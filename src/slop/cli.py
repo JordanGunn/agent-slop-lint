@@ -49,7 +49,10 @@ Examples:
     )
     check_parser.add_argument(
         "target", type=str,
-        help="Category (e.g. 'complexity'), subcategory (e.g. 'class.inheritance'), or rule (e.g. 'complexity.cyclomatic')",
+        help=(
+            "Category (e.g. 'complexity'), subcategory "
+            "(e.g. 'class.inheritance'), or rule (e.g. 'complexity.cyclomatic')"
+        ),
     )
     _add_common_args(check_parser)
 
@@ -153,7 +156,7 @@ def cmd_lint(args: argparse.Namespace) -> int:
 
 
 def cmd_check(args: argparse.Namespace) -> int:
-    from slop.rules import CATEGORIES, RULES_BY_NAME, RULE_REGISTRY
+    from slop.rules import CATEGORIES, RULE_REGISTRY, RULES_BY_NAME
 
     target = args.target
 
@@ -201,7 +204,7 @@ def cmd_rules() -> int:
 
     for rule in RULE_REGISTRY:
         enabled = "on" if rule.default_enabled else "off"
-        threshold = rule.threshold_label if hasattr(rule, "threshold_label") and rule.threshold_label else ""
+        threshold = getattr(rule, "threshold_label", "") or ""
         print(f"  {rule.name:32s} [{enabled:3s}] {threshold:10s} {rule.description}")
     return 0
 

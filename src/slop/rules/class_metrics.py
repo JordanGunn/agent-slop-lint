@@ -55,7 +55,9 @@ def run_coupling(root: Path, rule_config: RuleConfig, slop_config: SlopConfig) -
     )
 
 
-def run_inheritance_depth(root: Path, rule_config: RuleConfig, slop_config: SlopConfig) -> RuleResult:
+def run_inheritance_depth(
+    root: Path, rule_config: RuleConfig, slop_config: SlopConfig,
+) -> RuleResult:
     threshold = rule_config.params.get("inheritance_depth_threshold", 4)
     severity = rule_config.severity
     result = _run_ck(root, slop_config)
@@ -86,7 +88,9 @@ def run_inheritance_depth(root: Path, rule_config: RuleConfig, slop_config: Slop
     )
 
 
-def run_inheritance_children(root: Path, rule_config: RuleConfig, slop_config: SlopConfig) -> RuleResult:
+def run_inheritance_children(
+    root: Path, rule_config: RuleConfig, slop_config: SlopConfig,
+) -> RuleResult:
     threshold = rule_config.params.get("inheritance_children_threshold", 10)
     severity = rule_config.severity
     result = _run_ck(root, slop_config)

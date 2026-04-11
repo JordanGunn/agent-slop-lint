@@ -117,7 +117,10 @@ def run_weighted(root: Path, rule_config: RuleConfig, slop_config: SlopConfig) -
                     file=cm.file,
                     line=cm.line,
                     symbol=cm.name,
-                    message=f"WMC {cm.wmc} exceeds {threshold} ({cm.method_count} methods, {cm.kind})",
+                    message=(
+                        f"WMC {cm.wmc} exceeds {threshold} "
+                        f"({cm.method_count} methods, {cm.kind})"
+                    ),
                     severity=severity,
                     value=cm.wmc,
                     threshold=threshold,

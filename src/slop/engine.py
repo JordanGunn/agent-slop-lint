@@ -9,7 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from slop import __version__
-from slop.models import LintResult, RuleConfig, RuleResult, SlopConfig
+from slop.models import LintResult, RuleResult, SlopConfig
 from slop.rules import RULE_REGISTRY, RULES_BY_CATEGORY, RULES_BY_NAME
 
 

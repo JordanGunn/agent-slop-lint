@@ -8,7 +8,7 @@ from __future__ import annotations
 import json
 
 from slop.color import bold, dim, green, red, yellow
-from slop.models import LintResult, RuleResult, Violation
+from slop.models import LintResult, RuleResult
 
 # Default number of violations shown per sub-rule before "...and N more"
 DEFAULT_MAX_VIOLATIONS = 5
@@ -44,7 +44,7 @@ def format_human(result: LintResult, *, max_violations: int = DEFAULT_MAX_VIOLAT
 
         if all_skipped:
             lines.append(dim(f"{cat} (disabled)"))
-            lines.append(dim(f"  \u2139 skipped (enable in .slop.toml)"))
+            lines.append(dim("  \u2139 skipped (enable in .slop.toml)"))
             lines.append("")
             continue
 
@@ -66,7 +66,10 @@ def format_human(result: LintResult, *, max_violations: int = DEFAULT_MAX_VIOLAT
             cat_total_violations += len(violations)
 
             # Extract checked count
-            for key in ("functions_checked", "files_analyzed", "packages_analyzed", "classes_checked"):
+            for key in (
+                "functions_checked", "files_analyzed",
+                "packages_analyzed", "classes_checked",
+            ):
                 if key in rr.summary:
                     cat_checked = max(cat_checked, rr.summary[key])
 
@@ -104,7 +107,8 @@ def format_human(result: LintResult, *, max_violations: int = DEFAULT_MAX_VIOLAT
         if cat_total_violations > 0:
             lines.append(f"  {_plural(cat_total_violations, 'violation')}{checked_str}")
         else:
-            lines.append(f"  {green('\u2713')} clean{checked_str}")
+            checkmark = green("\u2713")
+            lines.append(f"  {checkmark} clean{checked_str}")
 
         lines.append("")
 
