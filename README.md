@@ -9,9 +9,12 @@ One CLI. One config file. Ten rules. Exit code 0 or 1.
 ## Installation
 
 ```bash
-# Clone and run the install script (installs aux-skills backend + slop)
-git clone https://github.com/JordanGunn/slop.git
-cd slop
+# From PyPI
+pip install agent-slop-lint
+
+# Or clone and run the install script (installs aux-skills backend + slop)
+git clone https://github.com/JordanGunn/agent-slop-lint.git
+cd agent-slop-lint
 ./scripts/install.sh
 ```
 

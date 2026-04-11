@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "slop"
+name = "agent-slop-lint"
 version = "0.1.0"
 description = "Agentic code quality linter — catches slop before it becomes architectural rot"
 readme = "README.md"
