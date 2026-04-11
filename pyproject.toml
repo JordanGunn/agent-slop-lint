@@ -1,0 +1,45 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "slop"
+version = "0.1.0"
+description = "Agentic code quality linter — catches slop before it becomes architectural rot"
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.10"
+authors = [{ name = "Jordan Godau" }]
+keywords = ["linter", "code-quality", "complexity", "coupling", "agentic", "slop"]
+dependencies = [
+    "aux-skills>=0.2.0",
+    "tomli>=2.0; python_version < '3.11'",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0", "ruff>=0.1.0"]
+
+[project.scripts]
+slop = "slop.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/slop"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.uv.sources]
+aux-skills = { path = "../aux/cli", editable = true }
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+]

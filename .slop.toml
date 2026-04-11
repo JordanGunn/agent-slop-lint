@@ -1,0 +1,32 @@
+# slop — dogfood config (slop linting itself)
+
+root = "src"
+languages = ["python"]
+
+[rules.complexity]
+enabled = true
+cyclomatic_threshold = 25       # format_human is complex (22) — legit refactor target
+cognitive_threshold = 60        # format_human nesting (56) — legit refactor target
+weighted_threshold = 50
+severity = "error"
+
+[rules.hotspots]
+enabled = false                 # slop is a new project — no meaningful churn history yet
+
+[rules.packages]
+enabled = false                 # single-package project, martin metrics not applicable
+
+[rules.deps]
+enabled = true
+fail_on_cycles = true
+severity = "error"
+
+[rules.orphans]
+enabled = false
+
+[rules.class]
+enabled = true
+coupling_threshold = 8
+inheritance_depth_threshold = 4
+inheritance_children_threshold = 10
+severity = "error"

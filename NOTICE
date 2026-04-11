@@ -1,0 +1,64 @@
+slop — Agentic Code Quality Linter
+Copyright 2025 Jordan Godau
+
+This product implements established software metrics from the following
+published research. These metrics are mathematical formulas computed from
+source code structure; slop implements them independently via tree-sitter
+AST traversal. No code from the original authors' implementations is used.
+
+ACADEMIC CITATIONS
+==================
+
+Cyclomatic Complexity (complexity.cyclomatic)
+  McCabe, T.J. (1976). "A Complexity Measure." IEEE Transactions on
+  Software Engineering, SE-2(4), 308-320.
+
+Cognitive Complexity (complexity.cognitive)
+  Campbell, G.A. (2018). "Cognitive Complexity: A new way of measuring
+  understandability." SonarSource SA. Technical report.
+
+Chidamber & Kemerer Object-Oriented Metrics (class.*, complexity.weighted)
+  Chidamber, S.R. & Kemerer, C.F. (1994). "A Metrics Suite for Object
+  Oriented Design." IEEE Transactions on Software Engineering, 20(6),
+  476-493.
+
+  Metrics implemented: CBO (Coupling Between Object Classes), DIT (Depth
+  of Inheritance Tree), NOC (Number of Children), WMC (Weighted Methods
+  per Class).
+
+Distance from the Main Sequence (packages)
+  Martin, R.C. (1994). "OO Design Quality Metrics: An Analysis of
+  Dependencies." Proceedings of Workshop Pragmatic and Theoretical
+  Directions in Object-Oriented Software Metrics, OOPSLA '94.
+
+  Martin, R.C. (2002). "Agile Software Development: Principles, Patterns,
+  and Practices." Prentice Hall. Chapter 20: Principles of Package Design.
+
+  Metrics implemented: Instability (I), Abstractness (A), Distance from
+  the Main Sequence (D').
+
+Hotspot Analysis (hotspots)
+  Tornhill, A. (2015). "Your Code as a Crime Scene: Use Forensic
+  Techniques to Arrest Defects, Bottlenecks, and Bad Design in Your
+  Programs." Pragmatic Bookshelf.
+
+  The hotspot formula (complexity × change frequency) and quadrant
+  classification approach are adapted from Tornhill's work. The default
+  time window (90 days vs Tornhill's 1 year) is an intentional adjustment
+  for agentic-era codebases.
+
+Information Flow Complexity (historical reference)
+  Henry, S. & Kafura, D. (1981). "Software Structure Metrics Based on
+  Information Flow." IEEE Transactions on Software Engineering, SE-7(5),
+  510-518.
+
+  Not directly implemented. Martin's Instability metric is a normalised
+  refinement of Henry & Kafura's fan-in/fan-out model.
+
+COMPUTATIONAL BACKEND
+=====================
+
+slop depends on aux-skills (https://github.com/JordanGunn/aux) for all
+metric computation. aux-skills provides deterministic kernels built on
+tree-sitter, ripgrep, fd, and git. No metric computation occurs in slop
+itself.
