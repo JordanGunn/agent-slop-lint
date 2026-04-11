@@ -32,7 +32,7 @@ jobs:
           uv venv .venv --python ${{ matrix.python-version }}
           . .venv/bin/activate
           uv pip install "aux-skills @ git+https://github.com/JordanGunn/aux.git#subdirectory=cli"
-          uv pip install -e ".[dev]"
+          pip install -e ".[dev]"
 
       - name: Lint
         run: |
