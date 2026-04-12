@@ -16,8 +16,8 @@ from slop.models import RuleConfig, RuleResult, SlopConfig, Violation
 def run_churn_weighted(
     root: Path, rule_config: RuleConfig, slop_config: SlopConfig
 ) -> RuleResult:
-    """Check churn-weighted complexity hotspots."""
-    since = rule_config.params.get("since", "90 days ago")
+    """Check growth-weighted complexity hotspots."""
+    since = rule_config.params.get("since", "14 days ago")
     min_commits = rule_config.params.get("min_commits", 2)
     fail_on_quadrant = set(rule_config.params.get("fail_on_quadrant", ["hotspot"]))
     severity = rule_config.severity
@@ -40,7 +40,7 @@ def run_churn_weighted(
                     symbol=None,
                     message=(
                         f"{fh.quadrant} (CCX={fh.sum_ccx}, "
-                        f"churn={fh.change_freq}, score={fh.hotspot_score:.0f})"
+                        f"growth=+{fh.loc_delta} LOC, score={fh.hotspot_score:.0f})"
                     ),
                     severity=severity,
                     value=fh.hotspot_score,
@@ -48,7 +48,8 @@ def run_churn_weighted(
                     metadata={
                         "quadrant": fh.quadrant,
                         "sum_ccx": fh.sum_ccx,
-                        "change_freq": fh.change_freq,
+                        "loc_delta": fh.loc_delta,
+                        "commit_count": fh.commit_count,
                         "last_seen": fh.last_seen,
                     },
                 )

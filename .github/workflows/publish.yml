@@ -29,9 +29,8 @@ jobs:
         run: |
           uv venv .venv --python 3.12
           . .venv/bin/activate
-          uv pip install "aux-skills @ git+https://github.com/JordanGunn/aux.git#subdirectory=cli"
           uv pip install pytest ruff "tomli>=2.0"
-          uv pip install --no-deps -e .
+          uv pip install -e .
 
       - name: Test
         run: |

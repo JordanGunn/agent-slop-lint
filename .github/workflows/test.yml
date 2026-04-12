@@ -31,9 +31,8 @@ jobs:
         run: |
           uv venv .venv --python ${{ matrix.python-version }}
           . .venv/bin/activate
-          uv pip install "aux-skills @ git+https://github.com/JordanGunn/aux.git#subdirectory=cli"
           uv pip install pytest ruff "tomli>=2.0"
-          uv pip install --no-deps -e .
+          uv pip install -e .
 
       - name: Lint
         run: |

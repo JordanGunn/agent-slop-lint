@@ -61,21 +61,28 @@ textbooks for forty years, precise and computable and largely unread,
 waiting to be applied to a problem that did not yet exist when it was
 written.
 
-## Why slop defaults to 90 days
+## Why slop defaults to 14 days
 
-One deliberate deviation from the literature: slop's hotspot window
-defaults to 90 days instead of Adam Tornhill's canonical 1 year.
+Two deliberate deviations from the literature: slop's hotspot window
+defaults to 14 days (not Tornhill's 1 year), and the churn proxy is net
+LOC delta (not commit count).
 
 Tornhill's window was calibrated for human release cycles — quarterly
 planning, vacation rotations, team changes. Agentic code rot accumulates
-on a steeper curve. An agent-assisted sprint can produce more structural
-churn in two weeks than a human team produces in two months. A 1-year
-window on an agent-era repo surfaces a year's worth of human-era noise
-alongside the recent agentic signal, drowning the actionable findings
-in historical baseline.
+in days, not months. An agent can dump 200 lines of private helper
+functions into an existing file in a single session, and the
+architectural damage — namespace contamination, coupling growth,
+ownership erosion — is immediate. A 1-year window drowns this signal
+in historical noise.
 
-90 days captures a product quarter's worth of recent activity without
-reaching back into irrelevant history. The window is configurable via
+Commit count was a reasonable churn proxy in 2015, when most commits
+were human-authored and roughly similar in scope. With agents, one
+commit can add 400 lines while 40 trivial commits touch one line each.
+LOC delta (via `git log --numstat`) directly measures the volume of
+change, which is the signal that matters.
+
+14 days captures the burst pattern agents produce. Widen to
+`"90 days ago"` for human-pace repos. The window is configurable via
 `rules.hotspots.since` in `.slop.toml`.
 
 ---

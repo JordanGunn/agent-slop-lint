@@ -37,11 +37,11 @@ def test_default_complexity_enabled_with_standard_thresholds(tmp_path: Path):
     assert rc.params["weighted_threshold"] == 50
 
 
-def test_default_hotspots_since_90_days(tmp_path: Path):
+def test_default_hotspots_since_14_days(tmp_path: Path):
     config = load_config(root=str(tmp_path))
     rc = config.rule_config("hotspots")
     assert rc.enabled is True
-    assert rc.params["since"] == "90 days ago"
+    assert rc.params["since"] == "14 days ago"
     assert rc.params["min_commits"] == 2
     assert rc.params["fail_on_quadrant"] == ["hotspot"]
 
@@ -179,7 +179,7 @@ def test_disable_rule_via_config(tmp_path: Path):
     config = load_config(root=str(tmp_path))
     rc = config.rule_config("hotspots")
     assert rc.enabled is False
-    assert rc.params["since"] == "90 days ago"
+    assert rc.params["since"] == "14 days ago"
 
 
 def test_unknown_category_returns_default_rule_config(tmp_path: Path):

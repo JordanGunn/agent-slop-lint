@@ -45,7 +45,7 @@ DEFAULT_RULE_CONFIGS: dict[str, dict[str, Any]] = {
     "hotspots": {
         "enabled": True,
         "severity": "error",
-        "since": "90 days ago",
+        "since": "14 days ago",
         "min_commits": 2,
         "fail_on_quadrant": ["hotspot"],
     },
@@ -194,7 +194,7 @@ severity = "error"
 
 [rules.hotspots]
 enabled = true
-since = "90 days ago"           # git log window (agentic-era default: 90d)
+since = "14 days ago"           # git log window (agentic-era default: 14d)
 min_commits = 2
 fail_on_quadrant = ["hotspot"]
 severity = "error"

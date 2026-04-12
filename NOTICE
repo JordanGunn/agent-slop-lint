@@ -42,10 +42,11 @@ Hotspot Analysis (hotspots)
   Techniques to Arrest Defects, Bottlenecks, and Bad Design in Your
   Programs." Pragmatic Bookshelf.
 
-  The hotspot formula (complexity × change frequency) and quadrant
-  classification approach are adapted from Tornhill's work. The default
-  time window (90 days vs Tornhill's 1 year) is an intentional adjustment
-  for agentic-era codebases.
+  The hotspot formula (complexity × churn) and quadrant classification
+  approach are adapted from Tornhill's work. The churn proxy uses net LOC
+  delta (git --numstat) instead of commit count, and the default time
+  window (14 days vs Tornhill's 1 year) is an intentional adjustment for
+  agentic-era codebases where architectural damage accumulates in days.
 
 Information Flow Complexity (historical reference)
   Henry, S. & Kafura, D. (1981). "Software Structure Metrics Based on

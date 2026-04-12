@@ -44,7 +44,7 @@ slop init
 | `complexity.cyclomatic` | CCX > 10 | Per-function path count | McCabe 1976 |
 | `complexity.cognitive` | CogC > 15 | Per-function reading difficulty | Campbell 2018 |
 | `complexity.weighted` | WMC > 50 | Per-class aggregate method complexity | Chidamber & Kemerer 1994 |
-| `hotspots` | 90d window | Files that are complex AND frequently changed | Tornhill 2015 |
+| `hotspots` | 14d window | Files that are complex AND growing fast | Tornhill 2015 |
 | `packages` | D' > 0.7 | Package design distance from the Main Sequence | Martin 1994 |
 | `deps` | any cycle | Dependency cycles between modules | — |
 | `orphans` | disabled | Unreferenced symbols (advisory, needs human review) | — |
@@ -83,7 +83,7 @@ severity = "error"
 
 [rules.hotspots]
 enabled = true
-since = "90 days ago"
+since = "14 days ago"
 min_commits = 2
 fail_on_quadrant = ["hotspot"]
 severity = "error"
@@ -160,9 +160,9 @@ slop schema                            Config schema as JSON
 
 `packages` (Martin metrics) currently supports Go and Python only. Other languages' files are excluded from the relevant rules, not errored.
 
-## Why 90 days?
+## Why 14 days?
 
-Tornhill's canonical hotspot window is 1 year, calibrated for human release cycles. slop defaults to 90 days because agentic code rot accumulates on a steeper curve — a 1-year window on an agent-assisted repo drowns the recent signal in human-era noise. Override with `--since` or the `rules.hotspots.since` config key.
+Tornhill's canonical hotspot window is 1 year, calibrated for human release cycles. slop defaults to 14 days because agentic code rot accumulates in days, not months — an agent can dump 200 lines of private helpers into a file in a single session, and the architectural damage is immediate. A 1-year window on an agent-assisted repo drowns the recent signal in human-era noise. Widen to `"90 days ago"` for human-pace repos, or override with `--since` / `rules.hotspots.since`.
 
 ## Architecture
 
