@@ -30,7 +30,7 @@ jobs:
           uv venv .venv --python 3.12
           . .venv/bin/activate
           uv pip install pytest ruff "tomli>=2.0"
-          uv pip install -e .
+          uv pip install --no-sources -e .
 
       - name: Test
         run: |
