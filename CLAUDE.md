@@ -66,5 +66,5 @@ Rules are thin wrappers: load config params, call an aux kernel, iterate results
 
 - **Kernels live in aux-skills, not slop.** slop imports `from aux.kernels.<x> import <x>_kernel`. No metric computation in slop.
 - **Config priority:** `--config` flag > `.slop.toml` > `pyproject.toml [tool.slop]` > defaults.
-- **90-day default hotspot window** — tighter than Tornhill's 1yr because agentic rot accumulates faster.
+- **14-day default hotspot window** — tuned for agentic code generation where architectural damage accumulates in days, not months.
 - **Exit codes:** 0 = clean, 1 = violations, 2 = error.

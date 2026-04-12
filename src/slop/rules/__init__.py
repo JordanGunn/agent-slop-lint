@@ -54,7 +54,7 @@ RULE_REGISTRY: list[RuleDefinition] = [
         description="Churn \u00d7 complexity per file (Tornhill 2015)",
         default_severity="error",
         default_enabled=True,
-        threshold_label="90d window",
+        threshold_label="14d window",
         run=run_churn_weighted,
     ),
 

@@ -9,18 +9,38 @@ One CLI. One config file. Ten rules. Exit code 0 or 1.
 ## Installation
 
 ```bash
-# From PyPI
 pip install agent-slop-lint
-
-# Or clone and run the install script (installs aux-skills backend + slop)
-git clone https://github.com/JordanGunn/agent-slop-lint.git
-cd agent-slop-lint
-./scripts/install.sh
 ```
 
-The install script checks system dependencies, installs `aux-skills` (the computational backend), installs `slop`, and verifies both are available in PATH.
+This installs slop and its Python dependency [`aux-skills`](https://pypi.org/project/aux-skills/) (the computational backend that provides all metric kernels).
 
-**System requirements:** Python 3.10+, [uv](https://docs.astral.sh/uv/), `git`, `rg` ([ripgrep](https://github.com/BurntSushi/ripgrep)), `fd`/`fdfind` ([fd](https://github.com/sharkdp/fd)).
+### System dependencies
+
+slop's metric kernels shell out to system tools that must be installed separately:
+
+| Tool | Purpose | Install |
+|---|---|---|
+| [ripgrep](https://github.com/BurntSushi/ripgrep) (`rg`) | Content search, symbol reference counting | `apt install ripgrep` / `brew install ripgrep` |
+| [fd](https://github.com/sharkdp/fd) (`fd` or `fdfind`) | File discovery | `apt install fd-find` / `brew install fd` |
+| [git](https://git-scm.com/) | Hotspot churn analysis (git log) | `apt install git` / `brew install git` |
+| Python 3.10+ | Runtime | [python.org](https://www.python.org/) |
+
+Tree-sitter grammars (for AST-based metrics like CCX, CK, Halstead, NPATH) are bundled as Python wheels by `aux-skills` — no manual grammar installation needed.
+
+### Verify
+
+```bash
+slop rules          # list all rules and thresholds
+aux doctor          # check system tool availability
+```
+
+### Alternative: install script
+
+```bash
+git clone https://github.com/JordanGunn/agent-slop-lint.git
+cd agent-slop-lint
+./scripts/install.sh    # checks deps, installs everything, verifies PATH
+```
 
 **Windows:** Use `.\scripts\install.ps1` instead.
 
