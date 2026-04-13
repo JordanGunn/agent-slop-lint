@@ -1,0 +1,79 @@
+# slop — agentic code quality linter
+
+> Catches structural code quality defects using established software metrics. Tuned for AI-assisted development where code rot accumulates faster than in human-only workflows.
+
+## Install
+
+```bash
+pip install agent-slop-lint
+```
+
+Requires system tools: `rg` (ripgrep), `fd`, `git`. See [setup guide](https://github.com/JordanGunn/agent-slop-lint/blob/main/docs/SETUP.md) for platform-specific install commands.
+
+## Quick start
+
+```bash
+# Generate config (choose: default, lax, strict)
+slop init
+slop init lax
+slop init strict
+
+# Run all rules
+slop lint
+
+# Run one category or rule
+slop check complexity
+slop check complexity.cyclomatic
+slop check class.inheritance
+
+# List rules and thresholds
+slop rules
+```
+
+## Output
+
+Use `--output json` for machine consumption. Use `--output human` (default) for terminal display.
+
+Exit codes: `0` = clean, `1` = violations found, `2` = error.
+
+## Rules
+
+10 rules across 6 categories:
+
+| Rule | Default threshold | What it catches |
+|---|---|---|
+| `complexity.cyclomatic` | CCX > 10 | Functions with too many paths |
+| `complexity.cognitive` | CogC > 15 | Functions that are hard to read |
+| `complexity.weighted` | WMC > 50 | Classes doing too much |
+| `hotspots` | 14d window | Files that are complex AND growing fast |
+| `packages` | D' > 0.7 | Packages far from the ideal design balance |
+| `deps` | any cycle | Circular dependencies between modules |
+| `orphans` | disabled | Dead code candidates (advisory) |
+| `class.coupling` | CBO > 8 | Classes that depend on too many others |
+| `class.inheritance.depth` | DIT > 4 | Deep inheritance hierarchies |
+| `class.inheritance.children` | NOC > 10 | Classes with too many subclasses |
+
+Languages: Python, JavaScript, TypeScript, Go, Rust, Java, C#.
+
+## Configuration
+
+Config lives in `.slop.toml` or `pyproject.toml [tool.slop]`. Generate with `slop init <profile>`.
+
+Profiles: `default` (balanced), `lax` (legacy/gradual adoption), `strict` (greenfield).
+
+Every threshold is tunable. See [configuration reference](https://github.com/JordanGunn/agent-slop-lint/blob/main/docs/CONFIG.md) for per-rule explanations and when to raise, lower, or disable each rule.
+
+## Integration
+
+**Pre-commit hook:** Add `slop lint --output quiet` to `.git/hooks/pre-commit`.
+
+**CI:** `pip install agent-slop-lint && slop lint` in any pipeline. Use `fetch-depth: 0` for hotspot analysis.
+
+**Agent skill:** Tell your agent to run `slop lint --output json` after structural changes. If clean, say nothing. If violations, fix or flag.
+
+## Links
+
+- [Setup guide](https://github.com/JordanGunn/agent-slop-lint/blob/main/docs/SETUP.md) — install, configure, integrate
+- [Configuration reference](https://github.com/JordanGunn/agent-slop-lint/blob/main/docs/CONFIG.md) — every rule explained, profiles, when to disable
+- [PyPI](https://pypi.org/project/agent-slop-lint/)
+- [GitHub](https://github.com/JordanGunn/agent-slop-lint)
