@@ -76,6 +76,15 @@ Examples:
         help="Target directory (created if it doesn't exist)",
     )
 
+    hook_parser = subparsers.add_parser(
+        "hook", help="Install or remove a git pre-commit hook that runs slop",
+        description="Install a git pre-commit hook that runs slop lint before each commit.",
+    )
+    hook_parser.add_argument(
+        "--disable", action="store_true",
+        help="Remove the slop pre-commit hook",
+    )
+
     subparsers.add_parser("rules", help="List all available rules with thresholds")
     subparsers.add_parser("schema", help="Print config schema as JSON")
 
@@ -124,6 +133,8 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_init(getattr(args, "profile", "default"))
     if args.command == "skill":
         return cmd_skill(args.directory)
+    if args.command == "hook":
+        return cmd_hook(disable=getattr(args, "disable", False))
     if args.command == "rules":
         return cmd_rules()
     if args.command == "schema":
@@ -206,6 +217,66 @@ def cmd_check(args: argparse.Namespace) -> int:
             )
             return 2
         return _load_and_run(args, filter_category=target)
+
+
+_HOOK_MARKER = "# --- slop pre-commit hook ---"
+_HOOK_CONTENT = f"""\
+#!/bin/sh
+{_HOOK_MARKER}
+slop lint --output quiet
+"""
+
+
+def cmd_hook(disable: bool = False) -> int:
+    import stat
+    import subprocess
+    from pathlib import Path
+
+    # Find the git repo root
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            capture_output=True, text=True, check=True,
+        )
+        repo_root = Path(result.stdout.strip())
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        print("slop: not inside a git repository", file=sys.stderr)
+        return 2
+
+    hook_path = repo_root / ".git" / "hooks" / "pre-commit"
+
+    if disable:
+        if not hook_path.exists():
+            print("slop: no pre-commit hook to remove")
+            return 0
+        content = hook_path.read_text()
+        if _HOOK_MARKER not in content:
+            print("slop: pre-commit hook exists but was not installed by slop — leaving it alone")
+            return 1
+        hook_path.unlink()
+        print(f"Removed slop pre-commit hook from {hook_path}")
+        return 0
+
+    # Install
+    if hook_path.exists():
+        content = hook_path.read_text()
+        if _HOOK_MARKER in content:
+            print("slop: pre-commit hook already installed")
+            return 0
+        print(
+            f"slop: {hook_path} already exists (not installed by slop)\n"
+            f"Add this line manually to your existing hook:\n"
+            f"  slop lint --output quiet",
+            file=sys.stderr,
+        )
+        return 1
+
+    hook_path.parent.mkdir(parents=True, exist_ok=True)
+    hook_path.write_text(_HOOK_CONTENT)
+    # Make executable (Unix); no-op effect on Windows but harmless
+    hook_path.chmod(hook_path.stat().st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
+    print(f"Installed slop pre-commit hook → {hook_path}")
+    return 0
 
 
 def cmd_skill(directory: str) -> int:

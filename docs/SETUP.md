@@ -149,35 +149,19 @@ Two paths, depending on how you want slop to run.
 
 A pre-commit hook runs slop automatically before every commit. Nothing gets in without passing.
 
-**Unix (`.git/hooks/pre-commit`):**
+**Unix / Windows:**
 ```bash
-#!/bin/sh
-slop lint --output quiet
+slop hook
 ```
 
-Make it executable:
+That's it. This installs a git pre-commit hook that runs `slop lint --output quiet` before each commit. Works on both platforms (git hooks use sh on all OSes).
+
+To remove it:
 ```bash
-chmod +x .git/hooks/pre-commit
+slop hook --disable
 ```
 
-**Windows (`.git/hooks/pre-commit`):**
-```bash
-#!/bin/sh
-slop lint --output quiet
-```
-
-Git hooks on Windows use Git Bash, so the same shell script works. Alternatively, create `.git/hooks/pre-commit.ps1` and configure Git to use PowerShell:
-```powershell
-# .git/hooks/pre-commit
-#!/bin/sh
-powershell.exe -ExecutionPolicy Bypass -File "$(dirname "$0")/pre-commit.ps1"
-```
-
-```powershell
-# .git/hooks/pre-commit.ps1
-$result = slop lint --output quiet
-if ($LASTEXITCODE -ne 0) { exit 1 }
-```
+If you already have a pre-commit hook, slop won't overwrite it — it'll tell you to add `slop lint --output quiet` to your existing hook manually.
 
 **With the [pre-commit](https://pre-commit.com/) framework:**
 

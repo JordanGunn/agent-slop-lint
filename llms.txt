@@ -75,7 +75,7 @@ Every threshold is tunable. See [configuration reference](https://github.com/Jor
 
 ## Integration
 
-**Pre-commit hook:** Add `slop lint --output quiet` to `.git/hooks/pre-commit`.
+**Pre-commit hook:** `slop hook` installs a git pre-commit hook. `slop hook --disable` removes it.
 
 **CI:** `pip install agent-slop-lint && slop lint` in any pipeline. Use `fetch-depth: 0` (full git history) so the hotspot rule can analyze change volume — shallow clones produce incomplete results.
 
