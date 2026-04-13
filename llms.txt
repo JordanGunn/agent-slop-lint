@@ -4,11 +4,18 @@
 
 ## Install
 
+Requires Python 3.10+.
+
 ```bash
 pip install agent-slop-lint
 ```
 
-Requires system tools: `rg` (ripgrep), `fd`, `git`. See [setup guide](https://github.com/JordanGunn/agent-slop-lint/blob/main/docs/SETUP.md) for platform-specific install commands.
+System tools (must be installed separately):
+- `rg` — `apt install ripgrep` / `brew install ripgrep`
+- `fd` — `apt install fd-find` / `brew install fd`
+- `git` — `apt install git` / `brew install git`
+
+See [setup guide](https://github.com/JordanGunn/agent-slop-lint/blob/main/docs/SETUP.md) for Windows (scoop/choco) and full instructions.
 
 ## Quick start
 
@@ -32,7 +39,10 @@ slop rules
 
 ## Output
 
-Use `--output json` for machine consumption. Use `--output human` (default) for terminal display.
+Three output modes:
+- `--output human` (default) — colored terminal display
+- `--output json` — structured JSON for machine consumption
+- `--output quiet` — one-line summary (ideal for pre-commit hooks)
 
 Exit codes: `0` = clean, `1` = violations found, `2` = error.
 
@@ -67,7 +77,7 @@ Every threshold is tunable. See [configuration reference](https://github.com/Jor
 
 **Pre-commit hook:** Add `slop lint --output quiet` to `.git/hooks/pre-commit`.
 
-**CI:** `pip install agent-slop-lint && slop lint` in any pipeline. Use `fetch-depth: 0` for hotspot analysis.
+**CI:** `pip install agent-slop-lint && slop lint` in any pipeline. Use `fetch-depth: 0` (full git history) so the hotspot rule can analyze change volume — shallow clones produce incomplete results.
 
 **Agent skill:** Tell your agent to run `slop lint --output json` after structural changes. If clean, say nothing. If violations, fix or flag.
 
