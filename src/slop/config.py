@@ -169,17 +169,72 @@ def load_config(
     )
 
 
-def generate_default_config() -> str:
-    """Generate a default .slop.toml config string."""
-    return '''\
+PROFILES: dict[str, dict[str, str | int | bool | list[str]]] = {
+    "default": {
+        "cyclomatic_threshold": 10,
+        "cognitive_threshold": 15,
+        "weighted_threshold": 50,
+        "hotspots_since": "14 days ago",
+        "hotspots_min_commits": 2,
+        "hotspots_fail_on_quadrant": ["hotspot"],
+        "max_distance": 0.7,
+        "packages_severity": "warning",
+        "orphans_enabled": False,
+        "coupling_threshold": 8,
+        "inheritance_depth_threshold": 4,
+        "inheritance_children_threshold": 10,
+    },
+    "lax": {
+        "cyclomatic_threshold": 20,
+        "cognitive_threshold": 25,
+        "weighted_threshold": 100,
+        "hotspots_since": "90 days ago",
+        "hotspots_min_commits": 3,
+        "hotspots_fail_on_quadrant": ["hotspot"],
+        "max_distance": 0.85,
+        "packages_severity": "warning",
+        "orphans_enabled": False,
+        "coupling_threshold": 15,
+        "inheritance_depth_threshold": 6,
+        "inheritance_children_threshold": 20,
+    },
+    "strict": {
+        "cyclomatic_threshold": 6,
+        "cognitive_threshold": 10,
+        "weighted_threshold": 30,
+        "hotspots_since": "7 days ago",
+        "hotspots_min_commits": 1,
+        "hotspots_fail_on_quadrant": ["hotspot", "churning_simple"],
+        "max_distance": 0.5,
+        "packages_severity": "error",
+        "orphans_enabled": True,
+        "coupling_threshold": 5,
+        "inheritance_depth_threshold": 3,
+        "inheritance_children_threshold": 7,
+    },
+}
+
+
+def generate_default_config(profile: str = "default") -> str:
+    """Generate a .slop.toml config string for the given profile.
+
+    Valid profiles: ``default``, ``lax``, ``strict``.
+    """
+    if profile not in PROFILES:
+        raise ValueError(f"Unknown profile '{profile}'. Valid: {', '.join(sorted(PROFILES))}")
+    p = PROFILES[profile]
+    quadrant_list = ', '.join(f'"{q}"' for q in p["hotspots_fail_on_quadrant"])
+    orphans_enabled = "true" if p["orphans_enabled"] else "false"
+    return f'''\
 # slop — agentic code quality linter
-# https://github.com/JordanGunn/slop
+# https://github.com/JordanGunn/agent-slop-lint
+# Profile: {profile}
 
 # Root directory (default: ".")
 root = "."
 
 # Languages to analyze (default: auto-detect all supported)
-# Supported: python, javascript, typescript, go, rust, java
+# Supported: python, javascript, typescript, go, rust, java, c_sharp
 # languages = ["python", "typescript"]
 
 # Global file exclusions (applied to all rules)
@@ -187,24 +242,24 @@ root = "."
 
 [rules.complexity]
 enabled = true
-cyclomatic_threshold = 10       # fail if any function CCX exceeds this
-cognitive_threshold = 15        # fail if any function CogC exceeds this
-weighted_threshold = 50         # fail if any class WMC exceeds this
+cyclomatic_threshold = {p["cyclomatic_threshold"]}       # fail if any function CCX exceeds this
+cognitive_threshold = {p["cognitive_threshold"]}        # fail if any function CogC exceeds this
+weighted_threshold = {p["weighted_threshold"]}         # fail if any class WMC exceeds this
 severity = "error"
 
 [rules.hotspots]
 enabled = true
-since = "14 days ago"           # git log window (agentic-era default: 14d)
-min_commits = 2
-fail_on_quadrant = ["hotspot"]
+since = "{p["hotspots_since"]}"
+min_commits = {p["hotspots_min_commits"]}
+fail_on_quadrant = [{quadrant_list}]
 severity = "error"
 
 [rules.packages]
 enabled = true
 # languages = ["python"]        # robert metrics only support go and python
-max_distance = 0.7              # fail if D\\' exceeds this
+max_distance = {p["max_distance"]}
 fail_on_zone = ["pain"]
-severity = "warning"
+severity = "{p["packages_severity"]}"
 
 [rules.deps]
 enabled = true
@@ -212,14 +267,14 @@ fail_on_cycles = true
 severity = "error"
 
 [rules.orphans]
-enabled = false                 # off by default — advisory, needs human review
+enabled = {orphans_enabled}
 min_confidence = "high"
 severity = "warning"
 
 [rules.class]
 enabled = true
-coupling_threshold = 8          # CBO: max other classes this class depends on
-inheritance_depth_threshold = 4 # DIT: max inheritance tree depth
-inheritance_children_threshold = 10  # NOC: max direct subclasses
+coupling_threshold = {p["coupling_threshold"]}
+inheritance_depth_threshold = {p["inheritance_depth_threshold"]}
+inheritance_children_threshold = {p["inheritance_children_threshold"]}
 severity = "error"
 '''

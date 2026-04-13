@@ -212,7 +212,15 @@ inheritance_children_threshold = 10
 
 ## Profiles
 
-Copy one of these into your `.slop.toml` as a starting point.
+Generate a profile directly with `slop init`:
+
+```bash
+slop init              # default — balanced for most projects
+slop init lax          # lax — legacy codebases or gradual adoption
+slop init strict       # strict — greenfield or quality-focused teams
+```
+
+Or copy one of the configs below into your `.slop.toml` manually.
 
 ### Default — balanced for most projects
 

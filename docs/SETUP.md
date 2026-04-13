@@ -72,19 +72,31 @@ cd agent-slop-lint
 
 ### Generate a config file
 
-Run `slop init` in your project root to generate an annotated `.slop.toml` with sensible defaults:
+Run `slop init` in your project root to generate an annotated `.slop.toml`. Choose a profile that matches your project:
+
+| Profile | Best for | Thresholds |
+|---|---|---|
+| `default` | Most projects | Balanced — catches real problems without noise |
+| `lax` | Legacy codebases, gradual adoption | Relaxed — focus on the worst offenders first |
+| `strict` | Greenfield, quality-focused teams | Aggressive — catches problems before they compound |
 
 **Unix:**
 ```bash
 cd /path/to/your/project
-slop init
+slop init              # default profile
+slop init lax          # legacy / gradual adoption
+slop init strict       # greenfield / quality-focused
 ```
 
 **Windows:**
 ```powershell
 cd C:\path\to\your\project
-slop init
+slop init              # default profile
+slop init lax          # legacy / gradual adoption
+slop init strict       # greenfield / quality-focused
 ```
+
+For detailed explanations of every threshold and what the profiles change, see the **[configuration reference](./CONFIG.md)**.
 
 This creates `.slop.toml` with all 10 rules pre-configured. The defaults work well for most projects — you can tune later.
 

@@ -31,7 +31,9 @@ Examples:
   slop check complexity
   slop check complexity.cyclomatic
   slop check class.inheritance
-  slop init
+  slop init                 # default profile
+  slop init lax            # legacy / gradual adoption
+  slop init strict         # greenfield / quality-focused
 """,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -56,7 +58,15 @@ Examples:
     )
     _add_common_args(check_parser)
 
-    subparsers.add_parser("init", help="Generate a default .slop.toml config file")
+    init_parser = subparsers.add_parser(
+        "init", help="Generate a .slop.toml config file",
+        description="Generate a .slop.toml config file with a named profile.",
+    )
+    init_parser.add_argument(
+        "profile", nargs="?", default="default",
+        choices=["default", "lax", "strict"],
+        help="Config profile: default (balanced), lax (legacy/gradual), strict (greenfield)",
+    )
     subparsers.add_parser("rules", help="List all available rules with thresholds")
     subparsers.add_parser("schema", help="Print config schema as JSON")
 
@@ -102,7 +112,7 @@ def main(argv: list[str] | None = None) -> int:
         args.no_color = False
 
     if args.command == "init":
-        return cmd_init()
+        return cmd_init(getattr(args, "profile", "default"))
     if args.command == "rules":
         return cmd_rules()
     if args.command == "schema":
@@ -187,15 +197,15 @@ def cmd_check(args: argparse.Namespace) -> int:
         return _load_and_run(args, filter_category=target)
 
 
-def cmd_init() -> int:
+def cmd_init(profile: str = "default") -> int:
     from pathlib import Path
 
     target = Path.cwd() / ".slop.toml"
     if target.exists():
         print(f"slop: {target} already exists", file=sys.stderr)
         return 1
-    target.write_text(generate_default_config())
-    print(f"Created {target}")
+    target.write_text(generate_default_config(profile))
+    print(f"Created {target} (profile: {profile})")
     return 0
 
 
