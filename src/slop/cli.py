@@ -67,6 +67,15 @@ Examples:
         choices=["default", "lax", "strict"],
         help="Config profile: default (balanced), lax (legacy/gradual), strict (greenfield)",
     )
+    skill_parser = subparsers.add_parser(
+        "skill", help="Install the slop agent skill into a directory",
+        description="Copy the bundled slop agent skill files into the target directory.",
+    )
+    skill_parser.add_argument(
+        "directory", type=str,
+        help="Target directory (created if it doesn't exist)",
+    )
+
     subparsers.add_parser("rules", help="List all available rules with thresholds")
     subparsers.add_parser("schema", help="Print config schema as JSON")
 
@@ -113,6 +122,8 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "init":
         return cmd_init(getattr(args, "profile", "default"))
+    if args.command == "skill":
+        return cmd_skill(args.directory)
     if args.command == "rules":
         return cmd_rules()
     if args.command == "schema":
@@ -195,6 +206,41 @@ def cmd_check(args: argparse.Namespace) -> int:
             )
             return 2
         return _load_and_run(args, filter_category=target)
+
+
+def cmd_skill(directory: str) -> int:
+    import importlib.resources
+    from pathlib import Path
+
+    target = Path(directory)
+
+    # Locate bundled skill files inside the package
+    skill_pkg = importlib.resources.files("slop") / "_skill"
+
+    # Copy the skill tree to the target directory
+    target.mkdir(parents=True, exist_ok=True)
+
+    def _copy_tree(src, dst: Path) -> int:
+        """Recursively copy from importlib resource to filesystem."""
+        count = 0
+        for item in src.iterdir():
+            dest = dst / item.name
+            if item.is_file():
+                dest.write_bytes(item.read_bytes())
+                count += 1
+            elif item.is_dir():
+                dest.mkdir(parents=True, exist_ok=True)
+                count += _copy_tree(item, dest)
+        return count
+
+    try:
+        count = _copy_tree(skill_pkg, target)
+    except Exception as e:
+        print(f"slop: failed to copy skill files: {e}", file=sys.stderr)
+        return 2
+
+    print(f"Installed slop skill ({count} files) → {target}")
+    return 0
 
 
 def cmd_init(profile: str = "default") -> int:

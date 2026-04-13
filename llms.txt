@@ -79,7 +79,13 @@ Every threshold is tunable. See [configuration reference](https://github.com/Jor
 
 **CI:** `pip install agent-slop-lint && slop lint` in any pipeline. Use `fetch-depth: 0` (full git history) so the hotspot rule can analyze change volume — shallow clones produce incomplete results.
 
-**Agent skill:** Tell your agent to run `slop lint --output json` after structural changes. If clean, say nothing. If violations, fix or flag.
+**Agent skill:** Install the bundled skill into your agent's config directory:
+```bash
+slop skill .claude/commands/slop/     # Claude Code
+slop skill .cursor/rules/slop/        # Cursor
+slop skill skills/slop/               # generic
+```
+The skill tells the agent when to run slop (passive after changes, active on request) and how to interpret the output.
 
 ## Links
 

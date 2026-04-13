@@ -266,10 +266,9 @@ any violations before presenting the result. If clean, say nothing. If violation
 fix them or flag the top offenders.
 ```
 
-Or install the skill for richer passive/active behaviour:
+Or install the bundled skill for richer passive/active behaviour:
 ```bash
-# From the slop repo
-./skills/slop/scripts/skill.sh init
+slop skill .claude/commands/slop/
 ```
 
 **Cursor (`.cursorrules` or project rules):**
