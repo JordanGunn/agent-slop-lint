@@ -12,7 +12,7 @@ One CLI. One config file. Ten rules. Exit code 0 or 1.
 pip install agent-slop-lint
 ```
 
-For full setup instructions — system dependencies, configuration, pre-commit hooks, CI pipelines, and agent skill integration — see **[SETUP.md](SETUP.md)**.
+For full setup instructions — system dependencies, pre-commit hooks, CI pipelines, and agent skill integration — see the **[setup guide](./docs/SETUP.md)**. For threshold tuning, rule-by-rule explanations, and lax/default/strict profiles — see the **[configuration reference](./docs/CONFIG.md)**.
 
 This installs slop and its Python dependency [`aux-skills`](https://pypi.org/project/aux-skills/) (the computational backend that provides all metric kernels).
 
