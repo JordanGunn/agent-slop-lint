@@ -78,7 +78,9 @@ def _render_category(
     for rule_name, rr in rule_pairs:
         if rr.status == "skip" or not rr.violations:
             continue
-        lines.extend(_render_violations(rule_name, rr.violations, has_multiple_rules, max_violations))
+        lines.extend(_render_violations(
+            rule_name, rr.violations, has_multiple_rules, max_violations,
+        ))
 
     # Errors (missing binaries, unreadable files, git failures, …) — surfaced
     # here so silent failures can't render as ✓ clean the way they used to.

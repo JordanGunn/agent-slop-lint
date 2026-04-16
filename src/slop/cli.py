@@ -207,7 +207,8 @@ def _print_missing_binaries(missing: list[MissingBinary]) -> None:
         if m.install:
             print(f"      install: {m.install}", file=sys.stderr)
     print("", file=sys.stderr)
-    print(dim("Install the missing binaries and retry. Run 'slop doctor' to recheck."), file=sys.stderr)
+    hint = dim("Install the missing binaries and retry. Run 'slop doctor' to recheck.")
+    print(hint, file=sys.stderr)
 
 
 def cmd_lint(args: argparse.Namespace) -> int:
