@@ -120,6 +120,62 @@ def test_human_skipped_shows_info():
     assert "skipped" in output
 
 
+def test_human_zero_files_analyzed_shows_warning_not_clean():
+    """A rule that passed with zero files scanned should render as a warning,
+    not a green checkmark. Counts of 0 previously hid in the ✓ clean path."""
+    rr = RuleResult(
+        rule="complexity.cyclomatic",
+        status="pass",
+        violations=[],
+        summary={"functions_checked": 0, "violation_count": 0},
+    )
+    result = LintResult(
+        version="0.1.0", root="/test", languages=["python"], display_root="./test",
+        rule_results={"complexity.cyclomatic": rr},
+        rules_checked=1, result="pass",
+    )
+    output = format_human(result)
+    assert "no files matched" in output
+    assert "\u2713 clean" not in output
+
+
+def test_human_surfaces_rule_errors():
+    """Errors captured on RuleResult must appear in human output, not just JSON."""
+    rr = RuleResult(
+        rule="complexity.cyclomatic",
+        status="error",
+        violations=[],
+        summary={"functions_checked": 0, "violation_count": 0},
+        errors=["fd not found. Install from https://github.com/sharkdp/fd"],
+    )
+    result = LintResult(
+        version="0.1.0", root="/test", languages=["python"], display_root="./test",
+        rule_results={"complexity.cyclomatic": rr},
+        rules_checked=1, result="error",
+    )
+    output = format_human(result)
+    assert "fd not found" in output
+    assert "ERROR" in output
+
+
+def test_human_error_status_does_not_render_as_clean():
+    """A category whose only rule errored should not show ✓ clean."""
+    rr = RuleResult(
+        rule="complexity.cyclomatic",
+        status="error",
+        violations=[],
+        errors=["boom"],
+    )
+    result = LintResult(
+        version="0.1.0", root="/test", languages=[], display_root="./test",
+        rule_results={"complexity.cyclomatic": rr},
+        rules_checked=1, result="error",
+    )
+    output = format_human(result)
+    assert "\u2713 clean" not in output
+    assert "no files matched" not in output  # errors take precedence over zero-files
+
+
 # ---------------------------------------------------------------------------
 # Quiet mode
 # ---------------------------------------------------------------------------

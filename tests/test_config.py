@@ -99,7 +99,10 @@ cyclomatic_threshold = 20
 """
     )
     config = load_config(root=str(tmp_path))
-    assert config.root == "src"
+    # Relative config roots are now resolved against the config file's
+    # directory (ruff/mypy convention).
+    assert Path(config.root) == (tmp_path / "src").resolve()
+    assert config.config_path == (tmp_path / ".slop.toml").resolve()
     assert config.languages == ["python"]
     assert config.exclude == ["**/vendor/**"]
     rc = config.rule_config("complexity")
@@ -111,7 +114,7 @@ def test_slop_toml_overrides_pyproject(tmp_path: Path):
     (tmp_path / "pyproject.toml").write_text('[tool.slop]\nroot = "from_pyproject"\n')
     (tmp_path / ".slop.toml").write_text('root = "from_slop_toml"\n')
     config = load_config(root=str(tmp_path))
-    assert config.root == "from_slop_toml"
+    assert Path(config.root) == (tmp_path / "from_slop_toml").resolve()
 
 
 # ---------------------------------------------------------------------------
@@ -131,7 +134,8 @@ severity = "warning"
 """
     )
     config = load_config(root=str(tmp_path))
-    assert config.root == "lib"
+    assert Path(config.root) == (tmp_path / "lib").resolve()
+    assert config.config_path == (tmp_path / "pyproject.toml").resolve()
     rc = config.rule_config("complexity")
     assert rc.params["cyclomatic_threshold"] == 5
     assert rc.severity == "warning"
@@ -166,7 +170,7 @@ def test_explicit_pyproject_extracts_tool_slop(tmp_path: Path):
     pyproject = tmp_path / "pyproject.toml"
     pyproject.write_text('[tool.slop]\nroot = "from_explicit_pyproject"\n')
     config = load_config(config_path=str(pyproject))
-    assert config.root == "from_explicit_pyproject"
+    assert Path(config.root) == (tmp_path / "from_explicit_pyproject").resolve()
 
 
 # ---------------------------------------------------------------------------
@@ -191,7 +195,66 @@ def test_unknown_category_returns_default_rule_config(tmp_path: Path):
 
 
 # ---------------------------------------------------------------------------
-# 6. Config generation
+# 6. Upward config discovery
+# ---------------------------------------------------------------------------
+
+
+def test_upward_walk_finds_parent_slop_toml(tmp_path: Path):
+    """Running from a deep subdirectory still finds .slop.toml at the root."""
+    (tmp_path / ".slop.toml").write_text('root = "src"\n[rules.complexity]\ncyclomatic_threshold = 7\n')
+    deep = tmp_path / "a" / "b" / "c"
+    deep.mkdir(parents=True)
+    config = load_config(root=str(deep))
+    # Config discovered at tmp_path; its "src" resolves relative to tmp_path.
+    assert config.config_path == (tmp_path / ".slop.toml").resolve()
+    assert Path(config.root) == (tmp_path / "src").resolve()
+    assert config.rule_config("complexity").params["cyclomatic_threshold"] == 7
+
+
+def test_upward_walk_finds_parent_pyproject(tmp_path: Path):
+    """pyproject.toml with [tool.slop] in a parent directory is honored."""
+    (tmp_path / "pyproject.toml").write_text('[tool.slop]\nroot = "lib"\n')
+    deep = tmp_path / "inner"
+    deep.mkdir()
+    config = load_config(root=str(deep))
+    assert config.config_path == (tmp_path / "pyproject.toml").resolve()
+    assert Path(config.root) == (tmp_path / "lib").resolve()
+
+
+def test_pyproject_without_tool_slop_stops_upward_walk(tmp_path: Path):
+    """A pyproject.toml with no [tool.slop] section still halts the walk."""
+    # Outer: a .slop.toml that would otherwise be discovered.
+    outer = tmp_path
+    outer_slop = outer / ".slop.toml"
+    outer_slop.write_text('[rules.complexity]\ncyclomatic_threshold = 99\n')
+    # Inner: a pyproject.toml without [tool.slop], acts as project boundary.
+    inner = tmp_path / "sub"
+    inner.mkdir()
+    (inner / "pyproject.toml").write_text('[project]\nname = "x"\n')
+    config = load_config(root=str(inner))
+    # Walk stopped at inner/pyproject.toml (no [tool.slop]) — falls back to
+    # defaults, NOT outer's .slop.toml.
+    assert config.config_path == (inner / "pyproject.toml").resolve()
+    assert config.rule_config("complexity").params["cyclomatic_threshold"] == 10
+
+
+def test_absolute_root_in_config_stays_absolute(tmp_path: Path):
+    """An absolute `root` in config is used verbatim, not re-resolved."""
+    target = tmp_path / "explicit_abs"
+    target.mkdir()
+    (tmp_path / ".slop.toml").write_text(f'root = "{target}"\n')
+    config = load_config(root=str(tmp_path))
+    assert config.root == str(target)
+
+
+def test_no_config_found_populates_config_path_none(tmp_path: Path):
+    """Falling back to defaults leaves config_path unset."""
+    config = load_config(root=str(tmp_path))
+    assert config.config_path is None
+
+
+# ---------------------------------------------------------------------------
+# 7. Config generation
 # ---------------------------------------------------------------------------
 
 

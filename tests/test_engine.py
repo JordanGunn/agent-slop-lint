@@ -105,3 +105,40 @@ def test_prefix_match_runs_subcategory(tmp_path: Path):
     assert "class.inheritance.depth" in rule_names
     assert "class.inheritance.children" in rule_names
     assert "class.coupling" not in rule_names
+
+
+def test_rule_with_errors_and_zero_violations_is_coerced_to_error(
+    tmp_path: Path, monkeypatch
+):
+    """A rule that returns errors (e.g. missing binary) must not render as pass.
+
+    Simulates the silent-failure case where a kernel bailed but the rule
+    wrapper still produced pass-status with an empty violations list.
+    """
+    from slop.models import RuleDefinition, RuleResult
+    from slop import rules as rules_module
+
+    def fake_run(root, rule_config, slop_config):
+        return RuleResult(
+            rule="complexity.cyclomatic",
+            status="pass",
+            violations=[],
+            errors=["fd not found"],
+        )
+
+    fake_def = RuleDefinition(
+        name="complexity.cyclomatic",
+        category="complexity",
+        description="test override",
+        run=fake_run,
+    )
+    # RULES_BY_NAME is a dict — engine looks up filter_rule via this mapping.
+    monkeypatch.setitem(rules_module.RULES_BY_NAME, "complexity.cyclomatic", fake_def)
+
+    config = load_config(root=str(tmp_path))
+    result = run_lint(config, filter_rule="complexity.cyclomatic")
+
+    rr = result.rule_results["complexity.cyclomatic"]
+    assert rr.status == "error"
+    assert rr.errors == ["fd not found"]
+    assert result.result == "error"

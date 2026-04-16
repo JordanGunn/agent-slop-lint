@@ -6,9 +6,10 @@ Supports human-readable (default), quiet (summary only), and JSON output.
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass, field
 
 from slop.color import bold, dim, green, red, yellow
-from slop.models import LintResult, RuleResult
+from slop.models import LintResult, RuleResult, Violation
 
 # Default number of violations shown per sub-rule before "...and N more"
 DEFAULT_MAX_VIOLATIONS = 5
@@ -33,90 +34,144 @@ def format_human(result: LintResult, *, max_violations: int = DEFAULT_MAX_VIOLAT
     lines.append(bold(f"slop {result.version}") + f" \u2014 scanning {display}")
     lines.append("")
 
-    # Group rule results by category (preserve insertion order)
+    for cat, rule_pairs in _group_by_category(result).items():
+        lines.extend(_render_category(cat, rule_pairs, max_violations))
+
+    lines.append("\u2500" * 40)
+    lines.append(_format_footer(result))
+    return "\n".join(lines)
+
+
+def _group_by_category(
+    result: LintResult,
+) -> dict[str, list[tuple[str, RuleResult]]]:
+    """Group rule results by top-level category, preserving insertion order."""
     categories: dict[str, list[tuple[str, RuleResult]]] = {}
     for rule_name, rr in result.rule_results.items():
         cat = rule_name.split(".")[0] if "." in rule_name else rule_name
         categories.setdefault(cat, []).append((rule_name, rr))
+    return categories
 
-    for cat, rule_pairs in categories.items():
-        all_skipped = all(rr.status == "skip" for _, rr in rule_pairs)
 
-        if all_skipped:
-            lines.append(dim(f"{cat} (disabled)"))
-            lines.append(dim("  \u2139 skipped (enable in .slop.toml)"))
-            lines.append("")
+def _render_category(
+    cat: str,
+    rule_pairs: list[tuple[str, RuleResult]],
+    max_violations: int,
+) -> list[str]:
+    """Render one category block: header, violations, errors, summary."""
+    if all(rr.status == "skip" for _, rr in rule_pairs):
+        return [
+            dim(f"{cat} (disabled)"),
+            dim("  \u2139 skipped (enable in .slop.toml)"),
+            "",
+        ]
+
+    lines: list[str] = []
+    header_extras = _category_header_extras(rule_pairs)
+    header_suffix = f" ({', '.join(header_extras)})" if header_extras else ""
+    lines.append(bold(f"{cat}{header_suffix}"))
+
+    has_multiple_rules = sum(1 for _, rr in rule_pairs if rr.status != "skip") > 1
+    agg = _aggregate_category(rule_pairs)
+
+    # Violations first (skip sub-rules with no violations).
+    for rule_name, rr in rule_pairs:
+        if rr.status == "skip" or not rr.violations:
             continue
+        lines.extend(_render_violations(rule_name, rr.violations, has_multiple_rules, max_violations))
 
-        # Category header with context
-        header_extras = _category_header_extras(rule_pairs)
-        header_suffix = f" ({', '.join(header_extras)})" if header_extras else ""
-        lines.append(bold(f"{cat}{header_suffix}"))
+    # Errors (missing binaries, unreadable files, git failures, …) — surfaced
+    # here so silent failures can't render as ✓ clean the way they used to.
+    for rule_name, err in agg.errors:
+        sub_name = rule_name.split(".", 1)[1] if "." in rule_name else rule_name
+        prefix = f"{sub_name}: " if has_multiple_rules else ""
+        lines.append(f"  {red(chr(0x2717))} {prefix}{err}")
 
-        # Group violations by sub-rule
-        cat_total_violations = 0
-        cat_checked = 0
-        has_multiple_rules = len([rp for rp in rule_pairs if rp[1].status != "skip"]) > 1
+    lines.append(_category_summary_line(agg))
+    lines.append("")
+    return lines
 
-        for rule_name, rr in rule_pairs:
-            if rr.status == "skip":
-                continue
 
-            violations = rr.violations
-            cat_total_violations += len(violations)
+@dataclass
+class _CategoryAgg:
+    """Aggregated metrics for one category across all its sub-rules."""
 
-            # Extract checked count
-            for key in (
-                "functions_checked", "files_analyzed",
-                "packages_analyzed", "classes_checked",
-            ):
-                if key in rr.summary:
-                    cat_checked = max(cat_checked, rr.summary[key])
+    total_violations: int = 0
+    checked: int = 0
+    errors: list[tuple[str, str]] = field(default_factory=list)
+    has_error_status: bool = False
 
-            if not violations:
-                continue
 
-            # Sub-rule header (only if category has multiple rules)
-            if has_multiple_rules:
-                sub_name = rule_name.split(".", 1)[1] if "." in rule_name else rule_name
-                lines.append(f"  {sub_name}")
-                indent = "    "
-            else:
-                indent = "  "
+_CHECKED_KEYS = (
+    "functions_checked", "files_analyzed",
+    "packages_analyzed", "classes_checked",
+)
 
-            # Show violations (capped)
-            shown = violations[:max_violations]
-            for v in shown:
-                marker = red("\u2717") if v.severity == "error" else yellow("\u26a0")
-                loc = v.file
-                if v.line:
-                    loc += f":{v.line}"
-                if v.symbol:
-                    loc += f" {v.symbol}"
-                lines.append(f"{indent}{marker} {loc} \u2014 {v.message}")
 
-            remaining = len(violations) - len(shown)
-            if remaining > 0:
-                lines.append(dim(f"{indent}...and {remaining} more"))
+def _aggregate_category(rule_pairs: list[tuple[str, RuleResult]]) -> _CategoryAgg:
+    """Fold a category's rule results into a single summary record."""
+    agg = _CategoryAgg()
+    for rule_name, rr in rule_pairs:
+        if rr.status == "skip":
+            continue
+        agg.total_violations += len(rr.violations)
+        if rr.status == "error":
+            agg.has_error_status = True
+        for err in rr.errors:
+            agg.errors.append((rule_name, err))
+        for key in _CHECKED_KEYS:
+            if key in rr.summary:
+                agg.checked = max(agg.checked, rr.summary[key])
+    return agg
 
-            if has_multiple_rules:
-                lines.append("")  # blank between sub-rules
 
-        # Category summary
-        checked_str = f", {cat_checked} checked" if cat_checked else ""
-        if cat_total_violations > 0:
-            lines.append(f"  {_plural(cat_total_violations, 'violation')}{checked_str}")
-        else:
-            checkmark = green("\u2713")
-            lines.append(f"  {checkmark} clean{checked_str}")
+def _render_violations(
+    rule_name: str,
+    violations: list[Violation],
+    has_multiple_rules: bool,
+    max_violations: int,
+) -> list[str]:
+    """Render the violation block for one sub-rule."""
+    lines: list[str] = []
+    if has_multiple_rules:
+        sub_name = rule_name.split(".", 1)[1] if "." in rule_name else rule_name
+        lines.append(f"  {sub_name}")
+        indent = "    "
+    else:
+        indent = "  "
 
+    shown = violations[:max_violations]
+    for v in shown:
+        marker = red("\u2717") if v.severity == "error" else yellow("\u26a0")
+        loc = v.file
+        if v.line:
+            loc += f":{v.line}"
+        if v.symbol:
+            loc += f" {v.symbol}"
+        lines.append(f"{indent}{marker} {loc} \u2014 {v.message}")
+
+    remaining = len(violations) - len(shown)
+    if remaining > 0:
+        lines.append(dim(f"{indent}...and {remaining} more"))
+
+    if has_multiple_rules:
         lines.append("")
+    return lines
 
-    # Footer
-    lines.append("\u2500" * 40)
-    lines.append(_format_footer(result))
 
-    return "\n".join(lines)
+def _category_summary_line(agg: _CategoryAgg) -> str:
+    """Pick the right one-line summary (errors > violations > no-files > clean)."""
+    checked_str = f", {agg.checked} checked" if agg.checked else ""
+    if agg.has_error_status or agg.errors:
+        cross = red("\u2717")
+        count = max(len(agg.errors), 1)
+        noun = "error" if count == 1 else "errors"
+        return f"  {cross} {count} {noun}{checked_str}"
+    if agg.total_violations > 0:
+        return f"  {_plural(agg.total_violations, 'violation')}{checked_str}"
+    if agg.checked == 0:
+        return f"  {yellow(chr(0x26a0))} no files matched"
+    return f"  {green(chr(0x2713))} clean{checked_str}"
 
 
 def _category_header_extras(rule_pairs: list[tuple[str, RuleResult]]) -> list[str]:
@@ -150,6 +205,8 @@ def _format_footer(result: LintResult) -> str:
         status = red(bold("FAIL"))
     elif status == "PASS":
         status = green(bold("PASS"))
+    elif status == "ERROR":
+        status = red(bold("ERROR"))
 
     return " | ".join(parts) + f" | {status}"
 

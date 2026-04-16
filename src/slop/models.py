@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 # ---------------------------------------------------------------------------
@@ -28,6 +29,7 @@ class SlopConfig:
     languages: list[str] = field(default_factory=list)
     exclude: list[str] = field(default_factory=list)
     rules: dict[str, RuleConfig] = field(default_factory=dict)
+    config_path: Path | None = None
 
     def rule_config(self, category: str) -> RuleConfig:
         """Get the RuleConfig for a category, falling back to defaults."""

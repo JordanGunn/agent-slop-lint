@@ -111,6 +111,30 @@ def _build_rule_configs(raw_rules: dict[str, Any]) -> dict[str, RuleConfig]:
     return result
 
 
+def _discover_config(search_root: Path) -> tuple[Path | None, dict[str, Any]]:
+    """Walk upward from search_root looking for a slop config file.
+
+    At each directory: ``.slop.toml`` beats ``pyproject.toml``. Either one
+    marks the project root — we stop at the first directory that contains
+    one, even if the discovered ``pyproject.toml`` has no ``[tool.slop]``
+    table (falling back to defaults for that project).
+
+    Returns the discovered config file path (or None) and the parsed dict.
+    """
+    current = search_root.resolve()
+    while True:
+        slop_toml = current / ".slop.toml"
+        if slop_toml.is_file():
+            return slop_toml, _read_toml(slop_toml)
+        pyproject = current / "pyproject.toml"
+        if pyproject.is_file():
+            data = _read_toml(pyproject)
+            return pyproject, data.get("tool", {}).get("slop", {})
+        if current.parent == current:
+            return None, {}
+        current = current.parent
+
+
 def load_config(
     *,
     config_path: str | None = None,
@@ -118,42 +142,60 @@ def load_config(
 ) -> SlopConfig:
     """Load slop configuration from TOML files with fallback to defaults.
 
+    Discovery walks upward from ``root`` (or CWD) looking for ``.slop.toml``
+    or ``pyproject.toml`` with a ``[tool.slop]`` table — matching the
+    convention used by ruff, mypy, etc. Relative ``root`` paths in a
+    discovered config are resolved relative to the config file's directory;
+    explicit ``--config`` paths are resolved relative to CWD.
+
     Args:
-        config_path: Explicit config file path (highest priority).
-        root: Root directory for searching .slop.toml and pyproject.toml.
-            If None, uses current directory.
+        config_path: Explicit config file path (highest priority, no walk).
+        root: Starting directory for the upward walk. If None, uses CWD.
 
     Returns:
-        Merged SlopConfig.
+        Merged SlopConfig with ``config_path`` populated when a config was
+        discovered (or None when falling back to defaults).
     """
     raw: dict[str, Any] = {}
     search_root = Path(root) if root else Path.cwd()
+    discovered_config: Path | None = None
 
-    # Priority 1: explicit --config path
+    # Priority 1: explicit --config path (no upward walk)
     if config_path:
         config_file = Path(config_path)
         if not config_file.is_file():
             raise FileNotFoundError(f"Config file not found: {config_file}")
         raw = _read_toml(config_file)
-        # If it's a pyproject.toml, extract [tool.slop]
         if config_file.name == "pyproject.toml":
             raw = raw.get("tool", {}).get("slop", {})
+        discovered_config = config_file.resolve()
     else:
-        # Priority 2: .slop.toml in root
-        slop_toml = search_root / ".slop.toml"
-        if slop_toml.is_file():
-            raw = _read_toml(slop_toml)
-        else:
-            # Priority 3: pyproject.toml [tool.slop]
-            pyproject = search_root / "pyproject.toml"
-            if pyproject.is_file():
-                pyproject_data = _read_toml(pyproject)
-                raw = pyproject_data.get("tool", {}).get("slop", {})
+        # Priority 2/3: walk upward looking for .slop.toml or pyproject.toml
+        discovered_config, raw = _discover_config(search_root)
 
     # Extract top-level fields
-    config_root = raw.get("root", root or ".")
+    raw_root = raw.get("root")
     languages = raw.get("languages", [])
     exclude = raw.get("exclude", [])
+
+    # Resolve root. Precedence:
+    #   - config's `root` (resolved relative to the config file's directory
+    #     when the config was discovered) wins when present.
+    #   - the caller-supplied ``root`` is used as a fallback.
+    #   - final fallback is ".".
+    # CLI ``--root`` overrides are applied by the caller after load_config
+    # returns (see slop.cli._load_and_run); this function treats its ``root``
+    # parameter only as a search-start hint and default.
+    if raw_root is not None:
+        raw_root_path = Path(raw_root)
+        if raw_root_path.is_absolute() or discovered_config is None:
+            config_root = str(raw_root_path)
+        else:
+            config_root = str((discovered_config.parent / raw_root_path).resolve())
+    elif root is not None:
+        config_root = root
+    else:
+        config_root = "."
 
     # Build rule configs
     raw_rules = raw.get("rules", {})
@@ -166,6 +208,7 @@ def load_config(
         languages=languages,
         exclude=exclude,
         rules=rule_configs,
+        config_path=discovered_config,
     )
 
 

@@ -7,10 +7,11 @@ import json
 import sys
 
 from slop import __version__
-from slop.color import set_color
+from slop.color import bold, dim, green, red, set_color
 from slop.config import generate_default_config, load_config
 from slop.engine import run_lint
 from slop.output import DEFAULT_MAX_VIOLATIONS, format_human, format_json, format_quiet
+from slop.preflight import MissingBinary, check_required_binaries
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -24,6 +25,7 @@ Commands:
   init         Generate a default .slop.toml config file
   rules        List all available rules with thresholds
   schema       Print JSON schema of the config
+  doctor       Check that required system binaries are installed
 
 Examples:
   slop lint
@@ -87,6 +89,10 @@ Examples:
 
     subparsers.add_parser("rules", help="List all available rules with thresholds")
     subparsers.add_parser("schema", help="Print config schema as JSON")
+    subparsers.add_parser(
+        "doctor",
+        help="Check that required system binaries (fd, git, rg) are installed",
+    )
 
     return parser
 
@@ -143,6 +149,8 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_lint(args)
     if args.command == "check":
         return cmd_check(args)
+    if args.command == "doctor":
+        return cmd_doctor()
 
     parser.print_help()
     return 0
@@ -157,6 +165,11 @@ def _load_and_run(args: argparse.Namespace, **lint_kwargs) -> int:
         )
     except Exception as e:
         print(f"slop: config error: {e}", file=sys.stderr)
+        return 2
+
+    missing = check_required_binaries(config)
+    if missing:
+        _print_missing_binaries(missing)
         return 2
 
     display_root = args.root or config.root
@@ -181,6 +194,20 @@ def _load_and_run(args: argparse.Namespace, **lint_kwargs) -> int:
     if result.result == "fail":
         return 1
     return 0
+
+
+def _print_missing_binaries(missing: list[MissingBinary]) -> None:
+    """Render a preflight error block to stderr when required binaries are absent."""
+    header = red(bold("slop: missing required system binaries"))
+    print(header, file=sys.stderr)
+    print("", file=sys.stderr)
+    for m in missing:
+        rules_str = ", ".join(m.rules)
+        print(f"  {red(chr(0x2717))} {bold(m.name)} \u2014 needed by {rules_str}", file=sys.stderr)
+        if m.install:
+            print(f"      install: {m.install}", file=sys.stderr)
+    print("", file=sys.stderr)
+    print(dim("Install the missing binaries and retry. Run 'slop doctor' to recheck."), file=sys.stderr)
 
 
 def cmd_lint(args: argparse.Namespace) -> int:
@@ -324,6 +351,49 @@ def cmd_init(profile: str = "default") -> int:
     target.write_text(generate_default_config(profile))
     print(f"Created {target} (profile: {profile})")
     return 0
+
+
+def cmd_doctor() -> int:
+    """Print the status of each system binary slop may shell out to.
+
+    Exits 2 if any of fd / git / rg are missing. Reports all three regardless
+    of the current config so users can diagnose before touching config.
+    """
+    from aux.util.doctor import run_doctor
+
+    report = run_doctor()
+    tools = report.get("tools", {})
+
+    print(bold(f"slop doctor \u2014 slop {__version__}"))
+    print("")
+
+    all_present = True
+    for name in ("fd", "rg", "git"):
+        info = tools.get(name)
+        if info is None:
+            continue
+        available = info.get("available", False)
+        if available:
+            path = info.get("path", "")
+            version = info.get("version") or ""
+            actual_name = info.get("actual_name")
+            alias = f" (as {actual_name})" if actual_name else ""
+            version_str = f" ({version})" if version else ""
+            print(f"  {green(chr(0x2713))} {bold(name):20s} {path}{alias}{version_str}")
+        else:
+            all_present = False
+            install = info.get("install", "")
+            line = f"  {red(chr(0x2717))} {bold(name):20s} missing"
+            if install:
+                line += f" \u2014 install: {install}"
+            print(line)
+
+    print("")
+    if all_present:
+        print(green(bold("All required binaries are installed.")))
+        return 0
+    print(red(bold("Missing dependencies. See above for install instructions.")))
+    return 2
 
 
 def cmd_rules() -> int:

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "agent-slop-lint"
-version = "0.3.1"
+version = "0.4.0"
 description = "Agentic code quality linter — catches slop before it becomes architectural rot"
 readme = "README.md"
 license = "Apache-2.0"
@@ -12,7 +12,7 @@ requires-python = ">=3.10"
 authors = [{ name = "Jordan Godau" }]
 keywords = ["linter", "code-quality", "complexity", "coupling", "agentic", "slop"]
 dependencies = [
-    "aux-skills>=0.2.0",
+    "aux-skills>=0.3.0",
     "tomli>=2.0; python_version < '3.11'",
 ]
 

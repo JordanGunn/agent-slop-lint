@@ -103,6 +103,12 @@ def run_lint(
                 errors=[f"{type(e).__name__}: {e}"],
             )
 
+        # A rule that produced errors but no violations should be reported
+        # as an error, not a pass — otherwise silent failures (e.g. missing
+        # binaries, unreadable files) render as clean.
+        if result.errors and result.status == "pass":
+            result.status = "error"
+
         rule_results[rule_def.name] = result
         rules_checked += 1
 
