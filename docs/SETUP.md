@@ -122,12 +122,14 @@ enabled = false               # advisory — enable when ready for dead code aud
 
 ### Config priority
 
-slop loads config in this order (first found wins):
+slop walks upward from the current directory looking for a config file — same convention as ruff and mypy. First found wins:
 
-1. `--config path/to/file` (explicit CLI flag)
-2. `.slop.toml` (in project root)
-3. `pyproject.toml` under `[tool.slop]`
+1. `--config path/to/file` (explicit CLI flag, no walk)
+2. Nearest `.slop.toml` walking upward from CWD
+3. Nearest `pyproject.toml` walking upward from CWD (uses `[tool.slop]` if present; otherwise the file just anchors the project)
 4. Built-in defaults
+
+A `root` key in a discovered config resolves relative to that config file's directory, so `root = "src"` in `~/project/.slop.toml` always means `~/project/src` no matter where you invoke slop from. `--root` on the CLI resolves relative to CWD and overrides the config's `root`.
 
 ### Alternative: pyproject.toml
 
@@ -286,7 +288,7 @@ Confirm everything is working.
 **Unix:**
 ```bash
 # Check system tool availability
-aux doctor
+slop doctor
 
 # List all rules and their thresholds
 slop rules
@@ -297,7 +299,7 @@ slop lint --root /path/to/your/project
 
 **Windows:**
 ```powershell
-aux doctor
+slop doctor
 slop rules
 slop lint --root C:\path\to\your\project
 ```
@@ -344,4 +346,4 @@ enabled = false
 
 **Shallow clone in CI** — hotspot analysis needs git history. Use `fetch-depth: 0` in your checkout step, or set `since` to a short window to reduce the history needed.
 
-**`aux doctor` shows missing optional tools** — `httpx` and `trafilatura` are optional dependencies for `aux curl` (HTTP fetch). They're not needed by slop.
+**`slop doctor` or `aux doctor` shows missing optional tools** — `httpx` and `trafilatura` are optional dependencies for `aux curl` (HTTP fetch). They're not needed by slop.

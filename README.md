@@ -1,173 +1,93 @@
 # slop
 
-Agentic code quality linter — catches slop before it becomes architectural rot.
+A code quality linter for codebases where AI agents are writing most of the diffs.
 
-`slop` is a language-agnostic linter that detects structural quality defects across a codebase using established software metrics. It ships with opinionated defaults tuned for AI-assisted development, where code rot accumulates faster than in human-only workflows.
+[![PyPI](https://img.shields.io/pypi/v/agent-slop-lint)](https://pypi.org/project/agent-slop-lint/)
+[![Python](https://img.shields.io/pypi/pyversions/agent-slop-lint)](https://pypi.org/project/agent-slop-lint/)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
 
-One CLI. One config file. Ten rules. Exit code 0 or 1.
+Static analysis tools got their defaults from codebases where a productive human wrote maybe 100 lines on a busy day and another human reviewed every one. An agent can drop that much into a single file before emitting its first status message, and the structural damage (deep coupling, WMC-heavy classes, files that grow 500 LOC in a week) lands inside one session rather than accumulating over quarters. The usual review cadence does not catch it. slop is calibrated for that pace.
 
-## Installation
+The metrics themselves are not new. Cyclomatic complexity (McCabe 1976), the CK suite for classes (Chidamber and Kemerer 1994), package distance from the Main Sequence (Martin 1994), churn-weighted hotspots (Tornhill 2015): all well-cited, all mostly ignored in day-to-day workflows because they were tuned for human timescales. slop wraps them behind one CLI with thresholds that assume a different pace of change.
+
+## Example
+
+```
+$ slop lint
+
+slop 0.4.0 — scanning .
+
+complexity
+  cyclomatic
+    ✗ src/pipeline/ingest.py:44 process_batch — CCX 18 exceeds 10
+    ✗ src/pipeline/ingest.py:112 _normalize_rows — CCX 14 exceeds 10
+    ✗ src/store/frame.py:204 append_partition — CCX 11 exceeds 10
+
+  cognitive
+    ✗ src/pipeline/ingest.py:44 process_batch — CogC 26 exceeds 15
+    ✗ src/store/frame.py:204 append_partition — CogC 21 exceeds 15
+
+  6 violations, 142 checked
+
+hotspots (14 days ago)
+  ✗ src/lifecycle/tasks/write.py — CCX=41, growth +556 LOC
+  ✗ src/pipeline/transformation.py — CCX=45, growth +367 LOC
+  2 violations
+
+packages
+  ⚠ src/config — Zone of Pain (I=0.12, A=0.00)
+  ⚠ src/core/distributed/dag — Zone of Pain (I=0.18, A=0.05)
+  ⚠ src/core/transform — Zone of Pain (I=0.09, A=0.03)
+  3 advisories
+
+deps
+  ✓ clean, 55 checked
+
+class
+  coupling
+    ✗ tests/v2/test_pdrf_types.py:12 PdrfTestSuite — CBO 11 exceeds 8
+
+  1 violation, 8 checked
+
+orphans (disabled)
+  ℹ skipped (enable in .slop.toml)
+
+────────────────────────────────────────
+9 violations | 3 advisories | 8 rules checked | FAIL
+```
+
+Exit code is `0` when clean, `1` on violations, `2` on configuration or runtime error. Works in CI, pre-commit hooks, and interactively.
+
+## Install
 
 ```bash
 pip install agent-slop-lint
 ```
 
-For full setup instructions — system dependencies, pre-commit hooks, CI pipelines, and agent skill integration — see the **[setup guide](./docs/SETUP.md)**. For threshold tuning, rule-by-rule explanations, and lax/default/strict profiles — see the **[configuration reference](./docs/CONFIG.md)**.
+slop shells out to `rg`, `fd`, and `git`. Install those via your system package manager (`apt install ripgrep fd-find git`, `brew install ripgrep fd git`, or equivalent) and run `slop doctor` to verify.
 
-This installs slop and its Python dependency [`aux-skills`](https://pypi.org/project/aux-skills/) (the computational backend that provides all metric kernels).
-
-### System dependencies
-
-slop's metric kernels shell out to system tools that must be installed separately:
-
-| Tool | Purpose | Install |
-|---|---|---|
-| [ripgrep](https://github.com/BurntSushi/ripgrep) (`rg`) | Content search, symbol reference counting | `apt install ripgrep` / `brew install ripgrep` |
-| [fd](https://github.com/sharkdp/fd) (`fd` or `fdfind`) | File discovery | `apt install fd-find` / `brew install fd` |
-| [git](https://git-scm.com/) | Hotspot churn analysis (git log) | `apt install git` / `brew install git` |
-| Python 3.10+ | Runtime | [python.org](https://www.python.org/) |
-
-Tree-sitter grammars (for AST-based metrics like CCX, CK, Halstead, NPATH) are bundled as Python wheels by `aux-skills` — no manual grammar installation needed.
-
-### Verify
-
-```bash
-slop rules          # list all rules and thresholds
-aux doctor          # check system tool availability
-```
-
-### Alternative: install script
-
-```bash
-git clone https://github.com/JordanGunn/agent-slop-lint.git
-cd agent-slop-lint
-./scripts/install.sh    # checks deps, installs everything, verifies PATH
-```
-
-**Windows:** Use `.\scripts\install.ps1` instead.
-
-## Quick start
-
-```bash
-# Run all rules with defaults
-slop lint
-
-# See what's available
-slop rules
-
-# Generate a config file to customize
-slop init
-```
+Full per-platform install steps, CI recipes, pre-commit wiring, and the agent skill are in the [setup guide](./docs/SETUP.md).
 
 ## Rules
 
-| Rule | Default | What it measures | Citation |
+| Rule | Default | Measures | Source |
 |---|---|---|---|
 | `complexity.cyclomatic` | CCX > 10 | Per-function path count | McCabe 1976 |
 | `complexity.cognitive` | CogC > 15 | Per-function reading difficulty | Campbell 2018 |
-| `complexity.weighted` | WMC > 50 | Per-class aggregate method complexity | Chidamber & Kemerer 1994 |
-| `hotspots` | 14d window | Files that are complex AND growing fast | Tornhill 2015 |
+| `complexity.weighted` | WMC > 50 | Per-class aggregate method complexity | Chidamber and Kemerer 1994 |
+| `hotspots` | 14-day window | Files that are complex AND growing fast | Tornhill 2015 |
 | `packages` | D' > 0.7 | Package design distance from the Main Sequence | Martin 1994 |
-| `deps` | any cycle | Dependency cycles between modules | — |
-| `orphans` | disabled | Unreferenced symbols (advisory, needs human review) | — |
-| `class.coupling` | CBO > 8 | Classes coupled to too many other classes | Chidamber & Kemerer 1994 |
-| `class.inheritance.depth` | DIT > 4 | Inheritance hierarchies that are too deep | Chidamber & Kemerer 1994 |
-| `class.inheritance.children` | NOC > 10 | Base classes with too many direct subclasses | Chidamber & Kemerer 1994 |
+| `deps` | any cycle | Dependency cycles between modules | Tarjan 1972 |
+| `orphans` | disabled | Unreferenced symbols (advisory) | — |
+| `class.coupling` | CBO > 8 | Classes coupled to too many other classes | Chidamber and Kemerer 1994 |
+| `class.inheritance.depth` | DIT > 4 | Inheritance hierarchies that are too deep | Chidamber and Kemerer 1994 |
+| `class.inheritance.children` | NOC > 10 | Base classes with too many direct subclasses | Chidamber and Kemerer 1994 |
 
-## Configuration
+Per-threshold explanations, when to raise them, and the `default` / `lax` / `strict` profiles live in the [configuration reference](./docs/CONFIG.md).
 
-slop loads config from (in priority order):
+### Why a 14-day hotspot window
 
-1. `--config <path>` flag
-2. `.slop.toml` in the project root
-3. `pyproject.toml` `[tool.slop]` section
-4. Built-in defaults
-
-Generate a starter config:
-
-```bash
-slop init
-```
-
-### `.slop.toml`
-
-```toml
-root = "."
-# languages = ["python", "typescript"]
-# exclude = ["**/test_*", "**/vendor/**"]
-
-[rules.complexity]
-enabled = true
-cyclomatic_threshold = 10
-cognitive_threshold = 15
-weighted_threshold = 50
-severity = "error"
-
-[rules.hotspots]
-enabled = true
-since = "14 days ago"
-min_commits = 2
-fail_on_quadrant = ["hotspot"]
-severity = "error"
-
-[rules.packages]
-enabled = true
-max_distance = 0.7
-fail_on_zone = ["pain"]
-severity = "warning"
-
-[rules.deps]
-enabled = true
-fail_on_cycles = true
-severity = "error"
-
-[rules.orphans]
-enabled = false
-min_confidence = "high"
-severity = "warning"
-
-[rules.class]
-enabled = true
-coupling_threshold = 8
-inheritance_depth_threshold = 4
-inheritance_children_threshold = 10
-severity = "error"
-```
-
-## CLI reference
-
-```
-slop lint                              Run all enabled rules
-slop lint --root ./src                 Override root directory
-slop lint --output json                JSON output (for agents/CI)
-slop lint --output quiet               Summary only (one line)
-slop lint --max-violations 0           Show all violations (no cap)
-slop lint --no-color                   Disable ANSI colors
-
-slop check complexity                  Run one category
-slop check complexity.cyclomatic       Run one rule
-slop check class.inheritance           Run a subcategory
-
-slop init                              Generate .slop.toml
-slop rules                             List rules with thresholds
-slop schema                            Config schema as JSON
-```
-
-### Exit codes
-
-| Code | Meaning |
-|---|---|
-| `0` | No violations |
-| `1` | One or more violations found |
-| `2` | Configuration or runtime error |
-
-### Output modes
-
-**human** (default) — grouped by category and sub-rule, top 5 violations per rule with `...and N more`, colored when connected to a terminal.
-
-**json** — structured JSON with per-rule violations, summaries, and metadata. Designed for agent consumption and CI pipelines.
-
-**quiet** — one-line summary: `53 violations | 2 advisories | FAIL`
+Tornhill's original work used a 1-year window, tuned for release cycles where a file you had not touched in 9 months was stable and a file you had been touching for 9 months was probably structurally important. Agent workflows collapse that timescale. A file can go from 200 LOC to 800 LOC in a week, and the architectural decisions compounding inside that growth are the ones worth catching early rather than a year later when the file is already unrecoverable. The 14-day default rewards recency. Widen `rules.hotspots.since` to `"90 days ago"` for human-pace repos.
 
 ## Language support
 
@@ -179,18 +99,44 @@ slop schema                            Config schema as JSON
 | Go | `.go` | yes | yes | yes | yes | yes |
 | Rust | `.rs` | yes | yes | — | — | yes |
 | Java | `.java` | yes | yes | — | yes | yes |
+| C# | `.cs` | yes | yes | — | yes | yes |
 
-`packages` (Martin metrics) currently supports Go and Python only. Other languages' files are excluded from the relevant rules, not errored.
+Martin's package metrics currently only run on Go and Python. Files in other languages are silently excluded from that rule, not errored. Every other rule runs across all seven languages.
 
-## Why 14 days?
+## Configuration
 
-Tornhill's canonical hotspot window is 1 year, calibrated for human release cycles. slop defaults to 14 days because agentic code rot accumulates in days, not months — an agent can dump 200 lines of private helpers into a file in a single session, and the architectural damage is immediate. A 1-year window on an agent-assisted repo drowns the recent signal in human-era noise. Widen to `"90 days ago"` for human-pace repos, or override with `--since` / `rules.hotspots.since`.
+slop walks upward from the current directory looking for `.slop.toml` first and then `pyproject.toml` with a `[tool.slop]` table, the same discovery ruff and mypy use. When a config is discovered, its `root` key resolves relative to the config file's directory, so `root = "src"` in `~/project/.slop.toml` always points at `~/project/src` regardless of which subdirectory you invoked slop from. `--config` and `--root` on the CLI override both.
+
+Generate a starter config:
+
+```bash
+slop init          # balanced defaults
+slop init lax      # legacy or gradual adoption
+slop init strict   # greenfield or quality-focused
+```
+
+Every threshold, the intent behind it, and the three profiles in full are documented in the [configuration reference](./docs/CONFIG.md).
+
+## CLI
+
+```
+slop lint                         Run all enabled rules (default command)
+slop check <category|rule>        Run one category or rule
+slop init [profile]               Generate .slop.toml
+slop doctor                       Check fd, rg, git are installed
+slop hook                         Install a git pre-commit hook
+slop skill <dir>                  Install the bundled agent skill
+slop rules                        List rules with thresholds
+slop schema                       Config schema as JSON
+```
+
+Run `slop --help` for the full flag list, or `slop <command> --help` for per-command options. Output formats are `--output human` (default), `--output json` for CI and agent consumption, and `--output quiet` for one-line summaries.
 
 ## Architecture
 
-slop is a thin orchestration layer. The computational backend is [aux-skills](https://github.com/JordanGunn/aux), which provides deterministic metric kernels built on tree-sitter, ripgrep, fd, and git. slop wraps those kernels with a linter interface: declarative config, threshold checking, human/JSON/quiet output, and CI exit codes.
+slop is a thin orchestration layer. Metric computation lives in [aux-skills](https://github.com/JordanGunn/aux), a sibling package that ships deterministic kernels built on tree-sitter, ripgrep, fd, and git. slop wraps those kernels with declarative config, threshold checking, human/JSON/quiet output, and CI exit codes.
 
-No metric computation happens in slop itself. When aux-skills gains a new kernel, slop gains a new rule with zero kernel work.
+When aux-skills gains a new metric kernel, slop gains a new rule with zero computation work.
 
 ## Acknowledgments
 
@@ -200,13 +146,13 @@ slop implements metrics from established software engineering research. Full cit
 |---|---|---|
 | Cyclomatic Complexity | Thomas J. McCabe | 1976 |
 | Cognitive Complexity | G. Ann Campbell (SonarSource) | 2018 |
-| CBO, DIT, NOC, WMC | Shyam R. Chidamber & Chris F. Kemerer | 1994 |
+| CBO, DIT, NOC, WMC | Shyam R. Chidamber and Chris F. Kemerer | 1994 |
 | Instability, Abstractness, D' | Robert C. Martin | 1994, 2002 |
 | Hotspot analysis | Adam Tornhill | 2015 |
 | Dependency cycle detection | Robert E. Tarjan | 1972 |
 
-These are mathematical formulas computed from source code structure. slop implements them independently via tree-sitter AST traversal — no code from the original authors' implementations is used.
+These are mathematical formulas computed from source code structure. slop implements them independently via tree-sitter AST traversal. No code from the original authors' implementations is used.
 
 ## License
 
-Apache 2.0 — see [LICENSE](LICENSE)
+Apache 2.0. See [LICENSE](LICENSE).
