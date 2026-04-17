@@ -2,23 +2,46 @@
 
 ## What this is
 
-`slop` is an agentic code quality linter. It wraps metric kernels from `aux-skills` (PyPI) behind a unified linter interface with declarative config, threshold checking, and CI exit codes.
+`slop` is an agentic code quality linter. It wraps vendored metric kernels (originally from aux-skills, now under `src/cli/slop/_aux/`) behind a unified linter interface with declarative config, threshold checking, and CI exit codes. The vendored kernel tree is the single source of metric computation; slop does not depend on the external `aux-skills` package at runtime.
+
+## Repo layout
+
+```
+slop/                       <- repo root (docs, LICENSE, NOTICE, README, .slop.toml, .github, scripts)
+  src/
+    pyproject.toml
+    .gitignore              <- Python-specific (caches, venv, dist, uv.lock, ...)
+    cli/
+      slop/                 <- the Python package (import slop)
+        cli.py              CLI entry point (argparse)
+        config.py           Config loading (upward walk; .slop.toml / pyproject[tool.slop] / defaults)
+        engine.py           Rule runner (iterate rules, collect results, compute exit code)
+        output.py           Human / JSON / quiet formatters
+        models.py           Core dataclasses (Violation, RuleResult, LintResult, ...)
+        color.py            ANSI color helpers with TTY/NO_COLOR detection
+        preflight.py        System-binary preflight (fd, rg, git)
+        rules/              Thin wrappers around _aux kernels
+        _aux/               Vendored metric kernels (excluded from slop's own lint and ruff)
+    tests/
+```
 
 ## Setup
 
 ```bash
-# Full install (aux-skills backend + slop CLI, available system-wide)
+# Full install (slop as a uv tool, available system-wide)
 ./scripts/install.sh
 
-# Development only (local venv, for running tests)
-uv sync
+# Development only (local venv under src/)
+cd src && uv sync
 ```
-
-The install script installs both `aux-skills` and `slop` as `uv tool` entries (available at `~/.local/bin/`). For local dev, `uv sync` sets up the project venv with `aux-skills` resolved from the sibling `../aux/cli` via `tool.uv.sources` in `pyproject.toml`.
 
 ## Common commands
 
+All dev commands run from `src/`:
+
 ```bash
+cd src
+
 # Run tests
 uv run python -m pytest
 
@@ -32,39 +55,23 @@ uv run slop lint --root /path/to/code
 uv run slop rules
 ```
 
-## Project structure
-
-```
-src/slop/
-  cli.py          CLI entry point (argparse)
-  config.py       Config loading (.slop.toml / pyproject.toml / defaults)
-  engine.py       Rule runner (iterate rules, collect results, compute exit code)
-  output.py       Human-readable + JSON + quiet formatters
-  models.py       Core dataclasses (Violation, RuleResult, LintResult, etc.)
-  color.py        ANSI color helpers with TTY/NO_COLOR detection
-  rules/
-    __init__.py   Rule registry (RULE_REGISTRY, RULES_BY_NAME, etc.)
-    complexity.py Wraps ccx_kernel + ck_kernel → cyclomatic, cognitive, weighted
-    hotspots.py   Wraps hotspots_kernel → churn-weighted file hotspots
-    architecture.py  Wraps robert_kernel → package design D'
-    dependencies.py  Wraps deps_kernel → dependency cycles
-    dead_code.py     Wraps prune_kernel → unreferenced symbols
-    class_metrics.py Wraps ck_kernel → CBO, DIT, NOC
-```
-
 ## Adding a new rule
 
-1. Create `src/slop/rules/<name>.py` with a `run_<rule>(root, rule_config, slop_config) -> RuleResult` function
+1. Create `src/cli/slop/rules/<name>.py` with `run_<rule>(root, rule_config, slop_config) -> RuleResult`
 2. Add a `RuleDefinition` to `RULE_REGISTRY` in `rules/__init__.py`
 3. Add default config in `config.py` `DEFAULT_RULE_CONFIGS`
 4. Add to the generated config template in `config.py` `generate_default_config()`
-5. Write tests in `tests/test_rules/test_<name>.py`
+5. Write tests in `src/tests/test_rules/test_<name>.py`
 
-Rules are thin wrappers: load config params, call an aux kernel, iterate results, emit `Violation` objects for threshold breaches.
+Rules are thin wrappers: load config params, call a kernel under `slop._aux`, iterate results, emit `Violation` objects for threshold breaches.
 
 ## Key design decisions
 
-- **Kernels live in aux-skills, not slop.** slop imports `from aux.kernels.<x> import <x>_kernel`. No metric computation in slop.
-- **Config priority:** `--config` flag > `.slop.toml` > `pyproject.toml [tool.slop]` > defaults.
-- **14-day default hotspot window** — tuned for agentic code generation where architectural damage accumulates in days, not months.
+- **Kernels live in `slop._aux`, not as an external dep.** slop imports `from slop._aux.kernels.<x> import <x>_kernel`. The vendored tree is Apache-2.0 licensed; see `src/cli/slop/_aux/LICENSE` and the repo-root `NOTICE` for attribution.
+- **Config discovery walks upward** from CWD for `.slop.toml` or `pyproject.toml` with `[tool.slop]`. A pyproject without `[tool.slop]` is skipped, so sub-project pyproject files (like `src/pyproject.toml` in this repo) don't mask a repo-root `.slop.toml`.
+- **14-day default hotspot window.** Tuned for agentic code generation where architectural damage accumulates in days, not months.
 - **Exit codes:** 0 = clean, 1 = violations, 2 = error.
+
+## README/LICENSE duplication
+
+`README.md` and `LICENSE` are tracked in two places: the repo root (for GitHub's landing page) and `src/` (for PyPI, via hatchling). Hatchling validates the `readme` and `license-files` paths against the pyproject directory before applying force-include, so it will not accept `../README.md`-style paths. When updating either file, update both copies. If this drift becomes painful, add a pre-commit hook or CI check that fails when `src/README.md` and `README.md` (or the two `LICENSE` files) disagree.

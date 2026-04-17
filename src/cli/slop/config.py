@@ -114,10 +114,11 @@ def _build_rule_configs(raw_rules: dict[str, Any]) -> dict[str, RuleConfig]:
 def _discover_config(search_root: Path) -> tuple[Path | None, dict[str, Any]]:
     """Walk upward from search_root looking for a slop config file.
 
-    At each directory: ``.slop.toml`` beats ``pyproject.toml``. Either one
-    marks the project root — we stop at the first directory that contains
-    one, even if the discovered ``pyproject.toml`` has no ``[tool.slop]``
-    table (falling back to defaults for that project).
+    At each directory: ``.slop.toml`` wins outright. A ``pyproject.toml``
+    counts only if it has a ``[tool.slop]`` table; one without is not a
+    slop config and the walk continues upward. This lets sub-project
+    pyproject files (e.g. src/pyproject.toml in a nested layout) coexist
+    with a repo-root ``.slop.toml``.
 
     Returns the discovered config file path (or None) and the parsed dict.
     """
@@ -129,7 +130,9 @@ def _discover_config(search_root: Path) -> tuple[Path | None, dict[str, Any]]:
         pyproject = current / "pyproject.toml"
         if pyproject.is_file():
             data = _read_toml(pyproject)
-            return pyproject, data.get("tool", {}).get("slop", {})
+            slop_table = data.get("tool", {}).get("slop", {})
+            if slop_table:
+                return pyproject, slop_table
         if current.parent == current:
             return None, {}
         current = current.parent

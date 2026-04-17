@@ -8,6 +8,7 @@ version = "0.4.0"
 description = "Agentic code quality linter — catches slop before it becomes architectural rot"
 readme = "README.md"
 license = "Apache-2.0"
+license-files = ["LICENSE"]
 requires-python = ">=3.10"
 authors = [{ name = "Jordan Godau" }]
 keywords = ["linter", "code-quality", "complexity", "coupling", "agentic", "slop"]
@@ -34,19 +35,22 @@ dev = ["pytest>=7.0", "ruff>=0.1.0"]
 slop = "slop.cli:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/slop"]
+packages = ["cli/slop"]
+
+[tool.hatch.build.targets.sdist]
+include = ["cli/slop", "tests", "pyproject.toml", "README.md", "LICENSE"]
 
 [tool.ruff]
 line-length = 100
 target-version = "py310"
-extend-exclude = ["src/slop/_aux"]
+extend-exclude = ["cli/slop/_aux"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "W"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["src"]
+pythonpath = ["cli"]
 
 [dependency-groups]
 dev = [

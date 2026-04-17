@@ -1,10 +1,10 @@
 # slop — agentic code quality linter
-# Installs slop + aux-skills backend and validates system dependencies
+# Installs slop as a uv tool and validates system dependencies.
 $ErrorActionPreference = "Stop"
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RootDir = Split-Path -Parent $ScriptDir
-$AuxDir = Join-Path (Split-Path -Parent $RootDir) "aux" "cli"
+$SrcDir = Join-Path $RootDir "src"
 
 Write-Output "slop - Installation"
 Write-Output "==================="
@@ -73,41 +73,18 @@ Write-Output "All system dependencies available."
 Write-Output ""
 
 # -----------------------------------------------------------------------------
-# Phase 2: Install aux-skills (computational backend)
-# -----------------------------------------------------------------------------
-Write-Output "Installing aux-skills (computational backend)..."
-
-$auxPyproject = Join-Path $AuxDir "pyproject.toml"
-if (Test-Path $auxPyproject) {
-    # Local development: install from sibling directory
-    Push-Location $AuxDir
-    try {
-        & uv tool install --editable ".[dev]" --force --quiet
-    } finally {
-        Pop-Location
-    }
-    Write-Output "  + aux-skills installed from local path: $AuxDir"
-} else {
-    # Production: install from PyPI
-    & uv tool install aux-skills --force --quiet
-    Write-Output "  + aux-skills installed from PyPI"
-}
-
-Write-Output ""
-
-# -----------------------------------------------------------------------------
-# Phase 3: Install slop
+# Phase 2: Install slop
 # -----------------------------------------------------------------------------
 Write-Output "Installing slop..."
 
-$pyproject = Join-Path $RootDir "pyproject.toml"
+$pyproject = Join-Path $SrcDir "pyproject.toml"
 if (-not (Test-Path $pyproject)) {
-    Write-Error "ERROR: pyproject.toml not found at $RootDir"
+    Write-Error "ERROR: pyproject.toml not found at $SrcDir"
     Write-Output "Ensure you're running this from the slop repository."
     exit 1
 }
 
-Push-Location $RootDir
+Push-Location $SrcDir
 try {
     & uv tool install --editable ".[dev]" --force --quiet
 } finally {
@@ -118,17 +95,9 @@ Write-Output "  + slop installed (via uv tool)"
 Write-Output ""
 
 # -----------------------------------------------------------------------------
-# Phase 4: Verify installation
+# Phase 3: Verify installation
 # -----------------------------------------------------------------------------
 Write-Output "Verifying installation..."
-
-if (-not (Get-Command aux -ErrorAction SilentlyContinue)) {
-    Write-Error "  x aux command not found in PATH"
-    Write-Output "    You may need to add Scripts directory to PATH"
-    exit 1
-}
-$auxVersion = & aux --version 2>$null
-Write-Output "  + aux: $auxVersion"
 
 if (-not (Get-Command slop -ErrorAction SilentlyContinue)) {
     Write-Error "  x slop command not found in PATH"
@@ -141,7 +110,7 @@ Write-Output "  + slop: $slopVersion"
 Write-Output ""
 
 # -----------------------------------------------------------------------------
-# Phase 5: Confirm rules
+# Phase 4: Confirm rules
 # -----------------------------------------------------------------------------
 Write-Output "Available rules:"
 & slop rules

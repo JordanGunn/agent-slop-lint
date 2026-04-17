@@ -28,6 +28,7 @@ jobs:
           sudo apt-get install -y -qq ripgrep fd-find git
 
       - name: Create venv and install
+        working-directory: src
         run: |
           uv venv .venv --python ${{ matrix.python-version }}
           . .venv/bin/activate
@@ -35,11 +36,13 @@ jobs:
           uv pip install --no-sources -e .
 
       - name: Lint
+        working-directory: src
         run: |
           . .venv/bin/activate
-          ruff check src/
+          ruff check cli/
 
       - name: Test
+        working-directory: src
         run: |
           . .venv/bin/activate
           python -m pytest -v

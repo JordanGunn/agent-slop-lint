@@ -26,6 +26,7 @@ jobs:
           sudo apt-get install -y -qq ripgrep fd-find git
 
       - name: Create venv and install
+        working-directory: src
         run: |
           uv venv .venv --python 3.12
           . .venv/bin/activate
@@ -33,6 +34,7 @@ jobs:
           uv pip install --no-sources -e .
 
       - name: Test
+        working-directory: src
         run: |
           . .venv/bin/activate
           python -m pytest -v
@@ -52,7 +54,10 @@ jobs:
         run: uv python install 3.12
 
       - name: Build package
+        working-directory: src
         run: uv build
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: src/dist/

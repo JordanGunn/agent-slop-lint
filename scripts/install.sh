@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # slop — agentic code quality linter
-# Installs slop + aux-skills backend and validates system dependencies
+# Installs slop as a uv tool and validates system dependencies.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(dirname "$SCRIPT_DIR")"
-AUX_DIR="$(cd "$ROOT_DIR/../aux/cli" 2>/dev/null && pwd || echo "")"
+SRC_DIR="$ROOT_DIR/src"
 
 echo "slop — Installation"
 echo "==================="
@@ -27,7 +27,7 @@ else
     echo "  ✓ uv: $(uv --version 2>/dev/null | head -1)"
 fi
 
-# ripgrep (required by aux-skills for grep/search kernels)
+# ripgrep (required by slop's metric kernels)
 if ! command -v rg &>/dev/null; then
     echo "  ✗ rg (ripgrep) not found"
     echo "    Install: apt install ripgrep | brew install ripgrep"
@@ -36,7 +36,7 @@ else
     echo "  ✓ rg: $(rg --version 2>/dev/null | head -1)"
 fi
 
-# fd (required by aux-skills for file discovery)
+# fd (required by slop's file discovery)
 if command -v fd &>/dev/null; then
     echo "  ✓ fd: $(fd --version 2>/dev/null | head -1)"
 elif command -v fdfind &>/dev/null; then
@@ -47,7 +47,7 @@ else
     errors=$((errors + 1))
 fi
 
-# git (required for hotspots and delta)
+# git (required for hotspots)
 if ! command -v git &>/dev/null; then
     echo "  ✗ git not found"
     echo "    Install: apt install git | brew install git"
@@ -68,51 +68,26 @@ echo "All system dependencies available."
 echo
 
 # -----------------------------------------------------------------------------
-# Phase 2: Install aux-skills (computational backend)
-# -----------------------------------------------------------------------------
-echo "Installing aux-skills (computational backend)..."
-
-if [[ -n "$AUX_DIR" && -f "$AUX_DIR/pyproject.toml" ]]; then
-    # Local development: install from sibling directory
-    cd "$AUX_DIR"
-    uv tool install --editable ".[dev]" --force --quiet
-    echo "  ✓ aux-skills installed from local path: $AUX_DIR"
-else
-    # Production: install from PyPI
-    uv tool install aux-skills --force --quiet
-    echo "  ✓ aux-skills installed from PyPI"
-fi
-
-echo
-
-# -----------------------------------------------------------------------------
-# Phase 3: Install slop
+# Phase 2: Install slop
 # -----------------------------------------------------------------------------
 echo "Installing slop..."
 
-if [[ ! -f "$ROOT_DIR/pyproject.toml" ]]; then
-    echo "ERROR: pyproject.toml not found at $ROOT_DIR"
+if [[ ! -f "$SRC_DIR/pyproject.toml" ]]; then
+    echo "ERROR: pyproject.toml not found at $SRC_DIR"
     echo "Ensure you're running this from the slop repository."
     exit 1
 fi
 
-cd "$ROOT_DIR"
+cd "$SRC_DIR"
 uv tool install --editable ".[dev]" --force --quiet
 
 echo "  ✓ slop installed (via uv tool)"
 echo
 
 # -----------------------------------------------------------------------------
-# Phase 4: Verify installation
+# Phase 3: Verify installation
 # -----------------------------------------------------------------------------
 echo "Verifying installation..."
-
-if ! command -v aux &>/dev/null; then
-    echo "  ✗ aux command not found in PATH"
-    echo "    You may need to add ~/.local/bin to PATH"
-    exit 1
-fi
-echo "  ✓ aux: $(aux --version 2>/dev/null)"
 
 if ! command -v slop &>/dev/null; then
     echo "  ✗ slop command not found in PATH"
@@ -124,7 +99,7 @@ echo "  ✓ slop: $(slop --version 2>/dev/null)"
 echo
 
 # -----------------------------------------------------------------------------
-# Phase 5: Confirm rules
+# Phase 4: Confirm rules
 # -----------------------------------------------------------------------------
 echo "Available rules:"
 slop rules

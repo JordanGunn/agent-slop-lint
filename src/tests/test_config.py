@@ -220,21 +220,21 @@ def test_upward_walk_finds_parent_pyproject(tmp_path: Path):
     assert Path(config.root) == (tmp_path / "lib").resolve()
 
 
-def test_pyproject_without_tool_slop_stops_upward_walk(tmp_path: Path):
-    """A pyproject.toml with no [tool.slop] section still halts the walk."""
-    # Outer: a .slop.toml that would otherwise be discovered.
+def test_pyproject_without_tool_slop_does_not_halt_walk(tmp_path: Path):
+    """A pyproject.toml with no [tool.slop] section is skipped during the walk."""
+    # Outer: a .slop.toml that should still be discovered.
     outer = tmp_path
     outer_slop = outer / ".slop.toml"
     outer_slop.write_text('[rules.complexity]\ncyclomatic_threshold = 99\n')
-    # Inner: a pyproject.toml without [tool.slop], acts as project boundary.
+    # Inner: a sub-project pyproject.toml without [tool.slop]. Common in
+    # nested layouts (e.g. monorepo with multiple Python packages). The walk
+    # must skip past it and keep looking for a real slop config above.
     inner = tmp_path / "sub"
     inner.mkdir()
     (inner / "pyproject.toml").write_text('[project]\nname = "x"\n')
     config = load_config(root=str(inner))
-    # Walk stopped at inner/pyproject.toml (no [tool.slop]) — falls back to
-    # defaults, NOT outer's .slop.toml.
-    assert config.config_path == (inner / "pyproject.toml").resolve()
-    assert config.rule_config("complexity").params["cyclomatic_threshold"] == 10
+    assert config.config_path == outer_slop.resolve()
+    assert config.rule_config("complexity").params["cyclomatic_threshold"] == 99
 
 
 def test_absolute_root_in_config_stays_absolute(tmp_path: Path):
