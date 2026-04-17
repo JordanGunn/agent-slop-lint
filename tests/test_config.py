@@ -11,8 +11,7 @@ from slop.config import (
     generate_default_config,
     load_config,
 )
-from slop.models import RuleConfig, SlopConfig
-
+from slop.models import SlopConfig
 
 # ---------------------------------------------------------------------------
 # 1. Default config

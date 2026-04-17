@@ -8,8 +8,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from aux.kernels.hotspots import hotspots_kernel
-
+from slop._aux.kernels.hotspots import hotspots_kernel
 from slop.models import RuleConfig, RuleResult, SlopConfig, Violation
 
 

@@ -2,6 +2,7 @@
 
 root = "src"
 languages = ["python"]
+exclude = ["**/_aux/**"]
 
 [rules.complexity]
 enabled = true

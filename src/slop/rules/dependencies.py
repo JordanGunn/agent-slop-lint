@@ -8,8 +8,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from aux.kernels.deps import deps_kernel
-
+from slop._aux.kernels.deps import deps_kernel
 from slop.models import RuleConfig, RuleResult, SlopConfig, Violation
 
 

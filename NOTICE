@@ -6,6 +6,15 @@ published research. These metrics are mathematical formulas computed from
 source code structure; slop implements them independently via tree-sitter
 AST traversal. No code from the original authors' implementations is used.
 
+VENDORED CODE
+=============
+
+The src/slop/_aux/ subtree is a vendored, pruned copy of aux-skills
+(https://github.com/JordanGunn/aux), also Copyright 2025 Jordan Godau
+and licensed under Apache License 2.0. See src/slop/_aux/LICENSE for the
+full Apache 2.0 text. slop owns this code directly and does not track
+upstream aux-skills changes automatically.
+
 ACADEMIC CITATIONS
 ==================
 

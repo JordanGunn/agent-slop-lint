@@ -8,7 +8,6 @@ from slop.color import set_color
 from slop.models import LintResult, RuleResult, Violation
 from slop.output import _plural, format_human, format_json, format_quiet
 
-
 # Disable color for predictable test output
 set_color(False)
 

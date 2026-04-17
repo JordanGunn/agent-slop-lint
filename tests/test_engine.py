@@ -6,7 +6,7 @@ from pathlib import Path
 
 from slop.config import load_config
 from slop.engine import run_lint
-from slop.models import SlopConfig, RuleConfig
+from slop.models import RuleConfig, SlopConfig
 
 
 def _config_with_rules(tmp_path: Path, **rule_overrides) -> SlopConfig:
@@ -115,8 +115,8 @@ def test_rule_with_errors_and_zero_violations_is_coerced_to_error(
     Simulates the silent-failure case where a kernel bailed but the rule
     wrapper still produced pass-status with an empty violations list.
     """
-    from slop.models import RuleDefinition, RuleResult
     from slop import rules as rules_module
+    from slop.models import RuleDefinition, RuleResult
 
     def fake_run(root, rule_config, slop_config):
         return RuleResult(

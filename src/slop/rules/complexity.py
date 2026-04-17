@@ -10,9 +10,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from aux.kernels.ccx import CcxResult, ccx_kernel
-from aux.kernels.ck import ck_kernel
-
+from slop._aux.kernels.ccx import CcxResult, ccx_kernel
+from slop._aux.kernels.ck import ck_kernel
 from slop.models import RuleConfig, RuleResult, SlopConfig, Violation
 
 

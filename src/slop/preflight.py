@@ -16,8 +16,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from aux.util.doctor import check_tool
-
+from slop._aux.util.doctor import check_tool
 from slop.models import SlopConfig
 
 

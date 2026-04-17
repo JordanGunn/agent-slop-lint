@@ -8,8 +8,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from aux.kernels.robert import robert_kernel
-
+from slop._aux.kernels.robert import robert_kernel
 from slop.models import RuleConfig, RuleResult, SlopConfig, Violation
 
 # robert_kernel only supports go and python

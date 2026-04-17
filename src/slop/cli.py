@@ -360,7 +360,7 @@ def cmd_doctor() -> int:
     Exits 2 if any of fd / git / rg are missing. Reports all three regardless
     of the current config so users can diagnose before touching config.
     """
-    from aux.util.doctor import run_doctor
+    from slop._aux.util.doctor import run_doctor
 
     report = run_doctor()
     tools = report.get("tools", {})

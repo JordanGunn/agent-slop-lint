@@ -12,7 +12,18 @@ requires-python = ">=3.10"
 authors = [{ name = "Jordan Godau" }]
 keywords = ["linter", "code-quality", "complexity", "coupling", "agentic", "slop"]
 dependencies = [
-    "aux-skills>=0.3.0",
+    "tree-sitter>=0.21.0",
+    "tree-sitter-python>=0.21.0",
+    "tree-sitter-javascript>=0.21.0",
+    "tree-sitter-typescript>=0.21.0",
+    "tree-sitter-rust>=0.21.0",
+    "tree-sitter-go>=0.21.0",
+    "tree-sitter-java>=0.21.0",
+    "tree-sitter-c>=0.21.0",
+    "tree-sitter-cpp>=0.21.0",
+    "tree-sitter-ruby>=0.21.0",
+    "tree-sitter-bash>=0.21.0",
+    "tree-sitter-c-sharp>=0.21.0",
     "tomli>=2.0; python_version < '3.11'",
 ]
 
@@ -28,6 +39,7 @@ packages = ["src/slop"]
 [tool.ruff]
 line-length = 100
 target-version = "py310"
+extend-exclude = ["src/slop/_aux"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "W"]
@@ -35,9 +47,6 @@ select = ["E", "F", "I", "W"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
-
-[tool.uv.sources]
-aux-skills = { path = "../aux/cli", editable = true }
 
 [dependency-groups]
 dev = [
