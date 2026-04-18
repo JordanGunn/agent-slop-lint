@@ -15,6 +15,7 @@ from slop.rules.class_metrics import run_coupling, run_inheritance_children, run
 from slop.rules.complexity import run_cognitive, run_cyclomatic, run_weighted
 from slop.rules.dead_code import run_unreferenced
 from slop.rules.dependencies import run_cycles
+from slop.rules.halstead import run_difficulty, run_volume
 from slop.rules.hotspots import run_churn_weighted
 
 RULE_REGISTRY: list[RuleDefinition] = [
@@ -45,6 +46,26 @@ RULE_REGISTRY: list[RuleDefinition] = [
         default_enabled=True,
         threshold_label="WMC > 50",
         run=run_weighted,
+    ),
+
+    # --- halstead (function-level information content and density) ---
+    RuleDefinition(
+        name="halstead.volume",
+        category="halstead",
+        description="Per-function Halstead Volume (Halstead 1977)",
+        default_severity="error",
+        default_enabled=True,
+        threshold_label="V > 1000",
+        run=run_volume,
+    ),
+    RuleDefinition(
+        name="halstead.difficulty",
+        category="halstead",
+        description="Per-function Halstead Difficulty (Halstead 1977)",
+        default_severity="error",
+        default_enabled=True,
+        threshold_label="D > 30",
+        run=run_difficulty,
     ),
 
     # --- hotspots ---

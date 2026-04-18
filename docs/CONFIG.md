@@ -63,6 +63,42 @@ cognitive_threshold = 15
 weighted_threshold = 50
 ```
 
+### halstead.volume
+
+**What it measures:** Halstead's (1977) Volume metric — `V = Length × log2(Vocabulary)`, where Length is total operator/operand occurrences and Vocabulary is the distinct-operator + distinct-operand count. Volume proxies the information content of a function. Large Volume means "a lot of stuff is happening in here."
+
+**Default threshold:** `V > 1000`
+
+**What the numbers mean:** Volume scales with both size and diversity. A 20-line function with five variables and standard arithmetic lands around V=150. A 60-line function touching twenty symbols and many operators can hit V=1200 without looking obviously complex to CCX or CogC. That is the niche Halstead covers.
+
+**When to raise it:** Long formatter functions, serializers, or state-machine dispatchers that legitimately reference many symbols. Raising to 1500 keeps the signal without flagging structurally-reasonable breadth.
+
+**When to lower it:** Greenfield projects wanting tight function sizes. Lowering to 500 forces decomposition early.
+
+**When Halstead differs from CCX:** CCX counts control-flow paths. Halstead counts tokens. A function with low CCX but 40 unique operands (e.g. a big dict construction) will have high Volume but low CCX. Halstead catches that; CCX misses it.
+
+```toml
+[rules.halstead]
+volume_threshold = 1000
+```
+
+### halstead.difficulty
+
+**What it measures:** Halstead's (1977) Difficulty — `D = (n1/2) × (N2/n2)` where n1 is unique operators, n2 is unique operands, and N2 is total operand occurrences. Difficulty proxies the cognitive burden of reading one line: how many operators the reader has to track and how often operands repeat.
+
+**Default threshold:** `D > 30`
+
+**What the numbers mean:** A simple arithmetic function lands around D=5–10. Functions approaching D=30 use most of their language's operator surface and reuse a lot of operands — typical of parsers, expression evaluators, or densely-fused pipelines. D=50+ is almost always a sign that a function is doing the work of three.
+
+**When to raise it:** Numerical or DSL interpreter code where operator density is intrinsic to the domain. Raising to 50 leaves room for legitimate density.
+
+**When to lower it:** Teams that want to catch cognitive density early. D=20 is aggressive but effective.
+
+```toml
+[rules.halstead]
+difficulty_threshold = 30
+```
+
 ### hotspots
 
 **What it measures:** Growth-weighted complexity per file — Tornhill's (2015) hotspot framework with LOC delta as the churn proxy. Score = `sum_ccx × max(0, net_loc_delta)`. Files that are complex AND growing fast are where architectural damage accumulates.
@@ -230,6 +266,10 @@ cyclomatic_threshold = 10
 cognitive_threshold = 15
 weighted_threshold = 50
 
+[rules.halstead]
+volume_threshold = 1000
+difficulty_threshold = 30
+
 [rules.hotspots]
 since = "14 days ago"
 min_commits = 2
@@ -261,6 +301,10 @@ cyclomatic_threshold = 20
 cognitive_threshold = 25
 weighted_threshold = 100
 
+[rules.halstead]
+volume_threshold = 1500
+difficulty_threshold = 50
+
 [rules.hotspots]
 since = "90 days ago"
 min_commits = 3
@@ -291,6 +335,10 @@ Catches problems before they compound. Expect some friction in the first week as
 cyclomatic_threshold = 6
 cognitive_threshold = 10
 weighted_threshold = 30
+
+[rules.halstead]
+volume_threshold = 500
+difficulty_threshold = 20
 
 [rules.hotspots]
 since = "7 days ago"

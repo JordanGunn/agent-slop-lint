@@ -11,6 +11,12 @@ cognitive_threshold = 60        # format_human nesting (56) — legit refactor t
 weighted_threshold = 50
 severity = "error"
 
+[rules.halstead]
+enabled = true
+volume_threshold = 1800         # engine.run_lint V=1763 — refactor target
+difficulty_threshold = 35       # engine.run_lint D=30.9 — refactor target
+severity = "error"
+
 [rules.hotspots]
 enabled = false                 # slop is a new project — no meaningful churn history yet
 

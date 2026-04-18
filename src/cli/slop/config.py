@@ -42,6 +42,12 @@ DEFAULT_RULE_CONFIGS: dict[str, dict[str, Any]] = {
         "cognitive_threshold": 15,
         "weighted_threshold": 50,
     },
+    "halstead": {
+        "enabled": True,
+        "severity": "error",
+        "volume_threshold": 1000,
+        "difficulty_threshold": 30,
+    },
     "hotspots": {
         "enabled": True,
         "severity": "error",
@@ -220,6 +226,8 @@ PROFILES: dict[str, dict[str, str | int | bool | list[str]]] = {
         "cyclomatic_threshold": 10,
         "cognitive_threshold": 15,
         "weighted_threshold": 50,
+        "volume_threshold": 1000,
+        "difficulty_threshold": 30,
         "hotspots_since": "14 days ago",
         "hotspots_min_commits": 2,
         "hotspots_fail_on_quadrant": ["hotspot"],
@@ -234,6 +242,8 @@ PROFILES: dict[str, dict[str, str | int | bool | list[str]]] = {
         "cyclomatic_threshold": 20,
         "cognitive_threshold": 25,
         "weighted_threshold": 100,
+        "volume_threshold": 1500,
+        "difficulty_threshold": 50,
         "hotspots_since": "90 days ago",
         "hotspots_min_commits": 3,
         "hotspots_fail_on_quadrant": ["hotspot"],
@@ -248,6 +258,8 @@ PROFILES: dict[str, dict[str, str | int | bool | list[str]]] = {
         "cyclomatic_threshold": 6,
         "cognitive_threshold": 10,
         "weighted_threshold": 30,
+        "volume_threshold": 500,
+        "difficulty_threshold": 20,
         "hotspots_since": "7 days ago",
         "hotspots_min_commits": 1,
         "hotspots_fail_on_quadrant": ["hotspot", "churning_simple"],
@@ -291,6 +303,12 @@ enabled = true
 cyclomatic_threshold = {p["cyclomatic_threshold"]}       # fail if any function CCX exceeds this
 cognitive_threshold = {p["cognitive_threshold"]}        # fail if any function CogC exceeds this
 weighted_threshold = {p["weighted_threshold"]}         # fail if any class WMC exceeds this
+severity = "error"
+
+[rules.halstead]
+enabled = true
+volume_threshold = {p["volume_threshold"]}         # fail if any function V exceeds this
+difficulty_threshold = {p["difficulty_threshold"]}        # fail if any function D exceeds this
 severity = "error"
 
 [rules.hotspots]
