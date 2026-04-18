@@ -99,6 +99,25 @@ volume_threshold = 1000
 difficulty_threshold = 30
 ```
 
+### npath
+
+**What it measures:** Nejmeh's (1988) NPath complexity — the count of acyclic execution paths through a function. Unlike McCabe's CCX which is additive (each branch adds 1 to the count), NPath is multiplicative: sequential branches multiply path counts. Ten sequential independent `if` statements produce CCX=11 but NPath=1024. NPath catches combinatorial explosion that CCX massively underreports.
+
+**Default threshold:** `NPath > 200`
+
+**What the numbers mean:** A linear function has NPath=1. A single `if` doubles it to 2. A function with five sequential ifs has NPath=32; ten sequential ifs produces NPath=1024. The canonical threshold from Nejmeh (1988) and SonarJava is 200, chosen because it corresponds to roughly the combinatorial limit of what fits in a reviewer's head.
+
+**When NPath differs from CCX:** CCX treats `if a: f(); if b: g(); if c: h()` as three independent decisions (CCX=4). NPath treats them as combinatorial because each branch independently affects whether the next one executes in a particular state (NPath=8). For code where the branches are genuinely independent, NPath is the more honest metric.
+
+**When to raise it:** Parsers, validators, or code handling genuinely independent flags where combinatorial reasoning is intrinsic. Raising to 500 accommodates legitimate branch fan-out.
+
+**When to lower it:** Greenfield projects. NPath=100 forces decomposition of sequential-branch-heavy functions.
+
+```toml
+[rules.npath]
+npath_threshold = 200
+```
+
 ### hotspots
 
 **What it measures:** Growth-weighted complexity per file — Tornhill's (2015) hotspot framework with LOC delta as the churn proxy. Score = `sum_ccx × max(0, net_loc_delta)`. Files that are complex AND growing fast are where architectural damage accumulates.
@@ -270,6 +289,9 @@ weighted_threshold = 50
 volume_threshold = 1000
 difficulty_threshold = 30
 
+[rules.npath]
+npath_threshold = 200
+
 [rules.hotspots]
 since = "14 days ago"
 min_commits = 2
@@ -305,6 +327,9 @@ weighted_threshold = 100
 volume_threshold = 1500
 difficulty_threshold = 50
 
+[rules.npath]
+npath_threshold = 500
+
 [rules.hotspots]
 since = "90 days ago"
 min_commits = 3
@@ -339,6 +364,9 @@ weighted_threshold = 30
 [rules.halstead]
 volume_threshold = 500
 difficulty_threshold = 20
+
+[rules.npath]
+npath_threshold = 100
 
 [rules.hotspots]
 since = "7 days ago"

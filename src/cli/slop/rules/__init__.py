@@ -17,6 +17,7 @@ from slop.rules.dead_code import run_unreferenced
 from slop.rules.dependencies import run_cycles
 from slop.rules.halstead import run_difficulty, run_volume
 from slop.rules.hotspots import run_churn_weighted
+from slop.rules.npath import run_npath
 
 RULE_REGISTRY: list[RuleDefinition] = [
     # --- complexity (function + class level) ---
@@ -66,6 +67,17 @@ RULE_REGISTRY: list[RuleDefinition] = [
         default_enabled=True,
         threshold_label="D > 30",
         run=run_difficulty,
+    ),
+
+    # --- npath (combinatorial path explosion that CCX underreports) ---
+    RuleDefinition(
+        name="npath",
+        category="npath",
+        description="Per-function acyclic execution path count (Nejmeh 1988)",
+        default_severity="error",
+        default_enabled=True,
+        threshold_label="NPath > 200",
+        run=run_npath,
     ),
 
     # --- hotspots ---

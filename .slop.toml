@@ -17,6 +17,11 @@ volume_threshold = 1800         # engine.run_lint V=1763 — refactor target
 difficulty_threshold = 35       # engine.run_lint D=30.9 — refactor target
 severity = "error"
 
+[rules.npath]
+enabled = true
+npath_threshold = 1100          # cli.main NPath=1024 (argparse dispatch) — refactor target
+severity = "error"
+
 [rules.hotspots]
 enabled = false                 # slop is a new project — no meaningful churn history yet
 

@@ -48,6 +48,11 @@ DEFAULT_RULE_CONFIGS: dict[str, dict[str, Any]] = {
         "volume_threshold": 1000,
         "difficulty_threshold": 30,
     },
+    "npath": {
+        "enabled": True,
+        "severity": "error",
+        "npath_threshold": 200,
+    },
     "hotspots": {
         "enabled": True,
         "severity": "error",
@@ -228,6 +233,7 @@ PROFILES: dict[str, dict[str, str | int | bool | list[str]]] = {
         "weighted_threshold": 50,
         "volume_threshold": 1000,
         "difficulty_threshold": 30,
+        "npath_threshold": 200,
         "hotspots_since": "14 days ago",
         "hotspots_min_commits": 2,
         "hotspots_fail_on_quadrant": ["hotspot"],
@@ -244,6 +250,7 @@ PROFILES: dict[str, dict[str, str | int | bool | list[str]]] = {
         "weighted_threshold": 100,
         "volume_threshold": 1500,
         "difficulty_threshold": 50,
+        "npath_threshold": 500,
         "hotspots_since": "90 days ago",
         "hotspots_min_commits": 3,
         "hotspots_fail_on_quadrant": ["hotspot"],
@@ -260,6 +267,7 @@ PROFILES: dict[str, dict[str, str | int | bool | list[str]]] = {
         "weighted_threshold": 30,
         "volume_threshold": 500,
         "difficulty_threshold": 20,
+        "npath_threshold": 100,
         "hotspots_since": "7 days ago",
         "hotspots_min_commits": 1,
         "hotspots_fail_on_quadrant": ["hotspot", "churning_simple"],
@@ -309,6 +317,11 @@ severity = "error"
 enabled = true
 volume_threshold = {p["volume_threshold"]}         # fail if any function V exceeds this
 difficulty_threshold = {p["difficulty_threshold"]}        # fail if any function D exceeds this
+severity = "error"
+
+[rules.npath]
+enabled = true
+npath_threshold = {p["npath_threshold"]}         # fail if any function NPath exceeds this
 severity = "error"
 
 [rules.hotspots]
