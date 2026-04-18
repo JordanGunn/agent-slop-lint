@@ -6,7 +6,7 @@ A code quality linter for codebases where AI agents are writing most of the diff
 [![Python](https://img.shields.io/pypi/pyversions/agent-slop-lint)](https://pypi.org/project/agent-slop-lint/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
 
-Static analysis tools got their defaults from codebases where a productive human wrote maybe 100 lines on a busy day and another human reviewed every one. An agent can drop that much into a single file before emitting its first status message, and the structural damage (deep coupling, WMC-heavy classes, files that grow 500 LOC in a week) lands inside one session rather than accumulating over quarters. The usual review cadence does not catch it. slop is calibrated for that pace.
+Static analysis tools got their defaults from codebases where a productive human wrote maybe 100 lines on a busy day and another human reviewed every one. An agent can drop that much into a single file before emitting its first status message, and the structural damage (deep coupling, WMC-heavy classes, files that grow 500 LOC in a week) lands inside one session rather than accumulating over quarters. The usual review cadence does not catch it. `slop` is calibrated for that pace.
 
 The metrics themselves are not new. Cyclomatic complexity (McCabe 1976), the CK suite for classes (Chidamber and Kemerer 1994), package distance from the Main Sequence (Martin 1994), churn-weighted hotspots (Tornhill 2015): all well-cited, all mostly ignored in day-to-day workflows because they were tuned for human timescales. slop wraps them behind one CLI with thresholds that assume a different pace of change.
 
