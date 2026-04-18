@@ -48,13 +48,16 @@ Exit codes: `0` = clean, `1` = violations found, `2` = error.
 
 ## Rules
 
-10 rules across 6 categories:
+12 rules across 8 categories:
 
 | Rule | Default threshold | What it catches |
 |---|---|---|
 | `complexity.cyclomatic` | CCX > 10 | Functions with too many paths |
 | `complexity.cognitive` | CogC > 15 | Functions that are hard to read |
-| `complexity.weighted` | WMC > 50 | Classes doing too much |
+| `complexity.weighted` | WMC > 40 | Classes doing too much |
+| `halstead.volume` | V > 1500 | Functions with high information content |
+| `halstead.difficulty` | D > 30 | Functions with dense operator/operand reuse |
+| `npath` | NPath > 400 | Functions with combinatorial path explosion |
 | `hotspots` | 14d window | Files that are complex AND growing fast |
 | `packages` | D' > 0.7 | Packages far from the ideal design balance |
 | `deps` | any cycle | Circular dependencies between modules |

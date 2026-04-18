@@ -38,7 +38,7 @@ def _slop_config() -> SlopConfig:
 
 
 def _rule_config(**overrides) -> RuleConfig:
-    defaults = {"npath_threshold": 200}
+    defaults = {"npath_threshold": 400}
     defaults.update(overrides)
     return RuleConfig(enabled=True, severity="error", params=defaults)
 

@@ -98,7 +98,7 @@ slop init strict       # greenfield / quality-focused
 
 For detailed explanations of every threshold and what the profiles change, see the **[configuration reference](./CONFIG.md)**.
 
-This creates `.slop.toml` with all 10 rules pre-configured. The defaults work well for most projects — you can tune later.
+This creates `.slop.toml` with all 12 rules pre-configured. The defaults work well for most projects — you can tune later.
 
 ### Key settings to review
 
@@ -308,8 +308,11 @@ slop lint --root C:\path\to\your\project
 ```
   complexity.cyclomatic            [on ] CCX > 10   Per-function Cyclomatic Complexity (McCabe 1976)
   complexity.cognitive             [on ] CogC > 15  Per-function Cognitive Complexity (Campbell 2018)
-  complexity.weighted              [on ] WMC > 50   Per-class sum of method CCX (Chidamber & Kemerer 1994)
-  hotspots                         [on ] 14d window Growth × complexity per file (Tornhill 2015)
+  complexity.weighted              [on ] WMC > 40   Per-class sum of method CCX (Chidamber & Kemerer 1994)
+  halstead.volume                  [on ] V > 1500   Per-function Halstead Volume (Halstead 1977)
+  halstead.difficulty              [on ] D > 30     Per-function Halstead Difficulty (Halstead 1977)
+  npath                            [on ] NPath > 400 Per-function acyclic execution path count (Nejmeh 1988)
+  hotspots                         [on ] 14d window Churn × complexity per file (Tornhill 2015)
   packages                         [on ] D' > 0.7   Package design distance (Martin 1994)
   deps                             [on ] cycles     Dependency cycle detection
   orphans                          [off]            Unreferenced symbols (advisory)

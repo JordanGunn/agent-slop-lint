@@ -45,7 +45,7 @@ RULE_REGISTRY: list[RuleDefinition] = [
         description="Per-class sum of method CCX (Chidamber & Kemerer 1994)",
         default_severity="error",
         default_enabled=True,
-        threshold_label="WMC > 50",
+        threshold_label="WMC > 40",
         run=run_weighted,
     ),
 
@@ -56,7 +56,7 @@ RULE_REGISTRY: list[RuleDefinition] = [
         description="Per-function Halstead Volume (Halstead 1977)",
         default_severity="error",
         default_enabled=True,
-        threshold_label="V > 1000",
+        threshold_label="V > 1500",
         run=run_volume,
     ),
     RuleDefinition(
@@ -76,7 +76,7 @@ RULE_REGISTRY: list[RuleDefinition] = [
         description="Per-function acyclic execution path count (Nejmeh 1988)",
         default_severity="error",
         default_enabled=True,
-        threshold_label="NPath > 200",
+        threshold_label="NPath > 400",
         run=run_npath,
     ),
 

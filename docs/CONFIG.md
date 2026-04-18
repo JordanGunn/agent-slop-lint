@@ -4,6 +4,18 @@ This guide explains every configurable value in slop, what it means in practice,
 
 slop reads config from `.slop.toml` (or `[tool.slop]` in `pyproject.toml`). Generate a starter config with `slop init`.
 
+## A note on default thresholds
+
+slop cites well-established metrics (McCabe, Chidamber & Kemerer, Halstead, Nejmeh, Martin, Tornhill) and most defaults match the numbers from those original sources. Three do not, and this section documents why so readers who open the cited papers can reconcile the discrepancy.
+
+| Rule | Citation's threshold | slop default | Why slop diverges |
+|---|---:|---:|---|
+| `complexity.weighted` (WMC) | ~50 (1990s industry convention) | 40 | Contemporary OO advice (Fowler, Martin) treats classes with more than a handful of responsibilities as refactor candidates. 40 aligns with modern practice and catches god-class drift earlier. |
+| `halstead.volume` | ~1000 (SonarSource-style) | 1500 | The 1000 ceiling flags legitimate orchestration code (formatters, dispatchers, fused pipelines) that are not actually rot. 1500 still flags the pathological case where three responsibilities fused into one function, without penalising honest breadth-heavy code. |
+| `npath` | 200 (Nejmeh 1988) | 400 | Nejmeh's 200 was calibrated on pre-OO C code at AT&T Bell Labs in 1988. Modern CLI dispatch patterns (click, argparse, cobra) routinely produce honest `main` functions at NPath 256-512 because each `if args.command == "X"` doubles the count. 400 raises the floor above typical dispatch while still flagging the 10-sequential-if combinatorial explosion (NPath=1024). |
+
+Every other rule's default matches the cited source.
+
 ## Rule reference
 
 ### complexity.cyclomatic
@@ -48,9 +60,11 @@ cognitive_threshold = 15
 
 **What it measures:** Weighted Methods per Class (Chidamber & Kemerer 1994) — the sum of CCX across all methods in a class. High WMC means the class is doing too much.
 
-**Default threshold:** `WMC > 50`
+**Default threshold:** `WMC > 40`
 
-**What the numbers mean:** A class with 10 methods averaging CCX=5 each has WMC=50. That's the boundary — it's a lot of logic in one place but not necessarily wrong. A class with WMC=150 is almost certainly a god class.
+**What the numbers mean:** A class with 10 methods averaging CCX=4 each has WMC=40. That is the boundary where a class is doing enough that a reader has to actively hold its pieces in their head. A class with WMC=150 is almost certainly a god class.
+
+**Why the default is 40 and not 50.** The older industry convention of WMC > 50 was tuned for 1990s OO codebases where classes of 20-plus methods were routine. Contemporary OO advice (Fowler, Martin) treats classes with more than a handful of responsibilities as refactor candidates. 40 is closer to current practice and catches god-class drift earlier. If you maintain a codebase with legitimately large classes (framework base classes, protocol handlers), raising to 50 or 60 is reasonable.
 
 **When to raise it:** Large classes that are well-factored internally (clear method boundaries, low coupling between methods). Raising to 75–100 focuses on the truly egregious cases.
 
@@ -67,13 +81,15 @@ weighted_threshold = 50
 
 **What it measures:** Halstead's (1977) Volume metric — `V = Length × log2(Vocabulary)`, where Length is total operator/operand occurrences and Vocabulary is the distinct-operator + distinct-operand count. Volume proxies the information content of a function. Large Volume means "a lot of stuff is happening in here."
 
-**Default threshold:** `V > 1000`
+**Default threshold:** `V > 1500`
 
 **What the numbers mean:** Volume scales with both size and diversity. A 20-line function with five variables and standard arithmetic lands around V=150. A 60-line function touching twenty symbols and many operators can hit V=1200 without looking obviously complex to CCX or CogC. That is the niche Halstead covers.
 
-**When to raise it:** Long formatter functions, serializers, or state-machine dispatchers that legitimately reference many symbols. Raising to 1500 keeps the signal without flagging structurally-reasonable breadth.
+**Why the default is 1500 and not 1000.** SonarSource-style V > 1000 is a reasonable boundary for functions that were *meant* to be decomposed. In practice, legitimate orchestration code (format_human, run_lint, dispatch functions, serializers that touch many fields) often sits in the 1200-1800 range without being rot. 1500 still flags the pathological case where three responsibilities fused into one function (typical V of 2000-plus) while leaving honest orchestration alone.
 
-**When to lower it:** Greenfield projects wanting tight function sizes. Lowering to 500 forces decomposition early.
+**When to raise it:** Long formatters, serializers, or state-machine dispatchers that legitimately reference many symbols. Raising to 2000 leaves room for breadth-heavy code.
+
+**When to lower it:** Greenfield projects wanting tight function sizes. Lowering to 1000 or 800 forces decomposition early.
 
 **When Halstead differs from CCX:** CCX counts control-flow paths. Halstead counts tokens. A function with low CCX but 40 unique operands (e.g. a big dict construction) will have high Volume but low CCX. Halstead catches that; CCX misses it.
 
@@ -103,15 +119,17 @@ difficulty_threshold = 30
 
 **What it measures:** Nejmeh's (1988) NPath complexity — the count of acyclic execution paths through a function. Unlike McCabe's CCX which is additive (each branch adds 1 to the count), NPath is multiplicative: sequential branches multiply path counts. Ten sequential independent `if` statements produce CCX=11 but NPath=1024. NPath catches combinatorial explosion that CCX massively underreports.
 
-**Default threshold:** `NPath > 200`
+**Default threshold:** `NPath > 400`
 
-**What the numbers mean:** A linear function has NPath=1. A single `if` doubles it to 2. A function with five sequential ifs has NPath=32; ten sequential ifs produces NPath=1024. The canonical threshold from Nejmeh (1988) and SonarJava is 200, chosen because it corresponds to roughly the combinatorial limit of what fits in a reviewer's head.
+**What the numbers mean:** A linear function has NPath=1. A single `if` doubles it to 2. A function with five sequential ifs has NPath=32; ten sequential ifs produces NPath=1024. The canonical Nejmeh (1988) threshold was 200, chosen because it corresponds to roughly the combinatorial limit of what fits in a reviewer's head.
+
+**Why the default is 400 and not 200.** Nejmeh's 200 came from 1988 AT&T Bell Labs research on small pre-OO C functions before modern CLI dispatch patterns existed. Contemporary code routinely includes `main` functions with eight to ten subcommand branches (click, argparse, cobra), and each branch doubles NPath. Honest dispatch functions sit at NPath 256-512 and are not rot. 400 raises the floor above the typical CLI dispatch pattern while still flagging genuine combinatorial explosion (NPath > 500 and especially > 1000 almost always indicates branches that should have been decomposed into handler functions).
 
 **When NPath differs from CCX:** CCX treats `if a: f(); if b: g(); if c: h()` as three independent decisions (CCX=4). NPath treats them as combinatorial because each branch independently affects whether the next one executes in a particular state (NPath=8). For code where the branches are genuinely independent, NPath is the more honest metric.
 
-**When to raise it:** Parsers, validators, or code handling genuinely independent flags where combinatorial reasoning is intrinsic. Raising to 500 accommodates legitimate branch fan-out.
+**When to raise it:** Parsers, validators, or code handling genuinely independent flags where combinatorial reasoning is intrinsic. Raising to 800 or 1000 accommodates legitimate branch fan-out.
 
-**When to lower it:** Greenfield projects. NPath=100 forces decomposition of sequential-branch-heavy functions.
+**When to lower it:** Greenfield projects. NPath=200 returns to Nejmeh's canonical ceiling.
 
 ```toml
 [rules.npath]
@@ -283,14 +301,14 @@ Or copy one of the configs below into your `.slop.toml` manually.
 [rules.complexity]
 cyclomatic_threshold = 10
 cognitive_threshold = 15
-weighted_threshold = 50
+weighted_threshold = 40
 
 [rules.halstead]
-volume_threshold = 1000
+volume_threshold = 1500
 difficulty_threshold = 30
 
 [rules.npath]
-npath_threshold = 200
+npath_threshold = 400
 
 [rules.hotspots]
 since = "14 days ago"
@@ -321,14 +339,14 @@ Start here if the default profile produces too many violations to act on. Tighte
 [rules.complexity]
 cyclomatic_threshold = 20
 cognitive_threshold = 25
-weighted_threshold = 100
+weighted_threshold = 80
 
 [rules.halstead]
-volume_threshold = 1500
+volume_threshold = 3000
 difficulty_threshold = 50
 
 [rules.npath]
-npath_threshold = 500
+npath_threshold = 1000
 
 [rules.hotspots]
 since = "90 days ago"

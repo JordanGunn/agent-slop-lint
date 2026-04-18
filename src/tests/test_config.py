@@ -33,7 +33,7 @@ def test_default_complexity_enabled_with_standard_thresholds(tmp_path: Path):
     assert rc.severity == "error"
     assert rc.params["cyclomatic_threshold"] == 10
     assert rc.params["cognitive_threshold"] == 15
-    assert rc.params["weighted_threshold"] == 50
+    assert rc.params["weighted_threshold"] == 40
 
 
 def test_default_hotspots_since_14_days(tmp_path: Path):

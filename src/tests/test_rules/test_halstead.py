@@ -37,7 +37,7 @@ def _slop_config() -> SlopConfig:
 
 
 def _rule_config(**overrides) -> RuleConfig:
-    defaults = {"volume_threshold": 1000, "difficulty_threshold": 30}
+    defaults = {"volume_threshold": 1500, "difficulty_threshold": 30}
     defaults.update(overrides)
     return RuleConfig(enabled=True, severity="error", params=defaults)
 

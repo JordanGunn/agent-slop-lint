@@ -74,10 +74,10 @@ Full per-platform install steps, CI recipes, pre-commit wiring, and the agent sk
 |---|---|---|---|
 | `complexity.cyclomatic` | CCX > 10 | Per-function path count | McCabe 1976 |
 | `complexity.cognitive` | CogC > 15 | Per-function reading difficulty | Campbell 2018 |
-| `complexity.weighted` | WMC > 50 | Per-class aggregate method complexity | Chidamber and Kemerer 1994 |
-| `halstead.volume` | V > 1000 | Per-function information content (Length × log2 Vocabulary) | Halstead 1977 |
+| `complexity.weighted` | WMC > 40 | Per-class aggregate method complexity | Chidamber and Kemerer 1994 |
+| `halstead.volume` | V > 1500 | Per-function information content (Length × log2 Vocabulary) | Halstead 1977 |
 | `halstead.difficulty` | D > 30 | Per-function operator/operand density | Halstead 1977 |
-| `npath` | NPath > 200 | Per-function acyclic execution path count | Nejmeh 1988 |
+| `npath` | NPath > 400 | Per-function acyclic execution path count | Nejmeh 1988 |
 | `hotspots` | 14-day window | Files that are complex AND growing fast | Tornhill 2015 |
 | `packages` | D' > 0.7 | Package design distance from the Main Sequence | Martin 1994 |
 | `deps` | any cycle | Dependency cycles between modules | Tarjan 1972 |
