@@ -333,7 +333,7 @@ severity = "error"
 
 [rules.packages]
 enabled = true
-# languages = ["python"]        # robert metrics only support go and python
+# languages = ["python"]        # optional: restrict to a subset of slop's supported languages
 max_distance = {p["max_distance"]}
 fail_on_zone = ["pain"]
 severity = "{p["packages_severity"]}"

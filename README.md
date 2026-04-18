@@ -97,14 +97,14 @@ Tornhill's original work used a 1-year window, tuned for release cycles where a 
 | Language | Extensions | Complexity | Hotspots | Packages | Deps | Class |
 |---|---|---|---|---|---|---|
 | Python | `.py` | yes | yes | yes | yes | yes |
-| JavaScript | `.js`, `.mjs`, `.cjs` | yes | yes | — | yes | yes |
-| TypeScript | `.ts`, `.tsx` | yes | yes | — | yes | yes |
+| JavaScript | `.js`, `.mjs`, `.cjs` | yes | yes | yes | yes | yes |
+| TypeScript | `.ts`, `.tsx` | yes | yes | yes | yes | yes |
 | Go | `.go` | yes | yes | yes | yes | yes |
-| Rust | `.rs` | yes | yes | — | — | yes |
-| Java | `.java` | yes | yes | — | yes | yes |
-| C# | `.cs` | yes | yes | — | yes | yes |
+| Rust | `.rs` | yes | yes | yes | — | yes |
+| Java | `.java` | yes | yes | yes | yes | yes |
+| C# | `.cs` | yes | yes | yes | yes | yes |
 
-Martin's package metrics currently only run on Go and Python. Files in other languages are silently excluded from that rule, not errored. Every other rule runs across all seven languages.
+JavaScript has no `interface` or `abstract class` in the language itself, so every declared class is counted as concrete. A JavaScript package with `Ca > 0` and no abstraction will legitimately land in Martin's Zone of Pain; treat `packages` as an advisory signal rather than a gate on JavaScript code (it is `severity = "warning"` by default for that reason). Rust's `deps` rule is not implemented (no import graph yet); `packages` on Rust uses the trait/struct/enum split for abstractness and reports Ca=Ce=0 per package, so it mostly surfaces intra-crate abstraction balance rather than cross-crate coupling.
 
 ## Configuration
 

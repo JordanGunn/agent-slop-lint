@@ -179,13 +179,13 @@ fail_on_quadrant = ["hotspot"]
 - **D' near 0** — on the Main Sequence. Balanced.
 - **D' near 1** — in a zone. Either Pain (concrete + stable = rigid) or Uselessness (abstract + unstable = over-engineered).
 
-**Currently supports:** Go and Python only. Other languages are silently skipped.
+**Currently supports:** Every language slop covers: Go, Python, Java, C#, TypeScript, JavaScript, Rust. Abstract-type detection is language-specific: Go interfaces, Python ABCs / Protocols, Java and C# `interface` plus `abstract class`, TypeScript `interface` plus `abstract class`, Rust `trait`. JavaScript has no `interface` or `abstract class` in the language itself, so every `class` is counted as concrete (Ja=0); this is accurate but means JS packages with `Ca > 0` will reliably land in Zone of Pain. Files in an unsupported language are silently skipped.
 
 **When to raise it:** Mature codebases where some packages are legitimately concrete and stable (e.g., utility packages). Raising to 0.85 focuses on extreme cases.
 
 **When to lower it:** Projects with strict layered architecture. 0.5 catches packages drifting from the ideal early.
 
-**When to disable:** Single-package projects, or languages other than Go and Python.
+**When to disable:** Single-package projects where the metric is ill-defined. JavaScript-only projects where you don't want the expected noise from the "no abstract concept" limitation; the rule is `severity = "warning"` by default, so it reports without failing the build.
 
 ```toml
 [rules.packages]
@@ -417,7 +417,7 @@ Disabling a rule is a legitimate choice in specific contexts. The table below he
 |---|---|---|
 | `complexity.weighted` | No classes in your codebase (functional style, scripting) | Any OOP codebase |
 | `hotspots` | No git history available, or running in a shallow-cloned CI without `fetch-depth: 0` | Any git repo with history |
-| `packages` | Single-package project, or language not Go/Python | Multi-package Go or Python projects |
+| `packages` | Single-package project (metric ill-defined) | Multi-package projects in any supported language |
 | `deps` | Very early prototype with intentionally fluid boundaries | Any project past the prototype stage |
 | `orphans` | Always off as a CI gate. Enable for periodic cleanup audits only. | Never as a permanent gate — false positive rate is too high |
 | `class.coupling` | No classes (functional, scripting) | Any OOP codebase |

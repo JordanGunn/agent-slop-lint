@@ -333,7 +333,7 @@ slop lint --root C:\path\to\your\project
 | Java | `.java` | Yes |
 | C# | `.cs` | Yes |
 
-The `packages` rule (Martin metrics) currently supports Go and Python only. All other rules work across all 7 languages.
+Every rule covers every listed language, with two documented caveats: `deps` is not implemented for Rust (no import graph extractor yet), and `packages` on JavaScript will always count every class as concrete because JavaScript has no `interface` or `abstract class` in the language itself. See CONFIG.md for per-rule detail.
 
 ## Troubleshooting
 

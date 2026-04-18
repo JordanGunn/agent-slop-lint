@@ -52,6 +52,11 @@ class RobertResult:
 _LANG_GLOBS: dict[str, list[str]] = {
     "go": ["**/*.go"],
     "python": ["**/*.py"],
+    "java": ["**/*.java"],
+    "c_sharp": ["**/*.cs"],
+    "typescript": ["**/*.ts", "**/*.tsx"],
+    "javascript": ["**/*.js", "**/*.mjs", "**/*.cjs"],
+    "rust": ["**/*.rs"],
 }
 
 
@@ -74,7 +79,8 @@ def robert_kernel(
 
     Args:
         root: Search root directory
-        language: Language to analyze: 'go' or 'python'
+        language: Language to analyze. One of: go, python, java, c_sharp,
+            typescript, javascript, rust.
         globs: Additional include glob patterns
         excludes: Exclude glob patterns
         hidden: Include hidden files
@@ -94,7 +100,10 @@ def robert_kernel(
             files_searched=0,
             zone_counts=_empty_zone_counts(),
             guidance=[],
-            errors=[f"Unsupported language '{language}'. Supported: go, python"],
+            errors=[
+                f"Unsupported language '{language}'. Supported: "
+                f"{', '.join(sorted(_LANG_GLOBS))}"
+            ],
         )
 
     # Resolve effective globs
@@ -312,11 +321,124 @@ _PYTHON_CLASS_QUERY = """
 
 _ABSTRACT_BASE_PATTERN = re.compile(r"\b(ABC|Protocol|ABCMeta)\b")
 
+# --- Java ---
+_JAVA_INTERFACE_QUERY = """
+(interface_declaration name: (identifier) @name)
+"""
+_JAVA_CLASS_QUERY = """
+(class_declaration
+  (modifiers)? @mods
+  name: (identifier) @name)
+"""
+_JAVA_RECORD_QUERY = """
+(record_declaration name: (identifier) @name)
+"""
+
+# --- C# ---
+_CSHARP_INTERFACE_QUERY = """
+(interface_declaration name: (identifier) @name)
+"""
+_CSHARP_CLASS_QUERY = """
+(class_declaration name: (identifier) @name) @class
+"""
+_CSHARP_STRUCT_QUERY = """
+(struct_declaration name: (identifier) @name)
+"""
+_CSHARP_RECORD_QUERY = """
+(record_declaration name: (identifier) @name)
+"""
+
+# --- TypeScript ---
+_TS_INTERFACE_QUERY = """
+(interface_declaration name: (type_identifier) @name)
+"""
+_TS_CLASS_QUERY = """
+(class_declaration name: (type_identifier) @name) @class
+"""
+_TS_ABSTRACT_CLASS_QUERY = """
+(abstract_class_declaration name: (type_identifier) @name)
+"""
+
+# --- JavaScript ---
+_JS_CLASS_QUERY = """
+(class_declaration name: (identifier) @name)
+"""
+
+# --- Rust ---
+_RUST_TRAIT_QUERY = """
+(trait_item name: (type_identifier) @name)
+"""
+_RUST_STRUCT_QUERY = """
+(struct_item name: (type_identifier) @name)
+"""
+_RUST_ENUM_QUERY = """
+(enum_item name: (type_identifier) @name)
+"""
+
 # Text-tier fallback regexes
 _GO_INTERFACE_RE = re.compile(r"^type\s+\w+\s+interface\b", re.MULTILINE)
 _GO_STRUCT_RE = re.compile(r"^type\s+\w+\s+struct\b", re.MULTILINE)
 _PYTHON_ABSTRACT_RE = re.compile(r"^class\s+\w+\s*\(.*(?:ABC|Protocol|ABCMeta)", re.MULTILINE)
 _PYTHON_CONCRETE_RE = re.compile(r"^class\s+\w+", re.MULTILINE)
+
+# Java: interfaces are always abstract; classes are abstract only with the
+# `abstract` modifier. Records are concrete. Order-tolerant modifier scanning
+# via two regexes (abstract-class then all-class) and subtracting.
+_JAVA_INTERFACE_RE = re.compile(
+    r"^\s*(?:public|private|protected|static|final|sealed|non-sealed|\s)*\binterface\s+\w+",
+    re.MULTILINE,
+)
+_JAVA_ABSTRACT_CLASS_RE = re.compile(
+    r"^\s*(?:(?:public|private|protected|static|final|sealed|non-sealed)\s+)*abstract(?:\s+(?:public|private|protected|static|final|sealed|non-sealed))*\s+class\s+\w+",
+    re.MULTILINE,
+)
+_JAVA_CLASS_RE = re.compile(
+    r"^\s*(?:public|private|protected|abstract|static|final|sealed|non-sealed|\s)*\bclass\s+\w+",
+    re.MULTILINE,
+)
+_JAVA_RECORD_RE = re.compile(r"^\s*(?:public|private|protected|\s)*\brecord\s+\w+", re.MULTILINE)
+
+# C#: same shape as Java. `sealed` / `static` / `partial` etc. are modifiers
+# that don't affect abstractness; only `abstract` does.
+_CSHARP_INTERFACE_RE = re.compile(
+    r"^\s*(?:public|private|protected|internal|static|\s)*\binterface\s+\w+",
+    re.MULTILINE,
+)
+_CSHARP_ABSTRACT_CLASS_RE = re.compile(
+    r"^\s*(?:(?:public|private|protected|internal|static|sealed|partial)\s+)*abstract(?:\s+(?:public|private|protected|internal|static|sealed|partial))*\s+class\s+\w+",
+    re.MULTILINE,
+)
+_CSHARP_CLASS_RE = re.compile(
+    r"^\s*(?:public|private|protected|internal|abstract|static|sealed|partial|\s)*\bclass\s+\w+",
+    re.MULTILINE,
+)
+_CSHARP_STRUCT_RE = re.compile(
+    r"^\s*(?:public|private|protected|internal|readonly|ref|\s)*\bstruct\s+\w+",
+    re.MULTILINE,
+)
+_CSHARP_RECORD_RE = re.compile(
+    r"^\s*(?:public|private|protected|internal|\s)*\brecord\s+\w+", re.MULTILINE
+)
+
+# TypeScript: interface, abstract class (prefixed with `abstract`), plain class.
+_TS_INTERFACE_RE = re.compile(
+    r"^\s*(?:export\s+|declare\s+)*interface\s+\w+", re.MULTILINE
+)
+_TS_ABSTRACT_CLASS_RE = re.compile(
+    r"^\s*(?:export\s+|declare\s+)*abstract\s+class\s+\w+", re.MULTILINE
+)
+_TS_CLASS_RE = re.compile(
+    r"^\s*(?:export\s+|declare\s+|abstract\s+)*class\s+\w+", re.MULTILINE
+)
+
+# JavaScript: no abstract / interface concept in the language itself, so every
+# class declaration is treated as concrete.
+_JS_CLASS_RE = re.compile(r"^\s*(?:export\s+|default\s+)*class\s+\w+", re.MULTILINE)
+
+# Rust: trait is abstract; struct and enum are concrete.
+_RUST_TRAIT_RE = re.compile(r"^\s*(?:pub(?:\([^)]*\))?\s+)?(?:unsafe\s+)?trait\s+\w+", re.MULTILINE)
+_RUST_STRUCT_RE = re.compile(r"^\s*(?:pub(?:\([^)]*\))?\s+)?struct\s+\w+", re.MULTILINE)
+_RUST_ENUM_RE = re.compile(r"^\s*(?:pub(?:\([^)]*\))?\s+)?enum\s+\w+", re.MULTILINE)
 
 
 def _compute_abstractness(
@@ -337,6 +459,60 @@ def _compute_abstractness(
     return _compute_abstractness_text(pkg_files, language, errors)
 
 
+def _count_query_matches(
+    pkg_files: list[Path],
+    query_str: str,
+    language: str,
+    errors: list[str],
+) -> int:
+    """Run a tree-sitter query over pkg_files and count distinct @name captures."""
+    from slop._aux.kernels.query import query_kernel
+
+    res = query_kernel(files=pkg_files, query_str=query_str, language=language)
+    errors.extend(res.errors)
+    names: set[str] = set()
+    for match in res.matches:
+        for cap in match.captures:
+            if cap.name == "name":
+                names.add(f"{match.file}:{cap.text}:{cap.line}")
+    return len(names)
+
+
+def _split_classes_by_abstract_modifier(
+    pkg_files: list[Path],
+    query_str: str,
+    language: str,
+    errors: list[str],
+    modifier_capture: str = "mods",
+) -> tuple[int, int]:
+    """Run a class-declaration query and split captures by whether the
+    modifier-capture text contains ``abstract``.
+
+    Returns ``(abstract_count, concrete_count)``. Classes without the captured
+    modifiers field are treated as concrete.
+    """
+    from slop._aux.kernels.query import query_kernel
+
+    res = query_kernel(files=pkg_files, query_str=query_str, language=language)
+    errors.extend(res.errors)
+
+    abstract_count = 0
+    concrete_count = 0
+    for ast_match in res.matches:
+        caps_by_name: dict[str, list[str]] = {}
+        for cap in ast_match.captures:
+            caps_by_name.setdefault(cap.name, []).append(cap.text)
+        if "name" not in caps_by_name:
+            continue
+        mods_texts = caps_by_name.get(modifier_capture, [])
+        is_abstract = any(re.search(r"\babstract\b", m) for m in mods_texts)
+        if is_abstract:
+            abstract_count += 1
+        else:
+            concrete_count += 1
+    return abstract_count, concrete_count
+
+
 def _compute_abstractness_ast(
     pkg_files: list[Path],
     language: str,
@@ -349,29 +525,12 @@ def _compute_abstractness_ast(
     nc = 0
 
     if language == "go":
-        res = query_kernel(files=pkg_files, query_str=_GO_INTERFACE_QUERY, language="go")
-        errors.extend(res.errors)
-        # Count distinct @name captures (one per interface)
-        names: set[str] = set()
-        for match in res.matches:
-            for cap in match.captures:
-                if cap.name == "name":
-                    names.add(f"{match.file}:{cap.text}:{cap.line}")
-        na = len(names)
-
-        res2 = query_kernel(files=pkg_files, query_str=_GO_STRUCT_QUERY, language="go")
-        errors.extend(res2.errors)
-        names2: set[str] = set()
-        for match in res2.matches:
-            for cap in match.captures:
-                if cap.name == "name":
-                    names2.add(f"{match.file}:{cap.text}:{cap.line}")
-        nc = len(names2)
+        na = _count_query_matches(pkg_files, _GO_INTERFACE_QUERY, "go", errors)
+        nc = _count_query_matches(pkg_files, _GO_STRUCT_QUERY, "go", errors)
 
     elif language == "python":
         res = query_kernel(files=pkg_files, query_str=_PYTHON_CLASS_QUERY, language="python")
         errors.extend(res.errors)
-        # Each AstMatch = one class definition; check if bases contain ABC/Protocol/ABCMeta
         for ast_match in res.matches:
             caps_by_name: dict[str, list[str]] = {}
             for cap in ast_match.captures:
@@ -383,6 +542,52 @@ def _compute_abstractness_ast(
                 na += 1
             else:
                 nc += 1
+
+    elif language == "java":
+        na += _count_query_matches(pkg_files, _JAVA_INTERFACE_QUERY, "java", errors)
+        java_abstract, java_concrete = _split_classes_by_abstract_modifier(
+            pkg_files, _JAVA_CLASS_QUERY, "java", errors,
+        )
+        na += java_abstract
+        nc += java_concrete
+        nc += _count_query_matches(pkg_files, _JAVA_RECORD_QUERY, "java", errors)
+
+    elif language == "c_sharp":
+        na += _count_query_matches(pkg_files, _CSHARP_INTERFACE_QUERY, "c_sharp", errors)
+        cs_abstract, cs_concrete = _split_classes_by_abstract_modifier(
+            pkg_files, _CSHARP_CLASS_QUERY, "c_sharp", errors,
+            # C# class_declaration places `abstract` as a sibling @class modifier;
+            # capture the whole class node's source and scan it for the keyword.
+            modifier_capture="class",
+        )
+        na += cs_abstract
+        nc += cs_concrete
+        nc += _count_query_matches(pkg_files, _CSHARP_STRUCT_QUERY, "c_sharp", errors)
+        nc += _count_query_matches(pkg_files, _CSHARP_RECORD_QUERY, "c_sharp", errors)
+
+    elif language == "typescript":
+        na += _count_query_matches(pkg_files, _TS_INTERFACE_QUERY, "typescript", errors)
+        na += _count_query_matches(pkg_files, _TS_ABSTRACT_CLASS_QUERY, "typescript", errors)
+        # Non-abstract classes. If the grammar lacks a separate abstract_class_declaration
+        # node, the @class capture catches both and we fall back to text scan.
+        ts_abstract, ts_concrete = _split_classes_by_abstract_modifier(
+            pkg_files, _TS_CLASS_QUERY, "typescript", errors,
+            modifier_capture="class",
+        )
+        na += ts_abstract
+        nc += ts_concrete
+
+    elif language == "javascript":
+        # JS has no interface or abstract-class in the language; treat every
+        # class declaration as concrete. Packages with Ca > 0 and no abstraction
+        # will legitimately land in Zone of Pain.
+        nc = _count_query_matches(pkg_files, _JS_CLASS_QUERY, "javascript", errors)
+
+    elif language == "rust":
+        na = _count_query_matches(pkg_files, _RUST_TRAIT_QUERY, "rust", errors)
+        nc += _count_query_matches(pkg_files, _RUST_STRUCT_QUERY, "rust", errors)
+        nc += _count_query_matches(pkg_files, _RUST_ENUM_QUERY, "rust", errors)
+
     else:
         return _compute_abstractness_text(pkg_files, language, errors)
 
@@ -408,11 +613,44 @@ def _compute_abstractness_text(
         if language == "go":
             na += len(_GO_INTERFACE_RE.findall(content))
             nc += len(_GO_STRUCT_RE.findall(content))
+
         elif language == "python":
             abstract_matches = set(_PYTHON_ABSTRACT_RE.findall(content))
             all_classes = _PYTHON_CONCRETE_RE.findall(content)
             na += len(abstract_matches)
             nc += max(0, len(all_classes) - len(abstract_matches))
+
+        elif language == "java":
+            na += len(_JAVA_INTERFACE_RE.findall(content))
+            abstract_classes = len(_JAVA_ABSTRACT_CLASS_RE.findall(content))
+            all_classes = len(_JAVA_CLASS_RE.findall(content))
+            na += abstract_classes
+            nc += max(0, all_classes - abstract_classes)
+            nc += len(_JAVA_RECORD_RE.findall(content))
+
+        elif language == "c_sharp":
+            na += len(_CSHARP_INTERFACE_RE.findall(content))
+            abstract_classes = len(_CSHARP_ABSTRACT_CLASS_RE.findall(content))
+            all_classes = len(_CSHARP_CLASS_RE.findall(content))
+            na += abstract_classes
+            nc += max(0, all_classes - abstract_classes)
+            nc += len(_CSHARP_STRUCT_RE.findall(content))
+            nc += len(_CSHARP_RECORD_RE.findall(content))
+
+        elif language == "typescript":
+            na += len(_TS_INTERFACE_RE.findall(content))
+            abstract_classes = len(_TS_ABSTRACT_CLASS_RE.findall(content))
+            all_classes = len(_TS_CLASS_RE.findall(content))
+            na += abstract_classes
+            nc += max(0, all_classes - abstract_classes)
+
+        elif language == "javascript":
+            nc += len(_JS_CLASS_RE.findall(content))
+
+        elif language == "rust":
+            na += len(_RUST_TRAIT_RE.findall(content))
+            nc += len(_RUST_STRUCT_RE.findall(content))
+            nc += len(_RUST_ENUM_RE.findall(content))
 
     return na, nc, errors
 

@@ -1,4 +1,4 @@
-"""Architecture rules — wraps aux robert_kernel.
+"""Architecture rules — wraps the vendored robert_kernel.
 
 Rules:
   packages  — fail if any package's D' exceeds threshold or lands in a forbidden zone
@@ -11,8 +11,17 @@ from pathlib import Path
 from slop._aux.kernels.robert import robert_kernel
 from slop.models import RuleConfig, RuleResult, SlopConfig, Violation
 
-# robert_kernel only supports go and python
-_SUPPORTED_LANGUAGES = {"go", "python"}
+# Languages robert_kernel can compute Distance from the Main Sequence for.
+# Must stay in sync with _LANG_GLOBS in slop._aux.kernels.robert.
+_SUPPORTED_LANGUAGES = {
+    "go",
+    "python",
+    "java",
+    "c_sharp",
+    "typescript",
+    "javascript",
+    "rust",
+}
 
 
 def run_distance(
@@ -36,7 +45,10 @@ def run_distance(
         return RuleResult(
             rule="packages",
             status="skip",
-            summary={"reason": "no supported languages (robert requires go or python)"},
+            summary={
+                "reason": "no supported languages",
+                "supported": sorted(_SUPPORTED_LANGUAGES),
+            },
         )
 
     violations: list[Violation] = []
