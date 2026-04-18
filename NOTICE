@@ -9,11 +9,10 @@ AST traversal. No code from the original authors' implementations is used.
 VENDORED CODE
 =============
 
-The src/slop/_aux/ subtree is a vendored, pruned copy of aux-skills
+The src/cli/slop/_aux/ subtree is a vendored, pruned copy of aux-skills
 (https://github.com/JordanGunn/aux), also Copyright 2025 Jordan Godau
-and licensed under Apache License 2.0. See src/slop/_aux/LICENSE for the
-full Apache 2.0 text. slop owns this code directly and does not track
-upstream aux-skills changes automatically.
+and licensed under Apache License 2.0. See src/cli/slop/_aux/LICENSE for
+the full Apache 2.0 text. slop owns this code directly.
 
 ACADEMIC CITATIONS
 ==================
@@ -64,11 +63,3 @@ Information Flow Complexity (historical reference)
 
   Not directly implemented. Martin's Instability metric is a normalised
   refinement of Henry & Kafura's fan-in/fan-out model.
-
-COMPUTATIONAL BACKEND
-=====================
-
-slop depends on aux-skills (https://github.com/JordanGunn/aux) for all
-metric computation. aux-skills provides deterministic kernels built on
-tree-sitter, ripgrep, fd, and git. No metric computation occurs in slop
-itself.

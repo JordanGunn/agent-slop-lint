@@ -6,7 +6,7 @@ Get slop running on your project in four steps: install, configure, integrate, v
 
 ### Python package
 
-slop is distributed as `agent-slop-lint` on PyPI. It pulls in [`aux-skills`](https://pypi.org/project/aux-skills/) (the computational backend) and all tree-sitter grammars automatically.
+`slop` is distributed as `agent-slop-lint` on PyPI. All metric kernels ship inside the package and the tree-sitter grammars they use are pulled in as wheel dependencies. One `pip install` is all you need.
 
 **Unix (macOS / Linux):**
 ```bash

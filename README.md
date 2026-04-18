@@ -137,9 +137,9 @@ Run `slop --help` for the full flag list, or `slop <command> --help` for per-com
 
 ## Architecture
 
-slop is a thin orchestration layer. Metric computation lives in [aux-skills](https://github.com/JordanGunn/aux), a sibling package that ships deterministic kernels built on tree-sitter, ripgrep, fd, and git. slop wraps those kernels with declarative config, threshold checking, human/JSON/quiet output, and CI exit codes.
+`slop` ships the metric kernels it needs directly. Each rule wraps a deterministic kernel built on tree-sitter AST traversal, ripgrep, fd, and git. The kernels live under `src/cli/slop/_aux/` in the repo and ride along in the installed wheel, so `pip install agent-slop-lint` gives you a single self-contained package with no companion runtime to install.
 
-When aux-skills gains a new metric kernel, slop gains a new rule with zero computation work.
+Rules are thin wrappers around those kernels: load config params, call the kernel, iterate results, emit `Violation` objects for threshold breaches. Adding a new metric is a new kernel plus a new rule file in `src/cli/slop/rules/`.
 
 ## Acknowledgments
 

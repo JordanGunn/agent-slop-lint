@@ -2,7 +2,7 @@
 
 ## What this is
 
-`slop` is an agentic code quality linter. It wraps vendored metric kernels (originally from aux-skills, now under `src/cli/slop/_aux/`) behind a unified linter interface with declarative config, threshold checking, and CI exit codes. The vendored kernel tree is the single source of metric computation; slop does not depend on the external `aux-skills` package at runtime.
+`slop` is an agentic code quality linter. It ships its own metric kernels under `src/cli/slop/_aux/` (tree-sitter, ripgrep, fd, git) and exposes them through a rule interface with declarative config, threshold checking, and CI exit codes. Self-contained — no external runtime dependency beyond the tree-sitter wheels already listed in `pyproject.toml`.
 
 ## Repo layout
 

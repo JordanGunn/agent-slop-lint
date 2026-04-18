@@ -24,40 +24,21 @@ OPTIONAL_TOOLS = {
     "git": {
         "name": "git",
         "install": "https://git-scm.com/downloads",
-        "commands": ["delta"],
-        "description": "Git version control (required for aux delta)",
+        "commands": ["hotspots"],
+        "description": "Git version control (required for the hotspots rule)",
     },
 }
 
 REQUIRED_PYTHON_PACKAGES = {
     "tree_sitter": {
         "name": "tree-sitter",
-        "install": "pip install aux-skills",
-        "commands": ["find", "usages", "deps", "delta", "prune", "robert", "search (--query)"],
-        "description": "AST-aware structural search and substitution",
+        "install": "pip install agent-slop-lint",
+        "commands": ["complexity", "class", "halstead", "npath", "deps", "packages"],
+        "description": "AST parsing used by every rule that reads source structure",
     },
 }
 
-OPTIONAL_PYTHON_PACKAGES = {
-    "httpx": {
-        "name": "httpx",
-        "install": "pip install 'aux-skills[curl]'",
-        "commands": ["curl"],
-        "description": "HTTP client for aux curl (required)",
-    },
-    "trafilatura": {
-        "name": "trafilatura",
-        "install": "pip install 'aux-skills[curl]'",
-        "commands": ["curl (text/markdown mode)"],
-        "description": "HTML → clean text extraction for aux curl",
-    },
-    "html2text": {
-        "name": "html2text",
-        "install": "pip install 'aux-skills[curl]'",
-        "commands": ["curl (markdown mode fallback)"],
-        "description": "HTML → Markdown fallback for aux curl",
-    },
-}
+OPTIONAL_PYTHON_PACKAGES: dict[str, dict] = {}
 
 
 def check_tool(name: str) -> dict:

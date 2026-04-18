@@ -7,7 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Documentation cleanup. Removed every remaining claim that `slop` depends on the external `aux-skills` package at runtime (it does not since 0.5.0). README's "Architecture" section now describes the kernels as shipped inside the wheel. SETUP.md no longer says `pip install agent-slop-lint` pulls in `aux-skills`. CLAUDE.md rewritten along the same lines. NOTICE's stale "COMPUTATIONAL BACKEND" block removed and the vendor-code path updated to reflect the 0.5.0 restructure. `_aux/util/doctor.py` install hints for `tree-sitter` and `git` now point at `agent-slop-lint` and `slop hotspots` respectively rather than the pre-vendor `aux-skills` and `aux delta`. Optional-Python-packages block (for the aux curl kernel, which slop does not ship) removed. `_aux/__init__.py` docstring reworded to describe what the subpackage is; attribution remains in NOTICE and the vendored LICENSE where Apache 2.0 requires it.
+
 ## [0.5.0] - 2026-04-17
+
+**Released to PyPI** on 2026-04-17 as `agent-slop-lint==0.5.0`. Tag: [`v0.5.0`](https://github.com/JordanGunn/agent-slop-lint/releases/tag/v0.5.0).
 
 ### Added
 
@@ -44,6 +50,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.4.0] - 2026-04-16
 
+**Released to PyPI** on 2026-04-16 as `agent-slop-lint==0.4.0`. Tag: [`v0.4.0`](https://github.com/JordanGunn/agent-slop-lint/releases/tag/v0.4.0).
+
 ### Added
 
 - `slop doctor` subcommand. Reports availability of `fd`, `rg`, and `git` so users can diagnose missing system dependencies before touching configuration.
@@ -59,11 +67,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.3.1] - 2026-04-13
 
+**Released to PyPI** on 2026-04-13 as `agent-slop-lint==0.3.1`. Tag: [`v0.3.1`](https://github.com/JordanGunn/agent-slop-lint/releases/tag/v0.3.1).
+
 ### Added
 
 - `slop hook` subcommand to install or remove a git pre-commit hook that runs `slop lint --output quiet`.
 
 ## [0.3.0] - 2026-04-13
+
+**Released to PyPI** on 2026-04-13 as `agent-slop-lint==0.3.0`. Tag: [`v0.3.0`](https://github.com/JordanGunn/agent-slop-lint/releases/tag/v0.3.0).
 
 ### Added
 
@@ -75,12 +87,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.2.0] - 2026-04-12
 
+**Released to PyPI** on 2026-04-12 as `agent-slop-lint==0.2.0`. Tag: [`v0.2.0`](https://github.com/JordanGunn/agent-slop-lint/releases/tag/v0.2.0).
+
 ### Changed
 
 - Hotspot metric moved to LOC-delta churn proxy (was commit count) and defaults tightened to a 14-day window (was 90d), calibrated for agentic code generation timescales.
 - `aux-skills` pulled from PyPI rather than a sibling git path (internal-dev convenience).
 
 ## [0.1.0] - 2026-04-10
+
+**Released to PyPI** on 2026-04-11 as `agent-slop-lint==0.1.0`. Tag: [`v0.1.0`](https://github.com/JordanGunn/agent-slop-lint/releases/tag/v0.1.0).
 
 ### Added
 
