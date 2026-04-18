@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-04-18
+
+**Released to PyPI** on 2026-04-18 as `agent-slop-lint==0.6.0`. Tag: [`v0.6.0`](https://github.com/JordanGunn/agent-slop-lint/releases/tag/v0.6.0).
+
 ### Added
 
 - **`packages` rule now runs on every language slop supports.** Previously `packages` (Martin's Distance from the Main Sequence) was Go and Python only. The underlying `robert_kernel` now has abstract/concrete type detection for Java (`interface`, `abstract class`, `record`), C# (`interface`, `abstract class`, `struct`, `record`), TypeScript (`interface`, `abstract class`), Rust (`trait`, `struct`, `enum`), and JavaScript (all classes counted concrete because the language has no abstract/interface construct). Both the tree-sitter AST path and the regex fallback are implemented per language. See CONFIG.md for per-language semantics and the JavaScript "Zone of Pain by default" caveat.
@@ -15,6 +19,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Documentation cleanup. Removed every remaining claim that `slop` depends on the external `aux-skills` package at runtime (it does not since 0.5.0). README's "Architecture" section now describes the kernels as shipped inside the wheel. SETUP.md no longer says `pip install agent-slop-lint` pulls in `aux-skills`. CLAUDE.md rewritten along the same lines. NOTICE's stale "COMPUTATIONAL BACKEND" block removed and the vendor-code path updated to reflect the 0.5.0 restructure. `_aux/util/doctor.py` install hints for `tree-sitter` and `git` now point at `agent-slop-lint` and `slop hotspots` respectively rather than the pre-vendor `aux-skills` and `aux delta`. Optional-Python-packages block (for the aux curl kernel, which slop does not ship) removed. `_aux/__init__.py` docstring reworded to describe what the subpackage is; attribution remains in NOTICE and the vendored LICENSE where Apache 2.0 requires it.
 - Language support table in README and SETUP.md updated to mark `packages` as `yes` for Java, C#, TypeScript, JavaScript, and Rust. CONFIG.md `packages` section rewritten to document the per-language abstract-type conventions and the JavaScript caveat.
+
+### Upgrade notes
+
+- If you run slop on a codebase containing Java, C#, TypeScript, JavaScript, or Rust, the `packages` rule will now produce output where it previously returned nothing. `packages` is `severity = "warning"` by default, so this does not convert passing builds to failing builds without a config change. If the new coverage is noisy on your JS-only project (see caveat above), the quickest silencer is `[rules.packages]\nenabled = false` in your `.slop.toml`.
+- `pyproject.toml` without a `[tool.slop]` section no longer halts slop's upward config walk (this landed in 0.5.0; called out here again because the implication for nested-project layouts is subtle). If a subproject pyproject was intentionally shielding a monorepo `.slop.toml`, add an explicit `[tool.slop]` table to keep that behavior.
 
 ## [0.5.0] - 2026-04-17
 
@@ -112,7 +121,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `.slop.toml` and `pyproject.toml [tool.slop]` config support.
 - PyPI distribution as `agent-slop-lint`.
 
-[Unreleased]: https://github.com/JordanGunn/agent-slop-lint/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/JordanGunn/agent-slop-lint/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/JordanGunn/agent-slop-lint/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/JordanGunn/agent-slop-lint/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/JordanGunn/agent-slop-lint/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/JordanGunn/agent-slop-lint/compare/v0.3.0...v0.3.1
