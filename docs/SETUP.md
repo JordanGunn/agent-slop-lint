@@ -349,4 +349,4 @@ enabled = false
 
 **Shallow clone in CI** — hotspot analysis needs git history. Use `fetch-depth: 0` in your checkout step, or set `since` to a short window to reduce the history needed.
 
-**`slop doctor` or `aux doctor` shows missing optional tools** — `httpx` and `trafilatura` are optional dependencies for `aux curl` (HTTP fetch). They're not needed by slop.
+**`slop doctor` reports a missing tool** — slop shells out to `fd`, `rg`, and `git`. Install via your system package manager (`apt install ripgrep fd-find git`, `brew install ripgrep fd git`, or equivalent) and rerun `slop doctor`.

@@ -1,4 +1,4 @@
-"""Hotspots rule — wraps aux hotspots_kernel.
+"""Hotspots rule — wraps the vendored hotspots_kernel.
 
 Rules:
   hotspots  — fail if any file lands in a forbidden quadrant

@@ -1,4 +1,4 @@
-"""Dependencies rules — wraps aux deps_kernel.
+"""Dependencies rules — wraps the vendored deps_kernel.
 
 Rules:
   deps  — fail if any dependency cycles exist

@@ -1,4 +1,4 @@
-"""Dead-code rules — wraps aux prune_kernel.
+"""Dead-code rules — wraps the vendored prune_kernel.
 
 Rules:
   orphans  — report unreferenced symbols (advisory by default)

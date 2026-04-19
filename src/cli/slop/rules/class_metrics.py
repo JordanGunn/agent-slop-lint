@@ -1,4 +1,4 @@
-"""Class-level rules — wraps aux ck_kernel.
+"""Class-level rules — wraps the vendored ck_kernel.
 
 Rules:
   class.coupling              — CBO exceeds threshold

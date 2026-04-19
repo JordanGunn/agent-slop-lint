@@ -349,22 +349,22 @@ def build_next_steps(candidates: list[PruneCandidate], root: Path, globs: list[s
                 "The codebase appears fully referenced — or widen scope with max_refs, "
                 "different globs, or both scopes."
             ),
-            "verify_command": f"aux usages <symbol> --root {root}",
+            "verify_command": f"rg <symbol> {root}",
         }
 
     by_conf = Counter(c.confidence for c in candidates)
     parts = [f"{v} {k}" for k, v in sorted(by_conf.items())]
     conf_str = ", ".join(parts)
     n = len(candidates)
-    glob_hint = f" --glob \"{globs[0]}\"" if globs else ""
+    glob_hint = f' -g "{globs[0]}"' if globs else ""
     message = (
         f"Found {n} candidate{'s' if n != 1 else ''} ({conf_str}). "
         f"This is a first-pass static scan. Before taking any action, "
-        f"I can trace the full reference chain for each using `aux usages` — this will "
+        f"trace the full reference chain for each with ripgrep — this will "
         f"surface dynamic call paths and narrow the list further. "
-        f"Would you like me to investigate any of these in more detail?"
+        f"Would you like to investigate any of these in more detail?"
     )
     return {
         "message": message,
-        "verify_command": f"aux usages <symbol> --root {root}{glob_hint}",
+        "verify_command": f"rg <symbol> {root}{glob_hint}",
     }

@@ -52,24 +52,12 @@ cmd_init() {
 }
 
 cmd_validate() {
-    local errors=0
-
     if ! command -v slop &>/dev/null; then
-        echo "error: slop not found. Run ./scripts/install.sh" >&2
-        errors=$((errors + 1))
-    fi
-
-    if ! command -v aux &>/dev/null; then
-        echo "error: aux not found. Run ./scripts/install.sh" >&2
-        errors=$((errors + 1))
-    fi
-
-    if [[ $errors -gt 0 ]]; then
+        echo "error: slop not found. Run 'pip install agent-slop-lint' or ./scripts/install.sh" >&2
         return 1
     fi
 
     echo "slop: $(slop --version 2>/dev/null)"
-    echo "aux:  $(aux --version 2>/dev/null)"
     echo "ok"
 }
 

@@ -1,4 +1,4 @@
-"""Complexity rules — wraps aux ccx_kernel and ck_kernel.
+"""Complexity rules — wraps the vendored ccx_kernel and ck_kernel.
 
 Rules:
   complexity.cyclomatic  — fail if any function's CCX exceeds threshold

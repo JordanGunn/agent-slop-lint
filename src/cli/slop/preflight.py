@@ -1,10 +1,10 @@
 """Preflight system-dependency check.
 
-slop's rules shell out through aux kernels to ``fd``, ``git``, and ``rg``.
-When a binary is missing, the kernel silently returns zero files — which
-the human formatter renders as ``✓ clean``. This module resolves that by
-checking required binaries up-front and failing fast with a clear block
-that points at install instructions.
+slop's rules shell out to ``fd``, ``git``, and ``rg``. When a binary is
+missing, the kernel silently returns zero files — which the human
+formatter renders as ``✓ clean``. This module resolves that by checking
+required binaries up-front and failing fast with a clear block that
+points at install instructions.
 
 The required-binary set is rule-driven:
 - ``fd`` is always required (every file-discovery kernel uses it).
@@ -24,7 +24,7 @@ from slop.models import SlopConfig
 class MissingBinary:
     """A system binary required by an enabled rule that was not found."""
 
-    name: str                # the canonical name aux looks up (e.g. "fd")
+    name: str                # canonical tool name (e.g. "fd")
     rules: tuple[str, ...]   # slop rules that need it (e.g. ("complexity.*", ...))
     install: str             # install hint URL or command
 

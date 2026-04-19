@@ -24,17 +24,11 @@ Usage (run):
 
 function Test-Validate {
     if (-not (Get-Command slop -ErrorAction SilentlyContinue)) {
-        Write-Error "error: slop not found. Run .\scripts\install.ps1"
-        exit 1
-    }
-    if (-not (Get-Command aux -ErrorAction SilentlyContinue)) {
-        Write-Error "error: aux not found. Run .\scripts\install.ps1"
+        Write-Error "error: slop not found. Run 'pip install agent-slop-lint' or .\scripts\install.ps1"
         exit 1
     }
     $slopVer = & slop --version 2>$null
-    $auxVer = & aux --version 2>$null
     Write-Output "slop: $slopVer"
-    Write-Output "aux:  $auxVer"
     Write-Output "ok"
 }
 
