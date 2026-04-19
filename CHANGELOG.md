@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-04-18
+
+**Released to PyPI** on 2026-04-18 as `agent-slop-lint==0.6.1`. Tag: [`v0.6.1`](https://github.com/JordanGunn/agent-slop-lint/releases/tag/v0.6.1).
+
+### Fixed
+
+- **Bundled agent skill's `validate` command** (`skill.sh` / `skill.ps1`, installed via `slop skill <dir>`) used to fail on every slop-only install with `error: aux not found` and tell users to run `./scripts/install.sh`. The `aux` binary is not installed by `pip install agent-slop-lint` and was not a runtime dependency of slop post-0.5.0, so this was a broken instruction. `validate` now checks for `slop` only and points users at `pip install agent-slop-lint` or the install script.
+- **`orphans` rule JSON output.** The `next_steps.verify_command` field used to emit `aux usages <symbol> --root <root>`, referencing a command slop does not ship. Replaced with `rg <symbol> <root>` (ripgrep is already a required slop system dependency). The accompanying `message` string now mentions "trace with ripgrep" rather than "trace with `aux usages`".
+- Rule-file module docstrings (`complexity.py`, `class_metrics.py`, `dead_code.py`, `dependencies.py`, `hotspots.py`) and `preflight.py` no longer describe their kernels as "aux X_kernel"; they now say "the vendored X_kernel" to match post-0.5.0 reality.
+- `docs/SETUP.md` troubleshooting entry for missing system tools no longer references `aux doctor` or `aux curl`; it points at `slop doctor` and a direct install hint for the three system binaries slop uses.
+
 ## [0.6.0] - 2026-04-18
 
 **Released to PyPI** on 2026-04-18 as `agent-slop-lint==0.6.0`. Tag: [`v0.6.0`](https://github.com/JordanGunn/agent-slop-lint/releases/tag/v0.6.0).
@@ -121,7 +132,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `.slop.toml` and `pyproject.toml [tool.slop]` config support.
 - PyPI distribution as `agent-slop-lint`.
 
-[Unreleased]: https://github.com/JordanGunn/agent-slop-lint/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/JordanGunn/agent-slop-lint/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/JordanGunn/agent-slop-lint/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/JordanGunn/agent-slop-lint/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/JordanGunn/agent-slop-lint/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/JordanGunn/agent-slop-lint/compare/v0.3.1...v0.4.0
