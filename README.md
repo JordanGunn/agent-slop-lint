@@ -156,6 +156,14 @@ slop implements metrics from established software engineering research. Full cit
 
 These are mathematical formulas computed from source code structure. slop implements them independently via tree-sitter AST traversal. No code from the original authors' implementations is used.
 
+## Further reading
+
+- [Configuration reference](./docs/CONFIG.md) — per-rule threshold guidance, the `default` / `lax` / `strict` profiles, when to tune or disable each rule.
+- [Setup guide](./docs/SETUP.md) — per-platform install, CI recipes, pre-commit wiring, agent skill installation.
+- [Design philosophy](./docs/philosophy/) — why these metrics, why external, what problem slop is solving.
+- [References](./docs/philosophy/references.md) — full bibliography tied to each rule.
+- [Changelog](./CHANGELOG.md)
+
 ## License
 
 Apache 2.0. See [LICENSE](LICENSE).

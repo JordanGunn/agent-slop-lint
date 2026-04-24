@@ -1,98 +1,20 @@
 # slop — agentic code quality linter
 
-> Catches structural code quality defects using established software metrics. Tuned for AI-assisted development where code rot accumulates faster than in human-only workflows.
+> Catches structural code quality defects using established software metrics (McCabe, Chidamber & Kemerer, Halstead, Nejmeh, Martin, Tornhill). Tuned for AI-assisted codebases where code rot accumulates faster than in human-only workflows.
 
-## Install
+## Overview
 
-Requires Python 3.10+.
+- [README](https://github.com/JordanGunn/agent-slop-lint/blob/main/README.md): install, example output, rules table with default thresholds, language support.
 
-```bash
-pip install agent-slop-lint
-```
+## Reference
 
-System tools (must be installed separately):
-- `rg` — `apt install ripgrep` / `brew install ripgrep`
-- `fd` — `apt install fd-find` / `brew install fd`
-- `git` — `apt install git` / `brew install git`
+- [Configuration reference](https://github.com/JordanGunn/agent-slop-lint/blob/main/docs/CONFIG.md): per-rule threshold guidance, the `default` / `lax` / `strict` profiles, when to tune or disable each rule.
+- [Setup guide](https://github.com/JordanGunn/agent-slop-lint/blob/main/docs/SETUP.md): per-platform install, CI recipes, pre-commit wiring, agent skill installation.
 
-See [setup guide](https://github.com/JordanGunn/agent-slop-lint/blob/main/docs/SETUP.md) for Windows (scoop/choco) and full instructions.
+## Philosophy
 
-## Quick start
-
-```bash
-# Generate config (choose: default, lax, strict)
-slop init
-slop init lax
-slop init strict
-
-# Run all rules
-slop lint
-
-# Run one category or rule
-slop check complexity
-slop check complexity.cyclomatic
-slop check class.inheritance
-
-# List rules and thresholds
-slop rules
-```
-
-## Output
-
-Three output modes:
-- `--output human` (default) — colored terminal display
-- `--output json` — structured JSON for machine consumption
-- `--output quiet` — one-line summary (ideal for pre-commit hooks)
-
-Exit codes: `0` = clean, `1` = violations found, `2` = error.
-
-## Rules
-
-12 rules across 8 categories:
-
-| Rule | Default threshold | What it catches |
-|---|---|---|
-| `complexity.cyclomatic` | CCX > 10 | Functions with too many paths |
-| `complexity.cognitive` | CogC > 15 | Functions that are hard to read |
-| `complexity.weighted` | WMC > 40 | Classes doing too much |
-| `halstead.volume` | V > 1500 | Functions with high information content |
-| `halstead.difficulty` | D > 30 | Functions with dense operator/operand reuse |
-| `npath` | NPath > 400 | Functions with combinatorial path explosion |
-| `hotspots` | 14d window | Files that are complex AND growing fast |
-| `packages` | D' > 0.7 | Packages far from the ideal design balance |
-| `deps` | any cycle | Circular dependencies between modules |
-| `orphans` | disabled | Dead code candidates (advisory) |
-| `class.coupling` | CBO > 8 | Classes that depend on too many others |
-| `class.inheritance.depth` | DIT > 4 | Deep inheritance hierarchies |
-| `class.inheritance.children` | NOC > 10 | Classes with too many subclasses |
-
-Languages: Python, JavaScript, TypeScript, Go, Rust, Java, C#.
-
-## Configuration
-
-Config lives in `.slop.toml` or `pyproject.toml [tool.slop]`. Generate with `slop init <profile>`.
-
-Profiles: `default` (balanced), `lax` (legacy/gradual adoption), `strict` (greenfield).
-
-Every threshold is tunable. See [configuration reference](https://github.com/JordanGunn/agent-slop-lint/blob/main/docs/CONFIG.md) for per-rule explanations and when to raise, lower, or disable each rule.
-
-## Integration
-
-**Pre-commit hook:** `slop hook` installs a git pre-commit hook. `slop hook --disable` removes it.
-
-**CI:** `pip install agent-slop-lint && slop lint` in any pipeline. Use `fetch-depth: 0` (full git history) so the hotspot rule can analyze change volume — shallow clones produce incomplete results.
-
-**Agent skill:** Install the bundled skill into your agent's config directory:
-```bash
-slop skill .claude/commands/slop/     # Claude Code
-slop skill .cursor/rules/slop/        # Cursor
-slop skill skills/slop/               # generic
-```
-The skill tells the agent when to run slop (passive after changes, active on request) and how to interpret the output.
-
-## Links
-
-- [Setup guide](https://github.com/JordanGunn/agent-slop-lint/blob/main/docs/SETUP.md) — install, configure, integrate
-- [Configuration reference](https://github.com/JordanGunn/agent-slop-lint/blob/main/docs/CONFIG.md) — every rule explained, profiles, when to disable
-- [PyPI](https://pypi.org/project/agent-slop-lint/)
-- [GitHub](https://github.com/JordanGunn/agent-slop-lint)
+- [Why slop exists](https://github.com/JordanGunn/agent-slop-lint/blob/main/docs/philosophy/why-slop-exists.md): why quantitative structural signals matter more as agents write more of the code.
+- [The defensible subset](https://github.com/JordanGunn/agent-slop-lint/blob/main/docs/philosophy/the-defensible-subset.md): which metrics are implemented and the criteria each satisfies.
+- [Why external metrics](https://github.com/JordanGunn/agent-slop-lint/blob/main/docs/philosophy/why-external-metrics.md): why the checks run outside the agent's own reasoning rather than as self-assessment.
+- [The ceremonial reviewer](https://github.com/JordanGunn/agent-slop-lint/blob/main/docs/philosophy/the-ceremonial-reviewer.md): the failure mode where review becomes a rubber stamp, and how external metrics compensate.
+- [References](https://github.com/JordanGunn/agent-slop-lint/blob/main/docs/philosophy/references.md): full bibliography with a pointer from each entry to the slop rule it backs.
