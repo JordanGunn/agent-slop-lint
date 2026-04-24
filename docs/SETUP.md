@@ -257,6 +257,8 @@ Or install the bundled skill for richer passive/active behaviour:
 slop skill .claude/commands/slop/
 ```
 
+The skill's source lives at [`src/cli/slop/_skill/SKILL.md`](../src/cli/slop/_skill/SKILL.md) if you want to preview it before installing. Do not copy it manually — `slop skill <dir>` is the supported install path and keeps the skill bundled with the CLI version you have installed.
+
 **Cursor (`.cursorrules` or project rules):**
 ```
 After making structural changes to the codebase (new files, refactors, multi-file edits),
