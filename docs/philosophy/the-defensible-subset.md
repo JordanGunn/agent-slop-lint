@@ -25,8 +25,11 @@ work.
 | Weighted Methods per Class (WMC) | Aggregate method complexity per class | Chidamber & Kemerer, 1994 | `complexity.weighted` |
 | Cyclomatic Complexity (CCX) | Path coverage burden at the method level | McCabe, 1976 | `complexity.cyclomatic` |
 | Cognitive Complexity | Subjective reading difficulty | Campbell, 2018 | `complexity.cognitive` |
+| Halstead Volume | Per-function information content (length × log₂ vocabulary) | Halstead, 1977 | `halstead.volume` |
+| Halstead Difficulty | Per-function operator/operand density | Halstead, 1977 | `halstead.difficulty` |
+| NPath | Per-function acyclic execution path count (multiplicative) | Nejmeh, 1988 | `npath` |
 | Change coupling / hotspot density | Decay and defect risk over time | Gall et al., 1998; Tornhill, 2015 | `hotspots` |
-| Dependency cycles | Structural invariant violations | Tarjan, 1972 | `deps` |
+| Acyclic dependency violations | Structural invariant violations | Lakos, 1996; Martin, 2002 | `deps` |
 | Dead code / unreferenced symbols | Decay through accumulation | (widely tooled) | `orphans` |
 
 ## Why these and not others
@@ -75,14 +78,11 @@ slop is an attempt to use the instruments.
 
 ## What is not included (and why)
 
-**Halstead's Software Science (1977).** The underlying counts (unique
-operators, operands) are computable from any AST, but the derived
-measures (estimated bug count, effort) have weak empirical validation
-in modern contexts.
-
-**NPATH Complexity (Nejmeh, 1988).** Counts acyclic execution paths
-rather than independent paths. Flags the same problems as CCX with
-stricter sensitivity. May be added in a future version.
+**Halstead's derived measures: estimated bug count (B) and effort (E).**
+Volume and Difficulty are included in the table above. The further
+derivations Halstead proposed for estimating bug count and programmer
+effort have weak empirical validation in modern contexts and are not
+implemented.
 
 **Response For a Class (RFC).** Part of the Chidamber & Kemerer suite
 but requires call-graph resolution that tree-sitter alone cannot

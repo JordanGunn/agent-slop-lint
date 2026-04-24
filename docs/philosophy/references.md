@@ -12,6 +12,13 @@ Full bibliography of the research slop's metrics are built on.
   understandability." SonarSource SA. Technical report.
   → `complexity.cognitive`
 
+- **Halstead, M.H.** (1977). *Elements of Software Science*. Elsevier.
+  → `halstead.volume`, `halstead.difficulty`
+
+- **Nejmeh, B.A.** (1988). "NPATH: A Measure of Execution Path Complexity
+  and Its Applications." *Communications of the ACM*, 31(2), 188-200.
+  → `npath`
+
 - **Chidamber, S.R. & Kemerer, C.F.** (1994). "A Metrics Suite for Object
   Oriented Design." *IEEE Transactions on Software Engineering*, 20(6),
   476-493.
@@ -25,7 +32,10 @@ Full bibliography of the research slop's metrics are built on.
 
 - **Martin, R.C.** (2002). *Agile Software Development: Principles,
   Patterns, and Practices*. Prentice Hall. Chapter 20.
-  → `packages` (expanded treatment)
+  → `packages` (expanded treatment), `deps` (Acyclic Dependencies Principle)
+
+- **Lakos, J.** (1996). *Large-Scale C++ Software Design*. Addison-Wesley.
+  → `deps` (Acyclic Dependencies Principle)
 
 - **Tornhill, A.** (2015). *Your Code as a Crime Scene: Use Forensic
   Techniques to Arrest Defects, Bottlenecks, and Bad Design in Your
@@ -34,7 +44,7 @@ Full bibliography of the research slop's metrics are built on.
 
 - **Tarjan, R.E.** (1972). "Depth-First Search and Linear Graph
   Algorithms." *SIAM Journal on Computing*, 1(2), 146-160.
-  → `deps` (cycle detection)
+  → `deps` (SCC detection algorithm)
 
 ## Secondary sources (cited in rationale)
 
@@ -80,9 +90,3 @@ Full bibliography of the research slop's metrics are built on.
 
 - **Weirich, J.** (2009). "Connascence Examined." Presentation.
 
-## Metrics not yet implemented
-
-- **Halstead, M.** (1977). *Elements of Software Science*. Elsevier.
-
-- **Nejmeh, B.** (1988). "NPATH: A Measure of Execution Path Complexity
-  and Its Applications." *Communications of the ACM*, 31(2), 188-200.
