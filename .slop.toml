@@ -1,44 +1,11 @@
-# slop — dogfood config (slop linting itself)
+# slop — dogfood config (slop linting itself, default thresholds)
 
 root = "src"
 languages = ["python"]
 exclude = ["**/_aux/**"]
 
-[rules.complexity]
-enabled = true
-cyclomatic_threshold = 25       # format_human is complex (22) — legit refactor target
-cognitive_threshold = 60        # format_human nesting (56) — legit refactor target
-weighted_threshold = 50
-severity = "error"
-
-[rules.halstead]
-enabled = true
-volume_threshold = 1800         # engine.run_lint V=1763 — refactor target
-difficulty_threshold = 35       # engine.run_lint D=30.9 — refactor target
-severity = "error"
-
-[rules.npath]
-enabled = true
-npath_threshold = 1100          # cli.main NPath=1024 (argparse dispatch) — refactor target
-severity = "error"
-
 [rules.hotspots]
-enabled = false                 # slop is a new project — no meaningful churn history yet
+enabled = false                 # new project — no meaningful churn history yet
 
 [rules.packages]
-enabled = false                 # single-package project, martin metrics not applicable
-
-[rules.deps]
-enabled = true
-fail_on_cycles = true
-severity = "error"
-
-[rules.orphans]
-enabled = false
-
-[rules.class]
-enabled = true
-coupling_threshold = 8
-inheritance_depth_threshold = 4
-inheritance_children_threshold = 10
-severity = "error"
+enabled = false                 # small corpus (4 packages after _aux exclude), I/A/D' is noisy

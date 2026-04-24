@@ -196,7 +196,7 @@ severity = "warning"
 
 ### deps
 
-**What it measures:** Dependency cycles between modules. Uses Tarjan's (1972) SCC algorithm on the import graph. Any cycle means two modules can't be changed or tested independently.
+**What it measures:** Dependency cycles between modules. The Acyclic Dependencies Principle (Lakos 1996; Martin 2002) holds that cycles prevent independent reasoning, testing, and extraction of any module in the cycle — every change touches the whole loop. slop detects them with Tarjan's (1972) SCC algorithm on the import graph.
 
 **Default:** Fail on any cycle.
 

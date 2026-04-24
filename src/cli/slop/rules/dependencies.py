@@ -2,6 +2,13 @@
 
 Rules:
   deps  — fail if any dependency cycles exist
+
+The Acyclic Dependencies Principle (Lakos 1996; Martin 2002, ch. 20) holds
+that import cycles prevent independent reasoning about, testing of, or
+extraction of any module in the cycle — every change touches the whole
+loop. slop detects cycles via Tarjan's (1972) SCC algorithm on the import
+graph, with tree-sitter extracting imports per language (regex fallback
+when the parser fails).
 """
 
 from __future__ import annotations

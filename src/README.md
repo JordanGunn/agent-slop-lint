@@ -80,7 +80,7 @@ Full per-platform install steps, CI recipes, pre-commit wiring, and the agent sk
 | `npath` | NPath > 400 | Per-function acyclic execution path count | Nejmeh 1988 |
 | `hotspots` | 14-day window | Files that are complex AND growing fast | Tornhill 2015 |
 | `packages` | D' > 0.7 | Package design distance from the Main Sequence | Martin 1994 |
-| `deps` | any cycle | Dependency cycles between modules | Tarjan 1972 |
+| `deps` | any cycle | Dependency cycles between modules | Lakos 1996, Martin 2002 |
 | `orphans` | disabled | Unreferenced symbols (advisory) | — |
 | `class.coupling` | CBO > 8 | Classes coupled to too many other classes | Chidamber and Kemerer 1994 |
 | `class.inheritance.depth` | DIT > 4 | Inheritance hierarchies that are too deep | Chidamber and Kemerer 1994 |
@@ -149,8 +149,11 @@ slop implements metrics from established software engineering research. Full cit
 |---|---|---|
 | Cyclomatic Complexity | Thomas J. McCabe | 1976 |
 | Cognitive Complexity | G. Ann Campbell (SonarSource) | 2018 |
+| Halstead Volume, Difficulty | Maurice H. Halstead | 1977 |
+| NPath | Brian A. Nejmeh | 1988 |
 | CBO, DIT, NOC, WMC | Shyam R. Chidamber and Chris F. Kemerer | 1994 |
 | Instability, Abstractness, D' | Robert C. Martin | 1994, 2002 |
+| Acyclic Dependencies Principle | John Lakos; Robert C. Martin | 1996, 2002 |
 | Hotspot analysis | Adam Tornhill | 2015 |
 | Dependency cycle detection | Robert E. Tarjan | 1972 |
 

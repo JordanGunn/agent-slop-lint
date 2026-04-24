@@ -123,7 +123,6 @@ def main(argv: list[str] | None = None) -> int:
     parser = create_parser()
     args = parser.parse_args(argv)
 
-    # Handle color before any output
     if getattr(args, "no_color", False):
         set_color(False)
 
@@ -135,25 +134,22 @@ def main(argv: list[str] | None = None) -> int:
         args.max_violations = DEFAULT_MAX_VIOLATIONS
         args.no_color = False
 
-    if args.command == "init":
-        return cmd_init(getattr(args, "profile", "default"))
-    if args.command == "skill":
-        return cmd_skill(args.directory)
-    if args.command == "hook":
-        return cmd_hook(disable=getattr(args, "disable", False))
-    if args.command == "rules":
-        return cmd_rules()
-    if args.command == "schema":
-        return cmd_schema()
-    if args.command == "lint":
-        return cmd_lint(args)
-    if args.command == "check":
-        return cmd_check(args)
-    if args.command == "doctor":
-        return cmd_doctor()
+    dispatch = {
+        "init": lambda a: cmd_init(getattr(a, "profile", "default")),
+        "skill": lambda a: cmd_skill(a.directory),
+        "hook": lambda a: cmd_hook(disable=getattr(a, "disable", False)),
+        "rules": lambda _: cmd_rules(),
+        "schema": lambda _: cmd_schema(),
+        "lint": cmd_lint,
+        "check": cmd_check,
+        "doctor": lambda _: cmd_doctor(),
+    }
 
-    parser.print_help()
-    return 0
+    handler = dispatch.get(args.command)
+    if handler is None:
+        parser.print_help()
+        return 0
+    return handler(args)
 
 
 def _load_and_run(args: argparse.Namespace, **lint_kwargs) -> int:
@@ -354,6 +350,22 @@ def cmd_init(profile: str = "default") -> int:
     return 0
 
 
+def _format_binary_status(name: str, info: dict) -> tuple[str, bool]:
+    """Format one binary's doctor line. Returns (line, is_present)."""
+    if info.get("available", False):
+        path = info.get("path", "")
+        version = info.get("version") or ""
+        actual_name = info.get("actual_name")
+        alias = f" (as {actual_name})" if actual_name else ""
+        version_str = f" ({version})" if version else ""
+        return f"  {green(chr(0x2713))} {bold(name):20s} {path}{alias}{version_str}", True
+    install = info.get("install", "")
+    line = f"  {red(chr(0x2717))} {bold(name):20s} missing"
+    if install:
+        line += f" \u2014 install: {install}"
+    return line, False
+
+
 def cmd_doctor() -> int:
     """Print the status of each system binary slop may shell out to.
 
@@ -373,21 +385,10 @@ def cmd_doctor() -> int:
         info = tools.get(name)
         if info is None:
             continue
-        available = info.get("available", False)
-        if available:
-            path = info.get("path", "")
-            version = info.get("version") or ""
-            actual_name = info.get("actual_name")
-            alias = f" (as {actual_name})" if actual_name else ""
-            version_str = f" ({version})" if version else ""
-            print(f"  {green(chr(0x2713))} {bold(name):20s} {path}{alias}{version_str}")
-        else:
+        line, present = _format_binary_status(name, info)
+        print(line)
+        if not present:
             all_present = False
-            install = info.get("install", "")
-            line = f"  {red(chr(0x2717))} {bold(name):20s} missing"
-            if install:
-                line += f" \u2014 install: {install}"
-            print(line)
 
     print("")
     if all_present:

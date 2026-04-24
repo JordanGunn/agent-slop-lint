@@ -24,6 +24,42 @@ _SUPPORTED_LANGUAGES = {
 }
 
 
+def _resolve_languages(rule_languages, slop_languages):
+    """Narrow a language selection to what robert_kernel supports."""
+    candidates = rule_languages or slop_languages or _SUPPORTED_LANGUAGES
+    return [lang for lang in candidates if lang in _SUPPORTED_LANGUAGES]
+
+
+def _check_package(pkg, max_distance, fail_on_zone, severity):
+    """Return a Violation if the package breaches distance or zone limits."""
+    reasons: list[str] = []
+    if pkg.distance is not None and pkg.distance > max_distance:
+        reasons.append(f"D'={pkg.distance:.2f} exceeds {max_distance}")
+    if pkg.zone in fail_on_zone:
+        reasons.append(f"Zone of {pkg.zone.title()}")
+    if not reasons:
+        return None
+    return Violation(
+        rule="packages",
+        file=pkg.package,
+        line=None,
+        symbol=None,
+        message="; ".join(reasons)
+        + f" (I={pkg.instability or 0:.2f}, A={pkg.abstractness or 0:.2f})",
+        severity=severity,
+        value=pkg.distance,
+        threshold=max_distance,
+        metadata={
+            "zone": pkg.zone,
+            "instability": pkg.instability,
+            "abstractness": pkg.abstractness,
+            "ca": pkg.ca,
+            "ce": pkg.ce,
+            "language": pkg.language,
+        },
+    )
+
+
 def run_distance(
     root: Path, rule_config: RuleConfig, slop_config: SlopConfig
 ) -> RuleResult:
@@ -32,14 +68,10 @@ def run_distance(
     fail_on_zone = set(rule_config.params.get("fail_on_zone", ["pain"]))
     severity = rule_config.severity
 
-    # Determine which languages to analyze
-    rule_languages = rule_config.params.get("languages", [])
-    if rule_languages:
-        languages = [lang for lang in rule_languages if lang in _SUPPORTED_LANGUAGES]
-    elif slop_config.languages:
-        languages = [lang for lang in slop_config.languages if lang in _SUPPORTED_LANGUAGES]
-    else:
-        languages = list(_SUPPORTED_LANGUAGES)
+    languages = _resolve_languages(
+        rule_config.params.get("languages", []),
+        slop_config.languages or [],
+    )
 
     if not languages:
         return RuleResult(
@@ -63,41 +95,10 @@ def run_distance(
         )
         all_errors.extend(result.errors)
         packages_analyzed += result.packages_analyzed
-
         for pkg in result.packages:
-            triggered = False
-            reasons: list[str] = []
-
-            if pkg.distance is not None and pkg.distance > max_distance:
-                triggered = True
-                reasons.append(f"D'={pkg.distance:.2f} exceeds {max_distance}")
-
-            if pkg.zone in fail_on_zone:
-                triggered = True
-                reasons.append(f"Zone of {pkg.zone.title()}")
-
-            if triggered:
-                violations.append(
-                    Violation(
-                        rule="packages",
-                        file=pkg.package,
-                        line=None,
-                        symbol=None,
-                        message="; ".join(reasons)
-                        + f" (I={pkg.instability or 0:.2f}, A={pkg.abstractness or 0:.2f})",
-                        severity=severity,
-                        value=pkg.distance,
-                        threshold=max_distance,
-                        metadata={
-                            "zone": pkg.zone,
-                            "instability": pkg.instability,
-                            "abstractness": pkg.abstractness,
-                            "ca": pkg.ca,
-                            "ce": pkg.ce,
-                            "language": pkg.language,
-                        },
-                    )
-                )
+            v = _check_package(pkg, max_distance, fail_on_zone, severity)
+            if v is not None:
+                violations.append(v)
 
     return RuleResult(
         rule="packages",
