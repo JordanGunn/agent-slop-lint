@@ -30,9 +30,9 @@ from typing import Any
 
 import tree_sitter
 
-from slop._aux.kernels.ccx import ccx_kernel
-from slop._aux.kernels.find import find_kernel
-from slop._aux.util.treesitter import detect_language, load_language
+from slop._structural.ccx import ccx_kernel
+from slop._fs.find import find_kernel
+from slop._ast.treesitter import detect_language, load_language
 
 # ---------------------------------------------------------------------------
 # Data structures

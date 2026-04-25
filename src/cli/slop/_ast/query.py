@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from slop._aux.util.treesitter import detect_language, extract_captures, load_language
+from slop._ast.treesitter import detect_language, extract_captures, load_language
 
 
 @dataclass

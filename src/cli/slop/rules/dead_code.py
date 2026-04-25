@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop._aux.kernels.prune import prune_kernel
+from slop._compose.prune import prune_kernel
 from slop.models import RuleConfig, RuleResult, SlopConfig, Violation
 
 _CONFIDENCE_ORDER = {"high": 3, "medium": 2, "low": 1}

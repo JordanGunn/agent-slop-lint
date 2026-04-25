@@ -6,7 +6,7 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from slop._aux.kernels.deps import FileDeps, deps_kernel
+from slop._structural.deps import FileDeps, deps_kernel
 
 # ---------------------------------------------------------------------------
 # Data structures
@@ -466,7 +466,7 @@ def _count_query_matches(
     errors: list[str],
 ) -> int:
     """Run a tree-sitter query over pkg_files and count distinct @name captures."""
-    from slop._aux.kernels.query import query_kernel
+    from slop._ast.query import query_kernel
 
     res = query_kernel(files=pkg_files, query_str=query_str, language=language)
     errors.extend(res.errors)
@@ -491,7 +491,7 @@ def _split_classes_by_abstract_modifier(
     Returns ``(abstract_count, concrete_count)``. Classes without the captured
     modifiers field are treated as concrete.
     """
-    from slop._aux.kernels.query import query_kernel
+    from slop._ast.query import query_kernel
 
     res = query_kernel(files=pkg_files, query_str=query_str, language=language)
     errors.extend(res.errors)
@@ -519,7 +519,7 @@ def _compute_abstractness_ast(
     errors: list[str],
 ) -> tuple[int, int, list[str]]:
     """Count types using tree-sitter AST."""
-    from slop._aux.kernels.query import query_kernel
+    from slop._ast.query import query_kernel
 
     na = 0
     nc = 0

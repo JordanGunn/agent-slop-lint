@@ -2,10 +2,17 @@
 
 root = "src"
 languages = ["python"]
-exclude = ["**/_aux/**"]
+exclude = [
+    "**/_fs/**",
+    "**/_text/**",
+    "**/_ast/**",
+    "**/_compose/**",
+    "**/_structural/**",
+    "**/_util/**",
+]
 
 [rules.hotspots]
 enabled = false                 # new project — no meaningful churn history yet
 
 [rules.packages]
-enabled = false                 # small corpus (4 packages after _aux exclude), I/A/D' is noisy
+enabled = false                 # small corpus once the kernel subpackages are excluded; I/A/D' is noisy

@@ -43,7 +43,14 @@ include = ["cli/slop", "tests", "pyproject.toml", "README.md", "LICENSE"]
 [tool.ruff]
 line-length = 100
 target-version = "py310"
-extend-exclude = ["cli/slop/_aux"]
+extend-exclude = [
+    "cli/slop/_fs",
+    "cli/slop/_text",
+    "cli/slop/_ast",
+    "cli/slop/_compose",
+    "cli/slop/_structural",
+    "cli/slop/_util",
+]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "W"]

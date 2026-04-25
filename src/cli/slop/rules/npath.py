@@ -1,4 +1,4 @@
-"""NPath rule — wraps slop._aux npath_kernel.
+"""NPath rule — wraps slop._structural npath_kernel.
 
 Rule:
   npath  — fail if any function's acyclic execution-path count exceeds threshold
@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop._aux.kernels.npath import npath_kernel
+from slop._structural.npath import npath_kernel
 from slop.models import RuleConfig, RuleResult, SlopConfig, Violation
 
 

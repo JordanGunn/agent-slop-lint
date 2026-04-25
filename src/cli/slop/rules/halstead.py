@@ -1,4 +1,4 @@
-"""Halstead rules — wraps slop._aux halstead_kernel.
+"""Halstead rules — wraps slop._structural halstead_kernel.
 
 Rules:
   halstead.volume      — fail if any function's Volume exceeds threshold
@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop._aux.kernels.halstead import HalsteadResult, halstead_kernel
+from slop._structural.halstead import HalsteadResult, halstead_kernel
 from slop.models import RuleConfig, RuleResult, SlopConfig, Violation
 
 

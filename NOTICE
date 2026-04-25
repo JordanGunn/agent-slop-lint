@@ -9,10 +9,12 @@ AST traversal. No code from the original authors' implementations is used.
 VENDORED CODE
 =============
 
-The src/cli/slop/_aux/ subtree is a vendored, pruned copy of aux-skills
-(https://github.com/JordanGunn/aux), also Copyright 2025 Jordan Godau
-and licensed under Apache License 2.0. See src/cli/slop/_aux/LICENSE for
-the full Apache 2.0 text. slop owns this code directly.
+The metric-kernel subpackages under src/cli/slop/ — _fs/, _text/, _ast/,
+_compose/, _structural/, _util/ — were originally vendored from
+aux-skills (https://github.com/JordanGunn/aux), also Copyright 2025
+Jordan Godau and licensed under Apache License 2.0. See
+src/cli/slop/KERNELS_LICENSE for the full Apache 2.0 text. slop owns
+this code directly.
 
 ACADEMIC CITATIONS
 ==================

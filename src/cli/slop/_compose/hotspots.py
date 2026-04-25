@@ -37,10 +37,10 @@ import math
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from slop._aux.kernels.ccx import FileMetrics, ccx_kernel
-from slop._aux.kernels.ccx import _LANG_CONFIG as _CCX_LANG_CONFIG  # noqa: PLC2701 — composition contract
-from slop._aux.util.git import NumstatCommitRecord, git_log_numstat
-from slop._aux.util.treesitter import detect_language
+from slop._structural.ccx import FileMetrics, ccx_kernel
+from slop._structural.ccx import _LANG_CONFIG as _CCX_LANG_CONFIG  # noqa: PLC2701 — composition contract
+from slop._compose.git import NumstatCommitRecord, git_log_numstat
+from slop._ast.treesitter import detect_language
 
 # ---------------------------------------------------------------------------
 # Data structures

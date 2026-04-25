@@ -7,8 +7,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
 
-from slop._aux.kernels.find import find_kernel
-from slop._aux.kernels.grep import grep_kernel
+from slop._fs.find import find_kernel
+from slop._text.grep import grep_kernel
 
 
 ADVISORY = (
@@ -203,9 +203,9 @@ def _analyze_symbols(
     max_symbols: int | None,
 ) -> tuple[list[PruneCandidate], int, list[str], bool]:
     """Symbol-scope analysis: find top-level definitions with no external references."""
-    from slop._aux.kernels.query import query_kernel
-    from slop._aux.kernels.usages import DEFINITION_QUERIES
-    from slop._aux.util.treesitter import detect_language
+    from slop._ast.query import query_kernel
+    from slop._compose.usages import DEFINITION_QUERIES
+    from slop._ast.treesitter import detect_language
 
     candidates: list[PruneCandidate] = []
     errors: list[str] = []

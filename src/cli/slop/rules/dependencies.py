@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop._aux.kernels.deps import deps_kernel
+from slop._structural.deps import deps_kernel
 from slop.models import RuleConfig, RuleResult, SlopConfig, Violation
 
 

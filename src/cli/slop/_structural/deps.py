@@ -6,7 +6,7 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from slop._aux.kernels.find import find_kernel
+from slop._fs.find import find_kernel
 
 # Tree-sitter import queries per language: list of (query_string, kind_label)
 IMPORT_QUERIES: dict[str, list[tuple[str, str]]] = {
@@ -284,7 +284,7 @@ def _extract_all_imports(
 
 def _extract_imports_ast(fp: Path, language: str) -> list[ImportEdge]:
     """Extract import edges using tree-sitter AST."""
-    from slop._aux.kernels.query import query_kernel
+    from slop._ast.query import query_kernel
 
     queries = IMPORT_QUERIES.get(language, [])
     edges: list[ImportEdge] = []

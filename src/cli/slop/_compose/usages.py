@@ -5,8 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from slop._aux.kernels.find import find_kernel
-from slop._aux.kernels.grep import grep_kernel
+from slop._fs.find import find_kernel
+from slop._text.grep import grep_kernel
 
 
 # Definition queries per language: list of (query_string, symbol_type_label)
@@ -188,8 +188,8 @@ def _find_definitions(
         Tuple of (definition_map, errors) where definition_map maps
         (abs_path_str, line) -> (symbol_type, col).
     """
-    from slop._aux.kernels.query import query_kernel
-    from slop._aux.util.treesitter import detect_language
+    from slop._ast.query import query_kernel
+    from slop._ast.treesitter import detect_language
 
     definition_map: dict[tuple[str, int], tuple[str, int]] = {}
     errors: list[str] = []

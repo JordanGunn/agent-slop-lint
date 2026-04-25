@@ -112,7 +112,7 @@ def test_doctor_reports_all_present(monkeypatch):
         }
 
     # cmd_doctor imports run_doctor lazily inside the function.
-    import slop._aux.util.doctor as doctor_mod
+    import slop._util.doctor as doctor_mod
     monkeypatch.setattr(doctor_mod, "run_doctor", fake_run_doctor)
 
     code, stdout, _stderr = _run(["doctor"])
@@ -140,7 +140,7 @@ def test_doctor_exits_2_when_binary_missing(monkeypatch):
             "message": "Some dependencies missing",
         }
 
-    import slop._aux.util.doctor as doctor_mod
+    import slop._util.doctor as doctor_mod
     monkeypatch.setattr(doctor_mod, "run_doctor", fake_run_doctor)
 
     code, stdout, _stderr = _run(["doctor"])

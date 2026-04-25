@@ -30,7 +30,7 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
-from slop._aux.util.subprocess import run_tool, which
+from slop._util.subprocess import run_tool, which
 
 # ---------------------------------------------------------------------------
 # Data structures — name-only mode

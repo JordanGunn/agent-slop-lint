@@ -137,7 +137,7 @@ Run `slop --help` for the full flag list, or `slop <command> --help` for per-com
 
 ## Architecture
 
-`slop` ships the metric kernels it needs directly. Each rule wraps a deterministic kernel built on tree-sitter AST traversal, ripgrep, fd, and git. The kernels live under `src/cli/slop/_aux/` in the repo and ride along in the installed wheel, so `pip install agent-slop-lint` gives you a single self-contained package with no companion runtime to install.
+`slop` ships the discovery primitives and metric kernels it needs directly. Each rule wraps a deterministic kernel; primitives are organised by substrate — `slop._fs` (fd), `slop._text` (ripgrep), `slop._ast` (tree-sitter), `slop._compose` for cross-tool primitives, and `slop._structural` for the structural metric kernels. The whole tree rides along in the installed wheel, so `pip install agent-slop-lint` gives you a single self-contained package with no companion runtime to install.
 
 Rules are thin wrappers around those kernels: load config params, call the kernel, iterate results, emit `Violation` objects for threshold breaches. Adding a new metric is a new kernel plus a new rule file in `src/cli/slop/rules/`.
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import importlib
 
-from slop._aux.util.subprocess import run_tool, which
+from slop._util.subprocess import run_tool, which
 
 REQUIRED_TOOLS = {
     "rg": {

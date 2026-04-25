@@ -8,11 +8,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop._aux.kernels.robert import robert_kernel
+from slop._structural.robert import robert_kernel
 from slop.models import RuleConfig, RuleResult, SlopConfig, Violation
 
 # Languages robert_kernel can compute Distance from the Main Sequence for.
-# Must stay in sync with _LANG_GLOBS in slop._aux.kernels.robert.
+# Must stay in sync with _LANG_GLOBS in slop._structural.robert.
 _SUPPORTED_LANGUAGES = {
     "go",
     "python",
