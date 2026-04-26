@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "agent-slop-lint"
-version = "0.6.1"
+version = "0.7.0"
 description = "Agentic code quality linter — catches slop before it becomes architectural rot"
 readme = "README.md"
 license = "Apache-2.0"
@@ -25,6 +25,7 @@ dependencies = [
     "tree-sitter-ruby>=0.21.0",
     "tree-sitter-bash>=0.21.0",
     "tree-sitter-c-sharp>=0.21.0",
+    "tree-sitter-julia>=0.21.0",
     "tomli>=2.0; python_version < '3.11'",
 ]
 

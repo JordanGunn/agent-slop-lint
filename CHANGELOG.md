@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-04-26
+
+**Released to PyPI** on 2026-04-26 as `agent-slop-lint==0.7.0`. Tag: [`v0.7.0`](https://github.com/JordanGunn/agent-slop-lint/releases/tag/v0.7.0).
+
+### Added
+
+- **Julia language support** (`.jl`) across the structural rule family. `complexity.cyclomatic`, `complexity.cognitive`, `halstead.volume`, `halstead.difficulty`, `dependencies.cycles`, `architecture.distance`, `hotspots`, `dead_code`, and AST-based `usages` lookups all run on Julia files. Tree-sitter queries cover `using Foo`, `using Foo, Bar`, `using Foo.Bar`, `using Foo: a, b`, `import Foo`, and `import Base: show`. Abstract-type detection uses `abstract type X end`. New `tree-sitter-julia >= 0.21.0` runtime dependency. See `docs/JULIA.md` for the full status sheet, including known deferrals (short-form functions, do-blocks, CK class metrics) and calibration guidance.
+- New `_NpathLangConfig.body_skip_types` field and `_npath_of_flat_body` helper. Lets the npath kernel walk languages whose tree-sitter grammars have no block-wrapper node (Julia today; potentially Lua, some Ruby shapes later). Default value is the empty set so existing languages are unaffected.
+
+### Changed
+
+- **Repository layout: `_aux/` umbrella replaced with substrate-named subpackages.** Discovery primitives now live under `slop._fs/` (fd), `slop._text/` (ripgrep), `slop._ast/` (tree-sitter, plus `treesitter` helpers). Cross-tool primitives (`usages`, `hotspots`, `prune`, `git`) live under `slop._compose/`. Structural metric kernels (`ccx`, `ck`, `npath`, `halstead`, `deps`, `robert`) live under `slop._structural/`. Cross-cutting plumbing (`subprocess`, `doctor`) lives under `slop._util/`. Apache-2.0 attribution for the vendored kernel tree moves from `_aux/LICENSE` to `KERNELS_LICENSE` at the slop package root. Internal-only change; no public API affected. NOTICE, READMEs, CLAUDE.md, `.slop.toml` exclude list, and the ruff `extend-exclude` list all updated to point at the new paths.
+- Language tables in README, src/README, SETUP.md, and the CONFIG.md `packages` section now include Julia and document the deferrals.
+
+### Limitations
+
+- Julia short-form functions (`f(x) = x + 1`) are not detected as functions by the structural kernels — they parse as `assignment` nodes with a `call_expression` LHS, not `function_definition`. Same gap for operator-method definitions (`+(a, b) = ...`).
+- Julia `do`-blocks (`map(xs) do x ... end`) roll into the enclosing function rather than counted separately.
+- Julia `npath` counts top-level branches but under-counts nested control flow inside `elseif`/`else` clause bodies. Treat the number as a lower bound.
+- Julia `class.*` (CK CBO/DIT/NOC) is deferred. Same posture as Go and Rust, which also ship without these.
+
 ## [0.6.1] - 2026-04-18
 
 **Released to PyPI** on 2026-04-18 as `agent-slop-lint==0.6.1`. Tag: [`v0.6.1`](https://github.com/JordanGunn/agent-slop-lint/releases/tag/v0.6.1).
@@ -132,7 +153,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `.slop.toml` and `pyproject.toml [tool.slop]` config support.
 - PyPI distribution as `agent-slop-lint`.
 
-[Unreleased]: https://github.com/JordanGunn/agent-slop-lint/compare/v0.6.1...HEAD
+[Unreleased]: https://github.com/JordanGunn/agent-slop-lint/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/JordanGunn/agent-slop-lint/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/JordanGunn/agent-slop-lint/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/JordanGunn/agent-slop-lint/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/JordanGunn/agent-slop-lint/compare/v0.4.0...v0.5.0

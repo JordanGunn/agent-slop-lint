@@ -242,6 +242,37 @@ _LANG_CONFIG: dict[str, _HalsteadLangConfig] = {
             "true", "false", "null",
         }),
     ),
+    "julia": _HalsteadLangConfig(
+        function_nodes=frozenset({
+            "function_definition",
+            "arrow_function_expression",
+        }),
+        operator_types=frozenset({
+            # Keywords
+            "function", "return", "if", "else", "elseif", "end",
+            "for", "while", "break", "continue", "in",
+            "try", "catch", "finally", "throw",
+            "do", "begin", "let", "global", "local",
+            "module", "using", "import", "export",
+            "struct", "mutable", "abstract", "primitive", "type",
+            "const",
+            # Operators (tree-sitter-julia exposes these as "operator" nodes
+            # rather than literal token types; the kernel reads operator
+            # symbols from the operator child's text where applicable. We
+            # list the bare token strings here so generic walk-and-match
+            # logic still finds them.)
+            "=", "+", "-", "*", "/", "%", "^", "//", ".",
+            "==", "!=", "<", ">", "<=", ">=", "===", "!==",
+            "&&", "||", "!", "&", "|", "<<", ">>",
+            "+=", "-=", "*=", "/=",
+            "->", "::", ":", "?", "@", "...",
+        }),
+        operand_types=frozenset({
+            "identifier", "integer_literal", "float_literal",
+            "string_literal", "character_literal",
+            "true", "false", "nothing", "missing",
+        }),
+    ),
 }
 
 _LANG_GLOBS: dict[str, list[str]] = {
@@ -252,6 +283,7 @@ _LANG_GLOBS: dict[str, list[str]] = {
     "rust": ["**/*.rs"],
     "java": ["**/*.java"],
     "c_sharp": ["**/*.cs"],
+    "julia": ["**/*.jl"],
 }
 
 
@@ -290,7 +322,16 @@ def _extract_function_name(node, content: bytes) -> str:
     name_node = node.child_by_field_name("name")
     if name_node is not None:
         return _node_text(name_node, content)
-    if node.type == "lambda":
+    # Julia function_definition has signature → call_expression → identifier
+    if node.type == "function_definition":
+        for child in node.children:
+            if child.type == "signature":
+                for sub in child.children:
+                    if sub.type == "call_expression":
+                        for leaf in sub.children:
+                            if leaf.type == "identifier":
+                                return _node_text(leaf, content)
+    if node.type in ("lambda", "arrow_function_expression"):
         return "<lambda>"
     return "<anonymous>"
 

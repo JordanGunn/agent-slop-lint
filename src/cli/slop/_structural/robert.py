@@ -57,6 +57,7 @@ _LANG_GLOBS: dict[str, list[str]] = {
     "typescript": ["**/*.ts", "**/*.tsx"],
     "javascript": ["**/*.js", "**/*.mjs", "**/*.cjs"],
     "rust": ["**/*.rs"],
+    "julia": ["**/*.jl"],
 }
 
 

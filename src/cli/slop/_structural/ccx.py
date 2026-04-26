@@ -309,6 +309,33 @@ _LANG_CONFIG: dict[str, _LangConfig] = {
         boolean_op_node="binary_expression",
         boolean_op_filter=frozenset({"&&", "||"}),
     ),
+    "julia": _LangConfig(
+        function_nodes=frozenset({
+            "function_definition",
+            "arrow_function_expression",
+        }),
+        decision_nodes=frozenset({
+            "if_statement",
+            "elseif_clause",
+            "for_statement",
+            "while_statement",
+            "catch_clause",
+            "ternary_expression",
+        }),
+        nesting_nodes=frozenset({
+            "if_statement",
+            "for_statement",
+            "while_statement",
+            "try_statement",   # container for catch/finally clauses
+            "catch_clause",
+            "ternary_expression",
+        }),
+        compensating_decisions=frozenset({
+            "elseif_clause",   # syntactically inside if_statement
+        }),
+        boolean_op_node="binary_expression",
+        boolean_op_filter=frozenset({"&&", "||"}),
+    ),
 }
 
 # Glob patterns per language for find_kernel discovery.
@@ -320,6 +347,7 @@ _LANG_GLOBS: dict[str, list[str]] = {
     "rust": ["**/*.rs"],
     "java": ["**/*.java"],
     "c_sharp": ["**/*.cs"],
+    "julia": ["**/*.jl"],
 }
 
 # Bash files are explicitly excluded — see 03_POLICIES.md.
@@ -435,7 +463,17 @@ def _extract_function_name(node, content: bytes) -> str:
     name_node = node.child_by_field_name("name")
     if name_node is not None:
         return _node_text(name_node, content)
-    if node.type == "lambda":
+    # Julia: function_definition wraps the name in signature → call_expression
+    # → identifier. There is no `name` field on function_definition itself.
+    if node.type == "function_definition":
+        for child in node.children:
+            if child.type == "signature":
+                for sub in child.children:
+                    if sub.type == "call_expression":
+                        for leaf in sub.children:
+                            if leaf.type == "identifier":
+                                return _node_text(leaf, content)
+    if node.type in ("lambda", "arrow_function_expression"):
         return "<lambda>"
     return "<anonymous>"
 
@@ -449,10 +487,18 @@ def _python_bool_op(node) -> str:
 
 
 def _binary_op_text(node, content: bytes) -> str:
-    """Extract the operator text from a binary_expression node (JS/TS/Go/Rust/Java)."""
+    """Extract the operator text from a binary_expression node.
+
+    Most grammars expose the operator as a named field. Julia exposes it
+    as a positional child of type ``operator``; fall back to that when no
+    field is present.
+    """
     op_node = node.child_by_field_name("operator")
     if op_node is not None:
         return _node_text(op_node, content)
+    for child in node.children:
+        if child.type == "operator":
+            return _node_text(child, content)
     return ""
 
 

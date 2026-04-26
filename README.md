@@ -103,8 +103,9 @@ Tornhill's original work used a 1-year window, tuned for release cycles where a 
 | Rust | `.rs` | yes | yes | yes | — | yes |
 | Java | `.java` | yes | yes | yes | yes | yes |
 | C# | `.cs` | yes | yes | yes | yes | yes |
+| Julia | `.jl` | yes | yes | yes | yes | — |
 
-JavaScript has no `interface` or `abstract class` in the language itself, so every declared class is counted as concrete. A JavaScript package with `Ca > 0` and no abstraction will legitimately land in Martin's Zone of Pain; treat `packages` as an advisory signal rather than a gate on JavaScript code (it is `severity = "warning"` by default for that reason). Rust's `deps` rule is not implemented (no import graph yet); `packages` on Rust uses the trait/struct/enum split for abstractness and reports Ca=Ce=0 per package, so it mostly surfaces intra-crate abstraction balance rather than cross-crate coupling.
+JavaScript has no `interface` or `abstract class` in the language itself, so every declared class is counted as concrete. A JavaScript package with `Ca > 0` and no abstraction will legitimately land in Martin's Zone of Pain; treat `packages` as an advisory signal rather than a gate on JavaScript code (it is `severity = "warning"` by default for that reason). Rust's `deps` rule is not implemented (no import graph yet); `packages` on Rust uses the trait/struct/enum split for abstractness and reports Ca=Ce=0 per package, so it mostly surfaces intra-crate abstraction balance rather than cross-crate coupling. Julia's `class.*` metrics (CK CBO/DIT/NOC) are deferred because Julia uses multiple dispatch — methods aren't owned by structs, so DIT/NOC don't translate cleanly. Julia `npath` is best-effort and under-counts deeply nested control flow; treat the number as a lower bound. See [docs/JULIA.md](./docs/JULIA.md) for the full status, deferrals, and calibration notes.
 
 ## Configuration
 

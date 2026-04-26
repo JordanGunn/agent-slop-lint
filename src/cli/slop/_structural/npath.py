@@ -65,9 +65,14 @@ class _NpathLangConfig:
     case_node: str | None           # "switch_case", "case_clause" etc.
     try_node: str | None            # "try_statement" etc.
     catch_node: str | None          # "except_clause", "catch_clause" etc.
-    body_field: str                 # "body", "consequence", etc.
+    body_field: str                 # "body", "consequence", etc.; "" for flat-body langs
     block_types: frozenset[str]     # block/statement_block types
     bare_else_keyword: str | None = None  # C#: "else" is a bare keyword, not a wrapper
+    # Flat-body langs (Julia) have no body field and no block wrapper —
+    # statements are direct children of the function/if/etc. node. Listing
+    # the structural-keyword child types here lets the kernel walk the body
+    # by iterating over children minus these. Empty for non-flat langs.
+    body_skip_types: frozenset[str] = frozenset()
 
 
 _LANG_CONFIG: dict[str, _NpathLangConfig] = {
@@ -191,6 +196,27 @@ _LANG_CONFIG: dict[str, _NpathLangConfig] = {
         block_types=frozenset({"block"}),
         bare_else_keyword="else",
     ),
+    "julia": _NpathLangConfig(
+        function_nodes=frozenset({
+            "function_definition",
+            "arrow_function_expression",
+        }),
+        if_node="if_statement",
+        else_clause="else_clause",
+        elif_clause="elseif_clause",
+        loop_nodes=frozenset({"for_statement", "while_statement"}),
+        switch_node=None,
+        case_node=None,
+        try_node="try_statement",
+        catch_node="catch_clause",
+        body_field="",                 # flat-body language
+        block_types=frozenset(),
+        body_skip_types=frozenset({
+            "function", "end", "signature",
+            "if", "elseif", "else", "for", "for_binding",
+            "while", "try", "catch", "finally", "do",
+        }),
+    ),
 }
 
 _LANG_GLOBS: dict[str, list[str]] = {
@@ -201,6 +227,7 @@ _LANG_GLOBS: dict[str, list[str]] = {
     "rust": ["**/*.rs"],
     "java": ["**/*.java"],
     "c_sharp": ["**/*.cs"],
+    "julia": ["**/*.jl"],
 }
 
 
@@ -239,9 +266,35 @@ def _extract_function_name(node, content: bytes) -> str:
     name_node = node.child_by_field_name("name")
     if name_node is not None:
         return _node_text(name_node, content)
-    if node.type == "lambda":
+    # Julia function_definition has signature → call_expression → identifier
+    if node.type == "function_definition":
+        for child in node.children:
+            if child.type == "signature":
+                for sub in child.children:
+                    if sub.type == "call_expression":
+                        for leaf in sub.children:
+                            if leaf.type == "identifier":
+                                return _node_text(leaf, content)
+    if node.type in ("lambda", "arrow_function_expression"):
         return "<lambda>"
     return "<anonymous>"
+
+
+def _npath_of_flat_body(node, config: _NpathLangConfig) -> int:
+    """Compute NPATH for a flat-body construct (Julia function/if/loop body).
+
+    Julia has no block-wrapper node; statements are direct children. This
+    walks those children, skipping structural keyword nodes, and multiplies
+    their NPATH contributions.
+    """
+    result = 1
+    for child in node.children:
+        if child.type in config.body_skip_types:
+            continue
+        cn = _npath_of_node(child, config)
+        if cn > 1:
+            result *= cn
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -357,12 +410,20 @@ def _npath_of_if(node, config: _NpathLangConfig) -> int:
             alt_npaths.append(elif_body_npath)
         elif child.type == config.else_clause:
             has_terminal = True
+            else_npath_added = False
             for ec in child.children:
                 if ec.type in config.block_types:
                     alt_npaths.append(_npath_of_block(ec, config))
+                    else_npath_added = True
                 elif ec.type == config.if_node:
                     # C-style else-if chain
                     alt_npaths.append(_npath_of_if(ec, config))
+                    else_npath_added = True
+            # Flat-body langs (Julia): no block wrapper inside else_clause.
+            # Treat the clause as contributing one path; nested control flow
+            # inside is not deeply analysed (documented limitation).
+            if not else_npath_added and not config.body_field:
+                alt_npaths.append(1)
 
     # Bare-keyword else (C#): "else" is a keyword child, body is next sibling
     if config.bare_else_keyword and not has_terminal:
@@ -446,8 +507,11 @@ def npath_kernel(
         def find_functions(node):
             if node.type in config.function_nodes:
                 name = _extract_function_name(node, content)
-                body = node.child_by_field_name(config.body_field)
-                npath = _npath_of_block(body, config)
+                if config.body_field:
+                    body = node.child_by_field_name(config.body_field)
+                    npath = _npath_of_block(body, config)
+                else:
+                    npath = _npath_of_flat_body(node, config)
                 npath = max(1, npath)
 
                 if npath >= min_npath:

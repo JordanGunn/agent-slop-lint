@@ -179,7 +179,7 @@ fail_on_quadrant = ["hotspot"]
 - **D' near 0** — on the Main Sequence. Balanced.
 - **D' near 1** — in a zone. Either Pain (concrete + stable = rigid) or Uselessness (abstract + unstable = over-engineered).
 
-**Currently supports:** Every language slop covers: Go, Python, Java, C#, TypeScript, JavaScript, Rust. Abstract-type detection is language-specific: Go interfaces, Python ABCs / Protocols, Java and C# `interface` plus `abstract class`, TypeScript `interface` plus `abstract class`, Rust `trait`. JavaScript has no `interface` or `abstract class` in the language itself, so every `class` is counted as concrete (Ja=0); this is accurate but means JS packages with `Ca > 0` will reliably land in Zone of Pain. Files in an unsupported language are silently skipped.
+**Currently supports:** Every language slop covers: Go, Python, Java, C#, TypeScript, JavaScript, Rust, Julia. Abstract-type detection is language-specific: Go interfaces, Python ABCs / Protocols, Java and C# `interface` plus `abstract class`, TypeScript `interface` plus `abstract class`, Rust `trait`, Julia `abstract type`. JavaScript has no `interface` or `abstract class` in the language itself, so every `class` is counted as concrete (Ja=0); this is accurate but means JS packages with `Ca > 0` will reliably land in Zone of Pain. Files in an unsupported language are silently skipped.
 
 **When to raise it:** Mature codebases where some packages are legitimately concrete and stable (e.g., utility packages). Raising to 0.85 focuses on extreme cases.
 

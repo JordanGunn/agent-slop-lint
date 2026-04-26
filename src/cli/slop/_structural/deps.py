@@ -30,6 +30,20 @@ IMPORT_QUERIES: dict[str, list[tuple[str, str]]] = {
         ("(using_directive (identifier) @module)", "csharp_using"),
         ("(using_directive (qualified_name) @module)", "csharp_using"),
     ],
+    "julia": [
+        # `using Foo` / `using Foo, Bar`
+        ("(using_statement (identifier) @module)", "julia_using"),
+        # `using Foo.Bar`
+        ("(using_statement (scoped_identifier) @module)", "julia_using"),
+        # `using Foo: a, b` — only the leading identifier is the module
+        ("(using_statement (selected_import . (identifier) @module))", "julia_using"),
+        # `import Foo` / `import Foo, Bar`
+        ("(import_statement (identifier) @module)", "julia_import"),
+        # `import Foo.Bar`
+        ("(import_statement (scoped_identifier) @module)", "julia_import"),
+        # `import Base: show` — only the leading identifier is the module
+        ("(import_statement (selected_import . (identifier) @module))", "julia_import"),
+    ],
 }
 
 # Text-tier per-language regex fallback (applied to raw file content)
@@ -56,6 +70,16 @@ TEXT_IMPORT_REGEXES: dict[str, list[tuple[str, str]]] = {
     ],
     "c_sharp": [
         (r"^using\s+([\w.]+)\s*;", "csharp_using"),
+    ],
+    "julia": [
+        # `using Mod`, `using Mod1, Mod2`, `using Foo.Bar`
+        (r"^\s*using\s+([\w.]+)", "julia_using"),
+        # `using Foo: a, b` — captures Foo
+        (r"^\s*using\s+([\w.]+)\s*:", "julia_using"),
+        # `import Foo`, `import Foo.Bar`
+        (r"^\s*import\s+([\w.]+)", "julia_import"),
+        # `import Foo: a, b` — captures Foo
+        (r"^\s*import\s+([\w.]+)\s*:", "julia_import"),
     ],
 }
 
@@ -447,6 +471,7 @@ def _detect_file_language(fp: Path) -> str | None:
         ".rs": "rust",
         ".java": "java",
         ".cs": "c_sharp",
+        ".jl": "julia",
     }
     return ext_map.get(ext)
 

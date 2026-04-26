@@ -47,6 +47,14 @@ DEFINITION_QUERIES: dict[str, list[tuple[str, str]]] = {
         ("(constructor_declaration name: (identifier) @name)", "constructor"),
         ("(property_declaration name: (identifier) @name)", "property"),
     ],
+    "julia": [
+        # function f(...) ... end → captures the call_expression's identifier
+        ("(function_definition (signature (call_expression (identifier) @name)))", "function"),
+        # struct X / mutable struct X
+        ("(struct_definition (type_head (identifier) @name))", "struct"),
+        # abstract type X end
+        ("(abstract_definition (type_head (identifier) @name))", "abstract"),
+    ],
 }
 
 
