@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-04-26
+
+**Released to PyPI** on 2026-04-26 as `agent-slop-lint==0.7.1`. Tag: [`v0.7.1`](https://github.com/JordanGunn/agent-slop-lint/releases/tag/v0.7.1).
+
+### Refactored
+
+- **Per-language name extraction and function-node matching now live as Callable fields on each kernel's `_LangConfig`**, matching the established `extract_superclasses: SuperclassExtractor` pattern in `class_metrics`. Each of `_structural/ccx.py`, `_structural/npath.py`, and `_structural/halstead.py` gains `name_extractor: NameExtractor` and `is_function_node: FunctionNodeMatcher` fields with sensible defaults that reproduce v0.7.0 behaviour for every existing language. Removes the language-branching `if node.type == "function_definition":` block that v0.7.0 introduced into shared kernel functions. No behaviour change for Python / JavaScript / TypeScript / Go / Rust / Java / C#.
+
+### Fixed
+
+- **Short-form Julia function definitions** (`f(x) = x + 1`) are now detected and analysed by `complexity.cyclomatic`, `complexity.cognitive`, `complexity.npath`, `halstead.volume`, and `halstead.difficulty`. v0.7.0 silently skipped these because tree-sitter parses them as `assignment` nodes with a `call_expression` LHS rather than `function_definition`. Variable assignments (`x = 1`, `y = some_func()`) are correctly excluded.
+- **Operator-method definitions** (`+(a, b) = ...`, `-(a::Int, b::Int) = ...`) are now detected and named by their operator symbol (e.g. `+`, `-`).
+- **Do-blocks** (`map(xs) do x ... end`) are now treated as anonymous functions named `<lambda>`, with their decisions counted independently from the enclosing call.
+- **Method extensions on dotted names** (`function Base.show(...)` → name `show`) — previously returned `<anonymous>` in violation output.
+- **Where-clause function signatures** (`function f(x) where T ... end` → name `f`) — previously returned `<anonymous>` because the call_expression was nested inside a `where_expression` the v0.7.0 walker did not descend into.
+
+### Behaviour change to be aware of
+
+Users upgrading from v0.7.0 to v0.7.1 on Julia codebases that contain
+short-form functions, do-blocks, operator methods, or dotted method
+extensions may see new complexity / npath / halstead violations on
+code that previously passed silently. This is by design — those
+functions were not being analysed at all in v0.7.0.
+
 ## [0.7.0] - 2026-04-26
 
 **Released to PyPI** on 2026-04-26 as `agent-slop-lint==0.7.0`. Tag: [`v0.7.0`](https://github.com/JordanGunn/agent-slop-lint/releases/tag/v0.7.0).
@@ -153,7 +177,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `.slop.toml` and `pyproject.toml [tool.slop]` config support.
 - PyPI distribution as `agent-slop-lint`.
 
-[Unreleased]: https://github.com/JordanGunn/agent-slop-lint/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/JordanGunn/agent-slop-lint/compare/v0.7.1...HEAD
+[0.7.1]: https://github.com/JordanGunn/agent-slop-lint/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/JordanGunn/agent-slop-lint/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/JordanGunn/agent-slop-lint/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/JordanGunn/agent-slop-lint/compare/v0.5.0...v0.6.0

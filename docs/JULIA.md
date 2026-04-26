@@ -2,7 +2,7 @@
 status: shipped
 stability: first cut
 ship_state: structural rules supported; CK metrics deferred
-updated: 2026-04-25
+updated: 2026-04-26
 ---
 
 # Julia support
@@ -28,11 +28,9 @@ on the CLI.
 
 ## What is not supported (yet)
 
-- **Short-form function definitions** (`f(x) = x + 1`) are not detected as functions by the structural kernels. The tree-sitter grammar parses these as `assignment` nodes with a `call_expression` LHS rather than `function_definition`, so the function-finder skips them. This is the largest known gap; revisit if calibration shows it matters.
-- **`do`-blocks** (`map([1,2,3]) do x ... end`) are parsed as `do_clause` children of a `call_expression`. They behave like inline function bodies but are not currently treated as separate functions for complexity purposes — their decisions roll up into the enclosing function.
 - **NPath nesting under `elseif`/`else` clauses** undercounts because Julia's grammar nests body statements directly inside the clause node rather than in a wrapping `block`. The kernel treats each `else_clause` as contributing one path; multi-branch nested control flow inside a clause is invisible.
 - **CK class metrics** (see table above).
-- **Operator-method definitions** (`+(a, b) = ...`) follow the short-form pattern and inherit the same gap.
+- **Typed-return short-form functions** (`f(x)::Int = x + 1`) are not yet detected. The full-form alternative `function f(x)::Int ... end` works correctly.
 
 ## Why CK metrics aren't shipped for Julia
 
@@ -67,12 +65,15 @@ touches tree-sitter has a per-language config:
   `prune` and `usages`).
 
 Adding a new language means adding entries to those tables. The kernel
-implementations are language-agnostic. Julia's only deviation from this
-pattern is the function-name extractor: `function_definition` exposes
-the name through `signature → call_expression → identifier` rather than
-through the standard `name` field, so `_extract_function_name` (in
-`ccx.py`, `npath.py`, `halstead.py`) carries a small Julia-specific
-fallback.
+implementations are language-agnostic. Where a language's AST diverges
+from the conventional `name`-field shape, slop uses the same Callable-
+on-LangConfig pattern that `class_metrics`'s `extract_superclasses`
+established: a `name_extractor` and `is_function_node` callable can be
+registered on each kernel's per-language config. Julia uses both — its
+short-form, operator-method, do-block, dotted-method-name, and where-
+clause shapes all live in `_julia_name_extractor` and
+`_julia_is_function_node` (defined in each of `ccx.py`, `npath.py`,
+`halstead.py`).
 
 ## Calibrating thresholds for Julia
 

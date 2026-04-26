@@ -336,7 +336,7 @@ slop lint --root C:\path\to\your\project
 | C# | `.cs` | Yes |
 | Julia | `.jl` | Mostly — see `JULIA.md` |
 
-Every rule covers every listed language, with three documented caveats: `deps` is not implemented for Rust (no import graph extractor yet); `packages` on JavaScript will always count every class as concrete because JavaScript has no `interface` or `abstract class` in the language itself; and `class.*` (CK CBO/DIT/NOC) is deferred for Julia because multiple dispatch doesn't map cleanly to method-on-class semantics. Julia `npath` also under-counts deeply nested control flow. See CONFIG.md for per-rule detail and JULIA.md for Julia specifics.
+Every rule covers every listed language, with three documented caveats: `deps` is not implemented for Rust (no import graph extractor yet); `packages` on JavaScript will always count every class as concrete because JavaScript has no `interface` or `abstract class` in the language itself; and `class.*` (CK CBO/DIT/NOC) is deferred for Julia because multiple dispatch doesn't map cleanly to method-on-class semantics. Julia `npath` also under-counts nested control flow inside `elseif`/`else` clause bodies. See CONFIG.md for per-rule detail and JULIA.md for Julia specifics.
 
 ## Troubleshooting
 

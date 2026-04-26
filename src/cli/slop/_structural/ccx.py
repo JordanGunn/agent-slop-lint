@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 import tree_sitter
 
@@ -74,6 +74,108 @@ class CcxResult:
 
 
 # ---------------------------------------------------------------------------
+# Per-language callables — name extraction and function-node matching
+# ---------------------------------------------------------------------------
+
+NameExtractor = Callable[[Any, bytes], str]
+FunctionNodeMatcher = Callable[[Any, "_LangConfig"], bool]
+
+
+def _default_name_extractor(node, content: bytes) -> str:
+    """Standard function-name extraction via the ``name`` field.
+
+    Languages that expose their function name through
+    ``child_by_field_name("name")`` use this. Anonymous function shapes
+    (`lambda`, `arrow_function_expression`, `do_clause`) return
+    ``"<lambda>"``.
+    """
+    name_node = node.child_by_field_name("name")
+    if name_node is not None:
+        return content[name_node.start_byte:name_node.end_byte].decode("utf-8", errors="replace")
+    if node.type in ("lambda", "arrow_function_expression", "do_clause"):
+        return "<lambda>"
+    return "<anonymous>"
+
+
+def _default_is_function_node(node, config: "_LangConfig") -> bool:
+    """Standard function-node check: node type is in ``config.function_nodes``."""
+    return node.type in config.function_nodes
+
+
+def _julia_find_call(node):
+    """Find the call_expression that names a Julia function or method.
+
+    Handles full-form ``function f(x) ... end``, where-clause
+    ``function f(x) where T ... end``, and short-form ``f(x) = expr``
+    (assignment with a call_expression LHS).
+    """
+    if node.type == "function_definition":
+        for child in node.children:
+            if child.type == "signature":
+                for sub in child.children:
+                    if sub.type == "call_expression":
+                        return sub
+                    if sub.type == "where_expression":
+                        for ssub in sub.children:
+                            if ssub.type == "call_expression":
+                                return ssub
+        return None
+    if node.type == "assignment" and node.children:
+        lhs = node.children[0]
+        if lhs.type == "call_expression":
+            return lhs
+    return None
+
+
+def _julia_name_extractor(node, content: bytes) -> str:
+    """Julia-specific name extraction.
+
+    Uses ``_julia_find_call`` to locate the call_expression that holds
+    the function name. The first relevant child of the call_expression
+    is the name, with three shapes:
+
+    - ``identifier``: regular name (`f` from `function f(x) ... end`).
+    - ``operator``: operator-method definition (`+` from `+(a, b) = ...`).
+    - ``field_expression``: dotted method extension (`show` from
+      `function Base.show(...)` — the rightmost identifier).
+
+    Anonymous forms (``arrow_function_expression``, ``do_clause``)
+    return ``"<lambda>"``.
+    """
+    if node.type in ("arrow_function_expression", "do_clause"):
+        return "<lambda>"
+    call = _julia_find_call(node)
+    if call is None:
+        return "<anonymous>"
+    for c in call.children:
+        if c.type in ("identifier", "operator"):
+            return content[c.start_byte:c.end_byte].decode("utf-8", errors="replace")
+        if c.type == "field_expression":
+            idents = [fc for fc in c.children if fc.type == "identifier"]
+            if idents:
+                last = idents[-1]
+                return content[last.start_byte:last.end_byte].decode("utf-8", errors="replace")
+            return content[c.start_byte:c.end_byte].decode("utf-8", errors="replace")
+        if c.type == "argument_list":
+            break
+    return "<anonymous>"
+
+
+def _julia_is_function_node(node, config: "_LangConfig") -> bool:
+    """Julia function-node check: stock types plus short-form assignments.
+
+    Short-form ``f(x) = ...`` parses as ``assignment`` whose first
+    child is a ``call_expression``. Variable assignments like ``x = 1``
+    have an ``identifier`` LHS and are not counted.
+    """
+    if node.type in config.function_nodes:
+        return True
+    if node.type == "assignment" and node.children:
+        return node.children[0].type == "call_expression"
+    return False
+
+
+# ---------------------------------------------------------------------------
 # Per-language configuration
 # ---------------------------------------------------------------------------
 
@@ -90,6 +192,10 @@ class _LangConfig:
     # if, switch_case of switch, match_arm of match) but conceptually live at
     # the same logical depth. Their cog increment uses depth-1 to compensate.
     compensating_decisions: frozenset[str] = frozenset()
+    # Per-language callables. Defaults match the conventional tree-sitter
+    # shape; languages whose AST diverges register their own.
+    name_extractor: NameExtractor = _default_name_extractor
+    is_function_node: FunctionNodeMatcher = _default_is_function_node
 
 
 _LANG_CONFIG: dict[str, _LangConfig] = {
@@ -313,6 +419,7 @@ _LANG_CONFIG: dict[str, _LangConfig] = {
         function_nodes=frozenset({
             "function_definition",
             "arrow_function_expression",
+            "do_clause",       # `map(xs) do x ... end` body
         }),
         decision_nodes=frozenset({
             "if_statement",
@@ -335,6 +442,8 @@ _LANG_CONFIG: dict[str, _LangConfig] = {
         }),
         boolean_op_node="binary_expression",
         boolean_op_filter=frozenset({"&&", "||"}),
+        name_extractor=_julia_name_extractor,
+        is_function_node=_julia_is_function_node,
     ),
 }
 
@@ -455,27 +564,9 @@ def _node_text(node, content: bytes) -> str:
     return content[node.start_byte:node.end_byte].decode("utf-8", errors="replace")
 
 
-def _extract_function_name(node, content: bytes) -> str:
-    """Extract a function name from a function definition node.
-
-    Returns "<lambda>" for lambdas, "<anonymous>" for unnamed functions.
-    """
-    name_node = node.child_by_field_name("name")
-    if name_node is not None:
-        return _node_text(name_node, content)
-    # Julia: function_definition wraps the name in signature → call_expression
-    # → identifier. There is no `name` field on function_definition itself.
-    if node.type == "function_definition":
-        for child in node.children:
-            if child.type == "signature":
-                for sub in child.children:
-                    if sub.type == "call_expression":
-                        for leaf in sub.children:
-                            if leaf.type == "identifier":
-                                return _node_text(leaf, content)
-    if node.type in ("lambda", "arrow_function_expression"):
-        return "<lambda>"
-    return "<anonymous>"
+def _extract_function_name(node, content: bytes, config: _LangConfig) -> str:
+    """Delegate to the per-language ``name_extractor`` callable on ``config``."""
+    return config.name_extractor(node, content)
 
 
 def _python_bool_op(node) -> str:
@@ -517,7 +608,7 @@ def _walk_function(
     out_functions: list[FunctionMetrics],
 ) -> None:
     """Walk one function definition node, computing CCX/CogC and emitting a FunctionMetrics."""
-    name = _extract_function_name(func_node, content)
+    name = _extract_function_name(func_node, content, config)
     state = _WalkState()
 
     def walk(node, depth: int) -> None:
@@ -525,7 +616,7 @@ def _walk_function(
 
         # Nested function definition: handle as a separate FunctionMetrics
         # and stop descending — its body is the new function's responsibility.
-        if node_type in config.function_nodes and node is not func_node:
+        if config.is_function_node(node, config) and node is not func_node:
             _walk_function(
                 node, content, config, file_path, rel_file,
                 language, thresholds, out_functions,
@@ -627,7 +718,7 @@ def _walk_file(
     rel_file = _relative_path(root, file_path)
 
     def find_functions(node) -> None:
-        if node.type in config.function_nodes:
+        if config.is_function_node(node, config):
             _walk_function(
                 node, content, config, file_path, rel_file,
                 language, thresholds, functions,

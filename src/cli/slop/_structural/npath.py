@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 import tree_sitter
 
@@ -50,6 +50,77 @@ class NpathResult:
 
 
 # ---------------------------------------------------------------------------
+# Per-language callables — name extraction and function-node matching
+# ---------------------------------------------------------------------------
+
+NameExtractor = Callable[[Any, bytes], str]
+FunctionNodeMatcher = Callable[[Any, "_NpathLangConfig"], bool]
+
+
+def _default_name_extractor(node, content: bytes) -> str:
+    name_node = node.child_by_field_name("name")
+    if name_node is not None:
+        return content[name_node.start_byte:name_node.end_byte].decode("utf-8", errors="replace")
+    if node.type in ("lambda", "arrow_function_expression", "do_clause"):
+        return "<lambda>"
+    return "<anonymous>"
+
+
+def _default_is_function_node(node, config: "_NpathLangConfig") -> bool:
+    return node.type in config.function_nodes
+
+
+def _julia_find_call(node):
+    """Find the call_expression that names a Julia function or method."""
+    if node.type == "function_definition":
+        for child in node.children:
+            if child.type == "signature":
+                for sub in child.children:
+                    if sub.type == "call_expression":
+                        return sub
+                    if sub.type == "where_expression":
+                        for ssub in sub.children:
+                            if ssub.type == "call_expression":
+                                return ssub
+        return None
+    if node.type == "assignment" and node.children:
+        lhs = node.children[0]
+        if lhs.type == "call_expression":
+            return lhs
+    return None
+
+
+def _julia_name_extractor(node, content: bytes) -> str:
+    """Julia-specific name extraction. See `slop._structural.ccx` for details."""
+    if node.type in ("arrow_function_expression", "do_clause"):
+        return "<lambda>"
+    call = _julia_find_call(node)
+    if call is None:
+        return "<anonymous>"
+    for c in call.children:
+        if c.type in ("identifier", "operator"):
+            return content[c.start_byte:c.end_byte].decode("utf-8", errors="replace")
+        if c.type == "field_expression":
+            idents = [fc for fc in c.children if fc.type == "identifier"]
+            if idents:
+                last = idents[-1]
+                return content[last.start_byte:last.end_byte].decode("utf-8", errors="replace")
+            return content[c.start_byte:c.end_byte].decode("utf-8", errors="replace")
+        if c.type == "argument_list":
+            break
+    return "<anonymous>"
+
+
+def _julia_is_function_node(node, config: "_NpathLangConfig") -> bool:
+    """Julia: stock function nodes plus short-form assignments."""
+    if node.type in config.function_nodes:
+        return True
+    if node.type == "assignment" and node.children:
+        return node.children[0].type == "call_expression"
+    return False
+
+
+# ---------------------------------------------------------------------------
 # Per-language configuration
 # ---------------------------------------------------------------------------
 
@@ -73,6 +144,10 @@ class _NpathLangConfig:
     # the structural-keyword child types here lets the kernel walk the body
     # by iterating over children minus these. Empty for non-flat langs.
     body_skip_types: frozenset[str] = frozenset()
+    # Per-language callables. Defaults match the conventional tree-sitter
+    # shape; languages whose AST diverges register their own.
+    name_extractor: NameExtractor = _default_name_extractor
+    is_function_node: FunctionNodeMatcher = _default_is_function_node
 
 
 _LANG_CONFIG: dict[str, _NpathLangConfig] = {
@@ -200,6 +275,7 @@ _LANG_CONFIG: dict[str, _NpathLangConfig] = {
         function_nodes=frozenset({
             "function_definition",
             "arrow_function_expression",
+            "do_clause",       # `map(xs) do x ... end` body
         }),
         if_node="if_statement",
         else_clause="else_clause",
@@ -216,6 +292,8 @@ _LANG_CONFIG: dict[str, _NpathLangConfig] = {
             "if", "elseif", "else", "for", "for_binding",
             "while", "try", "catch", "finally", "do",
         }),
+        name_extractor=_julia_name_extractor,
+        is_function_node=_julia_is_function_node,
     ),
 }
 
@@ -262,22 +340,9 @@ def _relative_path(root: Path, path: Path) -> str:
         return str(path)
 
 
-def _extract_function_name(node, content: bytes) -> str:
-    name_node = node.child_by_field_name("name")
-    if name_node is not None:
-        return _node_text(name_node, content)
-    # Julia function_definition has signature → call_expression → identifier
-    if node.type == "function_definition":
-        for child in node.children:
-            if child.type == "signature":
-                for sub in child.children:
-                    if sub.type == "call_expression":
-                        for leaf in sub.children:
-                            if leaf.type == "identifier":
-                                return _node_text(leaf, content)
-    if node.type in ("lambda", "arrow_function_expression"):
-        return "<lambda>"
-    return "<anonymous>"
+def _extract_function_name(node, content: bytes, config: _NpathLangConfig) -> str:
+    """Delegate to the per-language ``name_extractor`` callable on ``config``."""
+    return config.name_extractor(node, content)
 
 
 def _npath_of_flat_body(node, config: _NpathLangConfig) -> int:
@@ -366,7 +431,7 @@ def _npath_of_node(node, config: _NpathLangConfig) -> int:
         return try_body_npath + handler_sum
 
     # --- nested function: don't descend ---
-    if ntype in config.function_nodes:
+    if config.is_function_node(node, config):
         return 1
 
     # --- anything else: transparent, recurse into children ---
@@ -505,8 +570,8 @@ def npath_kernel(
         rel = _relative_path(root, fp)
 
         def find_functions(node):
-            if node.type in config.function_nodes:
-                name = _extract_function_name(node, content)
+            if config.is_function_node(node, config):
+                name = _extract_function_name(node, content, config)
                 if config.body_field:
                     body = node.child_by_field_name(config.body_field)
                     npath = _npath_of_block(body, config)
