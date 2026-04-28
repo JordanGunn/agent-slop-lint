@@ -19,6 +19,9 @@ If you want to understand why slop exists and why these specific metrics:
 - [philosophy/the-ceremonial-reviewer.md](philosophy/the-ceremonial-reviewer.md):
   what happens when the only reviewer is a rubber stamp, and how external
   metrics compensate.
+- [philosophy/artifact-proxies.md](philosophy/artifact-proxies.md):
+  future-facing evidence model for artifact-derived comprehension, lexical,
+  and semantic proxies.
 - [philosophy/references.md](philosophy/references.md): full bibliography.
 
 ## Use it
@@ -43,6 +46,10 @@ report and the refactor that cleared it.
   headline number is the 128× reduction, but the more interesting part
   is that none of the refactors were clever; the metrics just pointed at
   things nobody had noticed during ordinary review.
+- [dogfood-deps-kernel.md](dogfood-deps-kernel.md): a later dogfood case
+  study showing how the former AUx `deps_kernel` scored when kernel
+  exclusions were removed, why the finding was valid, and what corrective
+  course was selected.
 
 ## What rules exist
 

@@ -1,26 +1,26 @@
 ---
 status: exploratory
 stability: in development
-ship_state: planned, not shipped; later than lexical
-purpose: investigate the applicability and usefulness of semantic rules as a new slop category
-updated: 2026-04-24
+ship_state: planned suite, not shipped; later than lexical
+purpose: investigate the applicability and usefulness of semantic rules as a separate slop suite
+updated: 2026-04-28
 ---
 
 # Semantic Rules
 
-> **This document describes a planned category that depends on external model artifacts.** No rules in this document currently ship in slop. Every rule here is a candidate under active investigation. Unlike the lexical category, semantic rules require a pre-trained embedding or topic model as an external dependency, which introduces calibration, versioning, and offline-CI concerns that are not yet resolved. The category will remain exploratory longer than lexical. Expect the rule list, the model strategy, and the configuration surface to evolve. Nothing in this document should be treated as a stable contract.
+> **This document describes a planned suite that depends on external model artifacts.** No semantic rules currently ship in slop. Every rule here is a candidate under active investigation. Unlike the lexical suite, semantic rules require a pre-trained embedding or topic model as an external dependency, which introduces calibration, versioning, and offline-CI concerns that are not yet resolved. The suite will remain exploratory longer than lexical. Expect the rule list, the model strategy, and the configuration surface to evolve. Nothing in this document should be treated as a stable contract.
 
 Semantic rules measure meaning relationships. They operate on learned or computed representations of what identifiers and code fragments mean relative to each other. They care about cohesion of concepts within a file, drift of vocabulary across modules, alignment between a name and what the code does.
 
-This category sits above the lexical category (see `LEXICAL.md`) in compute cost, in dependency on external artifacts, and in interpretation burden. It catches phenomena that neither structural nor lexical rules can see, but at the cost of non-trivial calibration work.
+This suite sits above the comprehension and lexical suites (see `COMPREHENSION.md` and `LEXICAL.md`) in compute cost, in dependency on external artifacts, and in interpretation burden. It catches phenomena that structural, comprehension, and lexical rules cannot see, but at the cost of non-trivial calibration work.
 
-See `TAXONOMY.md` for the category system this document fits into.
+See `TAXONOMY.md` for the suite system this document fits into. The planned command surface is `slop semantic`; it may share identifier extraction and AST kernels with other suites, but it should not inherit the stable suite's install burden or CI-gate posture.
 
-## Why this category exists
+## Why this suite exists
 
-Some forms of rot are invisible to structural analysis, invisible to surface-form lexical analysis, and visible only to something that understands what words mean relative to other words. Three examples motivate the category:
+Some forms of rot are invisible to structural analysis, invisible to surface-form lexical analysis, and visible only to something that understands what words mean relative to other words. Three examples motivate the suite:
 
-A file might contain `fetch_customer`, `get_user`, `retrieve_account`, and `load_profile`. Structurally clean. Lexically clean by surface-form analysis because the strings share no substrings. Semantically, these are four names for one operation, and the file is doing one thing under four labels. Only embedding similarity catches this.
+A file might contain `fetch_customer`, `get_user`, `retrieve_account`, and `load_profile`. Structurally clean. Not necessarily information-dense. Lexically clean by surface-form analysis because the strings share no substrings. Semantically, these are four names for one operation, and the file is doing one thing under four labels. Only embedding similarity catches this.
 
 A module might be named `auth.py` and contain functions whose implementations are a mix of authentication and request validation. Structurally fine. Lexically fine in isolation. Semantically bimodal: the file's identifier embeddings cluster into two groups, indicating the file is doing two unrelated things. Only embedding variance catches this.
 
@@ -28,13 +28,13 @@ A method named `parse_config` might return `None` on all error paths instead of 
 
 None of these three phenomena are new to the research literature. What is new is the opportunity to operationalize them in a general-purpose linter. The naturalness hypothesis (Hindle, Barr, Gabel, Su, Devanbu, ICSE 2012) established that code has statistical regularities exploitable by language models. The Big-Code-and-Naturalness survey (Allamanis, Barr, Devanbu, Sutton, ACM Computing Surveys 2018) cataloged a decade of work applying these techniques to naming, bug detection, and code completion. IdBench (Wainakh, Rauf, Pradel, ICSE 2021) provides a gold-standard benchmark for identifier embedding quality. code2vec (Alon et al., POPL 2019) established that AST-path-based embeddings can represent code semantics. The pieces exist; what's missing is the integration.
 
-## Category properties
+## Suite properties
 
 Measurement substrate: embeddings (word2vec, FastText, or code-specific variants like code2vec), topic models (LDA), language-model cross-entropy.
 
 Compute profile: moderate to high. Embedding lookup is fast once a model is loaded. Model loading and any training is the expensive step. For slop's purposes, all models ship as pre-trained, pinned artifacts; no project-specific training is required.
 
-Determinism: deterministic given a fixed model, fixed seed, and fixed inputs. Non-deterministic if the model or seed changes, which is why model pinning is load-bearing for this category.
+Determinism: deterministic given a fixed model, fixed seed, and fixed inputs. Non-deterministic if the model or seed changes, which is why model pinning is load-bearing for this suite.
 
 Failure modes: model-domain mismatch (a model trained on GitHub Java will underperform on niche domains), threshold transferability (defaults calibrated on the reference panel may not generalize), cold-start for small projects (embedding variance is meaningless below some file count), and interpretation gap (a violation may be correct without being explainable).
 
@@ -47,7 +47,7 @@ Semantic rules depend on pre-trained models. slop's approach:
 - **Pinning.** Every model ships with a specific version hash. Rule outputs are reproducible across machines given the same slop version.
 - **Offline CI.** Models are downloaded at slop install time, not at lint time. A `slop models download` subcommand fetches and caches models. Lint runs do not touch the network.
 - **Pluggability.** The model interface is abstract. The first ones shipped will be small (~50-200MB) general-purpose identifier embedding models from established sources (likely FastText trained on a broad code corpus, or the IdBench-evaluated models from Wainakh et al.). Users with compute budget and domain-specific needs can swap in larger or project-trained alternatives via config.
-- **Opt-in.** The entire `semantic.*` category is disabled by default. Projects that want it opt in explicitly. This matches the `orphans` pattern: advisory categories with specific adoption friction stay off until a user chooses them.
+- **Opt-in.** The entire `semantic.*` suite is disabled by default. Projects that want it opt in explicitly. This matches the `orphans` pattern: advisory surfaces with specific adoption friction stay off until a user chooses them.
 
 This strategy will be revisited during phase 1 of the investigation. The offline-CI requirement is the most likely to force changes.
 
@@ -93,7 +93,7 @@ Why it catches what it catches: directly operationalizes a subset of Arnaoudova 
 
 Compute profile: high. Body embedding per function, name embedding per function, distance computation. The body embedding is the expensive step and may require code2vec or a similar AST-path embedding rather than identifier embeddings.
 
-Risk: this is the most powerful and the most speculative rule in the category. Implementation bodies vary enormously in size and content, and a name/body distance threshold that works across diverse codebases is not guaranteed to exist. Likely ships as advisory even in the best case.
+Risk: this is the most powerful and the most speculative rule in the suite. Implementation bodies vary enormously in size and content, and a name/body distance threshold that works across diverse codebases is not guaranteed to exist. Likely ships as advisory even in the best case.
 
 ## Investigation ordering
 
@@ -105,7 +105,7 @@ Phase 3 (language-model and code-embedding rules): name-implementation alignment
 
 ## Per-rule investigation structure
 
-Same four-step process as the lexical category (see `LEXICAL.md`):
+Same four-step process as the lexical suite (see `LEXICAL.md`):
 
 1. Literature pass.
 2. Formalization.
@@ -116,7 +116,7 @@ Semantic rules have one additional pre-phase step: **model selection**. Before a
 
 ## Reference corpus
 
-Same reference panel as the lexical category. Semantic rules additionally benefit from IdBench's labeled identifier pairs for model validation, independent of the project reference panel.
+Same reference panel as the lexical suite. Semantic rules additionally benefit from IdBench's labeled identifier pairs for model validation, independent of the project reference panel.
 
 ## Acceptance criteria for graduation to production
 
@@ -135,7 +135,7 @@ Semantic rules are expected to ship more conservatively than lexical rules. Advi
 
 ```toml
 [rules.semantic]
-enabled = false   # category-wide switch; default off
+enabled = false   # suite-wide switch; default off
 model = "fasttext-code-general-v1"   # pinned pre-trained model; placeholder name
 
 [rules.semantic.identifier_cohesion]
@@ -153,22 +153,22 @@ severity = "warning"
 
 Threshold names and defaults are placeholders. They will stabilize only after the empirical probe phase of each rule's investigation and after model selection is finalized.
 
-## Relationship to lexical and structural categories
+## Relationship to lexical and structural suites
 
-Semantic rules are the ceiling of the three-category taxonomy: the most powerful and the most caveated. They catch phenomena neither of the other categories can see, but they carry costs the others do not:
+Semantic rules are the ceiling of the planned taxonomy: the most powerful and the most caveated. They catch phenomena the other suites cannot see, but they carry costs the others do not:
 
 - External artifacts (pinned models) with their own versioning and distribution concerns.
 - Calibration that does not transfer as cleanly across domains as structural or lexical thresholds.
 - Interpretation burden that cannot always be reduced to a one-sentence explanation.
 
-Expect semantic rules to be the last category a project adopts. Expect most projects to run structural + lexical and never enable semantic. That is a valid end state. Semantic rules exist for projects where the other two categories have matured and a further axis of measurement earns its cost.
+Expect semantic rules to be the last suite a project adopts. Expect most projects to run structural only, or structural plus carefully selected comprehension/lexical checks, and never enable semantic. That is a valid end state. Semantic rules exist for projects where the other suites have matured and a further axis of measurement earns its cost.
 
 ## Open questions
 
-The semantic category has more unresolved questions than the other two. The ones most likely to affect the investigation:
+The semantic suite has more unresolved questions than the other planned suites. The ones most likely to affect the investigation:
 
 - **Model choice.** FastText on subtokens, code2vec, or something else? Each has different coverage, cost, and licensing profiles. Decision will be made during the model-selection pre-phase.
-- **Offline CI viability.** Can a 100-200MB model ship with slop without burdening users who never enable the semantic category? Lazy download is the leading candidate but has install-time UX implications.
+- **Offline CI viability.** Can a 100-200MB model ship with slop without burdening users who never enable the semantic suite? Lazy download is the leading candidate but has install-time UX implications.
 - **Determinism audit.** Some embedding models have subtle non-determinism (thread-level floating-point variance). The audit needed to certify a chosen model as deterministic for slop's purposes is non-trivial.
 - **Licensing.** Pre-trained models come with licenses that interact with slop's Apache 2.0 license. This is a legal question, not a technical one, but it affects which models are viable.
 - **Domain transferability.** A model trained on mainstream GitHub corpora will underperform on specialized domains (embedded firmware, niche scientific code, game engine code). Does slop need domain-specific model packs, or does it accept that semantic rules are a "works for mainstream codebases" feature?

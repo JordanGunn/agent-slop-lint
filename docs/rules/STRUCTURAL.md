@@ -1,18 +1,20 @@
 ---
-status: locked
+status: future_plan
 stability: requires_migration
-ship_state: Completed, but requires migration under sub-category if lexical and semantic rules are approved.
-updated: 2026-04-24
+ship_state: stable suite direction; current CLI still uses historical flat names
+updated: 2026-04-28
 ---
 
 
 # Structural Rules
 
-Structural rules measure the shape of code: control flow, dependency graphs, class hierarchies, and change history. They operate on deterministic tree traversals and graph algorithms over source and git history. No models, no embeddings, no external corpora.
+Structural rules measure the shape of code: control flow, dependency graphs, class hierarchies, package graphs, and change history. They operate on deterministic tree traversals and graph algorithms over source and git history. No models, no embeddings, no external corpora.
 
-This is the category every slop rule belongs to today. All rules listed here are production-ready, have published empirical grounding in their cited sources, and ship enabled by default unless noted otherwise.
+This is the stable suite for slop rules whose primary signal is structural shape. Most current slop rules belong here, but Halstead-derived rules are better described as comprehension proxies and are planned to move under `comprehension.*` rather than `structural.*`.
 
-See `TAXONOMY.md` for the category system this document fits into. See `LEXICAL.md` and `SEMANTIC.md` for the two adjacent categories.
+Long term, today's `slop lint` behavior should become the configured default profile, while `slop structural` provides an explicit entrypoint for the stable structural suite.
+
+See `TAXONOMY.md` for the category system this document fits into. See `COMPREHENSION.md`, `LEXICAL.md`, and `SEMANTIC.md` for adjacent planned categories.
 
 ## Category properties
 
@@ -28,16 +30,14 @@ Interpretation burden: low. Every violation can be explained in one or two sente
 
 ## Rule inventory
 
-Twelve rules across seven subcategories. Every rule's default threshold and divergence from canonical sources is documented in the rule reference, which lives in the existing `CONFIG.md` and is being ported to this document as part of the taxonomy migration.
+Eleven current rules belong under the planned structural taxonomy. Every rule's default threshold and divergence from canonical sources is documented in the rule reference, which lives in the existing `CONFIG.md` and is being ported to this document as part of the taxonomy migration.
 
 | Rule (fully qualified) | Subcategory | Default | Citation |
 |---|---|---|---|
 | `structural.complexity.cyclomatic` | complexity | CCX > 10 | McCabe 1976 |
 | `structural.complexity.cognitive` | complexity | CogC > 15 | Campbell 2018 |
-| `structural.complexity.weighted` | complexity | WMC > 40 | Chidamber & Kemerer 1994 |
-| `structural.halstead.volume` | halstead | V > 1500 | Halstead 1977 |
-| `structural.halstead.difficulty` | halstead | D > 30 | Halstead 1977 |
-| `structural.npath` | npath | NPath > 400 | Nejmeh 1988 |
+| `structural.class.weighted_methods` | class | WMC > 40 | Chidamber & Kemerer 1994 |
+| `structural.complexity.npath` | complexity | NPath > 400 | Nejmeh 1988 |
 | `structural.hotspots` | hotspots | 14d window | Tornhill 2015 |
 | `structural.packages` | packages | D' > 0.7 | Martin 1994 |
 | `structural.deps` | deps | any cycle | Tarjan 1972 |
@@ -48,11 +48,9 @@ Twelve rules across seven subcategories. Every rule's default threshold and dive
 
 ## Subcategories
 
-**complexity** — per-function and per-class complexity measurements. Three rules. Two should never be disabled (cyclomatic, cognitive); if noisy, raise thresholds rather than turning off. The third (weighted) is meaningless in codebases without classes and may be disabled for functional or scripting projects.
+**complexity** — per-function control-flow measurements. Cyclomatic and cognitive complexity should rarely be disabled; if noisy, raise thresholds rather than turning off. NPath also belongs here because it measures combinatorial execution paths through a function.
 
-**halstead** — information-content metrics based on operator and operand counts. Two rules. Catches cognitive density that cyclomatic and cognitive complexity miss — particularly long functions that touch many symbols without nesting. slop's defaults diverge from canonical Halstead thresholds; see rule reference for rationale.
-
-**npath** — combinatorial path count through a function. One rule. Catches explosion that cyclomatic complexity underreports because CCX is additive and NPath is multiplicative. slop's default (400) is tuned above typical modern CLI dispatch patterns; Nejmeh's original 200 was calibrated on pre-OO C.
+**class** — four rules from the Chidamber-Kemerer family and related class-level structure: weighted methods, CBO, DIT, and NOC. All can be disabled for non-OOP codebases without affecting other rules.
 
 **hotspots** — complexity × churn per file, after Tornhill. One rule. slop uses a 14-day default window rather than Tornhill's canonical one-year because agentic-era rot accumulates on a steeper curve and a one-year window drowns recent signal in human-era noise. Disable on shallow clones.
 
@@ -61,8 +59,6 @@ Twelve rules across seven subcategories. Every rule's default threshold and dive
 **deps** — dependency cycle detection via Tarjan's SCC. One rule. Fails on any cycle by default.
 
 **orphans** — unreferenced-symbol detection. One rule. Advisory only, disabled by default, intended for periodic cleanup audits rather than CI gating. False positive rate is high enough that a permanent gate erodes trust.
-
-**class** — three rules (CBO, DIT, NOC) from the Chidamber-Kemerer suite, plus weighted methods (listed under complexity above). All three can be disabled for non-OOP codebases without affecting other rules.
 
 ## Per-rule reference
 
@@ -78,7 +74,13 @@ The three built-in profiles (`default`, `lax`, `strict`) continue to ship. Under
 [rules.structural.complexity]
 cyclomatic_threshold = 10
 cognitive_threshold = 15
-weighted_threshold = 40
+npath_threshold = 400
+
+[rules.structural.class]
+weighted_methods_threshold = 40
+coupling_threshold = 8
+inheritance_depth_threshold = 4
+inheritance_children_threshold = 10
 
 [rules.structural.hotspots]
 since = "14 days ago"
@@ -86,7 +88,7 @@ min_commits = 2
 fail_on_quadrant = ["hotspot"]
 ```
 
-The CLI shorthands (`slop check complexity` resolving to `slop check structural.complexity`) remain. Fully qualified names are canonical in config and JSON output.
+The CLI shorthands (`slop check complexity` resolving to `slop check structural.complexity`) remain. Fully qualified names are canonical in config and JSON output. `slop structural` is the planned direct suite command.
 
 ## Language support
 
@@ -106,12 +108,12 @@ Unsupported languages are silently excluded from the relevant rules rather than 
 
 ## Relationship to other categories
 
-Structural rules are the floor. Every slop-enabled project should run them. They are cheap, deterministic, and well-understood.
+Structural rules are the floor. Every slop-enabled project should run this suite. It is cheap, deterministic, and well-understood.
 
-Lexical and semantic rules (see `LEXICAL.md`, `SEMANTIC.md`) are orthogonal axes, not replacements. A file can be structurally clean (low complexity, low coupling, no cycles) and still be lexically degenerate (vocabulary inflation, inconsistent naming) or semantically incoherent (doing three unrelated things whose names happen not to collide). The reverse also holds.
+Comprehension, lexical, and semantic rules (see `COMPREHENSION.md`, `LEXICAL.md`, `SEMANTIC.md`) are orthogonal axes, not replacements. A file can be structurally clean (low complexity, low coupling, no cycles) and still be information-dense, lexically degenerate, or semantically incoherent. The reverse also holds.
 
-Expect all three categories to run together in mature adoption. Expect structural-only to be the first adoption stage for most projects.
+Expect structural and comprehension rules to be the first adoption stage for most projects because slop already ships the underlying legacy metrics. Lexical and semantic rules should remain advisory until their detectors are calibrated.
 
 ## Migration note
 
-All existing rules have been renamed to the fully-qualified form under `structural.*`. Config files using the old flat names (e.g. `[rules.complexity]` instead of `[rules.structural.complexity]`) will be supported as a deprecation shim for at least two minor versions, emitting a warning suggesting the updated form. No behavior differences between the shim and the canonical form are expected.
+The planned migration is documentation-only until implemented in code. Config files using the old flat names (for example `[rules.complexity]`) must continue to work until deprecation shims exist and have been supported for at least two minor versions. Halstead-derived rules are intentionally excluded from this structural migration and are documented in `COMPREHENSION.md`.

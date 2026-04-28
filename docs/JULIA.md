@@ -20,7 +20,7 @@ on the CLI.
 | `complexity.weighted` (WMC) | n/a | WMC is a class metric; Julia uses multiple dispatch instead of methods-on-classes. See "What is not supported." |
 | `complexity.npath` (Nejmeh NPATH) | partial | Counts top-level branches. Nested control flow inside `if`/`elseif`/`else` bodies is under-counted (Julia has no block-wrapper node, so the kernel currently flat-walks function bodies but does not recurse into clause bodies). Treat the number as a lower bound. |
 | `halstead.volume` / `halstead.difficulty` | full | Operator and operand tables included for Julia keywords, infix operators, literal types. |
-| `dependencies.cycles` | full | Tree-sitter queries cover `using Foo`, `using Foo, Bar`, `using Foo.Bar`, `using Foo: a, b`, `import Foo`, `import Base: show`. Module names are captured as raw strings; resolution to file paths is the same best-effort approach used for Python (matches by module-suffix to local files). |
+| `dependencies.cycles` | full | Tree-sitter queries cover `using Foo`, `using Foo, Bar`, `using Foo.Bar`, `using Foo: a, b`, `import Foo`, `import Base: show`. Module names are captured as raw strings; resolution to file paths is the same best-effort approach used for Python: exact local module path first, then last-component stem fallback. |
 | `architecture.distance` (I/A/D′) | yes, with caveat | Rides on `dependencies`. Abstractness uses `abstract_definition` as the abstract type marker. |
 | `dead_code` (prune) | full | Definition queries cover `function_definition`, `struct_definition`, `abstract_definition`. |
 | `hotspots` | full | Composes `complexity.cyclomatic` plus git churn; rides on the CCX layer. |

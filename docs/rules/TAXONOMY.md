@@ -1,123 +1,274 @@
-# Rule Taxonomy
-
-This doc defines the top-level rule taxonomy for `slop`. All subsequent category-specific and rule-specific docs depend on this one. 
-
-Read this first, then the per-category docs (`STRUCTURAL.md`, `LEXICAL.md`, `SEMANTIC.md`) build on this vocabulary.
-
+---
+status: future_plan
+stability: exploratory
+ship_state: planned suite taxonomy; not implemented in the current CLI or config schema
+purpose: define the long-term suites, evidence posture, naming principles, and migration direction for slop
+updated: 2026-04-28
 ---
 
-### 1. Overview
+# Rule Taxonomy
 
-slop currently ships twelve rules organized by implementation concern (`complexity.*`, `class.*`, `hotspots`, `deps`, `packages`, etc). That grouping is historical. It worked when every rule was structural, but it breaks down as slop expands into dimensions of code quality beyond control flow and dependency graphs.
+> **This document describes a planned taxonomy, not the current public
+> interface.** Current released rule names are still the historical names
+> (`complexity.*`, `halstead.*`, `npath`, `hotspots`, `packages`, `deps`,
+> `orphans`, `class.*`). The taxonomy below is the intended direction for a
+> future migration. No behavior, thresholds, config keys, or exit codes change
+> until that migration is implemented with compatibility shims.
 
-This document defines a three-category taxonomy that scales: **structural**, **lexical**, **semantic**. Every current and future rule belongs to exactly one. The categories are orthogonal, each has a distinct underlying measurement substrate, and the separation matches established software-engineering research terminology (Chidamber & Kemerer, McCabe, Tornhill, Martin for structural; Abebe, Arnaoudova, Lawrie, Deissenboeck for lexical; Hindle, Allamanis, Devanbu for semantic/naturalness).
+This document defines the long-term suite system for `slop`. It exists so
+future rule work has a stable conceptual home before code is written, and so
+experimental surfaces do not inherit the trust posture of the stable structural
+suite by accident.
 
-### 2. The three categories
+The core boundary is narrow:
 
-**Structural rules** measure shape. They operate on control flow, dependency graphs, class hierarchies, and change history. They care about how code is assembled, not what words it uses. Measurement substrates: AST, import graph, inheritance graph, commit history, file size. Output is deterministic from source and git history alone. No models, no embeddings, no external corpora.
+`slop` measures properties of the codebase artifact and its local history. It
+does not measure agent sessions, human approval, provenance chains, memory
+freshness, planning quality, or workflow authority.
 
-**Lexical rules** measure vocabulary. They operate on tokenized identifier streams, docstrings, and comments. They care about the words themselves: are they consistent, concise, appropriately named, drawn from a stable project vocabulary. Measurement substrates: token stream, identifier splits (camelCase / snake_case), part-of-speech tags, project-local dictionaries. Mostly deterministic. Some rules may use a small pre-trained POS model, but no project-wide training is required.
+## Suites
 
-**Semantic rules** measure meaning relationships. They operate on learned or computed representations of what identifiers and code fragments mean relative to each other. They care about cohesion of concepts within a file, drift of vocabulary across modules, alignment between a name and what the code does. Measurement substrates: embeddings (word2vec, FastText, or code-specific), topic models (LDA), language-model cross-entropy. Deterministic given a fixed model and a fixed seed, but the model itself is an external artifact.
+The planned taxonomy is implemented as suites, not merely as rule-name prefixes.
+A suite is a separately runnable rule family with its own evidence posture,
+dependency profile, default severity posture, and adoption story.
 
-The progression structural → lexical → semantic is a progression along three axes simultaneously: increasing compute cost, increasing dependency on external artifacts, and decreasing immediacy of the signal to human intuition. A violation of `complexity.cyclomatic` is obvious. A violation of `lexical.nominalization_density` requires an explanation. A violation of `semantic.identifier_cohesion` requires both an explanation and trust that the underlying embedding model is capturing a real phenomenon.
+The current product is effectively the structural suite plus two
+Halstead-derived legacy rules. Future suites may share the same kernels and
+primitives, but they should not share the same trust surface by default.
 
-This progression is intentional. Structural rules are the floor; no project should run without them. Lexical rules are the middle tier; they catch a second axis of rot that structural metrics cannot see. Semantic rules are the ceiling; they catch the deepest phenomena but carry the most caveats about calibration and interpretability.
+Planned CLI shape:
 
-### 3. Why this specific split
+```bash
+slop lint                 # run the configured default suite/profile
+slop structural           # stable structural suite; today's slop lint migrates here
+slop comprehension        # deterministic comprehension proxies; planned
+slop lexical              # vocabulary-quality checks; exploratory
+slop semantic             # model-backed concept checks; experimental
 
-The split is not arbitrary. Each category has a distinct measurement substrate, which determines its compute profile, its failure modes, and the expertise needed to interpret it.
+slop check structural     # explicit check form remains valid
+slop rules structural     # list rules for one suite
+```
 
-Structural rules run on deterministic tree traversals and graph algorithms. They fail when the parser fails or when the heuristic is miscalibrated for a language idiom (the NPath-vs-dispatch case already documented in CONFIG.md). They can be explained to anyone who has read Fowler.
+Future rules belong to exactly one top-level suite:
 
-Lexical rules run on tokenized identifier streams and small NLP primitives (dictionary lookup, POS tagging, morphological suffix detection). They fail when the project uses a legitimate domain vocabulary the rule does not recognize (a GIS codebase full of `LAS`, `LAZ`, `COPC`, `PDAL` is not lexically degenerate even if a default English dictionary flags it). They can be explained to anyone who has read any of the lexical-smell or identifier-naming literature.
+| Suite | Measures | Substrate | Default posture |
+|---|---|---|---|
+| `structural` | Shape and graph risk | AST, control flow, import graph, inheritance graph, package graph, git churn | default-on when established |
+| `comprehension` | Artifact proxies for comprehension burden | operator/operand counts, entropy, readability features, information-density metrics | supported or advisory depending on calibration |
+| `lexical` | Vocabulary discipline | identifiers, comments, docstrings, token streams, morphology, project dictionaries | advisory until empirically calibrated |
+| `semantic` | Meaning relationships | embeddings, topic models, language-model or code-model representations | opt-in advisory unless strongly validated |
 
-Semantic rules run on embeddings or learned models. They fail when the model was trained on a corpus unlike the target project, when the project is too small to establish a stable vocabulary baseline, or when the threshold is calibrated against a different domain. They require calibration work, and their output cannot always be turned into a one-sentence explanation.
+The suites are separated by measurement substrate, not by how serious a
+violation feels. A dependency cycle and an inflated naming cluster can both be
+harmful, but they fail differently, require different explanations, and deserve
+different adoption defaults.
 
-Mixing these into one category flattens distinctions that matter. A user who wants to adopt slop gradually should be able to say "start with structural, add lexical once we have a project dictionary, evaluate semantic last." A user in a constrained CI environment should be able to say "skip semantic, the model download is too expensive for our runners." A user debugging a false positive should know, immediately from the category prefix, whether they are debating a parser edge case, a vocabulary edge case, or a model-calibration edge case.
+## Suite Definitions
 
-### 4. Rule migration
+**Structural rules** measure shape: control-flow paths, dependency direction,
+cycles, class coupling, inheritance depth, package balance, and churn-weighted
+growth. They are deterministic from source code and git history. Their failure
+modes are parser gaps, language idioms, and threshold calibration.
 
-Every existing rule moves under `structural.*`. No behavior changes, no threshold changes, no new rules. Pure rename.
+**Comprehension rules** measure artifact proxies for cognitive and readability
+burden. These rules do not claim to measure cognition directly. They measure
+properties of the code that research has treated as proxies for comprehension
+cost: information volume, symbolic density, entropy, readability features, and
+similar artifact-derived signals. Halstead-derived rules belong here, not under
+`structural`, because their concept is information density rather than code
+shape.
 
-| Current | New |
-|---|---|
-| `complexity.cyclomatic` | `structural.complexity.cyclomatic` |
-| `complexity.cognitive` | `structural.complexity.cognitive` |
-| `complexity.weighted` | `structural.complexity.weighted` |
-| `halstead.volume` | `structural.halstead.volume` |
-| `halstead.difficulty` | `structural.halstead.difficulty` |
-| `npath` | `structural.npath` |
-| `hotspots` | `structural.hotspots` |
-| `packages` | `structural.packages` |
-| `deps` | `structural.deps` |
-| `orphans` | `structural.orphans` |
-| `class.coupling` | `structural.class.coupling` |
-| `class.inheritance.depth` | `structural.class.inheritance.depth` |
-| `class.inheritance.children` | `structural.class.inheritance.children` |
+**Lexical rules** measure vocabulary. They operate on identifier splits,
+comments, docstrings, and project-local dictionaries. They detect naming
+inflation, inconsistent vocabulary, disposable one-off terms, and vocabulary
+overlap that may indicate hidden coupling. They are mostly deterministic, but
+their thresholds need domain calibration.
 
-CLI conveniences like `slop check complexity` continue to work and mean `slop check structural.complexity`. This is a display-level shorthand, not a second naming scheme. The fully-qualified name is canonical in config, JSON output, and documentation.
+**Semantic rules** measure meaning relationships using learned or computed
+representations. They detect concept-level cohesion, synonym clusters beyond
+surface-form similarity, and name/implementation mismatch. They depend on
+pinned model artifacts or equivalent representations, so they carry the highest
+operational and interpretive burden.
 
-### 5. Config surface
+## Evidence Posture
 
-The config schema adds one layer of nesting and is otherwise unchanged:
+Evidence maturity is separate from suite. It controls default severity and
+whether a rule is allowed to gate CI by default.
+
+| Evidence posture | Meaning | Allowed default |
+|---|---|---|
+| `established` | Long-standing metric, deterministic computation, operational precedent, calibrated threshold family | may be enabled by default as `error` |
+| `supported` | Research supports the artifact as a comprehension or maintenance proxy, but thresholds or transferability require caution | may be enabled by default as `warning`, or opt-in as `error` |
+| `exploratory` | Phenomenon is plausible or literature-backed, but the detector is novel or uncalibrated | disabled by default; warning/report only |
+| `experimental` | Requires external models, high calibration burden, or uncertain transferability | disabled by default; advisory only |
+
+Suite does not directly determine exit behavior. A `structural` rule can be
+advisory, as `orphans` is today. A future `lexical` rule could eventually gate
+CI only after evidence and calibration justify that posture. Until then,
+novel rules remain opt-in warnings or report-only signals.
+
+## Shared Kernel Substrate
+
+The suite boundary is a product and trust boundary, not a hard implementation
+boundary. Suites may share deterministic kernels:
+
+- tree-sitter parsing
+- `fd` file discovery
+- `rg` text search
+- git history inspection
+- identifier splitting
+- import graph construction
+- AST traversal
+- output and receipt models
+
+Sharing kernels is desirable. Sharing default severity, install burden, or
+claims of maturity is not. A lexical rule can reuse tree-sitter and `rg`
+without becoming part of the stable structural suite. A semantic rule can reuse
+identifier extraction without inheriting structural's CI-gate posture.
+
+## Naming Principle
+
+Canonical rule names should describe the user-facing maintainability concern,
+not necessarily the academic formula.
+
+The source metric still matters. It belongs in documentation, citations,
+violation help text, and implementation notes. But users should not need to know
+the original author's name to understand what the rule is warning about.
+
+Examples:
+
+| Academic source | Legacy name | Preferred canonical direction |
+|---|---|---|
+| McCabe cyclomatic complexity | `complexity.cyclomatic` | `structural.complexity.cyclomatic` |
+| Campbell cognitive complexity | `complexity.cognitive` | `structural.complexity.cognitive` |
+| Nejmeh NPath | `npath` | `structural.complexity.npath` |
+| Halstead Volume | `halstead.volume` | `comprehension.information_volume` |
+| Halstead Difficulty | `halstead.difficulty` | `comprehension.symbol_difficulty` |
+
+The Halstead examples are the important precedent: the future rule name should
+describe dense information content and symbolic difficulty, while the docs cite
+Halstead as the root source.
+
+## Planned Migration
+
+The migration is conceptual first and behavioral later. No current name should
+be removed until compatibility aliases exist and have been carried for at least
+two minor versions.
+
+| Current name | Planned canonical name | Notes |
+|---|---|---|
+| `complexity.cyclomatic` | `structural.complexity.cyclomatic` | shape/control-flow metric |
+| `complexity.cognitive` | `structural.complexity.cognitive` | control-flow readability metric; despite the name, substrate is structural |
+| `complexity.weighted` | `structural.class.weighted_methods` | CK WMC; current grouping is historical |
+| `npath` | `structural.complexity.npath` | path-count structural metric |
+| `hotspots` | `structural.hotspots` | churn x complexity over local git history |
+| `packages` | `structural.packages` | package graph balance |
+| `deps` | `structural.deps` | import/dependency cycles |
+| `orphans` | `structural.orphans` | reachability/reference graph; advisory by default |
+| `class.coupling` | `structural.class.coupling` | CK CBO |
+| `class.inheritance.depth` | `structural.class.inheritance_depth` | CK DIT |
+| `class.inheritance.children` | `structural.class.inheritance_children` | CK NOC |
+| `halstead.volume` | `comprehension.information_volume` | based on Halstead Volume |
+| `halstead.difficulty` | `comprehension.symbol_difficulty` | based on Halstead Difficulty |
+
+CLI conveniences may remain shorter than canonical names. For example,
+`slop check complexity` can continue to mean the structural complexity family.
+The canonical names should be used in JSON output, generated config, and rule
+documentation once the migration lands. `slop structural` should be treated as
+the stable suite entrypoint rather than only as a filter over a larger rule bag.
+
+## Config Surface
+
+The future config schema adds one suite layer and moves comprehension rules
+out of the structural namespace:
 
 ```toml
 [rules.structural.complexity]
 cyclomatic_threshold = 10
 cognitive_threshold = 15
-weighted_threshold = 40
+npath_threshold = 400
 
-[rules.structural.hotspots]
-since = "14 days ago"
+[rules.structural.class]
+weighted_methods_threshold = 40
+coupling_threshold = 8
+inheritance_depth_threshold = 4
+inheritance_children_threshold = 10
+
+[rules.comprehension.information_volume]
+threshold = 1500
+severity = "error"
+
+[rules.comprehension.symbol_difficulty]
+threshold = 30
+severity = "error"
+
+[suites]
+default = ["structural"]
 
 [rules.lexical]
-enabled = false   # planned, not yet shipped
+enabled = false
 
 [rules.semantic]
-enabled = false   # planned, not yet shipped
+enabled = false
 ```
 
-The `[rules.lexical]` and `[rules.semantic]` sections are reserved now so early adopters can opt in as soon as rules land in those categories. Both default to `enabled = false` until the category has at least one shipped rule with an empirically validated threshold. This matches the pattern `structural.orphans` already uses: advisory categories are off until their false-positive profile is understood.
+Exact key names are not stable until implementation. The principle is stable:
+Halstead-derived rules become comprehension proxies, not structural rules. The
+default suite remains `structural` unless a profile explicitly opts into other
+suites.
 
-Profiles (`default`, `lax`, `strict`) remain at the top level. When lexical and semantic rules ship, the profiles will include defaults for them. Until then, the profiles are unchanged.
+## Graduation Policy
 
-### 6. Exit codes and severity
+Future candidate rules graduate only after they meet explicit criteria:
 
-Unchanged. All three categories emit violations into the same stream, with the same severity levels (`error`, `warning`) and the same exit codes (0 clean, 1 violations, 2 error). A lexical violation and a structural violation are both violations. The category distinction is for filtering, documentation, and interpretation, not for gating behavior.
+1. The measured artifact property is defined precisely.
+2. The computation is deterministic, or any required model artifact is pinned.
+3. The detector is evaluated against a reference corpus.
+4. The false-positive rate matches the proposed default severity.
+5. The violation can be explained in one actionable sentence.
+6. The rule's default behavior matches its evidence posture.
 
-An agent or CI consumer processing JSON output should treat `category` as metadata, not as a priority signal. A user who wants to gate their build only on structural rules can do so with `slop check structural`, which is a first-class CLI invocation, not a filter.
+Exploratory and experimental rules should not produce exit code `1` by default.
+They may emit warnings, reports, or JSON-only findings while calibration is in
+progress.
 
-### 7. The `orphans` question
+## Boundary With Other Tools
 
-`orphans` currently lives under the root as its own rule and is disabled by default. Under the new taxonomy it stays structural (it measures reachability in the reference graph, not lexical or semantic properties). It will move to `structural.orphans`. Its disabled-by-default posture and its advisory-only guidance are unchanged. This is flagged explicitly here because `orphans` is the one rule whose current placement (root-level, no category) most invites confusion.
+`slop` should not grow into a provenance ledger, memory system, policy engine,
+or agent governance platform. Those tools may be valuable, but they answer a
+different question.
 
-### 8. What a lexical rule looks like
+In scope:
 
-Concrete preview so the abstract taxonomy has weight. A candidate first lexical rule is **nominalization density**: proportion of identifiers ending in a small closed set of morphological suffixes (`Manager`, `Handler`, `Controller`, `Orchestrator`, `Provider`, `Coordinator`, `Service`), normalized by file size. High nominalization density correlates with the agentic-era failure mode where a model produces `UserPreferenceOrchestrationManager` where `UserPreferences` would do. The full spec and threshold discussion live in the forthcoming `LEXICAL.md`.
+- source tokens
+- identifiers, comments, and docstrings
+- AST shape
+- import and dependency graphs
+- class and package graphs
+- git-local churn
+- deterministic run receipts for `slop` output
+- pinned artifact proxies for comprehension or semantic analysis
 
-### 9. What a semantic rule looks like
+Out of scope:
 
-Concrete preview, same purpose. A candidate first semantic rule is **identifier embedding cohesion**: variance of identifier embeddings within a file, computed against a pre-trained code embedding model (FastText on subtokens is the current candidate). Low variance suggests the file is focused; bimodal variance suggests it's doing two unrelated things. Flags files whose lexical substance fragments even when structural metrics look fine. Full spec in the forthcoming `SEMANTIC.md`.
+- agent-session provenance
+- human approval chains
+- memory freshness
+- planning-state ledgers
+- runtime attestation
+- security sandbox policy
+- explanations of why an agent chose an implementation
 
-### 10. What this document fixes
+## Downstream Documents
 
-Two framing errors in earlier conversations that the implementation agent should not inherit:
+This taxonomy is the parent document for suite-specific plans:
 
-First, the earlier plan called the new category "semantic." That conflicts with the program-analysis sense of "semantic" (control/data flow). The established research term for what was proposed under that name is **lexical**. Semantic is reserved here for the embedding-and-topic-model tier above lexical, which is a real, distinct layer.
+- `STRUCTURAL.md` covers the stable shape and graph suite.
+- `COMPREHENSION.md` covers the planned information-density and readability suite.
+- `LEXICAL.md` covers the exploratory vocabulary-quality suite.
+- `SEMANTIC.md` covers the experimental model-backed concept-quality suite.
 
-Second, the earlier plan treated "adding semantic rules" as the headline. The headline is the **taxonomy**. Adding rules is downstream. Without the taxonomy, new rules land in whatever category a reviewer names first, and the category boundaries erode. The taxonomy is the commitment; specific rules are instances.
-
-### 11. Downstream dependencies
-
-This document is the parent of three children:
-
-- `STRUCTURAL.md` — describes the structural category, preserves and consolidates the existing CONFIG.md content, notes the rename.
-- `LEXICAL.md` — defines the lexical category, catalogs candidate rules with literature backing (Abebe et al., Arnaoudova et al., Allamanis et al., Lawrie et al., Deissenboeck & Pizka), specifies per-rule configuration, and presents the investigation ordering.
-- `SEMANTIC.md` — defines the semantic category, catalogs candidate rules with literature backing (Hindle et al., Allamanis et al. survey, IdBench), specifies the external-artifact strategy (pre-trained models, version pinning, offline CI), and presents the investigation ordering.
-
-No rule document should be read without this taxonomy doc first. Any agent or human implementing against slop should be able to answer "which category does this rule belong in, and why?" before writing code.
-
----
-
-Ready to move to the category documents whenever you are. The next most useful one to produce is `LEXICAL.md` since that's where the first new rules will land, but `STRUCTURAL.md` first might be better if you want to lock in the rename before introducing new surface area. Your call.
+The philosophy document `docs/philosophy/artifact-proxies.md` is the natural
+home for the broader scientific rationale: cognitive-load measurement,
+program-comprehension studies, readability models, and why artifact proxies are
+useful without pretending to measure cognition directly.

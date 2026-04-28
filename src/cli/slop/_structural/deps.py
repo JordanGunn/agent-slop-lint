@@ -119,6 +119,34 @@ class DepsResult:
     truncated: bool = False
 
 
+@dataclass
+class _DiscoveredFiles:
+    """File discovery output used by the dependency pipeline."""
+
+    paths: list[Path]
+    total_found: int
+    errors: list[str]
+
+
+@dataclass
+class _DependencyGraph:
+    """Resolved dependency graph plus raw imports for result rendering."""
+
+    imports_raw: dict[str, list[str]]
+    efferent: dict[str, set[str]]
+    afferent: dict[str, set[str]]
+    cycles: list[list[str]]
+    errors: list[str]
+
+
+@dataclass
+class _ModuleIndex:
+    """Best-effort local import resolver indexes."""
+
+    exact: dict[str, str]
+    stem: dict[str, str]
+
+
 def deps_kernel(
     root: Path,
     *,
@@ -147,7 +175,65 @@ def deps_kernel(
     Returns:
         DepsResult with per-file dependency info and cycles
     """
-    # Step 1: File discovery
+    discovered = _discover_dependency_files(
+        root=root, globs=globs, excludes=excludes,
+        hidden=hidden, no_ignore=no_ignore,
+    )
+
+    if not discovered.paths:
+        return _empty_result(
+            target=target,
+            files_searched=discovered.total_found,
+            errors=discovered.errors,
+        )
+
+    graph = _build_dependency_graph(root, discovered.paths, language)
+    errors = [*discovered.errors, *graph.errors]
+    target_abs = _resolve_target(root, target)
+    file_deps_list = _build_file_deps(
+        file_paths=discovered.paths,
+        imports_raw=graph.imports_raw,
+        efferent=graph.efferent,
+        afferent=graph.afferent,
+        target_abs=target_abs,
+    )
+    file_deps_list, truncated = _sort_and_cap_file_deps(file_deps_list, max_results)
+
+    return DepsResult(
+        target=target,
+        files=file_deps_list,
+        cycles=_filter_cycles(graph.cycles, target_abs),
+        files_searched=discovered.total_found,
+        errors=errors,
+        truncated=truncated,
+    )
+
+
+def _empty_result(
+    *,
+    target: str | None,
+    files_searched: int,
+    errors: list[str],
+) -> DepsResult:
+    """Build an empty dependency result."""
+    return DepsResult(
+        target=target,
+        files=[],
+        cycles=[],
+        files_searched=files_searched,
+        errors=errors,
+    )
+
+
+def _discover_dependency_files(
+    *,
+    root: Path,
+    globs: list[str] | None,
+    excludes: list[str] | None,
+    hidden: bool,
+    no_ignore: bool,
+) -> _DiscoveredFiles:
+    """Find candidate source files for dependency analysis."""
     find_result = find_kernel(
         root=root,
         globs=globs,
@@ -155,118 +241,167 @@ def deps_kernel(
         hidden=hidden,
         no_ignore=no_ignore,
     )
+    return _DiscoveredFiles(
+        paths=[root / e.path for e in find_result.entries if e.type == "file"],
+        total_found=find_result.total_found,
+        errors=list(find_result.errors),
+    )
 
-    file_paths = [root / e.path for e in find_result.entries if e.type == "file"]
-    errors: list[str] = list(find_result.errors)
 
-    if not file_paths:
-        return DepsResult(
-            target=target,
-            files=[],
-            cycles=[],
-            files_searched=find_result.total_found,
-            errors=errors,
-        )
+def _build_dependency_graph(
+    root: Path,
+    file_paths: list[Path],
+    language_override: str | None,
+) -> _DependencyGraph:
+    """Extract imports and build local dependency graph structures."""
+    module_index = _build_module_index(root, file_paths)
+    edges_by_file, extract_errors = _extract_all_imports(file_paths, language_override)
+    all_edges = [edge for edges in edges_by_file.values() for edge in edges]
+    imports_raw, efferent = _resolve_edges(file_paths, all_edges, module_index)
+    afferent = _reverse_adjacency(file_paths, efferent)
+    return _DependencyGraph(
+        imports_raw=imports_raw,
+        efferent=efferent,
+        afferent=afferent,
+        cycles=_detect_cycles(efferent),
+        errors=extract_errors,
+    )
 
-    # Step 2: Build stem → path map for module resolution
-    stem_to_path: dict[str, str] = {}
-    for fp in file_paths:
-        stem = fp.stem
-        if stem not in stem_to_path:
-            stem_to_path[stem] = str(fp)
 
-    # Step 3: Extract import edges per file
-    edges_by_file, extract_errors = _extract_all_imports(file_paths, language)
-    all_edges = [e for edges in edges_by_file.values() for e in edges]
-    errors.extend(extract_errors)
-
-    # Step 4: Resolve modules to files and build adjacency
-    # efferent_resolved: source_file -> set of resolved target abs_paths
-    efferent_resolved: dict[str, set[str]] = {str(fp): set() for fp in file_paths}
-    # imports_raw: source_file -> list of raw module strings
-    imports_raw: dict[str, list[str]] = {str(fp): [] for fp in file_paths}
-
-    for edge in all_edges:
-        imports_raw[edge.source].append(edge.module)
-        resolved = _resolve_module(edge.module, stem_to_path)
-        if resolved and resolved != edge.source:
-            efferent_resolved[edge.source].add(resolved)
-
-    # Step 5: Build afferent map (reverse: who imports this file)
-    afferent_map: dict[str, set[str]] = {str(fp): set() for fp in file_paths}
-    for src, targets in efferent_resolved.items():
-        for tgt in targets:
-            if tgt in afferent_map:
-                afferent_map[tgt].add(src)
-
-    # Step 6: Detect cycles via DFS
-    cycles = _detect_cycles(efferent_resolved)
-
-    # Step 7: Build FileDeps list
-    file_deps_list: list[FileDeps] = []
-
-    target_abs: str | None = None
-    if target:
-        target_path = Path(target)
-        if not target_path.is_absolute():
-            target_path = (root / target).resolve()
-        target_abs = str(target_path)
-
+def _build_module_index(root: Path, file_paths: list[Path]) -> _ModuleIndex:
+    """Build exact module-path and fallback stem indexes."""
+    exact: dict[str, str] = {}
+    stem: dict[str, str] = {}
     for fp in file_paths:
         fp_str = str(fp)
+        stem.setdefault(fp.stem, fp_str)
+        for name in _module_names_for_path(root, fp):
+            exact.setdefault(name, fp_str)
+    return _ModuleIndex(exact=exact, stem=stem)
 
-        # Target mode: only include the target file
+
+def _module_names_for_path(root: Path, fp: Path) -> list[str]:
+    """Return local module names represented by a source path."""
+    try:
+        rel = fp.relative_to(root)
+    except ValueError:
+        rel = fp
+
+    without_suffix = rel.with_suffix("")
+    dotted = ".".join(without_suffix.parts)
+    slash = "/".join(without_suffix.parts)
+    names = [dotted, slash]
+
+    if fp.name == "__init__.py" and without_suffix.parent.parts:
+        package_dotted = ".".join(without_suffix.parent.parts)
+        package_slash = "/".join(without_suffix.parent.parts)
+        names.extend([package_dotted, package_slash])
+
+    return _unique_strings(name for name in names if name)
+
+
+def _resolve_edges(
+    file_paths: list[Path],
+    edges: list[ImportEdge],
+    module_index: _ModuleIndex,
+) -> tuple[dict[str, list[str]], dict[str, set[str]]]:
+    """Resolve import edges to raw imports and local efferent adjacency."""
+    efferent: dict[str, set[str]] = {str(fp): set() for fp in file_paths}
+    imports_raw: dict[str, list[str]] = {str(fp): [] for fp in file_paths}
+
+    for edge in edges:
+        imports_raw[edge.source].append(edge.module)
+        resolved = _resolve_module(edge.module, module_index)
+        if resolved and resolved != edge.source:
+            efferent[edge.source].add(resolved)
+
+    return imports_raw, efferent
+
+
+def _reverse_adjacency(
+    file_paths: list[Path],
+    efferent: dict[str, set[str]],
+) -> dict[str, set[str]]:
+    """Build reverse dependency adjacency."""
+    afferent: dict[str, set[str]] = {str(fp): set() for fp in file_paths}
+    for src, targets in efferent.items():
+        for tgt in targets:
+            if tgt in afferent:
+                afferent[tgt].add(src)
+    return afferent
+
+
+def _resolve_target(root: Path, target: str | None) -> str | None:
+    """Resolve optional target path using the historical kernel semantics."""
+    if target is None:
+        return None
+    target_path = Path(target)
+    if not target_path.is_absolute():
+        target_path = (root / target).resolve()
+    return str(target_path)
+
+
+def _build_file_deps(
+    *,
+    file_paths: list[Path],
+    imports_raw: dict[str, list[str]],
+    efferent: dict[str, set[str]],
+    afferent: dict[str, set[str]],
+    target_abs: str | None,
+) -> list[FileDeps]:
+    """Build per-file dependency records from graph structures."""
+    file_deps: list[FileDeps] = []
+    for fp in file_paths:
+        fp_str = str(fp)
         if target_abs is not None and fp_str != target_abs:
             continue
-
-        # Deduplicate imports
-        seen_modules: set[str] = set()
-        unique_imports: list[str] = []
-        for m in imports_raw[fp_str]:
-            if m not in seen_modules:
-                seen_modules.add(m)
-                unique_imports.append(m)
-
-        lang = _detect_file_language(fp)
-        afferent_list = sorted(afferent_map[fp_str])
-        ce = len(efferent_resolved[fp_str])
+        afferent_list = sorted(afferent[fp_str])
+        ce = len(efferent[fp_str])
         ca = len(afferent_list)
-        instability = ce / (ca + ce) if (ca + ce) > 0 else None
-
-        file_deps_list.append(FileDeps(
+        file_deps.append(FileDeps(
             file=fp_str,
-            language=lang,
-            imports=unique_imports,
+            language=_detect_file_language(fp),
+            imports=_unique_imports(imports_raw[fp_str]),
             imported_by=afferent_list,
             efferent=ce,
             afferent=ca,
-            instability=instability,
+            instability=ce / (ca + ce) if (ca + ce) > 0 else None,
         ))
+    return file_deps
 
-    # Step 8: Sort by afferent descending
-    file_deps_list.sort(key=lambda fd: fd.afferent, reverse=True)
 
-    # Step 9: Apply max_results cap
-    truncated = False
-    if max_results is not None and len(file_deps_list) > max_results:
-        file_deps_list = file_deps_list[:max_results]
-        truncated = True
+def _unique_imports(imports: list[str]) -> list[str]:
+    """Deduplicate imports while preserving first-seen order."""
+    return _unique_strings(imports)
 
-    # Filter cycles based on mode
-    if target_abs is not None:
-        # Include cycles that contain the target
-        filtered_cycles = [c for c in cycles if target_abs in c]
-    else:
-        filtered_cycles = cycles
 
-    return DepsResult(
-        target=target,
-        files=file_deps_list,
-        cycles=filtered_cycles,
-        files_searched=find_result.total_found,
-        errors=errors,
-        truncated=truncated,
-    )
+def _unique_strings(values) -> list[str]:
+    """Deduplicate strings while preserving first-seen order."""
+    seen_modules: set[str] = set()
+    unique_imports: list[str] = []
+    for module in values:
+        if module not in seen_modules:
+            seen_modules.add(module)
+            unique_imports.append(module)
+    return unique_imports
+
+
+def _sort_and_cap_file_deps(
+    file_deps: list[FileDeps],
+    max_results: int | None,
+) -> tuple[list[FileDeps], bool]:
+    """Sort dependency records and apply the optional result cap."""
+    file_deps.sort(key=lambda fd: fd.afferent, reverse=True)
+    if max_results is not None and len(file_deps) > max_results:
+        return file_deps[:max_results], True
+    return file_deps, False
+
+
+def _filter_cycles(cycles: list[list[str]], target_abs: str | None) -> list[list[str]]:
+    """Apply target-mode cycle filtering."""
+    if target_abs is None:
+        return cycles
+    return [cycle for cycle in cycles if target_abs in cycle]
 
 
 def _extract_all_imports(
@@ -368,93 +503,132 @@ def _extract_go_imports_text(fp: Path, content: str) -> list[ImportEdge]:
 
     for line_no, line in enumerate(content.splitlines(), start=1):
         stripped = line.strip()
-        if stripped == "import (" or stripped.startswith("import ("):
+        if _is_go_import_block_start(stripped):
             in_import_block = True
             continue
+
         if in_import_block:
-            if stripped == ")":
+            if _is_go_import_block_end(stripped):
                 in_import_block = False
                 continue
-            m = pattern.search(stripped)
-            if m:
-                edges.append(ImportEdge(
-                    source=str(fp),
-                    module=m.group(1),
-                    kind="go_import",
-                    line=line_no,
-                ))
+            _append_go_import_edge(edges, fp, line_no, stripped, pattern)
         elif stripped.startswith("import "):
-            m = pattern.search(stripped)
-            if m:
-                edges.append(ImportEdge(
-                    source=str(fp),
-                    module=m.group(1),
-                    kind="go_import",
-                    line=line_no,
-                ))
+            _append_go_import_edge(edges, fp, line_no, stripped, pattern)
 
     return edges
 
 
+def _is_go_import_block_start(stripped: str) -> bool:
+    """Return whether a Go line starts an import block."""
+    return stripped == "import (" or stripped.startswith("import (")
+
+
+def _is_go_import_block_end(stripped: str) -> bool:
+    """Return whether a Go line ends an import block."""
+    return stripped == ")"
+
+
+def _append_go_import_edge(
+    edges: list[ImportEdge],
+    fp: Path,
+    line_no: int,
+    stripped: str,
+    pattern: re.Pattern[str],
+) -> None:
+    """Append a Go import edge when the line contains an import path."""
+    match = pattern.search(stripped)
+    if match:
+        edges.append(ImportEdge(
+            source=str(fp),
+            module=match.group(1),
+            kind="go_import",
+            line=line_no,
+        ))
+
+
 def _resolve_module(
     module: str,
-    stem_to_path: dict[str, str],
+    module_index: _ModuleIndex,
 ) -> str | None:
     """Resolve a module string to an abs path in the scanned set.
 
-    Best-effort: takes the last component of the module path and matches
-    against file stems. Returns None if no match found.
+    Best-effort: prefer an exact local module path, then fall back to the
+    historical last-component stem match. Returns None if no match is found.
     """
-    # Take last component (e.g. "pkg.util.find" → "find", "./utils/helper" → "helper")
-    last = module.replace("\\", "/").rstrip("/")
-    last = last.split("/")[-1].split(".")[-1]
-
-    # Strip leading dots (relative imports)
-    last = last.lstrip(".")
-
-    if not last:
+    normalized = _normalize_module_name(module)
+    if not normalized:
         return None
 
-    return stem_to_path.get(last)
+    exact = module_index.exact.get(normalized) or module_index.exact.get(
+        normalized.replace(".", "/")
+    )
+    if exact:
+        return exact
+
+    last = normalized.replace("\\", "/").rstrip("/")
+    last = last.split("/")[-1].split(".")[-1]
+    return module_index.stem.get(last)
+
+
+def _normalize_module_name(module: str) -> str:
+    """Normalize an import string for local best-effort matching."""
+    normalized = module.strip().strip('"\'').replace("\\", "/").rstrip("/")
+    normalized = normalized.lstrip(".")
+    if normalized.startswith("/"):
+        normalized = normalized.lstrip("/")
+    return normalized
 
 
 def _detect_cycles(efferent: dict[str, set[str]]) -> list[list[str]]:
-    """Detect cycles in the dependency graph using DFS.
+    """Detect cycles in the dependency graph using Tarjan SCC.
 
     Returns list of cycles, each cycle as a list of abs paths.
-    Only returns unique cycles (deduped by sorted tuple).
+    Each cycle is a strongly connected component with more than one node.
     """
-    visited: set[str] = set()
-    in_stack: set[str] = set()
+    index = 0
+    indexes: dict[str, int] = {}
+    lowlinks: dict[str, int] = {}
     stack: list[str] = []
+    on_stack: set[str] = set()
     cycles: list[list[str]] = []
-    seen_cycles: set[tuple[str, ...]] = set()
 
-    def dfs(node: str) -> None:
-        visited.add(node)
-        in_stack.add(node)
+    def strongconnect(node: str) -> None:
+        nonlocal index
+        indexes[node] = index
+        lowlinks[node] = index
+        index += 1
         stack.append(node)
+        on_stack.add(node)
 
-        for neighbor in efferent.get(node, set()):
-            if neighbor not in visited:
-                dfs(neighbor)
-            elif neighbor in in_stack:
-                # Found a cycle — extract it
-                cycle_start = stack.index(neighbor)
-                cycle = stack[cycle_start:]
-                key = tuple(sorted(cycle))
-                if key not in seen_cycles:
-                    seen_cycles.add(key)
-                    cycles.append(cycle[:])
+        for neighbor in sorted(efferent.get(node, set())):
+            if neighbor not in indexes:
+                strongconnect(neighbor)
+                lowlinks[node] = min(lowlinks[node], lowlinks[neighbor])
+            elif neighbor in on_stack:
+                lowlinks[node] = min(lowlinks[node], indexes[neighbor])
 
-        stack.pop()
-        in_stack.discard(node)
+        if lowlinks[node] == indexes[node]:
+            component = _pop_scc(node, stack, on_stack)
+            if len(component) > 1:
+                cycles.append(component)
 
     for node in efferent:
-        if node not in visited:
-            dfs(node)
+        if node not in indexes:
+            strongconnect(node)
 
     return cycles
+
+
+def _pop_scc(node: str, stack: list[str], on_stack: set[str]) -> list[str]:
+    """Pop one strongly connected component from Tarjan state."""
+    component: list[str] = []
+    while stack:
+        current = stack.pop()
+        on_stack.remove(current)
+        component.append(current)
+        if current == node:
+            break
+    return sorted(component)
 
 
 def _detect_file_language(fp: Path) -> str | None:
@@ -474,5 +648,3 @@ def _detect_file_language(fp: Path) -> str | None:
         ".jl": "julia",
     }
     return ext_map.get(ext)
-
-

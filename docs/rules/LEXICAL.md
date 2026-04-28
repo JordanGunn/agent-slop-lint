@@ -1,22 +1,22 @@
 ---
 status: exploratory
 stability: in development
-ship_state: planned, not shipped
-purpose: investigate the applicability and usefulness of lexical rules as a new slop category
-updated: 2026-04-24
+ship_state: planned suite, not shipped
+purpose: investigate the applicability and usefulness of lexical rules as a separate slop suite
+updated: 2026-04-28
 ---
 
 # Lexical Rules
 
-> **This document describes a planned category.** No rules in this document currently ship in slop. Every rule here is a candidate under active investigation. Thresholds, detectors, and empirical grounding will be validated against reference corpora before any rule graduates to production. Expect the rule list, the configuration surface, and the terminology to evolve during the investigation phase. Nothing in this document should be treated as a stable contract.
+> **This document describes a planned suite.** No lexical rules currently ship in slop. Every rule here is a candidate under active investigation. Thresholds, detectors, and empirical grounding will be validated against reference corpora before any rule graduates to production. Expect the rule list, the configuration surface, and the terminology to evolve during the investigation phase. Nothing in this document should be treated as a stable contract.
 
 Lexical rules measure vocabulary. They operate on tokenized identifier streams, docstrings, and comments. They care about the words themselves: whether they are consistent, concise, appropriately named, drawn from a stable project vocabulary.
 
-This category fills a gap slop does not currently cover. Structural rules (see `STRUCTURAL.md`) measure the shape of code and say nothing about whether `UserPreferenceOrchestrationManager` reads any worse than `UserPreferences`. Lexical rules close that gap.
+This suite fills a gap slop does not currently cover. Structural rules (see `STRUCTURAL.md`) measure the shape of code. Comprehension rules (see `COMPREHENSION.md`) measure information-density and readability proxies. Neither says whether `UserPreferenceOrchestrationManager` reads any worse than `UserPreferences`. Lexical rules close that vocabulary gap.
 
-See `TAXONOMY.md` for the category system this document fits into.
+See `TAXONOMY.md` for the suite system this document fits into. The planned command surface is `slop lexical`; it may share tree-sitter, `rg`, and identifier-splitting kernels with other suites without inheriting their default severity posture.
 
-## Why this category exists
+## Why this suite exists
 
 Three converging observations motivate the addition.
 
@@ -26,9 +26,9 @@ Second, this literature has operational precedent. NATURALIZE (Allamanis et al.,
 
 Third, agent-era code exhibits a specific failure mode that prior literature did not name: linguistic inflation. Where human-authored code drifts toward sloppy or inconsistent naming, agent-authored code drifts toward formal-sounding patterns that dominate the training corpus. `Manager`, `Handler`, `Orchestrator`, `Coordinator`, `Provider`, `Service` suffixes proliferate. Synonym clusters emerge where one project vocabulary would do (`user_row`, `user_record`, `user_data`, `customer_obj`). The prior literature frames these as individual-developer mistakes; the agent-era framing treats them as systematic outputs of statistical bias, with different implications for thresholds and remediation.
 
-Put together: the techniques exist, the validation precedent exists, and the failure mode is distinctively visible in modern codebases. The category earns its place.
+Put together: the techniques exist, the validation precedent exists, and the failure mode is distinctively visible in modern codebases. The suite earns its place as an exploratory surface.
 
-## Category properties
+## Suite properties
 
 Measurement substrate: token stream, identifier splits (camelCase / snake_case), part-of-speech tags, project-local vocabulary dictionaries, small morphological lexicons.
 
@@ -112,7 +112,7 @@ Phase 2 (project-local structures): cross-module vocabulary overlap, naming cons
 
 Phase 3 (POS tagging): pos convention violation. Needs a pinned POS tagger shipped with slop.
 
-An additional tier beyond phase 3 (embedding-based lexical rules like synonym clustering via identifier embeddings) belongs in the semantic category rather than here. See `SEMANTIC.md`.
+An additional tier beyond phase 3 (embedding-based lexical rules like synonym clustering via identifier embeddings) belongs in the semantic suite rather than here. See `SEMANTIC.md`.
 
 ## Per-rule investigation structure
 
@@ -151,7 +151,7 @@ Rules that partially meet these criteria may ship as advisory (`severity = "warn
 
 ```toml
 [rules.lexical]
-enabled = false   # category-wide switch; default off until at least one rule ships
+enabled = false   # suite-wide switch; default off until at least one rule ships
 
 [rules.lexical.nominalization_density]
 enabled = false
@@ -166,9 +166,11 @@ severity = "warning"
 
 Per-rule threshold names and defaults are placeholders. They will stabilize only after the empirical probe phase of each rule's investigation.
 
-## Relationship to structural and semantic categories
+## Relationship to structural, comprehension, and semantic suites
 
-Lexical rules are orthogonal to structural rules. A file can have clean control flow and degenerate vocabulary, or clean vocabulary and tangled control flow. Expect the two categories to run together once lexical rules mature.
+Lexical rules are orthogonal to structural rules. A file can have clean control flow and degenerate vocabulary, or clean vocabulary and tangled control flow. Expect the suites to run together only when a project explicitly adopts lexical checks.
+
+Lexical rules are distinct from comprehension rules (see `COMPREHENSION.md`). A comprehension rule can flag a dense function whose vocabulary is perfectly consistent. A lexical rule can flag inflated or inconsistent vocabulary in code whose information volume is otherwise modest.
 
 Lexical rules are also distinct from semantic rules (see `SEMANTIC.md`). Semantic rules use learned representations (embeddings, topic models, language-model cross-entropy) to capture meaning relationships that go beyond surface-form vocabulary analysis. A lexical rule can detect `UserRow` and `UserRecord` as near-synonyms by string similarity; a semantic rule can detect `fetch_customer` and `get_user` as near-synonyms by embedding similarity. Different substrate, different compute profile, different failure modes.
 
@@ -177,13 +179,13 @@ Lexical rules are also distinct from semantic rules (see `SEMANTIC.md`). Semanti
 Not all issues are resolved. The ones most likely to affect the investigation:
 
 - **Domain vocabulary handling.** A GIS codebase needs `LAS`, `LAZ`, `COPC`, `PDAL` in its accepted vocabulary. Should slop support a `.slop-dict` file per project? Auto-infer domain vocabulary from the corpus? Both? This question affects at least three of the candidate rules.
-- **Language-specific vs language-agnostic rules.** Nominalization density suffixes are English-centric. Does slop support non-English codebases at all? Does it ship language packs? The lexical category is where this question becomes unavoidable.
+- **Language-specific vs language-agnostic rules.** Nominalization density suffixes are English-centric. Does slop support non-English codebases at all? Does it ship language packs? The lexical suite is where this question becomes unavoidable.
 - **Calibration transferability.** Thresholds calibrated on the reference panel may not transfer to other domains. Profiles (`default`, `lax`, `strict`) may need a fourth axis (`domain = generic | embedded | web | data-eng | ...`).
 
 These are noted now so the implementing agent can flag them during investigation rather than ship rules whose defaults silently depend on an unstated assumption.
 
 ## Terminology clarification
 
-The category is **lexical**, not semantic. This matters because "semantic" in program analysis means something else (control and data flow semantics). The research term for what this category measures is the lexical dimension of code, established by the lexical-smells and linguistic-antipatterns literature cited above. Semantic is reserved for the next category up.
+The suite is **lexical**, not semantic. This matters because "semantic" in program analysis means something else (control and data flow semantics). The research term for what this suite measures is the lexical dimension of code, established by the lexical-smells and linguistic-antipatterns literature cited above. Semantic is reserved for the next suite up.
 
-An earlier version of this plan called this category "semantic" by mistake. The correction is documented in `TAXONOMY.md` and in the history of this document.
+An earlier version of this plan called this surface "semantic" by mistake. The correction is documented in `TAXONOMY.md` and in the history of this document.
