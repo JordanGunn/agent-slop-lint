@@ -29,8 +29,9 @@ If you want to understand why slop exists and why these specific metrics:
 - [SETUP.md](SETUP.md): install, wire up CI, install the git pre-commit
   hook.
 - [CONFIG.md](CONFIG.md): per-rule threshold tuning, profile presets
-  (`default`, `lax`, `strict`), and the rationale for the three defaults
-  that diverge from the original papers.
+  (`default`, `lax`, `strict`), scoped waivers for documented exceptions,
+  and the rationale for the three defaults that diverge from the original
+  papers.
 
 ## What it found on its own source
 

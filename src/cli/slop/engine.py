@@ -6,10 +6,13 @@ and computes the aggregate lint result with exit code.
 
 from __future__ import annotations
 
+from dataclasses import replace
+from datetime import date
+from fnmatch import fnmatchcase
 from pathlib import Path
 
 from slop import __version__
-from slop.models import LintResult, RuleResult, SlopConfig
+from slop.models import LintResult, RuleResult, SlopConfig, Violation, WaiverConfig
 from slop.rules import RULE_REGISTRY, RULES_BY_CATEGORY, RULES_BY_NAME
 
 
@@ -98,6 +101,7 @@ def run_lint(
     rules_skipped = 0
     total_violations = 0
     total_advisories = 0
+    total_waived = 0
 
     for rule_def in rules_to_run:
         rc = config.rule_config(rule_def.category)
@@ -107,6 +111,7 @@ def run_lint(
             continue
 
         result = _execute_rule(rule_def, root, rc, config)
+        result = _apply_waivers(result, config.waivers, root)
         rule_results[rule_def.name] = result
         rules_checked += 1
 
@@ -115,6 +120,7 @@ def run_lint(
                 total_violations += 1
             else:
                 total_advisories += 1
+        total_waived += len(result.waived_violations)
 
     return LintResult(
         version=__version__,
@@ -126,6 +132,7 @@ def run_lint(
         rules_skipped=rules_skipped,
         violation_count=total_violations,
         advisory_count=total_advisories,
+        waived_count=total_waived,
         result=_overall_status(rule_results, total_violations),
     )
 
@@ -137,3 +144,100 @@ def _overall_status(rule_results, total_violations) -> str:
     if total_violations > 0:
         return "fail"
     return "pass"
+
+
+def _apply_waivers(
+    result: RuleResult,
+    waivers: list[WaiverConfig],
+    root: Path,
+) -> RuleResult:
+    """Move matching violations into waived_violations without hiding them."""
+    if not waivers or not result.violations:
+        return result
+
+    remaining: list[Violation] = []
+    waived: list[Violation] = [*result.waived_violations]
+    today = date.today()
+
+    for violation in result.violations:
+        waiver = _matching_waiver(violation, waivers, root, today)
+        if waiver is None:
+            remaining.append(violation)
+        else:
+            waived.append(_mark_waived(violation, waiver))
+
+    result.violations = remaining
+    result.waived_violations = waived
+    if result.status == "fail" and not remaining:
+        result.status = "pass"
+    result.summary["waived_count"] = len(waived)
+    result.summary["violation_count"] = len(remaining)
+    return result
+
+
+def _matching_waiver(
+    violation: Violation,
+    waivers: list[WaiverConfig],
+    root: Path,
+    today: date,
+) -> WaiverConfig | None:
+    """Find the first active waiver that applies to a violation."""
+    for waiver in waivers:
+        if _waiver_expired(waiver, today):
+            continue
+        if not _rule_matches(violation.rule, waiver.rule):
+            continue
+        if not _path_matches(violation.file, waiver.path, root):
+            continue
+        if not _value_allowed(violation, waiver):
+            continue
+        return waiver
+    return None
+
+
+def _waiver_expired(waiver: WaiverConfig, today: date) -> bool:
+    """Return whether a waiver's optional expiry date has passed."""
+    return waiver.expires is not None and date.fromisoformat(waiver.expires) < today
+
+
+def _rule_matches(rule: str, pattern: str) -> bool:
+    """Match one exact rule name or one documented glob pattern."""
+    return fnmatchcase(rule, pattern)
+
+
+def _path_matches(file: str, pattern: str, root: Path) -> bool:
+    """Match waiver path globs against normalized repo-relative paths."""
+    normalized = _normalize_violation_path(file, root)
+    return fnmatchcase(normalized, pattern) or fnmatchcase(f"./{normalized}", pattern)
+
+
+def _normalize_violation_path(file: str, root: Path) -> str:
+    """Normalize violation paths to POSIX repo-relative form for matching."""
+    path = Path(file)
+    if path.is_absolute():
+        try:
+            path = path.relative_to(root)
+        except ValueError:
+            pass
+    return path.as_posix()
+
+
+def _value_allowed(violation: Violation, waiver: WaiverConfig) -> bool:
+    """Apply the optional local ceiling for a waiver."""
+    if waiver.allow_up_to is None:
+        return True
+    if not isinstance(violation.value, int | float):
+        return False
+    return violation.value <= waiver.allow_up_to
+
+
+def _mark_waived(violation: Violation, waiver: WaiverConfig) -> Violation:
+    """Attach waiver metadata to a violation copy."""
+    metadata = dict(violation.metadata)
+    metadata["waiver"] = {
+        "id": waiver.id,
+        "reason": waiver.reason,
+        "allow_up_to": waiver.allow_up_to,
+        "expires": waiver.expires,
+    }
+    return replace(violation, metadata=metadata)

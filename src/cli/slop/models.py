@@ -22,12 +22,25 @@ class RuleConfig:
 
 
 @dataclass
+class WaiverConfig:
+    """Scoped exception for known, bounded lint findings."""
+
+    id: str
+    path: str
+    rule: str
+    reason: str
+    allow_up_to: float | int | None = None
+    expires: str | None = None
+
+
+@dataclass
 class SlopConfig:
     """Top-level slop configuration."""
 
     root: str = "."
     languages: list[str] = field(default_factory=list)
     exclude: list[str] = field(default_factory=list)
+    waivers: list[WaiverConfig] = field(default_factory=list)
     rules: dict[str, RuleConfig] = field(default_factory=dict)
     config_path: Path | None = None
 
@@ -63,6 +76,7 @@ class RuleResult:
     rule: str                          # e.g. "complexity.cyclomatic"
     status: str = "pass"               # "pass" | "fail" | "skip" | "error"
     violations: list[Violation] = field(default_factory=list)
+    waived_violations: list[Violation] = field(default_factory=list)
     summary: dict[str, Any] = field(default_factory=dict)
     errors: list[str] = field(default_factory=list)
 
@@ -80,6 +94,7 @@ class LintResult:
     rules_skipped: int = 0
     violation_count: int = 0
     advisory_count: int = 0
+    waived_count: int = 0
     result: str = "pass"               # "pass" | "fail" | "error"
 
 

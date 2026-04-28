@@ -6,7 +6,7 @@ from pathlib import Path
 
 from slop.config import load_config
 from slop.engine import run_lint
-from slop.models import RuleConfig, SlopConfig
+from slop.models import RuleConfig, SlopConfig, Violation, WaiverConfig
 
 
 def _config_with_rules(tmp_path: Path, **rule_overrides) -> SlopConfig:
@@ -142,3 +142,151 @@ def test_rule_with_errors_and_zero_violations_is_coerced_to_error(
     assert rr.status == "error"
     assert rr.errors == ["fd not found"]
     assert result.result == "error"
+
+
+def test_matching_waiver_moves_violation_out_of_failure_set(tmp_path: Path, monkeypatch):
+    from slop import rules as rules_module
+    from slop.models import RuleDefinition, RuleResult
+
+    def fake_run(root, rule_config, slop_config):
+        return RuleResult(
+            rule="npath",
+            status="fail",
+            violations=[
+                Violation(
+                    rule="npath",
+                    file="src/parser/grammar.py",
+                    line=12,
+                    symbol="parse_expr",
+                    message="NPath 914 exceeds 400",
+                    severity="error",
+                    value=914,
+                    threshold=400,
+                )
+            ],
+            summary={"functions_checked": 1, "violation_count": 1},
+        )
+
+    fake_def = RuleDefinition(
+        name="npath",
+        category="npath",
+        description="test override",
+        run=fake_run,
+    )
+    monkeypatch.setitem(rules_module.RULES_BY_NAME, "npath", fake_def)
+
+    config = load_config(root=str(tmp_path))
+    config.waivers = [
+        WaiverConfig(
+            id="parser-npath",
+            path="src/parser/**",
+            rule="npath",
+            reason="Parser branch shape mirrors grammar alternatives.",
+            allow_up_to=1200,
+            expires="2099-01-01",
+        )
+    ]
+    result = run_lint(config, filter_rule="npath")
+
+    rr = result.rule_results["npath"]
+    assert result.result == "pass"
+    assert result.violation_count == 0
+    assert result.waived_count == 1
+    assert rr.violations == []
+    assert rr.waived_violations[0].metadata["waiver"]["id"] == "parser-npath"
+
+
+def test_waiver_limit_does_not_hide_larger_violation(tmp_path: Path, monkeypatch):
+    from slop import rules as rules_module
+    from slop.models import RuleDefinition, RuleResult
+
+    def fake_run(root, rule_config, slop_config):
+        return RuleResult(
+            rule="npath",
+            status="fail",
+            violations=[
+                Violation(
+                    rule="npath",
+                    file="src/parser/grammar.py",
+                    message="NPath 1400 exceeds 400",
+                    severity="error",
+                    value=1400,
+                    threshold=400,
+                )
+            ],
+            summary={"functions_checked": 1, "violation_count": 1},
+        )
+
+    fake_def = RuleDefinition(
+        name="npath",
+        category="npath",
+        description="test override",
+        run=fake_run,
+    )
+    monkeypatch.setitem(rules_module.RULES_BY_NAME, "npath", fake_def)
+
+    config = load_config(root=str(tmp_path))
+    config.waivers = [
+        WaiverConfig(
+            id="parser-npath",
+            path="src/parser/**",
+            rule="npath",
+            reason="Parser branch shape mirrors grammar alternatives.",
+            allow_up_to=1200,
+        )
+    ]
+    result = run_lint(config, filter_rule="npath")
+
+    rr = result.rule_results["npath"]
+    assert result.result == "fail"
+    assert result.violation_count == 1
+    assert result.waived_count == 0
+    assert len(rr.violations) == 1
+    assert rr.waived_violations == []
+
+
+def test_expired_waiver_does_not_apply(tmp_path: Path, monkeypatch):
+    from slop import rules as rules_module
+    from slop.models import RuleDefinition, RuleResult
+
+    def fake_run(root, rule_config, slop_config):
+        return RuleResult(
+            rule="npath",
+            status="fail",
+            violations=[
+                Violation(
+                    rule="npath",
+                    file="src/parser/grammar.py",
+                    message="NPath 914 exceeds 400",
+                    severity="error",
+                    value=914,
+                    threshold=400,
+                )
+            ],
+            summary={"functions_checked": 1, "violation_count": 1},
+        )
+
+    fake_def = RuleDefinition(
+        name="npath",
+        category="npath",
+        description="test override",
+        run=fake_run,
+    )
+    monkeypatch.setitem(rules_module.RULES_BY_NAME, "npath", fake_def)
+
+    config = load_config(root=str(tmp_path))
+    config.waivers = [
+        WaiverConfig(
+            id="expired-parser-npath",
+            path="src/parser/**",
+            rule="npath",
+            reason="Expired waiver should not apply.",
+            allow_up_to=1200,
+            expires="2000-01-01",
+        )
+    ]
+    result = run_lint(config, filter_rule="npath")
+
+    assert result.result == "fail"
+    assert result.violation_count == 1
+    assert result.waived_count == 0

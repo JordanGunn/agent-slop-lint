@@ -74,13 +74,7 @@ def _render_category(
     has_multiple_rules = sum(1 for _, rr in rule_pairs if rr.status != "skip") > 1
     agg = _aggregate_category(rule_pairs)
 
-    # Violations first (skip sub-rules with no violations).
-    for rule_name, rr in rule_pairs:
-        if rr.status == "skip" or not rr.violations:
-            continue
-        lines.extend(_render_violations(
-            rule_name, rr.violations, has_multiple_rules, max_violations,
-        ))
+    lines.extend(_render_category_findings(rule_pairs, has_multiple_rules, max_violations))
 
     # Errors (missing binaries, unreadable files, git failures, …) — surfaced
     # here so silent failures can't render as ✓ clean the way they used to.
@@ -94,11 +88,52 @@ def _render_category(
     return lines
 
 
+def _render_category_findings(
+    rule_pairs: list[tuple[str, RuleResult]],
+    has_multiple_rules: bool,
+    max_violations: int,
+) -> list[str]:
+    """Render failing findings first, then waived findings."""
+    lines: list[str] = []
+    for rule_name, rr in _rules_with_violations(rule_pairs):
+        lines.extend(_render_violations(
+            rule_name, rr.violations, has_multiple_rules, max_violations,
+        ))
+    for rule_name, rr in _rules_with_waivers(rule_pairs):
+        lines.extend(_render_waived(
+            rule_name, rr.waived_violations, has_multiple_rules, max_violations,
+        ))
+    return lines
+
+
+def _rules_with_violations(
+    rule_pairs: list[tuple[str, RuleResult]],
+) -> list[tuple[str, RuleResult]]:
+    """Return non-skipped rule results with failing violations."""
+    return [
+        (rule_name, rr)
+        for rule_name, rr in rule_pairs
+        if rr.status != "skip" and rr.violations
+    ]
+
+
+def _rules_with_waivers(
+    rule_pairs: list[tuple[str, RuleResult]],
+) -> list[tuple[str, RuleResult]]:
+    """Return non-skipped rule results with waived findings."""
+    return [
+        (rule_name, rr)
+        for rule_name, rr in rule_pairs
+        if rr.status != "skip" and rr.waived_violations
+    ]
+
+
 @dataclass
 class _CategoryAgg:
     """Aggregated metrics for one category across all its sub-rules."""
 
     total_violations: int = 0
+    total_waived: int = 0
     checked: int = 0
     errors: list[tuple[str, str]] = field(default_factory=list)
     has_error_status: bool = False
@@ -117,6 +152,7 @@ def _aggregate_category(rule_pairs: list[tuple[str, RuleResult]]) -> _CategoryAg
         if rr.status == "skip":
             continue
         agg.total_violations += len(rr.violations)
+        agg.total_waived += len(rr.waived_violations)
         if rr.status == "error":
             agg.has_error_status = True
         for err in rr.errors:
@@ -161,6 +197,48 @@ def _render_violations(
     return lines
 
 
+def _render_waived(
+    rule_name: str,
+    violations: list[Violation],
+    has_multiple_rules: bool,
+    max_violations: int,
+) -> list[str]:
+    """Render waived findings for one sub-rule."""
+    lines: list[str] = []
+    if has_multiple_rules:
+        sub_name = rule_name.split(".", 1)[1] if "." in rule_name else rule_name
+        lines.append(f"  {sub_name} waived")
+        indent = "    "
+    else:
+        lines.append("  waived")
+        indent = "    "
+
+    shown = violations[:max_violations]
+    for v in shown:
+        loc = v.file
+        if v.line:
+            loc += f":{v.line}"
+        if v.symbol:
+            loc += f" {v.symbol}"
+        waiver = v.metadata.get("waiver", {})
+        waiver_id = waiver.get("id", "unknown-waiver")
+        reason = waiver.get("reason", "")
+        lines.append(
+            f"{indent}{yellow(chr(0x26a0))} {loc} \u2014 {v.message} "
+            f"(waived by {waiver_id})"
+        )
+        if reason:
+            lines.append(dim(f"{indent}  reason: {reason}"))
+
+    remaining = len(violations) - len(shown)
+    if remaining > 0:
+        lines.append(dim(f"{indent}...and {remaining} more waived"))
+
+    if has_multiple_rules:
+        lines.append("")
+    return lines
+
+
 def _category_summary_line(agg: _CategoryAgg) -> str:
     """Pick the right one-line summary (errors > violations > no-files > clean)."""
     checked_str = f", {agg.checked} checked" if agg.checked else ""
@@ -170,7 +248,10 @@ def _category_summary_line(agg: _CategoryAgg) -> str:
         noun = "error" if count == 1 else "errors"
         return f"  {cross} {count} {noun}{checked_str}"
     if agg.total_violations > 0:
-        return f"  {_plural(agg.total_violations, 'violation')}{checked_str}"
+        suffix = f", {_plural(agg.total_waived, 'waived', 'waived')}" if agg.total_waived else ""
+        return f"  {_plural(agg.total_violations, 'violation')}{suffix}{checked_str}"
+    if agg.total_waived > 0:
+        return f"  {yellow(_plural(agg.total_waived, 'waived', 'waived'))}{checked_str}"
     if agg.checked == 0:
         return f"  {yellow(chr(0x26a0))} no files matched"
     return f"  {green(chr(0x2713))} clean{checked_str}"
@@ -198,6 +279,8 @@ def _format_footer(result: LintResult) -> str:
         parts.append(red(_plural(result.violation_count, "violation")))
     if result.advisory_count > 0:
         parts.append(yellow(_plural(result.advisory_count, "advisory", "advisories")))
+    if result.waived_count > 0:
+        parts.append(yellow(_plural(result.waived_count, "waived", "waived")))
     if not parts:
         parts.append(green("no violations"))
     parts.append(_plural(result.rules_checked, "rule") + " checked")
@@ -240,6 +323,7 @@ def format_json(result: LintResult) -> str:
             "rules_skipped": result.rules_skipped,
             "violation_count": result.violation_count,
             "advisory_count": result.advisory_count,
+            "waived_count": result.waived_count,
             "result": result.result,
         },
     }
@@ -258,9 +342,23 @@ def format_json(result: LintResult) -> str:
                 "threshold": v.threshold,
                 "metadata": v.metadata,
             })
+        waived_out = []
+        for v in rr.waived_violations:
+            waived_out.append({
+                "rule": v.rule,
+                "file": v.file,
+                "line": v.line,
+                "symbol": v.symbol,
+                "message": v.message,
+                "severity": v.severity,
+                "value": v.value,
+                "threshold": v.threshold,
+                "metadata": v.metadata,
+            })
         output["rules"][rule_name] = {
             "status": rr.status,
             "violations": violations_out,
+            "waived_violations": waived_out,
             "summary": rr.summary,
             "errors": rr.errors,
         }

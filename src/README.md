@@ -15,7 +15,7 @@ The metrics themselves are not new. Cyclomatic complexity (McCabe 1976), the CK 
 ```
 $ slop lint
 
-slop 0.7.2 — scanning .
+slop 0.8.0 — scanning .
 
 complexity
   cyclomatic

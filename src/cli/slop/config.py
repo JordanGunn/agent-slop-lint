@@ -10,10 +10,11 @@ Loads config from (in priority order):
 from __future__ import annotations
 
 import sys
+from datetime import date
 from pathlib import Path
 from typing import Any
 
-from slop.models import RuleConfig, SlopConfig
+from slop.models import RuleConfig, SlopConfig, WaiverConfig
 
 # ---------------------------------------------------------------------------
 # TOML loading (stdlib on 3.11+, tomli on 3.10)
@@ -122,6 +123,73 @@ def _build_rule_configs(raw_rules: dict[str, Any]) -> dict[str, RuleConfig]:
     return result
 
 
+def _build_waivers(raw_waivers: Any) -> list[WaiverConfig]:
+    """Build and validate top-level waiver configuration."""
+    if raw_waivers is None:
+        return []
+    if not isinstance(raw_waivers, list):
+        raise ValueError("waivers must be an array of tables")
+
+    waivers: list[WaiverConfig] = []
+    seen_ids: set[str] = set()
+    for i, raw in enumerate(raw_waivers, start=1):
+        waiver = _build_waiver(raw, i, seen_ids)
+        waivers.append(waiver)
+    return waivers
+
+
+def _build_waiver(raw: Any, index: int, seen_ids: set[str]) -> WaiverConfig:
+    """Build one waiver from a TOML table."""
+    if not isinstance(raw, dict):
+        raise ValueError(f"waiver #{index} must be a table")
+
+    waiver_id = _required_string(raw, "id", f"waiver #{index}")
+    if waiver_id in seen_ids:
+        raise ValueError(f"duplicate waiver id: {waiver_id}")
+    seen_ids.add(waiver_id)
+
+    return WaiverConfig(
+        id=waiver_id,
+        path=_required_string(raw, "path", f"waiver {waiver_id}"),
+        rule=_required_string(raw, "rule", f"waiver {waiver_id}"),
+        reason=_required_string(raw, "reason", f"waiver {waiver_id}"),
+        allow_up_to=_optional_number(raw, "allow_up_to", f"waiver {waiver_id}"),
+        expires=_optional_iso_date(raw, "expires", f"waiver {waiver_id}"),
+    )
+
+
+def _required_string(raw: dict[str, Any], key: str, label: str) -> str:
+    """Read a required non-empty string field."""
+    value = raw.get(key)
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{label} must define a non-empty {key}")
+    return value
+
+
+def _optional_number(raw: dict[str, Any], key: str, label: str) -> float | int | None:
+    """Read an optional non-bool numeric field."""
+    value = raw.get(key)
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        raise ValueError(f"{label} {key} must be numeric")
+    return value
+
+
+def _optional_iso_date(raw: dict[str, Any], key: str, label: str) -> str | None:
+    """Read an optional ISO date string."""
+    value = raw.get(key)
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ValueError(f"{label} {key} must be an ISO date string")
+    try:
+        date.fromisoformat(value)
+    except ValueError as e:
+        raise ValueError(f"{label} {key} must be an ISO date string") from e
+    return value
+
+
 def _discover_config(search_root: Path) -> tuple[Path | None, dict[str, Any]]:
     """Walk upward from search_root looking for a slop config file.
 
@@ -191,6 +259,7 @@ def load_config(
     raw_root = raw.get("root")
     languages = raw.get("languages", [])
     exclude = raw.get("exclude", [])
+    waivers = _build_waivers(raw.get("waivers"))
 
     # Resolve root. Precedence:
     #   - config's `root` (resolved relative to the config file's directory
@@ -221,6 +290,7 @@ def load_config(
         root=config_root,
         languages=languages,
         exclude=exclude,
+        waivers=waivers,
         rules=rule_configs,
         config_path=discovered_config,
     )
@@ -305,6 +375,16 @@ root = "."
 
 # Global file exclusions (applied to all rules)
 # exclude = ["**/test_*", "**/vendor/**"]
+
+# Scoped waivers keep exceptional findings visible without weakening global
+# thresholds. Prefer a local allow_up_to ceiling over an unbounded waiver.
+# [[waivers]]
+# id = "parser-npath"
+# path = "src/parser/**"
+# rule = "npath"
+# allow_up_to = 1200
+# reason = "Parser branch shape mirrors grammar alternatives."
+# expires = "2026-09-01"
 
 [rules.complexity]
 enabled = true

@@ -109,6 +109,62 @@ cyclomatic_threshold = 20
     assert rc.params["cognitive_threshold"] == 15
 
 
+def test_loads_top_level_waivers(tmp_path: Path):
+    (tmp_path / ".slop.toml").write_text(
+        """\
+[[waivers]]
+id = "parser-npath"
+path = "src/parser/**"
+rule = "npath"
+allow_up_to = 1200
+reason = "Parser branch shape mirrors grammar alternatives."
+expires = "2099-01-01"
+"""
+    )
+    config = load_config(root=str(tmp_path))
+    assert len(config.waivers) == 1
+    waiver = config.waivers[0]
+    assert waiver.id == "parser-npath"
+    assert waiver.path == "src/parser/**"
+    assert waiver.rule == "npath"
+    assert waiver.allow_up_to == 1200
+    assert waiver.reason.startswith("Parser branch")
+    assert waiver.expires == "2099-01-01"
+
+
+def test_waiver_requires_reason(tmp_path: Path):
+    (tmp_path / ".slop.toml").write_text(
+        """\
+[[waivers]]
+id = "missing-reason"
+path = "src/parser/**"
+rule = "npath"
+"""
+    )
+    with pytest.raises(ValueError, match="reason"):
+        load_config(root=str(tmp_path))
+
+
+def test_waiver_rejects_duplicate_ids(tmp_path: Path):
+    (tmp_path / ".slop.toml").write_text(
+        """\
+[[waivers]]
+id = "same"
+path = "a.py"
+rule = "npath"
+reason = "one"
+
+[[waivers]]
+id = "same"
+path = "b.py"
+rule = "npath"
+reason = "two"
+"""
+    )
+    with pytest.raises(ValueError, match="duplicate waiver id"):
+        load_config(root=str(tmp_path))
+
+
 def test_slop_toml_overrides_pyproject(tmp_path: Path):
     (tmp_path / "pyproject.toml").write_text('[tool.slop]\nroot = "from_pyproject"\n')
     (tmp_path / ".slop.toml").write_text('root = "from_slop_toml"\n')

@@ -16,6 +16,121 @@ slop cites well-established metrics (McCabe, Chidamber & Kemerer, Halstead, Nejm
 
 Every other rule's default matches the cited source.
 
+## Scoped waivers
+
+Do not lower a global threshold just because one parser, state machine,
+generated-adjacent file, or compatibility layer is legitimately more complex
+than the rest of the project. Use a waiver instead.
+
+A waiver is a bounded exception. slop still analyzes the code and still prints
+the finding, but a matching finding does not fail the run while it remains
+inside the waiver's local ceiling.
+
+```toml
+[[waivers]]
+id = "parser-npath"
+path = "src/parser/**"
+rule = "npath"
+allow_up_to = 1200
+reason = "Parser branch shape mirrors grammar alternatives."
+expires = "2026-09-01"
+```
+
+Required fields:
+
+| Field | Meaning |
+|---|---|
+| `id` | Stable identifier shown in output and JSON. Must be unique. |
+| `path` | Glob matched against repo-relative violation paths. |
+| `rule` | One rule name or glob pattern, for example `"npath"` or `"complexity.cognitive"`. |
+| `reason` | Human-readable rationale. Required so exceptions are reviewable. |
+
+Optional fields:
+
+| Field | Meaning |
+|---|---|
+| `allow_up_to` | Local ceiling for numeric findings. If the measured value exceeds this number, the finding fails normally. |
+| `expires` | ISO date (`YYYY-MM-DD`). Expired waivers no longer apply. |
+
+Waivers are intentionally different from `exclude`.
+
+- `exclude` means "do not analyze this path."
+- `waivers` means "analyze this path, show matching findings, but do not fail
+  while the finding stays within a documented exception."
+
+Prefer `allow_up_to` for complexity, NPath, Halstead, class, package, and
+hotspot findings. An unbounded waiver is allowed for non-numeric cases such as
+dependency cycles, but it should be rare because it can hide growth inside the
+exception boundary.
+
+Each waiver has exactly one local ceiling. If one path needs exceptions for
+multiple metrics, write multiple waiver entries. Do not reuse one number across
+metrics with different scales.
+
+```toml
+[[waivers]]
+id = "parser-npath"
+path = "src/parser/**"
+rule = "npath"
+allow_up_to = 1200
+reason = "Parser branch shape mirrors grammar alternatives."
+
+[[waivers]]
+id = "parser-cognitive"
+path = "src/parser/**"
+rule = "complexity.cognitive"
+allow_up_to = 30
+reason = "Parser branch shape mirrors grammar alternatives."
+```
+
+Waived findings appear in human output under a `waived` block and in JSON under
+`waived_violations`. They are not counted as failing violations.
+
+Human output:
+
+```text
+npath
+  waived
+    ⚠ src/parser/grammar.py:88 parse_expr — NPath 914 exceeds 400 (waived by parser-npath)
+      reason: Parser branch shape mirrors grammar alternatives.
+
+  1 waived, 42 checked
+
+────────────────────────────────────────
+1 waived | 1 rule checked | PASS
+```
+
+JSON output keeps failing and waived findings separate:
+
+```json
+{
+  "rules": {
+    "npath": {
+      "violations": [],
+      "waived_violations": [
+        {
+          "rule": "npath",
+          "file": "src/parser/grammar.py",
+          "value": 914,
+          "threshold": 400,
+          "metadata": {
+            "waiver": {
+              "id": "parser-npath",
+              "reason": "Parser branch shape mirrors grammar alternatives.",
+              "allow_up_to": 1200,
+              "expires": null
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+```
+
+Expired waivers and findings above `allow_up_to` fail normally. That makes a
+waiver a ceiling, not an ignore.
+
 ## Rule reference
 
 ### complexity.cyclomatic
