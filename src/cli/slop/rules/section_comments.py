@@ -47,7 +47,7 @@ def run_section_comment_density(
                     message=(
                         f"'{entry.name}' contains {entry.divider_count} section "
                         f"dividers (threshold: {threshold}): "
-                        f"lines {', '.join(str(l) for l in entry.divider_lines)}"
+                        f"lines {', '.join(str(line) for line in entry.divider_lines)}"
                     ),
                     severity=severity,
                     value=entry.divider_count,

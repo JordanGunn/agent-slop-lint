@@ -502,7 +502,8 @@ def generate_default_config(profile: str = "default") -> str:
     if profile not in PROFILES:
         raise ValueError(f"Unknown profile '{profile}'. Valid: {', '.join(sorted(PROFILES))}")
     profile_cfg = PROFILES[profile]
-    quadrant_list = ", ".join(f'"{quadrant}"' for quadrant in profile_cfg["hotspots_fail_on_quadrant"])
+    quadrants = profile_cfg["hotspots_fail_on_quadrant"]
+    quadrant_list = ", ".join(f'"{quadrant}"' for quadrant in quadrants)
     orphans_enabled = "true" if profile_cfg["orphans_enabled"] else "false"
     return f'''\
 # slop — agentic code quality linter
@@ -531,9 +532,9 @@ root = "."
 
 [rules.structural.complexity]
 enabled = true
-cyclomatic_threshold = {profile_cfg["cyclomatic_threshold"]}       # fail if any function CCX exceeds this
-cognitive_threshold = {profile_cfg["cognitive_threshold"]}        # fail if any function CogC exceeds this
-npath_threshold = {profile_cfg["npath_threshold"]}         # fail if any function NPath exceeds this
+cyclomatic_threshold = {profile_cfg["cyclomatic_threshold"]}       # fail if any function CCX > this
+cognitive_threshold = {profile_cfg["cognitive_threshold"]}        # fail if any function CogC > this
+npath_threshold = {profile_cfg["npath_threshold"]}         # fail if any function NPath > this
 severity = "error"
 
 [rules.structural.class.complexity]
@@ -585,21 +586,21 @@ severity = "warning"
 #    id = "local-imports-optional-dep"
 #    path = "src/your_package/**"
 #    rule = "structural.local_imports"
-#    reason = "Heavy optional dependency deferred to avoid import-time cost or crash when wheels are absent."
+#    reason = "Heavy optional dependency deferred to avoid import-time cost when wheels are absent."
 #
 # 2. CLI subcommand handlers deferring imports for startup speed:
 #    [[waivers]]
 #    id = "local-imports-cli-startup"
 #    path = "src/your_package/cli.py"
 #    rule = "structural.local_imports"
-#    reason = "CLI command handlers defer imports so users only pay the cost for the subcommand they invoke."
+#    reason = "CLI handlers defer imports so users pay the cost only for the subcommand invoked."
 #
 # 3. Test functions that import inside the body for monkeypatching:
 #    [[waivers]]
 #    id = "local-imports-test-monkeypatch"
 #    path = "tests/**"
 #    rule = "structural.local_imports"
-#    reason = "Import inside function body is required so the test can monkeypatch the module before the code under test runs."
+#    reason = "Import inside body required so the test can monkeypatch before code under test runs."
 # ─────────────────────────────────────────────────────────────────────────────
 
 [rules.structural.redundancy]

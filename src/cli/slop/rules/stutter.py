@@ -31,7 +31,7 @@ def run_stutter(
         for v in fn.violations:
             if len(v.overlap) < min_overlap:
                 continue
-                
+
             violations.append(
                 Violation(
                     rule="lexical.stutter",

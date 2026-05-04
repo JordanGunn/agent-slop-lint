@@ -33,9 +33,10 @@ def run_clone_density(
     root: Path, rule_config: RuleConfig, slop_config: SlopConfig
 ) -> RuleResult:
     """Flag codebase-level clone density and individual clone clusters."""
-    threshold: float = float(rule_config.params.get("threshold", DEFAULT_THRESHOLD))
-    min_leaf_nodes: int = int(rule_config.params.get("min_leaf_nodes", DEFAULT_MIN_LEAF_NODES))
-    min_cluster_size: int = int(rule_config.params.get("min_cluster_size", DEFAULT_MIN_CLUSTER_SIZE))
+    params = rule_config.params
+    threshold: float = float(params.get("threshold", DEFAULT_THRESHOLD))
+    min_leaf_nodes: int = int(params.get("min_leaf_nodes", DEFAULT_MIN_LEAF_NODES))
+    min_cluster_size: int = int(params.get("min_cluster_size", DEFAULT_MIN_CLUSTER_SIZE))
     severity = rule_config.severity
 
     result = clone_density_kernel(

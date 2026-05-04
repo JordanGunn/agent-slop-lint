@@ -81,33 +81,33 @@ def stutter_kernel(
 ) -> StutterResult:
     active = ({l.lower() for l in languages} & set(_SCOPE_NODES)) if languages else set(_SCOPE_NODES)
     find_globs = [g for l in sorted(active) for g in _LANG_GLOBS.get(l, [])]
-    
+
     find_result = find_kernel(root=root, globs=find_globs, excludes=excludes)
     files = [root / e.path for e in find_result.entries if e.type == "file"]
-    
+
     results: list[FunctionStutters] = []
     errors: list[str] = []
-    
+
     for fp in files:
         lang = detect_language(fp)
         if lang not in active: continue
-        
+
         tree_lang = load_language(lang)
         if tree_lang is None: continue
-        
+
         try:
             import tree_sitter
             content = fp.read_bytes()
             parser = tree_sitter.Parser()
             parser.language = tree_lang
             tree = parser.parse(content)
-            
+
             rel = str(fp.relative_to(root))
             module_name = fp.stem
             _scan_file(tree.root_node, content, rel, lang, module_name, results)
         except Exception as exc:
             errors.append(f"{fp}: {exc}")
-            
+
     return StutterResult(functions=results, files_searched=len(files), errors=errors)
 
 def _scan_file(root_node, content, rel, lang, module_name, out):
@@ -152,17 +152,17 @@ def _process_function_body(fn_node, content, scope_stack) -> list[StutterViolati
     body = fn_node.child_by_field_name("body") or fn_node
     identifiers = []
     _collect_identifier_nodes(body, identifiers)
-    
+
     violations = []
     for ident_node in identifiers:
         name = content[ident_node.start_byte:ident_node.end_byte].decode(errors="replace")
         if name.startswith("_") and not name.startswith("__"): continue # Skip internal-looking locals
-        
+
         tokens = split_identifier(name)
         if not tokens: continue
-        
+
         token_set = set(tokens)
-        
+
         # Check against all scopes in stack (module, class, function)
         for scope_name, scope_type, scope_tokens in reversed(scope_stack):
             # If we're checking a function's local variables against THAT function's name,

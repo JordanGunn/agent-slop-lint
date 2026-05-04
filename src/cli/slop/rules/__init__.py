@@ -11,26 +11,26 @@ generated config files. Legacy names (``complexity.cyclomatic``,
 from __future__ import annotations
 
 from slop.models import RuleDefinition
+from slop.rules.any_type_density import run_any_type_density
 from slop.rules.architecture import run_distance
 from slop.rules.class_metrics import run_coupling, run_inheritance_children, run_inheritance_depth
+from slop.rules.clone_density import run_clone_density
 from slop.rules.complexity import run_cognitive, run_cyclomatic, run_weighted
 from slop.rules.dead_code import run_unreferenced
 from slop.rules.dependencies import run_cycles
+from slop.rules.god_module import run_god_module
 from slop.rules.halstead import run_difficulty, run_volume
 from slop.rules.hotspots import run_churn_weighted
-from slop.rules.any_type_density import run_any_type_density
-from slop.rules.clone_density import run_clone_density
+from slop.rules.local_imports import run_local_imports
 from slop.rules.magic_literals import run_magic_literal_density
+from slop.rules.npath import run_npath
+from slop.rules.out_parameters import run_out_parameters
+from slop.rules.section_comments import run_section_comment_density
 from slop.rules.sibling_calls import run_sibling_call_redundancy
 from slop.rules.stringly_typed import run_stringly_typed
-from slop.rules.out_parameters import run_out_parameters
-from slop.rules.god_module import run_god_module
-from slop.rules.verbosity import run_verbosity
-from slop.rules.local_imports import run_local_imports
-from slop.rules.section_comments import run_section_comment_density
-from slop.rules.tersity import run_tersity
 from slop.rules.stutter import run_stutter
-from slop.rules.npath import run_npath
+from slop.rules.tersity import run_tersity
+from slop.rules.verbosity import run_verbosity
 
 RULE_REGISTRY: list[RuleDefinition] = [
     # --- structural.complexity (function-level control flow) ---
@@ -181,7 +181,7 @@ RULE_REGISTRY: list[RuleDefinition] = [
     RuleDefinition(
         name="structural.types.escape_hatches",
         category="structural.types.escape_hatches",
-        description="Fraction of type annotations using escape-hatch types (Any, interface{}, etc.)",
+        description="Fraction of type annotations using escape-hatch types (Any, interface{}, ...)",
         default_severity="warning",
         default_enabled=True,
         threshold_label="> 30%",
