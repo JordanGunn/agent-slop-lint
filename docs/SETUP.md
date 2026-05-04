@@ -98,7 +98,7 @@ slop init strict       # greenfield / quality-focused
 
 For detailed explanations of every threshold and what the profiles change, see the **[configuration reference](./CONFIG.md)**.
 
-This creates `.slop.toml` with all 12 rules pre-configured. The defaults work well for most projects — you can tune later.
+This creates `.slop.toml` with all 24 rules pre-configured. The defaults work well for most projects — you can tune later.
 
 ### Key settings to review
 
@@ -109,14 +109,14 @@ This creates `.slop.toml` with all 12 rules pre-configured. The defaults work we
 # Exclude paths that shouldn't be linted
 # exclude = ["**/node_modules/**", "**/dist/**", "**/vendor/**"]
 
-[rules.complexity]
+[rules.structural.complexity]
 cyclomatic_threshold = 10     # McCabe CCX — lower = stricter
 cognitive_threshold = 15      # Campbell CogC — lower = stricter
 
-[rules.hotspots]
+[rules.structural.hotspots]
 since = "14 days ago"         # widen to "90 days ago" for human-pace repos
 
-[rules.orphans]
+[rules.structural.orphans]
 enabled = false               # advisory — enable when ready for dead code audit
 ```
 
@@ -308,19 +308,31 @@ slop lint --root C:\path\to\your\project
 
 **Expected output from `slop rules`:**
 ```
-  complexity.cyclomatic            [on ] CCX > 10   Per-function Cyclomatic Complexity (McCabe 1976)
-  complexity.cognitive             [on ] CogC > 15  Per-function Cognitive Complexity (Campbell 2018)
-  complexity.weighted              [on ] WMC > 40   Per-class sum of method CCX (Chidamber & Kemerer 1994)
-  halstead.volume                  [on ] V > 1500   Per-function Halstead Volume (Halstead 1977)
-  halstead.difficulty              [on ] D > 30     Per-function Halstead Difficulty (Halstead 1977)
-  npath                            [on ] NPath > 400 Per-function acyclic execution path count (Nejmeh 1988)
-  hotspots                         [on ] 14d window Churn × complexity per file (Tornhill 2015)
-  packages                         [on ] D' > 0.7   Package design distance (Martin 1994)
-  deps                             [on ] cycles     Dependency cycle detection
-  orphans                          [off]            Unreferenced symbols (advisory)
-  class.coupling                   [on ] CBO > 8    Class coupling count (Chidamber & Kemerer 1994)
-  class.inheritance.depth          [on ] DIT > 4    Inheritance tree depth (Chidamber & Kemerer 1994)
-  class.inheritance.children       [on ] NOC > 10   Direct subclass count (Chidamber & Kemerer 1994)
+  structural.complexity.cyclomatic       [on ] CCX > 10   Per-function Cyclomatic Complexity (McCabe 1976)
+  structural.complexity.cognitive        [on ] CogC > 15  Per-function Cognitive Complexity (Campbell 2018)
+  structural.complexity.npath            [on ] NPath > 400 Per-function acyclic execution path count (Nejmeh 1988)
+  structural.class.complexity            [on ] WMC > 40   Per-class sum of method CCX (Chidamber & Kemerer 1994)
+  structural.class.coupling              [on ] CBO > 8    Class coupling count (Chidamber & Kemerer 1994)
+  structural.class.inheritance.depth     [on ] DIT > 4    Inheritance tree depth (Chidamber & Kemerer 1994)
+  structural.class.inheritance.children  [on ] NOC > 10   Direct subclass count (Chidamber & Kemerer 1994)
+  structural.hotspots                    [on ] 14d window Churn × complexity per file (Tornhill 2015)
+  structural.packages                    [on ] D' > 0.7   Package design distance (Martin 1994)
+  structural.deps                        [on ] cycles     Dependency cycle detection
+  structural.local_imports               [on ] any        Import statements inside function bodies (Python, Julia, Rust)
+  structural.redundancy                  [on ] ≥ 3 shared Sibling top-level functions sharing non-trivial callees (refactoring signal)
+  structural.types.sentinels             [on ] ≤ 8 values Function parameters annotated str with sentinel names (status, mode, kind, …)
+  structural.types.hidden_mutators       [on ] any mutation Functions that mutate collection-typed parameters in place
+  structural.types.escape_hatches        [on ] > 30%      Fraction of type annotations using escape-hatch types (Any, interface{}, etc.)
+  structural.duplication                 [on ] > 5%       Type-2 clone detection: structurally identical function bodies
+  structural.god_module                  [on ] > 20       Files with too many top-level callable definitions
+  structural.orphans                     [off]            Unreferenced symbols (advisory)
+  information.volume                     [on ] V > 1500   Per-function information volume (Halstead 1977)
+  information.difficulty                 [on ] D > 30     Per-function symbol difficulty (Halstead 1977)
+  information.magic_literals             [on ] > 3        Distinct non-trivial numeric literals per function (magic numbers)
+  information.section_comments           [on ] > 2        Section-divider comments inside function bodies (function overload signal)
+  lexical.stutter                        [on ] ≥ 2 tokens Identifiers repeating tokens from their enclosing scope
+  lexical.verbosity                      [on ] mean > 3.0 Mean identifier word-tokens per function (over-verbose naming)
+  lexical.tersity                        [on ] > 50%      Fraction of identifiers ≤ 2 chars per function (terse-naming guardrail)
 ```
 
 ## Supported languages
@@ -336,7 +348,7 @@ slop lint --root C:\path\to\your\project
 | C# | `.cs` | Yes |
 | Julia | `.jl` | Mostly — see `JULIA.md` |
 
-Every rule covers every listed language, with three documented caveats: `deps` is not implemented for Rust (no import graph extractor yet); `packages` on JavaScript will always count every class as concrete because JavaScript has no `interface` or `abstract class` in the language itself; and `class.*` (CK CBO/DIT/NOC) is deferred for Julia because multiple dispatch doesn't map cleanly to method-on-class semantics. Julia `npath` also under-counts nested control flow inside `elseif`/`else` clause bodies. See CONFIG.md for per-rule detail and JULIA.md for Julia specifics.
+Every rule covers every listed language, with three documented caveats: `structural.deps` is not implemented for Rust (no import graph extractor yet); `structural.packages` on JavaScript will always count every class as concrete because JavaScript has no `interface` or `abstract class` in the language itself; and `structural.class.*` (CK CBO/DIT/NOC) is deferred for Julia because multiple dispatch doesn't map cleanly to method-on-class semantics. Julia `structural.complexity.npath` also under-counts nested control flow inside `elseif`/`else` clause bodies. See CONFIG.md for per-rule detail and JULIA.md for Julia specifics.
 
 ## Troubleshooting
 
@@ -344,9 +356,9 @@ Every rule covers every listed language, with three documented caveats: `deps` i
 
 **`command not found: rg` / `fd`** — system dependencies not installed. See step 1.
 
-**`git: not a git repository`** — the hotspots rule requires a git repo. Other rules work without git. Disable hotspots in `.slop.toml` if you're not in a repo:
+**`git: not a git repository`** — the `structural.hotspots` rule requires a git repo. Other rules work without git. Disable it in `.slop.toml` if you're not in a repo:
 ```toml
-[rules.hotspots]
+[rules.structural.hotspots]
 enabled = false
 ```
 

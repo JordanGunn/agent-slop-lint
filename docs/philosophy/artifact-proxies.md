@@ -86,15 +86,15 @@ track. Halstead-derived metrics are the current example. They are computed from
 operators and operands, but their meaning is closer to comprehension burden than
 structural shape.
 
-Planned taxonomy home:
+Taxonomy home:
 
-- `comprehension.information_volume`
-- `comprehension.symbol_difficulty`
+- `information.volume`
+- `information.difficulty`
 
 Legacy names:
 
-- `halstead.volume`
-- `halstead.difficulty`
+- `information.volume` (formerly `halstead.volume`)
+- `information.difficulty` (formerly `halstead.difficulty`)
 
 ## Exploratory Artifact Families
 
@@ -118,7 +118,7 @@ Sources to track:
 
 Lexical quality measures vocabulary: naming consistency, generic role nouns,
 identifier frequency, and project-local terminology. This is the most natural
-next suite after structural and comprehension rules because many detectors can
+next suite after structural and information rules because many detectors can
 remain deterministic and cheap.
 
 Candidate subjects:

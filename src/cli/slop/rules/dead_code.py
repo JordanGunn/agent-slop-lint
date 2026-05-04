@@ -1,7 +1,7 @@
 """Dead-code rules — wraps the vendored prune_kernel.
 
 Rules:
-  orphans  — report unreferenced symbols (advisory by default)
+  structural.orphans  — report unreferenced symbols (advisory by default)
 """
 
 from __future__ import annotations
@@ -33,7 +33,7 @@ def run_unreferenced(
         if candidate_level >= min_confidence_level:
             violations.append(
                 Violation(
-                    rule="orphans",
+                    rule="structural.orphans",
                     file=candidate.file,
                     line=candidate.line if candidate.line > 0 else None,
                     symbol=candidate.symbol,
@@ -53,7 +53,7 @@ def run_unreferenced(
             )
 
     return RuleResult(
-        rule="orphans",
+        rule="structural.orphans",
         status="fail" if violations else "pass",
         violations=violations,
         summary={

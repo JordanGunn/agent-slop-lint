@@ -58,7 +58,7 @@ class SlopConfig:
 class Violation:
     """A single linter violation."""
 
-    rule: str                          # e.g. "complexity.cyclomatic"
+    rule: str                          # e.g. "structural.complexity.cyclomatic"
     file: str                          # relative path
     line: int | None = None
     symbol: str | None = None
@@ -73,7 +73,7 @@ class Violation:
 class RuleResult:
     """Result from running one rule."""
 
-    rule: str                          # e.g. "complexity.cyclomatic"
+    rule: str                          # e.g. "structural.complexity.cyclomatic"
     status: str = "pass"               # "pass" | "fail" | "skip" | "error"
     violations: list[Violation] = field(default_factory=list)
     waived_violations: list[Violation] = field(default_factory=list)
@@ -111,8 +111,8 @@ RuleRunner = Callable[..., RuleResult]
 class RuleDefinition:
     """Definition of a single linter rule."""
 
-    name: str                          # e.g. "complexity.cyclomatic"
-    category: str                      # e.g. "complexity"
+    name: str                          # e.g. "structural.complexity.cyclomatic"
+    category: str                      # e.g. "structural.complexity"
     description: str
     default_severity: str = "error"    # "error" | "warning" | "off"
     default_enabled: bool = True

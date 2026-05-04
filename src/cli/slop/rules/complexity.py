@@ -1,9 +1,9 @@
 """Complexity rules — wraps the vendored ccx_kernel and ck_kernel.
 
 Rules:
-  complexity.cyclomatic  — fail if any function's CCX exceeds threshold
-  complexity.cognitive   — fail if any function's CogC exceeds threshold
-  complexity.weighted    — fail if any class's WMC exceeds threshold
+  structural.complexity.cyclomatic    — fail if any function's CCX exceeds threshold
+  structural.complexity.cognitive     — fail if any function's CogC exceeds threshold
+  structural.class.complexity          — fail if any class's WMC exceeds threshold
 """
 
 from __future__ import annotations
@@ -36,7 +36,7 @@ def run_cyclomatic(root: Path, rule_config: RuleConfig, slop_config: SlopConfig)
         if fn.ccx > threshold:
             violations.append(
                 Violation(
-                    rule="complexity.cyclomatic",
+                    rule="structural.complexity.cyclomatic",
                     file=fn.file,
                     line=fn.line,
                     symbol=fn.name,
@@ -49,7 +49,7 @@ def run_cyclomatic(root: Path, rule_config: RuleConfig, slop_config: SlopConfig)
             )
 
     return RuleResult(
-        rule="complexity.cyclomatic",
+        rule="structural.complexity.cyclomatic",
         status="fail" if violations else "pass",
         violations=violations,
         summary={
@@ -72,7 +72,7 @@ def run_cognitive(root: Path, rule_config: RuleConfig, slop_config: SlopConfig) 
         if fn.cog > threshold:
             violations.append(
                 Violation(
-                    rule="complexity.cognitive",
+                    rule="structural.complexity.cognitive",
                     file=fn.file,
                     line=fn.line,
                     symbol=fn.name,
@@ -85,7 +85,7 @@ def run_cognitive(root: Path, rule_config: RuleConfig, slop_config: SlopConfig) 
             )
 
     return RuleResult(
-        rule="complexity.cognitive",
+        rule="structural.complexity.cognitive",
         status="fail" if violations else "pass",
         violations=violations,
         summary={
@@ -98,7 +98,7 @@ def run_cognitive(root: Path, rule_config: RuleConfig, slop_config: SlopConfig) 
 
 def run_weighted(root: Path, rule_config: RuleConfig, slop_config: SlopConfig) -> RuleResult:
     """Check Weighted Methods per Class (WMC) against threshold."""
-    threshold = rule_config.params.get("weighted_threshold", 50)
+    threshold = rule_config.params.get("threshold", 40)
     severity = rule_config.severity
 
     result = ck_kernel(
@@ -112,7 +112,7 @@ def run_weighted(root: Path, rule_config: RuleConfig, slop_config: SlopConfig) -
         if cm.wmc > threshold:
             violations.append(
                 Violation(
-                    rule="complexity.weighted",
+                    rule="structural.class.complexity",
                     file=cm.file,
                     line=cm.line,
                     symbol=cm.name,
@@ -128,7 +128,7 @@ def run_weighted(root: Path, rule_config: RuleConfig, slop_config: SlopConfig) -
             )
 
     return RuleResult(
-        rule="complexity.weighted",
+        rule="structural.class.complexity",
         status="fail" if violations else "pass",
         violations=violations,
         summary={

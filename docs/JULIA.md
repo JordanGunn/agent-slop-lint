@@ -15,16 +15,16 @@ on the CLI.
 
 | Rule | Julia status | Notes |
 |---|---|---|
-| `complexity.cyclomatic` (McCabe CCX) | full | Counts `if`/`elseif`/`for`/`while`/`catch`/ternary plus `&&` / `||` short-circuits. |
-| `complexity.cognitive` (Campbell CogC) | full | Same decision and nesting nodes; `elseif_clause` is treated as a compensating decision. |
-| `complexity.weighted` (WMC) | n/a | WMC is a class metric; Julia uses multiple dispatch instead of methods-on-classes. See "What is not supported." |
-| `complexity.npath` (Nejmeh NPATH) | partial | Counts top-level branches. Nested control flow inside `if`/`elseif`/`else` bodies is under-counted (Julia has no block-wrapper node, so the kernel currently flat-walks function bodies but does not recurse into clause bodies). Treat the number as a lower bound. |
-| `halstead.volume` / `halstead.difficulty` | full | Operator and operand tables included for Julia keywords, infix operators, literal types. |
-| `dependencies.cycles` | full | Tree-sitter queries cover `using Foo`, `using Foo, Bar`, `using Foo.Bar`, `using Foo: a, b`, `import Foo`, `import Base: show`. Module names are captured as raw strings; resolution to file paths is the same best-effort approach used for Python: exact local module path first, then last-component stem fallback. |
-| `architecture.distance` (I/A/D′) | yes, with caveat | Rides on `dependencies`. Abstractness uses `abstract_definition` as the abstract type marker. |
-| `dead_code` (prune) | full | Definition queries cover `function_definition`, `struct_definition`, `abstract_definition`. |
-| `hotspots` | full | Composes `complexity.cyclomatic` plus git churn; rides on the CCX layer. |
-| `class.*` (Chidamber-Kemerer: CBO, DIT, NOC) | **deferred** | Julia has no classes. `struct` and `mutable struct` are data-only; methods live in dispatch tables, not on the type. CBO is computable in principle (count cross-struct references) but DIT and NOC don't translate. Same posture as Go and Rust (which also ship without these). |
+| `structural.complexity.cyclomatic` (McCabe CCX) | full | Counts `if`/`elseif`/`for`/`while`/`catch`/ternary plus `&&` / `||` short-circuits. |
+| `structural.complexity.cognitive` (Campbell CogC) | full | Same decision and nesting nodes; `elseif_clause` is treated as a compensating decision. |
+| `structural.class.complexity` (WMC) | n/a | WMC is a class metric; Julia uses multiple dispatch instead of methods-on-classes. See "What is not supported." |
+| `structural.complexity.npath` (Nejmeh NPATH) | partial | Counts top-level branches. Nested control flow inside `if`/`elseif`/`else` bodies is under-counted (Julia has no block-wrapper node, so the kernel currently flat-walks function bodies but does not recurse into clause bodies). Treat the number as a lower bound. |
+| `information.volume` / `information.difficulty` | full | Operator and operand tables included for Julia keywords, infix operators, literal types. |
+| `structural.deps` | full | Tree-sitter queries cover `using Foo`, `using Foo, Bar`, `using Foo.Bar`, `using Foo: a, b`, `import Foo`, `import Base: show`. Module names are captured as raw strings; resolution to file paths is the same best-effort approach used for Python: exact local module path first, then last-component stem fallback. |
+| `structural.packages` (I/A/D′) | yes, with caveat | Rides on `structural.deps`. Abstractness uses `abstract_definition` as the abstract type marker. |
+| `structural.orphans` (prune) | full | Definition queries cover `function_definition`, `struct_definition`, `abstract_definition`. |
+| `structural.hotspots` | full | Composes `structural.complexity.cyclomatic` plus git churn; rides on the CCX layer. |
+| `structural.class.*` (Chidamber-Kemerer: CBO, DIT, NOC) | **deferred** | Julia has no classes. `struct` and `mutable struct` are data-only; methods live in dispatch tables, not on the type. CBO is computable in principle (count cross-struct references) but DIT and NOC don't translate. Same posture as Go and Rust (which also ship without these). |
 
 ## What is not supported (yet)
 

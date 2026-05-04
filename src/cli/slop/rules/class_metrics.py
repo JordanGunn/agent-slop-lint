@@ -1,9 +1,9 @@
 """Class-level rules — wraps the vendored ck_kernel.
 
 Rules:
-  class.coupling              — CBO exceeds threshold
-  class.inheritance.depth     — DIT exceeds threshold
-  class.inheritance.children  — NOC exceeds threshold
+  structural.class.coupling                — CBO exceeds threshold
+  structural.class.inheritance.depth       — DIT exceeds threshold
+  structural.class.inheritance.children    — NOC exceeds threshold
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ def _run_ck(root: Path, slop_config: SlopConfig):
 
 
 def run_coupling(root: Path, rule_config: RuleConfig, slop_config: SlopConfig) -> RuleResult:
-    threshold = rule_config.params.get("coupling_threshold", 8)
+    threshold = rule_config.params.get("threshold", 8)
     severity = rule_config.severity
     result = _run_ck(root, slop_config)
 
@@ -33,7 +33,7 @@ def run_coupling(root: Path, rule_config: RuleConfig, slop_config: SlopConfig) -
         if cm.cbo > threshold:
             violations.append(
                 Violation(
-                    rule="class.coupling",
+                    rule="structural.class.coupling",
                     file=cm.file,
                     line=cm.line,
                     symbol=cm.name,
@@ -46,7 +46,7 @@ def run_coupling(root: Path, rule_config: RuleConfig, slop_config: SlopConfig) -
             )
 
     return RuleResult(
-        rule="class.coupling",
+        rule="structural.class.coupling",
         status="fail" if violations else "pass",
         violations=violations,
         summary={"classes_checked": result.classes_analyzed, "violation_count": len(violations)},
@@ -57,7 +57,7 @@ def run_coupling(root: Path, rule_config: RuleConfig, slop_config: SlopConfig) -
 def run_inheritance_depth(
     root: Path, rule_config: RuleConfig, slop_config: SlopConfig,
 ) -> RuleResult:
-    threshold = rule_config.params.get("inheritance_depth_threshold", 4)
+    threshold = rule_config.params.get("threshold", 4)
     severity = rule_config.severity
     result = _run_ck(root, slop_config)
 
@@ -66,7 +66,7 @@ def run_inheritance_depth(
         if cm.dit > threshold:
             violations.append(
                 Violation(
-                    rule="class.inheritance.depth",
+                    rule="structural.class.inheritance.depth",
                     file=cm.file,
                     line=cm.line,
                     symbol=cm.name,
@@ -79,7 +79,7 @@ def run_inheritance_depth(
             )
 
     return RuleResult(
-        rule="class.inheritance.depth",
+        rule="structural.class.inheritance.depth",
         status="fail" if violations else "pass",
         violations=violations,
         summary={"classes_checked": result.classes_analyzed, "violation_count": len(violations)},
@@ -90,7 +90,7 @@ def run_inheritance_depth(
 def run_inheritance_children(
     root: Path, rule_config: RuleConfig, slop_config: SlopConfig,
 ) -> RuleResult:
-    threshold = rule_config.params.get("inheritance_children_threshold", 10)
+    threshold = rule_config.params.get("threshold", 10)
     severity = rule_config.severity
     result = _run_ck(root, slop_config)
 
@@ -99,7 +99,7 @@ def run_inheritance_children(
         if cm.noc > threshold:
             violations.append(
                 Violation(
-                    rule="class.inheritance.children",
+                    rule="structural.class.inheritance.children",
                     file=cm.file,
                     line=cm.line,
                     symbol=cm.name,
@@ -112,7 +112,7 @@ def run_inheritance_children(
             )
 
     return RuleResult(
-        rule="class.inheritance.children",
+        rule="structural.class.inheritance.children",
         status="fail" if violations else "pass",
         violations=violations,
         summary={"classes_checked": result.classes_analyzed, "violation_count": len(violations)},

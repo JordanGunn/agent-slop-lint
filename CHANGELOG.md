@@ -7,6 +7,128 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-05-04
+
+First stable release. The 0.9.0 → 1.0.0 jump is mostly additive: a new
+`lexical.*` suite, type-discipline and shape rules under `structural.*`,
+inline-density rules under `information.*`, and prefix-table semantics
+for bulk-disabling rules in config. Rule names and the public CLI are
+unchanged from 0.9.0.
+
+### Added
+
+- **`lexical.*` suite (3 rules).** A new measurement substrate covering
+  identifier vocabulary discipline.
+  - `lexical.stutter` — flags identifiers that repeat tokens from the
+    enclosing scope (function, class, module). Catches names like
+    `parse_parser_input` inside class `Parser`.
+  - `lexical.verbosity` — flags functions where the mean identifier word
+    count exceeds a threshold (default 3.0). Catches `compute_total_aggregated_user_score_value`-style drift.
+  - `lexical.tersity` — flags functions where more than 50% of identifiers
+    are ≤ 2 characters. Catches `p`/`q`/`x`-heavy code.
+- **New structural rules (6).**
+  - `structural.duplication` — Type-2 clone detection: structurally
+    identical function bodies across the codebase.
+  - `structural.god_module` — flags files with > 20 top-level callable
+    definitions.
+  - `structural.local_imports` — flags `import` statements inside function
+    bodies. Three Python idiomatic patterns (optional heavy deps, CLI
+    deferred imports, test monkeypatch imports) ship as commented-out
+    waiver templates in `slop init`.
+  - `structural.redundancy` — flags sibling top-level functions that share
+    ≥ 3 non-trivial callees (refactoring signal for shared helper
+    extraction).
+  - `structural.types.sentinels` — flags `str`-annotated parameters with
+    sentinel-shaped names (`status`, `mode`, `kind`, ...) where an enum
+    would be more honest.
+  - `structural.types.hidden_mutators` — flags functions that mutate
+    collection-typed parameters in place.
+  - `structural.types.escape_hatches` — flags files where the fraction of
+    type annotations using `Any`, `interface{}`, `unknown`, etc. exceeds
+    30%.
+- **New information rules (2).**
+  - `information.magic_literals` — flags functions with > 3 distinct
+    non-trivial numeric literals.
+  - `information.section_comments` — flags function bodies containing
+    section-divider comments (a function-overload signal).
+- **Prefix-table config semantics.** TOML tables `[rules.<prefix>]`
+  propagate `enabled` and `severity` to every descendant rule. More
+  specific tables override broader ones. Disabling an entire suite is now
+  one line:
+  ```toml
+  [rules.lexical]
+  enabled = false
+  ```
+  See `docs/CONFIG.md` "Disabling rules, groups, and suites".
+- **`CITATIONS.md`** — credits the AI assistance (Augment Code's auggie
+  Prism dynamic routing across Claude Opus 4.7, Claude Sonnet 4.5, and
+  Gemini 2.5 Pro) and points to NOTICE for academic citations.
+
+### Changed
+
+- README trimmed substantially. The full rule index moved to
+  `docs/rules/README.md` (where it was already authoritative).
+  Long-form caveats moved to the rule pages and `docs/JULIA.md`.
+- `docs/dogfood-deps-kernel.md` removed (case-study churn, no longer
+  current).
+- Rule wrappers `run_any_type_density` and `run_clone_density` now use
+  named module-level constants instead of hard-coded magic numbers.
+- `_lexical/stutter.py` `_scan_file` refactored for cognitive complexity
+  (CogC 17 → 9).
+
+### Fixed
+
+- `_structural/sibling_calls.py` — corrected a logical error (`or` → `and`)
+  in the shared-callee predicate that was producing inflated redundancy
+  counts.
+
+### Compatibility
+
+- All 0.9.0 rule names and TOML tables continue to work unchanged.
+- The legacy-name compatibility shim from 0.9.0 remains in place and is
+  still scheduled for removal in 1.1.0.
+
+## [0.9.0] - 2026-05-04
+
+### Changed — rule taxonomy migration
+
+- **All rule names now carry a suite prefix** matching `docs/rules/README.md`.
+  This is a breaking change for anything that consumes the JSON `rule` field
+  (CI parsers, dashboards, downstream tooling). Legacy names and TOML tables
+  still work via a compatibility shim and trigger a single consolidated
+  deprecation warning to stderr at config-load time. The shim is scheduled
+  for removal in 1.1.0.
+- Canonical rule names:
+  - `complexity.cyclomatic` → `structural.complexity.cyclomatic`
+  - `complexity.cognitive` → `structural.complexity.cognitive`
+  - `complexity.weighted` → `structural.class.complexity`
+  - `npath` → `structural.complexity.npath`
+  - `hotspots` → `structural.hotspots`
+  - `packages` → `structural.packages`
+  - `deps` → `structural.deps`
+  - `orphans` → `structural.orphans`
+  - `class.coupling` → `structural.class.coupling`
+  - `class.inheritance.depth` → `structural.class.inheritance.depth`
+  - `class.inheritance.children` → `structural.class.inheritance.children`
+  - `halstead.volume` → `information.volume`
+  - `halstead.difficulty` → `information.difficulty`
+- TOML config tables move under suite-prefixed paths
+  (`[rules.structural.complexity]`, `[rules.information.volume]`,
+  ...). The Halstead `volume_threshold` / `difficulty_threshold` keys are
+  renamed to `threshold` under their respective new tables. The CK
+  `weighted_threshold` key moves from `[rules.complexity]` to
+  `[rules.structural.class.complexity]` as `threshold`.
+- `slop check <name>` accepts both legacy and canonical names.
+- `slop init` now emits canonical TOML.
+- All bundled documentation and the agent skill ship with canonical names.
+
+### Compatibility shim
+
+- `slop._compat` is the single point of translation. Legacy → canonical
+  maps for rule names, category names, and TOML tables all live there.
+- Waivers using legacy rule names are translated at load time and listed
+  in the deprecation block.
+
 ## [0.7.1] - 2026-04-26
 
 **Released to PyPI** on 2026-04-26 as `agent-slop-lint==0.7.1`. Tag: [`v0.7.1`](https://github.com/JordanGunn/agent-slop-lint/releases/tag/v0.7.1).
@@ -177,7 +299,9 @@ functions were not being analysed at all in v0.7.0.
 - `.slop.toml` and `pyproject.toml [tool.slop]` config support.
 - PyPI distribution as `agent-slop-lint`.
 
-[Unreleased]: https://github.com/JordanGunn/agent-slop-lint/compare/v0.7.1...HEAD
+[Unreleased]: https://github.com/JordanGunn/agent-slop-lint/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/JordanGunn/agent-slop-lint/compare/v0.9.0...v1.0.0
+[0.9.0]: https://github.com/JordanGunn/agent-slop-lint/compare/v0.7.1...v0.9.0
 [0.7.1]: https://github.com/JordanGunn/agent-slop-lint/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/JordanGunn/agent-slop-lint/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/JordanGunn/agent-slop-lint/compare/v0.6.0...v0.6.1

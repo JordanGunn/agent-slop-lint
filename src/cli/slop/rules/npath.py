@@ -1,7 +1,7 @@
 """NPath rule — wraps slop._structural npath_kernel.
 
 Rule:
-  npath  — fail if any function's acyclic execution-path count exceeds threshold
+  structural.complexity.npath  — fail if any function's acyclic execution-path count exceeds threshold
 
 NPath (Nejmeh 1988) counts acyclic execution paths. Unlike McCabe's CCX
 (additive: 1 + branches), NPath is multiplicative — sequential branches
@@ -33,7 +33,7 @@ def run_npath(root: Path, rule_config: RuleConfig, slop_config: SlopConfig) -> R
         if fn.npath > threshold:
             violations.append(
                 Violation(
-                    rule="npath",
+                    rule="structural.complexity.npath",
                     file=fn.file,
                     line=fn.line,
                     symbol=fn.name,
@@ -46,7 +46,7 @@ def run_npath(root: Path, rule_config: RuleConfig, slop_config: SlopConfig) -> R
             )
 
     return RuleResult(
-        rule="npath",
+        rule="structural.complexity.npath",
         status="fail" if violations else "pass",
         violations=violations,
         summary={

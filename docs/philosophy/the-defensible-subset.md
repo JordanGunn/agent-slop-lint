@@ -18,19 +18,19 @@ work.
 
 | Metric | What it captures | Source | slop rule |
 |---|---|---|---|
-| Distance from the Main Sequence (D') | Architectural rot at the package level | Martin, 1994 | `packages` |
-| Coupling Between Object Classes (CBO) | Over-coupling at the class level | Chidamber & Kemerer, 1994 | `class.coupling` |
-| Depth of Inheritance Tree (DIT) | Fragile inheritance hierarchies | Chidamber & Kemerer, 1994 | `class.inheritance.depth` |
-| Number of Children (NOC) | Downstream coupling from base classes | Chidamber & Kemerer, 1994 | `class.inheritance.children` |
-| Weighted Methods per Class (WMC) | Aggregate method complexity per class | Chidamber & Kemerer, 1994 | `complexity.weighted` |
-| Cyclomatic Complexity (CCX) | Path coverage burden at the method level | McCabe, 1976 | `complexity.cyclomatic` |
-| Cognitive Complexity | Subjective reading difficulty | Campbell, 2018 | `complexity.cognitive` |
-| Halstead Volume | Per-function information content (length × log₂ vocabulary) | Halstead, 1977 | `halstead.volume` |
-| Halstead Difficulty | Per-function operator/operand density | Halstead, 1977 | `halstead.difficulty` |
-| NPath | Per-function acyclic execution path count (multiplicative) | Nejmeh, 1988 | `npath` |
-| Change coupling / hotspot density | Decay and defect risk over time | Gall et al., 1998; Tornhill, 2015 | `hotspots` |
-| Acyclic dependency violations | Structural invariant violations | Lakos, 1996; Martin, 2002 | `deps` |
-| Dead code / unreferenced symbols | Decay through accumulation | (widely tooled) | `orphans` |
+| Distance from the Main Sequence (D') | Architectural rot at the package level | Martin, 1994 | `structural.packages` |
+| Coupling Between Object Classes (CBO) | Over-coupling at the class level | Chidamber & Kemerer, 1994 | `structural.class.coupling` |
+| Depth of Inheritance Tree (DIT) | Fragile inheritance hierarchies | Chidamber & Kemerer, 1994 | `structural.class.inheritance.depth` |
+| Number of Children (NOC) | Downstream coupling from base classes | Chidamber & Kemerer, 1994 | `structural.class.inheritance.children` |
+| Weighted Methods per Class (WMC) | Aggregate method complexity per class | Chidamber & Kemerer, 1994 | `structural.class.complexity` |
+| Cyclomatic Complexity (CCX) | Path coverage burden at the method level | McCabe, 1976 | `structural.complexity.cyclomatic` |
+| Cognitive Complexity | Subjective reading difficulty | Campbell, 2018 | `structural.complexity.cognitive` |
+| Halstead Volume | Per-function information content (length × log₂ vocabulary) | Halstead, 1977 | `information.volume` |
+| Halstead Difficulty | Per-function operator/operand density | Halstead, 1977 | `information.difficulty` |
+| NPath | Per-function acyclic execution path count (multiplicative) | Nejmeh, 1988 | `structural.complexity.npath` |
+| Change coupling / hotspot density | Decay and defect risk over time | Gall et al., 1998; Tornhill, 2015 | `structural.hotspots` |
+| Acyclic dependency violations | Structural invariant violations | Lakos, 1996; Martin, 2002 | `structural.deps` |
+| Dead code / unreferenced symbols | Decay through accumulation | (widely tooled) | `structural.orphans` |
 
 ## Why these and not others
 

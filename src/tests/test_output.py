@@ -14,7 +14,7 @@ set_color(False)
 
 def _make_result(
     violations: list[Violation] | None = None,
-    rule_name: str = "complexity.cyclomatic",
+    rule_name: str = "structural.complexity.cyclomatic",
     status: str = "fail",
     **kwargs,
 ) -> LintResult:
@@ -40,7 +40,7 @@ def _make_result(
     )
 
 
-def _violation(rule: str = "complexity.cyclomatic", file: str = "a.py", line: int = 1, symbol: str = "f", value: int = 15) -> Violation:
+def _violation(rule: str = "structural.complexity.cyclomatic", file: str = "a.py", line: int = 1, symbol: str = "f", value: int = 15) -> Violation:
     return Violation(rule=rule, file=file, line=line, symbol=symbol, message=f"CCX {value} exceeds 10", severity="error", value=value, threshold=10)
 
 
@@ -79,14 +79,14 @@ def test_human_shows_display_root():
 
 def test_human_groups_by_subrule():
     vs = [
-        _violation("complexity.cyclomatic", "a.py", 1, "f1", 15),
-        _violation("complexity.cognitive", "a.py", 1, "f1", 20),
+        _violation("structural.complexity.cyclomatic", "a.py", 1, "f1", 15),
+        _violation("structural.complexity.cognitive", "a.py", 1, "f1", 20),
     ]
-    rr_cyc = RuleResult(rule="complexity.cyclomatic", status="fail", violations=[vs[0]], summary={"functions_checked": 10, "violation_count": 1})
-    rr_cog = RuleResult(rule="complexity.cognitive", status="fail", violations=[vs[1]], summary={"functions_checked": 10, "violation_count": 1})
+    rr_cyc = RuleResult(rule="structural.complexity.cyclomatic", status="fail", violations=[vs[0]], summary={"functions_checked": 10, "violation_count": 1})
+    rr_cog = RuleResult(rule="structural.complexity.cognitive", status="fail", violations=[vs[1]], summary={"functions_checked": 10, "violation_count": 1})
     result = LintResult(
         version="0.1.0", root="/test", languages=["python"], display_root="./test",
-        rule_results={"complexity.cyclomatic": rr_cyc, "complexity.cognitive": rr_cog},
+        rule_results={"structural.complexity.cyclomatic": rr_cyc, "structural.complexity.cognitive": rr_cog},
         rules_checked=2, violation_count=2, result="fail",
     )
     output = format_human(result)
@@ -123,14 +123,14 @@ def test_human_zero_files_analyzed_shows_warning_not_clean():
     """A rule that passed with zero files scanned should render as a warning,
     not a green checkmark. Counts of 0 previously hid in the ✓ clean path."""
     rr = RuleResult(
-        rule="complexity.cyclomatic",
+        rule="structural.complexity.cyclomatic",
         status="pass",
         violations=[],
         summary={"functions_checked": 0, "violation_count": 0},
     )
     result = LintResult(
         version="0.1.0", root="/test", languages=["python"], display_root="./test",
-        rule_results={"complexity.cyclomatic": rr},
+        rule_results={"structural.complexity.cyclomatic": rr},
         rules_checked=1, result="pass",
     )
     output = format_human(result)
@@ -141,7 +141,7 @@ def test_human_zero_files_analyzed_shows_warning_not_clean():
 def test_human_surfaces_rule_errors():
     """Errors captured on RuleResult must appear in human output, not just JSON."""
     rr = RuleResult(
-        rule="complexity.cyclomatic",
+        rule="structural.complexity.cyclomatic",
         status="error",
         violations=[],
         summary={"functions_checked": 0, "violation_count": 0},
@@ -149,7 +149,7 @@ def test_human_surfaces_rule_errors():
     )
     result = LintResult(
         version="0.1.0", root="/test", languages=["python"], display_root="./test",
-        rule_results={"complexity.cyclomatic": rr},
+        rule_results={"structural.complexity.cyclomatic": rr},
         rules_checked=1, result="error",
     )
     output = format_human(result)
@@ -160,14 +160,14 @@ def test_human_surfaces_rule_errors():
 def test_human_error_status_does_not_render_as_clean():
     """A category whose only rule errored should not show ✓ clean."""
     rr = RuleResult(
-        rule="complexity.cyclomatic",
+        rule="structural.complexity.cyclomatic",
         status="error",
         violations=[],
         errors=["boom"],
     )
     result = LintResult(
         version="0.1.0", root="/test", languages=[], display_root="./test",
-        rule_results={"complexity.cyclomatic": rr},
+        rule_results={"structural.complexity.cyclomatic": rr},
         rules_checked=1, result="error",
     )
     output = format_human(result)
@@ -252,7 +252,7 @@ def test_json_has_expected_keys():
     data = json.loads(format_json(result))
     assert data["summary"]["violation_count"] == 1
     assert data["summary"]["result"] == "fail"
-    rule_data = data["rules"]["complexity.cyclomatic"]
+    rule_data = data["rules"]["structural.complexity.cyclomatic"]
     assert rule_data["status"] == "fail"
     assert len(rule_data["violations"]) == 1
     assert "waived_violations" in rule_data

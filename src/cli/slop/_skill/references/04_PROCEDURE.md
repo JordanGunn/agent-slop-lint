@@ -16,10 +16,10 @@ index:
 slop lint --root <path> --output json
 
 # One category
-slop check complexity --root <path> --output json
+slop check structural.complexity --root <path> --output json
 
 # One rule
-slop check class.coupling --root <path> --output json
+slop check structural.class.coupling --root <path> --output json
 ```
 
 Always use `--output json`. Never parse human output.
@@ -54,7 +54,7 @@ The JSON structure:
       "status": "pass|fail|skip|error",
       "violations": [
         {
-          "rule": "complexity.cyclomatic",
+          "rule": "structural.complexity.cyclomatic",
           "file": "src/router.py",
           "line": 42,
           "symbol": "dispatch",
@@ -95,17 +95,17 @@ If clean, say nothing.
 ```
 slop results (<root>):
 
-complexity: <N> violations
+structural.complexity: <N> violations
   - <file>:<line> <symbol> — <message>
   - <file>:<line> <symbol> — <message>
   - ...and <M> more
 
-hotspots: clean
-packages: 2 warnings
+structural.hotspots: clean
+structural.packages: 2 warnings
   - <pkg> — <message>
 
-deps: clean
-class: clean
+structural.deps: clean
+structural.class: clean
 
 <total> violations, <rules_checked> rules checked
 ```

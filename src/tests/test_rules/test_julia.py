@@ -71,7 +71,7 @@ def test_julia_npath_runs_without_error(tmp_path: Path):
 
 def test_julia_halstead_runs_without_error(tmp_path: Path):
     (tmp_path / "branchy.jl").write_text(_BRANCHY_JL)
-    cfg = _rule_config(volume_threshold=10000)
+    cfg = _rule_config(threshold=10000)
     result = run_volume(tmp_path, cfg, _slop_config())
     assert result.status == "pass"
     assert result.summary.get("functions_checked", 0) >= 1

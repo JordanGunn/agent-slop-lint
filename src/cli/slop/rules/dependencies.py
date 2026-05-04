@@ -1,7 +1,7 @@
 """Dependencies rules — wraps the vendored deps_kernel.
 
 Rules:
-  deps  — fail if any dependency cycles exist
+  structural.deps  — fail if any dependency cycles exist
 
 The Acyclic Dependencies Principle (Lakos 1996; Martin 2002, ch. 20) holds
 that import cycles prevent independent reasoning about, testing of, or
@@ -37,7 +37,7 @@ def run_cycles(
             cycle_str = " \u2192 ".join(cycle)
             violations.append(
                 Violation(
-                    rule="deps",
+                    rule="structural.deps",
                     file=cycle[0] if cycle else "",
                     line=None,
                     symbol=None,
@@ -50,7 +50,7 @@ def run_cycles(
             )
 
     return RuleResult(
-        rule="deps",
+        rule="structural.deps",
         status="fail" if violations else "pass",
         violations=violations,
         summary={

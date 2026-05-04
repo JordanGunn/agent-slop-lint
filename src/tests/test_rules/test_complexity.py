@@ -76,7 +76,7 @@ def test_cyclomatic_fail_when_above_threshold(tmp_path: Path):
     assert result.status == "fail"
     assert len(result.violations) == 1
     v = result.violations[0]
-    assert v.rule == "complexity.cyclomatic"
+    assert v.rule == "structural.complexity.cyclomatic"
     assert v.value is not None and v.value > 10
     assert v.symbol == "branchy"
 
@@ -134,7 +134,7 @@ def test_cognitive_fail_when_above_threshold(tmp_path: Path):
     result = run_cognitive(tmp_path, _rule_config(cognitive_threshold=3), _default_config())
     assert result.status == "fail"
     assert len(result.violations) >= 1
-    assert result.violations[0].rule == "complexity.cognitive"
+    assert result.violations[0].rule == "structural.complexity.cognitive"
 
 
 def test_cognitive_threshold_configurable(tmp_path: Path):

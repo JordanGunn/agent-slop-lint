@@ -1,7 +1,7 @@
 """Hotspots rule — wraps the vendored hotspots_kernel.
 
 Rules:
-  hotspots  — fail if any file lands in a forbidden quadrant
+  structural.hotspots  — fail if any file lands in a forbidden quadrant
 """
 
 from __future__ import annotations
@@ -33,7 +33,7 @@ def run_churn_weighted(
         if fh.quadrant in fail_on_quadrant:
             violations.append(
                 Violation(
-                    rule="hotspots",
+                    rule="structural.hotspots",
                     file=fh.file,
                     line=None,
                     symbol=None,
@@ -55,7 +55,7 @@ def run_churn_weighted(
             )
 
     return RuleResult(
-        rule="hotspots",
+        rule="structural.hotspots",
         status="fail" if violations else "pass",
         violations=violations,
         summary={

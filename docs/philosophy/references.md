@@ -6,24 +6,26 @@ Full bibliography of the research slop's metrics are built on.
 
 - **McCabe, T.J.** (1976). "A Complexity Measure." *IEEE Transactions on
   Software Engineering*, SE-2(4), 308-320.
-  → `complexity.cyclomatic`
+  → `structural.complexity.cyclomatic`
 
 - **Campbell, G.A.** (2018). "Cognitive Complexity: A new way of measuring
   understandability." SonarSource SA. Technical report.
-  → `complexity.cognitive`
+  → `structural.complexity.cognitive`
 
 - **Halstead, M.H.** (1977). *Elements of Software Science*. Elsevier.
-  → `halstead.volume`, `halstead.difficulty`
+  → `information.volume`, `information.difficulty`
 
 - **Nejmeh, B.A.** (1988). "NPATH: A Measure of Execution Path Complexity
   and Its Applications." *Communications of the ACM*, 31(2), 188-200.
-  → `npath`
+  → `structural.complexity.npath`
 
 - **Chidamber, S.R. & Kemerer, C.F.** (1994). "A Metrics Suite for Object
   Oriented Design." *IEEE Transactions on Software Engineering*, 20(6),
   476-493.
-  → `complexity.weighted` (WMC), `class.coupling` (CBO),
-  `class.inheritance.depth` (DIT), `class.inheritance.children` (NOC)
+  → `structural.class.complexity` (WMC),
+  `structural.class.coupling` (CBO),
+  `structural.class.inheritance.depth` (DIT),
+  `structural.class.inheritance.children` (NOC)
 
 - **Martin, R.C.** (1994). "OO Design Quality Metrics: An Analysis of
   Dependencies." *Proceedings of Workshop Pragmatic and Theoretical

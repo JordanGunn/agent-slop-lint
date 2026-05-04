@@ -1,0 +1,177 @@
+# slop — agentic code quality linter
+# https://github.com/JordanGunn/agent-slop-lint
+# Profile: default
+
+# Root directory (default: ".")
+root = "."
+
+# Languages to analyze (default: auto-detect all supported)
+# Supported: python, javascript, typescript, go, rust, java, c_sharp
+# languages = ["python", "typescript"]
+
+# Global file exclusions (applied to all rules)
+# exclude = ["**/test_*", "**/vendor/**"]
+
+# Scoped waivers keep exceptional findings visible without weakening global
+# thresholds. Prefer a local allow_up_to ceiling over an unbounded waiver.
+# [[waivers]]
+# id = "parser-npath"
+# path = "src/parser/**"
+# rule = "structural.complexity.npath"
+# allow_up_to = 1200
+# reason = "Parser branch shape mirrors grammar alternatives."
+# expires = "2026-09-01"
+
+[rules.structural.complexity]
+enabled = true
+cyclomatic_threshold = 10       # fail if any function CCX exceeds this
+cognitive_threshold = 15        # fail if any function CogC exceeds this
+npath_threshold = 400         # fail if any function NPath exceeds this
+severity = "error"
+
+[rules.structural.class.complexity]
+enabled = true
+threshold = 40              # fail if any class WMC exceeds this
+severity = "error"
+
+[rules.structural.class.coupling]
+enabled = true
+threshold = 8
+severity = "error"
+
+[rules.structural.class.inheritance.depth]
+enabled = true
+threshold = 4
+severity = "error"
+
+[rules.structural.class.inheritance.children]
+enabled = true
+threshold = 10
+severity = "error"
+
+[rules.structural.hotspots]
+enabled = true
+since = "14 days ago"
+min_commits = 2
+fail_on_quadrant = ["hotspot"]
+severity = "error"
+
+[rules.structural.packages]
+enabled = true
+# languages = ["python"]        # optional: restrict to a subset of slop's supported languages
+max_distance = 0.7
+fail_on_zone = ["pain"]
+severity = "warning"
+
+[rules.structural.deps]
+enabled = true
+fail_on_cycles = true
+severity = "error"
+
+[rules.structural.local_imports]
+enabled = true
+# threshold = 0     # allow up to N local imports per file before flagging
+severity = "warning"
+# ── Python: local imports are a genuine idiom in three common situations ──────
+# 1. Optional / heavy dependencies deferred until the feature is actually used:
+#    [[waivers]]
+#    id = "local-imports-optional-dep"
+#    path = "src/your_package/**"
+#    rule = "structural.local_imports"
+#    reason = "Heavy optional dependency deferred to avoid import-time cost or crash when wheels are absent."
+#
+# 2. CLI subcommand handlers deferring imports for startup speed:
+#    [[waivers]]
+#    id = "local-imports-cli-startup"
+#    path = "src/your_package/cli.py"
+#    rule = "structural.local_imports"
+#    reason = "CLI command handlers defer imports so users only pay the cost for the subcommand they invoke."
+#
+# 3. Test functions that import inside the body for monkeypatching:
+#    [[waivers]]
+#    id = "local-imports-test-monkeypatch"
+#    path = "tests/**"
+#    rule = "structural.local_imports"
+#    reason = "Import inside function body is required so the test can monkeypatch the module before the code under test runs."
+# ─────────────────────────────────────────────────────────────────────────────
+
+[rules.structural.redundancy]
+enabled = true
+min_shared = 3      # minimum shared non-trivial callees between two sibling functions
+min_score = 0.5     # minimum overlap ratio (shared / max callee count)
+severity = "warning"
+
+[rules.structural.types.sentinels]
+enabled = true
+max_cardinality = 8   # flag sentinel str params with ≤ 8 distinct call-site values
+require_str_annotation = true
+severity = "warning"
+
+[rules.structural.types.hidden_mutators]
+enabled = true
+require_type_annotation = true   # only flag params with explicit collection types
+min_mutations = 1
+severity = "warning"
+
+[rules.structural.types.escape_hatches]
+enabled = true
+threshold = 0.30    # flag files where > 30% of annotations use escape-hatch types
+min_annotations = 5
+severity = "warning"
+
+[rules.structural.duplication]
+enabled = true
+threshold = 0.05    # flag when > 5% of functions are Type-2 clones
+min_leaf_nodes = 10 # ignore trivially short functions
+min_cluster_size = 2
+severity = "warning"
+
+[rules.structural.god_module]
+enabled = true
+threshold = 20      # flag files with more than this many top-level definitions
+severity = "warning"
+
+[rules.structural.orphans]
+enabled = false
+min_confidence = "high"
+severity = "warning"
+
+[rules.information.volume]
+enabled = true
+threshold = 1500         # fail if any function V exceeds this
+# token_weight_alpha = 0.0   # > 0 tightens threshold for terse-identifier functions
+severity = "error"
+
+[rules.information.difficulty]
+enabled = true
+threshold = 30        # fail if any function D exceeds this
+severity = "error"
+
+[rules.information.magic_literals]
+enabled = true
+threshold = 3       # flag functions with > 3 distinct non-trivial numeric literals
+severity = "warning"
+
+[rules.information.section_comments]
+enabled = true
+threshold = 2       # flag functions with more than this many section-divider comments
+severity = "warning"
+
+[rules.lexical.stutter]
+enabled = true
+min_overlap_tokens = 2   # flag identifiers repeating ≥ N tokens from enclosing scope
+severity = "warning"
+
+[rules.lexical.verbosity]
+enabled = true
+max_mean_tokens = 3.0   # flag functions where mean word-tokens-per-identifier > this
+min_identifiers = 5     # skip functions with fewer identifiers than this
+severity = "warning"
+
+[rules.lexical.tersity]
+enabled = true
+max_density = 0.50      # flag functions where > 50% of identifiers are ≤ max_len chars
+max_len = 2
+min_identifiers = 5
+# allow_list = ["i", "j", "k", "x", "y", "z", "ok", "n"]   # conventional short names
+severity = "warning"

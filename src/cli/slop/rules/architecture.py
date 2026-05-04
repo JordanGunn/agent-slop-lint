@@ -1,7 +1,7 @@
 """Architecture rules — wraps the vendored robert_kernel.
 
 Rules:
-  packages  — fail if any package's D' exceeds threshold or lands in a forbidden zone
+  structural.packages  — fail if any package's D' exceeds threshold or lands in a forbidden zone
 """
 
 from __future__ import annotations
@@ -40,7 +40,7 @@ def _check_package(pkg, max_distance, fail_on_zone, severity):
     if not reasons:
         return None
     return Violation(
-        rule="packages",
+        rule="structural.packages",
         file=pkg.package,
         line=None,
         symbol=None,
@@ -75,7 +75,7 @@ def run_distance(
 
     if not languages:
         return RuleResult(
-            rule="packages",
+            rule="structural.packages",
             status="skip",
             summary={
                 "reason": "no supported languages",
@@ -101,7 +101,7 @@ def run_distance(
                 violations.append(v)
 
     return RuleResult(
-        rule="packages",
+        rule="structural.packages",
         status="fail" if violations else "pass",
         violations=violations,
         summary={

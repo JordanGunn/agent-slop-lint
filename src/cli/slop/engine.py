@@ -12,29 +12,74 @@ from fnmatch import fnmatchcase
 from pathlib import Path
 
 from slop import __version__
+from slop._compat import canonical_categories, canonical_rule_name
 from slop.models import LintResult, RuleResult, SlopConfig, Violation, WaiverConfig
 from slop.rules import RULE_REGISTRY, RULES_BY_CATEGORY, RULES_BY_NAME
+
+
+def _resolve_rule_filter(filter_rule: str) -> list:
+    """Resolve a single-rule (or rule-prefix) filter to its rule set."""
+    canonical, _ = canonical_rule_name(filter_rule)
+    rule_def = RULES_BY_NAME.get(canonical)
+    if rule_def is not None:
+        return [rule_def]
+    prefix = canonical + "."
+    matches = [r for r in RULE_REGISTRY if r.name.startswith(prefix)]
+    if matches:
+        return matches
+    raise KeyError(filter_rule)
+
+
+def _rules_for_category(category: str, seen: set[str]) -> list:
+    """Append direct + nested-prefix + by-name matches for one category.
+
+    A legacy category alias (``complexity``) can fan out to entries that
+    resolve as either a category (``structural.complexity``) or a single
+    rule name (``structural.class.complexity``). Both shapes are
+    accepted here so legacy CLI shorthand keeps its old fan-out.
+    """
+    matches: list = []
+    for rule in RULES_BY_CATEGORY.get(category, []):
+        if rule.name not in seen:
+            matches.append(rule)
+            seen.add(rule.name)
+    by_name = RULES_BY_NAME.get(category)
+    if by_name is not None and by_name.name not in seen:
+        matches.append(by_name)
+        seen.add(by_name.name)
+    prefix = category + "."
+    for rule in RULE_REGISTRY:
+        if rule.category.startswith(prefix) and rule.name not in seen:
+            matches.append(rule)
+            seen.add(rule.name)
+    return matches
+
+
+def _resolve_category_filter(filter_category: str) -> list:
+    """Resolve a category filter (canonical or legacy alias) to its rule set."""
+    categories, _ = canonical_categories(filter_category)
+    matches: list = []
+    seen: set[str] = set()
+    for cat in categories:
+        matches.extend(_rules_for_category(cat, seen))
+    if not matches:
+        raise KeyError(filter_category)
+    return matches
 
 
 def _select_rules(filter_rule, filter_category):
     """Resolve filters to a list of rules to run.
 
+    Legacy rule / category names are translated to canonical form via
+    ``slop._compat`` before lookup. Prefix matching is preserved so
+    ``slop check structural.class`` still picks up every nested rule.
+
     Raises KeyError(filter) if the filter matches no rule or category.
     """
     if filter_rule:
-        rule_def = RULES_BY_NAME.get(filter_rule)
-        if rule_def is not None:
-            return [rule_def]
-        prefix = filter_rule + "."
-        prefix_matches = [r for r in RULE_REGISTRY if r.name.startswith(prefix)]
-        if prefix_matches:
-            return prefix_matches
-        raise KeyError(filter_rule)
+        return _resolve_rule_filter(filter_rule)
     if filter_category:
-        matches = RULES_BY_CATEGORY.get(filter_category, [])
-        if not matches:
-            raise KeyError(filter_category)
-        return matches
+        return _resolve_category_filter(filter_category)
     return list(RULE_REGISTRY)
 
 
@@ -70,7 +115,7 @@ def run_lint(
     Args:
         config: Merged slop configuration.
         filter_category: If set, run only rules in this category.
-        filter_rule: If set, run only this specific rule (e.g. "complexity.cyclomatic").
+        filter_rule: If set, run only this specific rule (e.g. "structural.complexity.cyclomatic").
 
     Returns:
         Aggregated LintResult with per-rule results and summary.

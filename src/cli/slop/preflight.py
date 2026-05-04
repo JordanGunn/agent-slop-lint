@@ -8,8 +8,8 @@ points at install instructions.
 
 The required-binary set is rule-driven:
 - ``fd`` is always required (every file-discovery kernel uses it).
-- ``git`` is required when the ``hotspots`` rule is enabled.
-- ``rg`` is required when the ``orphans`` rule is enabled.
+- ``git`` is required when the ``structural.hotspots`` rule is enabled.
+- ``rg`` is required when the ``structural.orphans`` rule is enabled.
 """
 
 from __future__ import annotations
@@ -25,7 +25,7 @@ class MissingBinary:
     """A system binary required by an enabled rule that was not found."""
 
     name: str                # canonical tool name (e.g. "fd")
-    rules: tuple[str, ...]   # slop rules that need it (e.g. ("complexity.*", ...))
+    rules: tuple[str, ...]   # slop rules that need it (e.g. ("structural.hotspots", ...))
     install: str             # install hint URL or command
 
 
@@ -38,13 +38,13 @@ def required_binaries(config: SlopConfig) -> dict[str, tuple[str, ...]]:
     # than enumerating every rule that indirectly depends on it.
     needed: dict[str, list[str]] = {"fd": ["file discovery"]}
 
-    hotspots = config.rules.get("hotspots")
+    hotspots = config.rules.get("structural.hotspots")
     if hotspots is None or hotspots.enabled:
-        needed.setdefault("git", []).append("hotspots")
+        needed.setdefault("git", []).append("structural.hotspots")
 
-    orphans = config.rules.get("orphans")
+    orphans = config.rules.get("structural.orphans")
     if orphans is not None and orphans.enabled:
-        needed.setdefault("rg", []).append("orphans")
+        needed.setdefault("rg", []).append("structural.orphans")
 
     return {k: tuple(v) for k, v in needed.items()}
 

@@ -30,9 +30,9 @@ Commands:
 Examples:
   slop lint
   slop lint --root ./src --output json
-  slop check complexity
-  slop check complexity.cyclomatic
-  slop check class.inheritance
+  slop check structural.complexity
+  slop check structural.complexity.cyclomatic
+  slop check structural.class
   slop init                 # default profile
   slop init lax            # legacy / gradual adoption
   slop init strict         # greenfield / quality-focused
@@ -54,8 +54,8 @@ Examples:
     check_parser.add_argument(
         "target", type=str,
         help=(
-            "Category (e.g. 'complexity'), subcategory "
-            "(e.g. 'class.inheritance'), or rule (e.g. 'complexity.cyclomatic')"
+            "Category (e.g. 'structural.complexity'), suite "
+            "(e.g. 'structural'), or rule (e.g. 'structural.complexity.cyclomatic')"
         ),
     )
     _add_common_args(check_parser)
@@ -212,35 +212,34 @@ def cmd_lint(args: argparse.Namespace) -> int:
 
 
 def cmd_check(args: argparse.Namespace) -> int:
+    from slop._compat import LEGACY_CATEGORIES, canonical_rule_name
     from slop.rules import CATEGORIES, RULE_REGISTRY, RULES_BY_NAME
 
     target = args.target
 
-    # Validate the target before running
-    if "." in target:
-        exact = target in RULES_BY_NAME
-        prefix = any(r.name.startswith(target + ".") for r in RULE_REGISTRY)
-        if not exact and not prefix:
-            available = ", ".join(sorted(CATEGORIES))
-            print(
-                f"slop: unknown rule or category '{target}'\n"
-                f"Available categories: {available}\n"
-                f"Run 'slop rules' for full list.",
-                file=sys.stderr,
-            )
-            return 2
+    # Validate the target before running. Legacy rule / category names are
+    # translated by the engine; we accept them here so the error message
+    # only fires for genuinely unknown targets.
+    canonical_rule, _ = canonical_rule_name(target)
+    if canonical_rule in RULES_BY_NAME:
         return _load_and_run(args, filter_rule=target)
-    else:
-        if target not in {r.category for r in RULE_REGISTRY}:
-            available = ", ".join(sorted(CATEGORIES))
-            print(
-                f"slop: unknown category '{target}'\n"
-                f"Available: {available}\n"
-                f"Run 'slop rules' for full list.",
-                file=sys.stderr,
-            )
-            return 2
+    if any(r.name.startswith(canonical_rule + ".") for r in RULE_REGISTRY):
+        return _load_and_run(args, filter_rule=target)
+
+    known_categories = {r.category for r in RULE_REGISTRY}
+    if target in known_categories or target in LEGACY_CATEGORIES:
         return _load_and_run(args, filter_category=target)
+    if any(c.startswith(target + ".") for c in known_categories):
+        return _load_and_run(args, filter_category=target)
+
+    available = ", ".join(sorted(CATEGORIES))
+    print(
+        f"slop: unknown rule or category '{target}'\n"
+        f"Available categories: {available}\n"
+        f"Run 'slop rules' for full list.",
+        file=sys.stderr,
+    )
+    return 2
 
 
 _HOOK_MARKER = "# --- slop pre-commit hook ---"

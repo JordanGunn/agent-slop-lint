@@ -26,11 +26,20 @@ def _config_with_rules(tmp_path: Path, **rule_overrides) -> SlopConfig:
     return config
 
 
+_DISABLE_NON_LOCAL = (
+    "structural.hotspots",
+    "structural.packages",
+    "structural.deps",
+    "structural.orphans",
+    "structural.class",
+)
+
+
 def test_engine_returns_pass_for_clean_code(tmp_path: Path):
     (tmp_path / "clean.py").write_text("x = 1\n")
     config = load_config(root=str(tmp_path))
     # Disable rules that need git or complex setup
-    for cat in ("hotspots", "packages", "deps", "orphans", "class"):
+    for cat in _DISABLE_NON_LOCAL:
         config.rules[cat] = RuleConfig(enabled=False)
     result = run_lint(config)
     assert result.result == "pass"
@@ -42,7 +51,7 @@ def test_engine_returns_fail_when_violations_exist(tmp_path: Path):
         + "".join(f"    if {chr(97+i)}: pass\n" for i in range(11))
     )
     config = load_config(root=str(tmp_path))
-    for cat in ("hotspots", "packages", "deps", "orphans", "class"):
+    for cat in _DISABLE_NON_LOCAL:
         config.rules[cat] = RuleConfig(enabled=False)
     result = run_lint(config)
     assert result.result == "fail"
@@ -63,17 +72,17 @@ def test_disabled_rule_is_skipped(tmp_path: Path):
 def test_filter_category_runs_only_that_category(tmp_path: Path):
     (tmp_path / "a.py").write_text("def f():\n    pass\n")
     config = load_config(root=str(tmp_path))
-    result = run_lint(config, filter_category="complexity")
-    # Only complexity rules should appear in results
+    result = run_lint(config, filter_category="structural.complexity")
+    # Only structural.complexity rules should appear in results
     for rule_name in result.rule_results:
-        assert rule_name.startswith("complexity"), f"Unexpected rule: {rule_name}"
+        assert rule_name.startswith("structural.complexity"), f"Unexpected rule: {rule_name}"
 
 
 def test_filter_rule_runs_one_rule(tmp_path: Path):
     (tmp_path / "a.py").write_text("def f():\n    pass\n")
     config = load_config(root=str(tmp_path))
-    result = run_lint(config, filter_rule="complexity.cyclomatic")
-    assert list(result.rule_results.keys()) == ["complexity.cyclomatic"]
+    result = run_lint(config, filter_rule="structural.complexity.cyclomatic")
+    assert list(result.rule_results.keys()) == ["structural.complexity.cyclomatic"]
 
 
 def test_unknown_rule_returns_error(tmp_path: Path):
@@ -98,13 +107,15 @@ def test_display_root_passes_through(tmp_path: Path):
 
 
 def test_prefix_match_runs_subcategory(tmp_path: Path):
+    """``slop check structural.class`` runs every rule in that category."""
     (tmp_path / "a.py").write_text("class Foo:\n    pass\n")
     config = load_config(root=str(tmp_path))
-    result = run_lint(config, filter_rule="class.inheritance")
+    result = run_lint(config, filter_category="structural.class")
     rule_names = list(result.rule_results.keys())
-    assert "class.inheritance.depth" in rule_names
-    assert "class.inheritance.children" in rule_names
-    assert "class.coupling" not in rule_names
+    assert "structural.class.inheritance.depth" in rule_names
+    assert "structural.class.inheritance.children" in rule_names
+    assert "structural.class.coupling" in rule_names
+    assert "structural.class.complexity" in rule_names
 
 
 def test_rule_with_errors_and_zero_violations_is_coerced_to_error(
@@ -120,25 +131,27 @@ def test_rule_with_errors_and_zero_violations_is_coerced_to_error(
 
     def fake_run(root, rule_config, slop_config):
         return RuleResult(
-            rule="complexity.cyclomatic",
+            rule="structural.complexity.cyclomatic",
             status="pass",
             violations=[],
             errors=["fd not found"],
         )
 
     fake_def = RuleDefinition(
-        name="complexity.cyclomatic",
-        category="complexity",
+        name="structural.complexity.cyclomatic",
+        category="structural.complexity",
         description="test override",
         run=fake_run,
     )
     # RULES_BY_NAME is a dict — engine looks up filter_rule via this mapping.
-    monkeypatch.setitem(rules_module.RULES_BY_NAME, "complexity.cyclomatic", fake_def)
+    monkeypatch.setitem(
+        rules_module.RULES_BY_NAME, "structural.complexity.cyclomatic", fake_def,
+    )
 
     config = load_config(root=str(tmp_path))
-    result = run_lint(config, filter_rule="complexity.cyclomatic")
+    result = run_lint(config, filter_rule="structural.complexity.cyclomatic")
 
-    rr = result.rule_results["complexity.cyclomatic"]
+    rr = result.rule_results["structural.complexity.cyclomatic"]
     assert rr.status == "error"
     assert rr.errors == ["fd not found"]
     assert result.result == "error"
@@ -150,11 +163,11 @@ def test_matching_waiver_moves_violation_out_of_failure_set(tmp_path: Path, monk
 
     def fake_run(root, rule_config, slop_config):
         return RuleResult(
-            rule="npath",
+            rule="structural.complexity.npath",
             status="fail",
             violations=[
                 Violation(
-                    rule="npath",
+                    rule="structural.complexity.npath",
                     file="src/parser/grammar.py",
                     line=12,
                     symbol="parse_expr",
@@ -168,27 +181,29 @@ def test_matching_waiver_moves_violation_out_of_failure_set(tmp_path: Path, monk
         )
 
     fake_def = RuleDefinition(
-        name="npath",
-        category="npath",
+        name="structural.complexity.npath",
+        category="structural.complexity",
         description="test override",
         run=fake_run,
     )
-    monkeypatch.setitem(rules_module.RULES_BY_NAME, "npath", fake_def)
+    monkeypatch.setitem(
+        rules_module.RULES_BY_NAME, "structural.complexity.npath", fake_def,
+    )
 
     config = load_config(root=str(tmp_path))
     config.waivers = [
         WaiverConfig(
             id="parser-npath",
             path="src/parser/**",
-            rule="npath",
+            rule="structural.complexity.npath",
             reason="Parser branch shape mirrors grammar alternatives.",
             allow_up_to=1200,
             expires="2099-01-01",
         )
     ]
-    result = run_lint(config, filter_rule="npath")
+    result = run_lint(config, filter_rule="structural.complexity.npath")
 
-    rr = result.rule_results["npath"]
+    rr = result.rule_results["structural.complexity.npath"]
     assert result.result == "pass"
     assert result.violation_count == 0
     assert result.waived_count == 1
@@ -202,11 +217,11 @@ def test_waiver_limit_does_not_hide_larger_violation(tmp_path: Path, monkeypatch
 
     def fake_run(root, rule_config, slop_config):
         return RuleResult(
-            rule="npath",
+            rule="structural.complexity.npath",
             status="fail",
             violations=[
                 Violation(
-                    rule="npath",
+                    rule="structural.complexity.npath",
                     file="src/parser/grammar.py",
                     message="NPath 1400 exceeds 400",
                     severity="error",
@@ -218,26 +233,28 @@ def test_waiver_limit_does_not_hide_larger_violation(tmp_path: Path, monkeypatch
         )
 
     fake_def = RuleDefinition(
-        name="npath",
-        category="npath",
+        name="structural.complexity.npath",
+        category="structural.complexity",
         description="test override",
         run=fake_run,
     )
-    monkeypatch.setitem(rules_module.RULES_BY_NAME, "npath", fake_def)
+    monkeypatch.setitem(
+        rules_module.RULES_BY_NAME, "structural.complexity.npath", fake_def,
+    )
 
     config = load_config(root=str(tmp_path))
     config.waivers = [
         WaiverConfig(
             id="parser-npath",
             path="src/parser/**",
-            rule="npath",
+            rule="structural.complexity.npath",
             reason="Parser branch shape mirrors grammar alternatives.",
             allow_up_to=1200,
         )
     ]
-    result = run_lint(config, filter_rule="npath")
+    result = run_lint(config, filter_rule="structural.complexity.npath")
 
-    rr = result.rule_results["npath"]
+    rr = result.rule_results["structural.complexity.npath"]
     assert result.result == "fail"
     assert result.violation_count == 1
     assert result.waived_count == 0
@@ -251,11 +268,11 @@ def test_expired_waiver_does_not_apply(tmp_path: Path, monkeypatch):
 
     def fake_run(root, rule_config, slop_config):
         return RuleResult(
-            rule="npath",
+            rule="structural.complexity.npath",
             status="fail",
             violations=[
                 Violation(
-                    rule="npath",
+                    rule="structural.complexity.npath",
                     file="src/parser/grammar.py",
                     message="NPath 914 exceeds 400",
                     severity="error",
@@ -267,25 +284,27 @@ def test_expired_waiver_does_not_apply(tmp_path: Path, monkeypatch):
         )
 
     fake_def = RuleDefinition(
-        name="npath",
-        category="npath",
+        name="structural.complexity.npath",
+        category="structural.complexity",
         description="test override",
         run=fake_run,
     )
-    monkeypatch.setitem(rules_module.RULES_BY_NAME, "npath", fake_def)
+    monkeypatch.setitem(
+        rules_module.RULES_BY_NAME, "structural.complexity.npath", fake_def,
+    )
 
     config = load_config(root=str(tmp_path))
     config.waivers = [
         WaiverConfig(
             id="expired-parser-npath",
             path="src/parser/**",
-            rule="npath",
+            rule="structural.complexity.npath",
             reason="Expired waiver should not apply.",
             allow_up_to=1200,
             expires="2000-01-01",
         )
     ]
-    result = run_lint(config, filter_rule="npath")
+    result = run_lint(config, filter_rule="structural.complexity.npath")
 
     assert result.result == "fail"
     assert result.violation_count == 1

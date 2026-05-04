@@ -59,7 +59,7 @@ def test_npath_flags_sequential_ifs(tmp_path: Path) -> None:
     assert any(v.symbol == "f" for v in result.violations)
     flagged = next(v for v in result.violations if v.symbol == "f")
     assert flagged.value is not None and flagged.value > 200
-    assert flagged.rule == "npath"
+    assert flagged.rule == "structural.complexity.npath"
 
 
 def test_npath_respects_custom_threshold(tmp_path: Path) -> None:

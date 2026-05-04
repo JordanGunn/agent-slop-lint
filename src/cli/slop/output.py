@@ -10,9 +10,29 @@ from dataclasses import dataclass, field
 
 from slop.color import bold, dim, green, red, yellow
 from slop.models import LintResult, RuleResult, Violation
+from slop.rules import RULES_BY_NAME
 
 # Default number of violations shown per sub-rule before "...and N more"
 DEFAULT_MAX_VIOLATIONS = 5
+
+
+def _category_for(rule_name: str) -> str:
+    """Return the category a rule belongs to.
+
+    Falls back to the rule name itself when the rule isn't registered
+    (covers test fixtures that monkey-patch the registry).
+    """
+    rule_def = RULES_BY_NAME.get(rule_name)
+    if rule_def is not None:
+        return rule_def.category
+    return rule_name
+
+
+def _short_name_for(rule_name: str) -> str:
+    """Return the leaf segment of a rule name for display under its category."""
+    if "." in rule_name:
+        return rule_name.rsplit(".", 1)[1]
+    return rule_name
 
 
 def _plural(n: int, singular: str, plural: str | None = None) -> str:
@@ -45,10 +65,10 @@ def format_human(result: LintResult, *, max_violations: int = DEFAULT_MAX_VIOLAT
 def _group_by_category(
     result: LintResult,
 ) -> dict[str, list[tuple[str, RuleResult]]]:
-    """Group rule results by top-level category, preserving insertion order."""
+    """Group rule results by registered category, preserving insertion order."""
     categories: dict[str, list[tuple[str, RuleResult]]] = {}
     for rule_name, rr in result.rule_results.items():
-        cat = rule_name.split(".")[0] if "." in rule_name else rule_name
+        cat = _category_for(rule_name)
         categories.setdefault(cat, []).append((rule_name, rr))
     return categories
 
@@ -79,7 +99,7 @@ def _render_category(
     # Errors (missing binaries, unreadable files, git failures, …) — surfaced
     # here so silent failures can't render as ✓ clean the way they used to.
     for rule_name, err in agg.errors:
-        sub_name = rule_name.split(".", 1)[1] if "." in rule_name else rule_name
+        sub_name = _short_name_for(rule_name)
         prefix = f"{sub_name}: " if has_multiple_rules else ""
         lines.append(f"  {red(chr(0x2717))} {prefix}{err}")
 
@@ -172,7 +192,7 @@ def _render_violations(
     """Render the violation block for one sub-rule."""
     lines: list[str] = []
     if has_multiple_rules:
-        sub_name = rule_name.split(".", 1)[1] if "." in rule_name else rule_name
+        sub_name = _short_name_for(rule_name)
         lines.append(f"  {sub_name}")
         indent = "    "
     else:
@@ -206,7 +226,7 @@ def _render_waived(
     """Render waived findings for one sub-rule."""
     lines: list[str] = []
     if has_multiple_rules:
-        sub_name = rule_name.split(".", 1)[1] if "." in rule_name else rule_name
+        sub_name = _short_name_for(rule_name)
         lines.append(f"  {sub_name} waived")
         indent = "    "
     else:

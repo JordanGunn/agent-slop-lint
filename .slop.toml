@@ -11,8 +11,65 @@ exclude = [
     "**/_util/**",
 ]
 
-[rules.hotspots]
+[rules.structural.hotspots]
 enabled = false                 # new project — no meaningful churn history yet
 
-[rules.packages]
+[rules.structural.packages]
 enabled = false                 # small corpus once the kernel subpackages are excluded; I/A/D' is noisy
+
+[rules.structural.redundancy]
+min_shared = 5                  # default (3) is too noisy for test suites; raise here since tests/ share many setup helpers
+
+[[waivers]]
+id = "stutter-tests"
+path = "src/tests/**"
+rule = "lexical.stutter"
+reason = "Test files import and call the symbols they test by name; the rule-under-test name naturally repeats tokens from the test module name (e.g. run_any_type_density inside test_any_type_density). Not a naming discipline problem."
+
+[[waivers]]
+id = "stutter-rule-wrappers"
+path = "src/cli/slop/rules/**"
+rule = "lexical.stutter"
+reason = "Rule wrapper functions are named run_X and call X_kernel; the kernel variable name repeating the function name is the most precise choice available. This is a structural idiom of the rule registry pattern, not naming drift."
+
+[[waivers]]
+id = "stutter-engine-filters"
+path = "src/cli/slop/engine.py"
+rule = "lexical.stutter"
+reason = "filter_rule inside _resolve_rule_filter and filter_category inside _resolve_category_filter: the local variable names the thing being resolved, which is exactly what the enclosing function is doing. Renaming would reduce clarity."
+
+[[waivers]]
+id = "stutter-compat-legacy"
+path = "src/cli/slop/_compat.py"
+rule = "lexical.stutter"
+reason = "legacy_table inside _apply_one_legacy_table: the function applies one entry from the legacy table, so legacy_table is the precise name for what it holds."
+
+[[waivers]]
+id = "stutter-preflight"
+path = "src/cli/slop/preflight.py"
+rule = "lexical.stutter"
+reason = "required_binaries inside check_required_binaries: the function checks required binaries, so the local variable holding the list of required binaries is named precisely."
+
+[[waivers]]
+id = "local-imports-optional-dep"
+path = "src/cli/slop/_lexical/**"
+rule = "structural.local_imports"
+reason = "tree_sitter is an optional heavy dependency; importing at module level would crash startup for users without the wheels installed. Deferred until the kernel is actually invoked."
+
+[[waivers]]
+id = "local-imports-cli-startup"
+path = "src/cli/slop/cli.py"
+rule = "structural.local_imports"
+reason = "CLI subcommand handlers defer imports so only the invoked command pays the import cost. Standard CLI startup-time optimisation — importing everything at the top would slow down every slop invocation."
+
+[[waivers]]
+id = "local-imports-halstead-optional"
+path = "src/cli/slop/rules/halstead.py"
+rule = "structural.local_imports"
+reason = "identifier_token_kernel is deferred to avoid a circular import and to keep the Halstead rule loadable without the lexical kernel being initialised."
+
+[[waivers]]
+id = "local-imports-test-monkeypatch"
+path = "src/tests/**"
+rule = "structural.local_imports"
+reason = "Imports inside test functions are required for monkeypatching: the module must be imported inside the function body so the test can patch it before the code under test runs."
