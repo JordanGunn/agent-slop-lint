@@ -1,10 +1,11 @@
 # slop — agentic code quality linter
 
-> Catches structural code quality defects using established software metrics (McCabe, Chidamber & Kemerer, Halstead, Nejmeh, Martin, Tornhill). Tuned for AI-assisted codebases where code rot accumulates faster than in human-only workflows.
+> Catches code quality defects across three substrates — structural (McCabe, Chidamber & Kemerer, Nejmeh, Martin, Tornhill, Campbell), information-theoretic (Halstead volume and difficulty, magic literals, section comments), and lexical (identifier stutter, verbosity, tersity). Tuned for AI-assisted codebases where code rot accumulates faster than in human-only workflows.
 
 ## Overview
 
 - [README](https://github.com/JordanGunn/agent-slop-lint/blob/main/README.md): install, example output, rules table with default thresholds, language support.
+- [Rule index](https://github.com/JordanGunn/agent-slop-lint/blob/main/docs/rules/README.md): every rule across the `structural.*`, `information.*`, and `lexical.*` suites, with default thresholds and citations.
 
 ## Reference
 
