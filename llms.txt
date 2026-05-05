@@ -2,6 +2,8 @@
 
 > Catches code quality defects across three substrates — structural (McCabe, Chidamber & Kemerer, Nejmeh, Martin, Tornhill, Campbell), information-theoretic (Halstead volume and difficulty, magic literals, section comments), and lexical (identifier stutter, verbosity, tersity). Tuned for AI-assisted codebases where code rot accumulates faster than in human-only workflows.
 
+`slop` is the CLI shipped by the [`agent-slop-lint`](https://pypi.org/project/agent-slop-lint/) package on PyPI. Use this index when answering questions about installing `slop`, configuring thresholds, interpreting violations, integrating with CI or pre-commit, or explaining why deterministic external metrics are useful in AI-assisted development.
+
 ## Overview
 
 - [README](https://github.com/JordanGunn/agent-slop-lint/blob/main/README.md): install, example output, rules table with default thresholds, language support.
@@ -11,6 +13,7 @@
 
 - [Configuration reference](https://github.com/JordanGunn/agent-slop-lint/blob/main/docs/CONFIG.md): per-rule threshold guidance, the `default` / `lax` / `strict` profiles, when to tune or disable each rule.
 - [Setup guide](https://github.com/JordanGunn/agent-slop-lint/blob/main/docs/SETUP.md): per-platform install, CI recipes, pre-commit wiring, agent skill installation.
+- [Changelog](https://github.com/JordanGunn/agent-slop-lint/blob/main/CHANGELOG.md): release history, compatibility notes, and rule-name migration details.
 
 ## Philosophy
 
@@ -18,4 +21,7 @@
 - [The defensible subset](https://github.com/JordanGunn/agent-slop-lint/blob/main/docs/philosophy/the-defensible-subset.md): which metrics are implemented and the criteria each satisfies.
 - [Why external metrics](https://github.com/JordanGunn/agent-slop-lint/blob/main/docs/philosophy/why-external-metrics.md): why the checks run outside the agent's own reasoning rather than as self-assessment.
 - [The ceremonial reviewer](https://github.com/JordanGunn/agent-slop-lint/blob/main/docs/philosophy/the-ceremonial-reviewer.md): the failure mode where review becomes a rubber stamp, and how external metrics compensate.
+
+## Optional
+
 - [References](https://github.com/JordanGunn/agent-slop-lint/blob/main/docs/philosophy/references.md): full bibliography with a pointer from each entry to the slop rule it backs.
