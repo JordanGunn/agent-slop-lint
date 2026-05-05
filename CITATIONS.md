@@ -34,6 +34,7 @@ frontier models depending on the task:
 - **Claude Opus 4.7** (Anthropic) — primary architecture and rule design.
 - **Claude Sonnet 4.5** (Anthropic) — implementation, refactoring, and test authoring.
 - **Gemini 2.5 Pro** (Google DeepMind) — second-opinion review and cross-language kernel work.
+- **Claude Code** (Anthropic) — agentic coding sessions, file editing, and CI triage.
 
 Every metric kernel, threshold, and rule wrapper was reviewed and accepted by
 a human before landing. The models did not invent the metrics; they helped
