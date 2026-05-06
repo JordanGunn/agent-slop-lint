@@ -57,6 +57,7 @@ _STR_ANNOTATION_RE = re.compile(
 _LANG_GLOBS: dict[str, list[str]] = {
     "python": ["**/*.py"],
     "c":      ["**/*.c", "**/*.h"],
+    "cpp":    ["**/*.cpp", "**/*.cc", "**/*.cxx", "**/*.hpp", "**/*.hxx"],
 }
 
 # ---------------------------------------------------------------------------
@@ -144,6 +145,8 @@ def stringly_typed_kernel(
             total_functions += _count_python_functions(fp)
         elif lang == "c":
             total_functions += _scan_c_file(fp, root, entries, errors)
+        elif lang == "cpp":
+            total_functions += _scan_cpp_file(fp, root, entries, errors)
 
     # Pass 2: call-site literal collection via ripgrep
     _enrich_with_call_sites(entries, root, excludes or [], max_cardinality)
@@ -466,6 +469,176 @@ def _c_fn_name(fn_node: object, content: bytes) -> str:
                 return content[inner.start_byte:inner.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
             return "<anonymous>"
         if declarator.type in ("pointer_declarator", "parenthesized_declarator"):  # type: ignore[attr-defined]
+            declarator = declarator.child_by_field_name("declarator")  # type: ignore[attr-defined]
+            continue
+        break
+    return "<anonymous>"
+
+
+# ---------------------------------------------------------------------------
+# C++ AST pass
+# ---------------------------------------------------------------------------
+
+
+def _scan_cpp_file(
+    fp: Path,
+    root: Path,
+    out: list[StringlyEntry],
+    errors: list[str],
+) -> int:
+    """Scan one C++ file for sentinel-shaped string parameters.
+
+    Flags ``char *``, ``const char *``, ``std::string``, and
+    ``std::string_view`` parameters whose name (lowercased, stripped of
+    trailing ``_``) is in ``_SENTINEL_NAMES``. Returns function count.
+    """
+    tree_lang = load_language("cpp")
+    if tree_lang is None:
+        return 0
+    try:
+        import tree_sitter
+        content = fp.read_bytes()
+        try:
+            parser = tree_sitter.Parser(tree_lang)
+            tree = parser.parse(content)
+        except TypeError:
+            parser = tree_sitter.Parser()
+            parser.language = tree_lang  # type: ignore[assignment]
+            tree = parser.parse(content)
+    except Exception as exc:
+        errors.append(f"{fp}: {exc}")
+        return 0
+
+    rel = str(fp.relative_to(root))
+    fn_count = 0
+    stack = [tree.root_node]
+    while stack:
+        node = stack.pop()
+        if node.type == "function_definition":  # type: ignore[attr-defined]
+            fn_count += 1
+            _process_cpp_function(node, content, rel, out)
+        else:
+            stack.extend(node.children)  # type: ignore[attr-defined]
+    return fn_count
+
+
+def _process_cpp_function(
+    fn_node: object,
+    content: bytes,
+    rel: str,
+    out: list[StringlyEntry],
+) -> None:
+    """Extract sentinel-shaped string-typed parameters from a C++ function."""
+    fn_name = _cpp_fn_name_local(fn_node, content)
+    fn_line = fn_node.start_point[0] + 1  # type: ignore[attr-defined]
+
+    declarator = fn_node.child_by_field_name("declarator")  # type: ignore[attr-defined]
+    while declarator is not None and declarator.type in (  # type: ignore[attr-defined]
+        "pointer_declarator", "reference_declarator", "parenthesized_declarator",
+    ):
+        declarator = declarator.child_by_field_name("declarator")  # type: ignore[attr-defined]
+    if declarator is None or declarator.type != "function_declarator":  # type: ignore[attr-defined]
+        return
+
+    plist = declarator.child_by_field_name("parameters")  # type: ignore[attr-defined]
+    if plist is None:
+        return
+
+    for param in plist.children:  # type: ignore[attr-defined]
+        if param.type != "parameter_declaration":  # type: ignore[attr-defined]
+            continue
+
+        is_string = False
+        # ``char`` primitive_type with a pointer_declarator or
+        # reference_declarator child → ``char*`` / ``char&`` parameter.
+        # ``std::string`` / ``std::string_view`` appear as
+        # qualified_identifier children with leaf "string"/"string_view".
+        ptr_or_ref = None
+        for child in param.children:  # type: ignore[attr-defined]
+            ctype = child.type  # type: ignore[attr-defined]
+            if ctype == "primitive_type":
+                ptext = content[child.start_byte:child.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+                if ptext.strip() == "char":
+                    is_string = True
+            elif ctype in ("pointer_declarator", "reference_declarator"):
+                ptr_or_ref = child
+            elif ctype == "qualified_identifier":
+                qtext = content[child.start_byte:child.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+                if qtext.strip() in (
+                    "std::string", "std::string_view",
+                    "std::wstring", "std::wstring_view",
+                ):
+                    is_string = True
+            elif ctype == "type_identifier":
+                ttext = content[child.start_byte:child.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+                if ttext.strip() in ("string", "string_view", "wstring", "wstring_view"):
+                    is_string = True
+
+        if not is_string:
+            continue
+
+        # Find the parameter identifier. For pointer/reference, it's
+        # inside the declarator chain. For value-passed std::string, it's
+        # a direct identifier child of parameter_declaration.
+        param_name: str | None = None
+        if ptr_or_ref is not None:
+            cur = ptr_or_ref
+            for _ in range(4):
+                if cur is None:
+                    break
+                inner = cur.child_by_field_name("declarator")  # type: ignore[attr-defined]
+                if inner is None:
+                    break
+                if inner.type == "identifier":  # type: ignore[attr-defined]
+                    param_name = content[inner.start_byte:inner.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+                    break
+                cur = inner
+        else:
+            for child in param.children:  # type: ignore[attr-defined]
+                if child.type == "identifier":  # type: ignore[attr-defined]
+                    param_name = content[child.start_byte:child.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+                    break
+
+        if param_name is None:
+            continue
+
+        sentinel_key = _STRIP_TRAILING.sub("", param_name).lower()
+        if sentinel_key not in _SENTINEL_NAMES:
+            continue
+
+        out.append(StringlyEntry(
+            file=rel,
+            function_name=fn_name,
+            param_name=param_name,
+            param_line=fn_line,
+            annotated=True,
+        ))
+
+
+def _cpp_fn_name_local(fn_node: object, content: bytes) -> str:
+    """Walk the C++ declarator chain to extract a function name."""
+    declarator = fn_node.child_by_field_name("declarator")  # type: ignore[attr-defined]
+    for _ in range(8):
+        if declarator is None:
+            return "<anonymous>"
+        if declarator.type == "function_declarator":  # type: ignore[attr-defined]
+            inner = declarator.child_by_field_name("declarator")  # type: ignore[attr-defined]
+            if inner is None:
+                return "<anonymous>"
+            if inner.type in ("identifier", "field_identifier"):  # type: ignore[attr-defined]
+                return content[inner.start_byte:inner.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+            if inner.type == "qualified_identifier":  # type: ignore[attr-defined]
+                for c in reversed(inner.children):  # type: ignore[attr-defined]
+                    if c.type == "identifier":  # type: ignore[attr-defined]
+                        return content[c.start_byte:c.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+                return "<anonymous>"
+            if inner.type == "operator_name":  # type: ignore[attr-defined]
+                for c in inner.children:  # type: ignore[attr-defined]
+                    if c.type != "operator":  # type: ignore[attr-defined]
+                        return content[c.start_byte:c.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+                return "<anonymous>"
+            return "<anonymous>"
+        if declarator.type in ("pointer_declarator", "reference_declarator", "parenthesized_declarator"):  # type: ignore[attr-defined]
             declarator = declarator.child_by_field_name("declarator")  # type: ignore[attr-defined]
             continue
         break

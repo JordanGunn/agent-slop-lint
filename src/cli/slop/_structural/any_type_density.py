@@ -98,6 +98,23 @@ _LANG_CONFIG: dict[str, tuple[str, str, list[str]]] = {
         r"\s*\*?\s*\w+\s*[,;()=\[]",
         ["**/*.c", "**/*.h"],
     ),
+    # C++ extends C's escape hatches: ``void *`` plus ``std::any``
+    # (C++17). Annotation pattern adds C++ qualifiers, references via
+    # ``&``, and namespaced/templated types. Calibration is tentative.
+    "cpp": (
+        r"\bvoid\s*\*|\bstd::any\b",
+        r"(?:^|[\s,(])"
+        r"(?:const\s+|volatile\s+|static\s+|extern\s+|inline\s+|"
+        r"constexpr\s+|consteval\s+|mutable\s+|"
+        r"register\s+|restrict\s+|auto\s+)*"
+        r"(?:unsigned\s+|signed\s+)?"
+        r"(?:int|char|float|double|long|short|void|bool|"
+        r"size_t|ssize_t|int\d{1,2}_t|uint\d{1,2}_t|ptrdiff_t|"
+        r"struct\s+\w+|enum\s+\w+|union\s+\w+|class\s+\w+|"
+        r"[A-Z]\w*_t|std::\w+(?:<[^>]*>)?|[A-Z]\w*(?:<[^>]*>)?)"
+        r"\s*[*&]?\s*\w+\s*[,;()=\[{]",
+        ["**/*.cpp", "**/*.cc", "**/*.cxx", "**/*.hpp", "**/*.hxx"],
+    ),
 }
 
 # ---------------------------------------------------------------------------

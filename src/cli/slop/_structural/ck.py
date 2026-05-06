@@ -215,6 +215,80 @@ def _extract_js_superclasses(node, content: bytes) -> list[str]:
     return result
 
 
+def _extract_cpp_superclasses(node, content: bytes) -> list[str]:
+    """Extract base class names from a C++ ``class_specifier`` / ``struct_specifier``.
+
+    Inheritance lives in a ``base_class_clause`` direct child:
+
+    ``class Dog : public Animal, public Pet, virtual private Trainable``
+
+    The ``base_class_clause`` contains a leading ``:``, then a sequence
+    of ``access_specifier``, ``virtual``, and ``type_identifier`` /
+    ``qualified_identifier`` nodes interleaved with ``,`` separators.
+    We collect every type identifier child as a base name.
+    """
+    bases: list[str] = []
+    for child in node.children:
+        if child.type != "base_class_clause":
+            continue
+        for sub in child.children:
+            if sub.type == "type_identifier":
+                bases.append(_node_text(sub, content))
+            elif sub.type == "qualified_identifier":
+                # Take the last identifier — for ``std::exception`` we
+                # want ``exception``.
+                last = None
+                for c in sub.children:
+                    if c.type in ("identifier", "type_identifier"):
+                        last = c
+                if last is not None:
+                    bases.append(_node_text(last, content))
+    return bases
+
+
+def _collect_cpp_outofline_methods(tree, content: bytes) -> list[tuple[str, int, int]]:
+    """Find C++ out-of-line method definitions at top level.
+
+    Returns ``[(class_name, start_line, end_line), ...]`` for every
+    top-level ``function_definition`` whose declarator chain contains
+    a ``qualified_identifier`` (e.g. ``void Animal::speak() {}``).
+    The class name is the first ``namespace_identifier`` /
+    ``type_identifier`` in the qualified id; the line range is the
+    function definition's span (used for matching CCX entries).
+    """
+    out: list[tuple[str, int, int]] = []
+
+    def visit(node):
+        if node.type == "function_definition":
+            declarator = node.child_by_field_name("declarator")
+            while declarator is not None and declarator.type in (
+                "pointer_declarator", "reference_declarator", "parenthesized_declarator",
+            ):
+                declarator = declarator.child_by_field_name("declarator")
+            if declarator is not None and declarator.type == "function_declarator":
+                inner = declarator.child_by_field_name("declarator")
+                if inner is not None and inner.type == "qualified_identifier":
+                    class_name = None
+                    for child in inner.children:
+                        if child.type in ("namespace_identifier", "type_identifier"):
+                            class_name = _node_text(child, content)
+                            break
+                    if class_name:
+                        out.append((
+                            class_name,
+                            node.start_point[0] + 1,
+                            node.end_point[0] + 1,
+                        ))
+            # Don't descend into function bodies; nested fns aren't
+            # standard C++.
+            return
+        for child in node.children:
+            visit(child)
+
+    visit(tree.root_node)
+    return out
+
+
 def _extract_no_superclasses(_node, _content: bytes) -> list[str]:
     return []
 
@@ -531,14 +605,23 @@ def _interpret(cm: ClassMetrics) -> str:
 # ---------------------------------------------------------------------------
 
 
-# Note on absent languages
-# ------------------------
+# Note on absent / present languages
+# ----------------------------------
 # C is intentionally NOT registered. C has no class concept — structs are
 # data-only with no methods or inheritance — so CBO/DIT/NOC/WMC have no
 # meaningful definition. The kernel filters by ``_LANG_CONFIG`` membership
 # and silently produces no results for ``.c`` / ``.h`` files. Same posture
-# as Julia (multiple dispatch). C++ will be registered separately in v1.0.2.
-# Ruby is also pending (v1.0.3).
+# as Julia (multiple dispatch).
+#
+# C++ IS registered (v1.0.2). It has classes, single and multiple
+# inheritance, virtual methods, pure-virtual / abstract classes, and
+# ``final`` — every CK metric translates directly. Out-of-line method
+# definitions (``void Foo::bar() {}``) parse as top-level
+# ``function_definition``s outside the class body, so the kernel runs a
+# second pass (``_collect_cpp_outofline_methods``) to attribute them to
+# their class for WMC.
+#
+# Ruby is pending (v1.0.3).
 
 _LANG_CONFIG: dict[str, _CkLangConfig] = {
     "python": _CkLangConfig(
@@ -604,6 +687,16 @@ _LANG_CONFIG: dict[str, _CkLangConfig] = {
         kind_label="struct",
         is_impl_based=True,
     ),
+    "cpp": _CkLangConfig(
+        class_nodes=frozenset({"class_specifier", "struct_specifier"}),
+        class_name_field="name",
+        body_field="body",
+        method_nodes=frozenset({"function_definition"}),
+        ref_node_types=frozenset({
+            "type_identifier", "qualified_identifier", "identifier",
+        }),
+        extract_superclasses=_extract_cpp_superclasses,
+    ),
 }
 
 _LANG_GLOBS: dict[str, list[str]] = {
@@ -614,6 +707,7 @@ _LANG_GLOBS: dict[str, list[str]] = {
     "rust": ["**/*.rs"],
     "java": ["**/*.java"],
     "c_sharp": ["**/*.cs"],
+    "cpp": ["**/*.cpp", "**/*.cc", "**/*.cxx", "**/*.hpp", "**/*.hxx"],
 }
 
 
@@ -674,6 +768,10 @@ def ck_kernel(
     all_classes: list[_ClassInfo] = []
     file_contents: dict[str, bytes] = {}
     language_counts: dict[str, int] = {}
+    # C++ out-of-line method index: file → [(class_name, fn_start_line, fn_end_line)].
+    # Used after WMC computation to attribute out-of-line method CCX
+    # back to the matching class definition.
+    cpp_outofline_by_file: dict[str, list[tuple[str, int, int]]] = {}
 
     for fp in file_paths:
         lang = detect_language(fp)
@@ -699,6 +797,16 @@ def ck_kernel(
         all_classes.extend(classes_in_file)
         if classes_in_file:
             language_counts[lang] = language_counts.get(lang, 0) + len(classes_in_file)
+
+        # C++ second pass: catalogue out-of-line method definitions for WMC
+        # attribution. The class itself is collected by ``_collect_body_classes``
+        # from its in-class declaration; methods defined outside that body
+        # (the typical header / .cpp split) need their CCX attributed back
+        # to the class explicitly.
+        if lang == "cpp":
+            outofline = _collect_cpp_outofline_methods(tree, content)
+            if outofline:
+                cpp_outofline_by_file[rel] = outofline
 
     if not all_classes:
         return CkResult(
@@ -731,11 +839,45 @@ def ck_kernel(
     for file_classes in classes_by_file.values():
         file_classes.sort(key=lambda c: (c.end_line - c.line))
 
+    # Index C++ class definitions by name for quick out-of-line
+    # attribution lookup. Note: this uses bare class name (ignoring
+    # namespaces). Two classes named ``Foo`` in different namespaces
+    # would collide and one would receive the other's WMC; documented
+    # in docs/CPP.md as a limitation.
+    cpp_class_by_name: dict[str, list[_ClassInfo]] = {}
+    for ci in all_classes:
+        if ci.language == "cpp":
+            cpp_class_by_name.setdefault(ci.name, []).append(ci)
+
     for fn in ccx_result.functions:
+        # First: in-body attribution (works for in-class methods in
+        # every supported language).
+        attributed = False
         for ci in classes_by_file.get(fn.file, []):
             if ci.line <= fn.line <= ci.end_line:
                 key = (ci.file, ci.name, ci.line)
                 wmc_by_class[key] = wmc_by_class.get(key, 0) + fn.ccx
+                attributed = True
+                break
+        if attributed:
+            continue
+
+        # Second: C++ out-of-line attribution. If the function's line
+        # range matches a catalogued ``Foo::bar`` definition, attribute
+        # its CCX to the class named ``Foo``.
+        outofline = cpp_outofline_by_file.get(fn.file, [])
+        for class_name, start_line, end_line in outofline:
+            if start_line <= fn.line <= end_line:
+                # Attribute to the first class definition matching this
+                # name. Prefer same-file class to a different-file one.
+                candidates = cpp_class_by_name.get(class_name, [])
+                target = next(
+                    (c for c in candidates if c.file == fn.file),
+                    candidates[0] if candidates else None,
+                )
+                if target is not None:
+                    key = (target.file, target.name, target.line)
+                    wmc_by_class[key] = wmc_by_class.get(key, 0) + fn.ccx
                 break
 
     # Step 6: Build ClassMetrics

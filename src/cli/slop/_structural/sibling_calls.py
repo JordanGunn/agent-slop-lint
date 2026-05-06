@@ -68,9 +68,24 @@ _C_STDLIB: frozenset[str] = frozenset({
     "assert", "perror", "errno",
 })
 
+# C++ stdlib idioms — minimal initial set; extend during calibration.
+# Includes the C stdlib (most C++ projects mix the two) plus common
+# std:: free functions and methods that show up in many call sites.
+_CPP_STDLIB: frozenset[str] = _C_STDLIB | frozenset({
+    "make_unique", "make_shared", "move", "forward",
+    "begin", "end", "cbegin", "cend", "rbegin", "rend",
+    "size", "empty", "front", "back", "push_back", "pop_back",
+    "emplace", "emplace_back", "insert", "erase", "find", "count",
+    "data", "clear", "reserve", "resize",
+    "to_string", "stoi", "stol", "stof", "stod",
+    "min", "max", "swap", "abs",
+    "get", "set",
+})
+
 _LANG_GLOBS: dict[str, list[str]] = {
     "python": ["**/*.py"],
     "c":      ["**/*.c", "**/*.h"],
+    "cpp":    ["**/*.cpp", "**/*.cc", "**/*.cxx", "**/*.hpp", "**/*.hxx"],
 }
 
 # ---------------------------------------------------------------------------
@@ -110,12 +125,15 @@ def _is_trivial_callee(name: str, language: str = "python") -> bool:
     """True if the callee name should be excluded from the analysis.
 
     The ``language`` argument selects the per-language exclusion list:
-    Python builtins for ``"python"``, C stdlib for ``"c"``. The length
-    and dunder filters apply to every language.
+    Python builtins for ``"python"``, C stdlib for ``"c"``, C++ stdlib
+    (which includes the C stdlib) for ``"cpp"``. The length and dunder
+    filters apply to every language.
     """
     if language == "python" and name in _PYTHON_BUILTINS:
         return True
     if language == "c" and name in _C_STDLIB:
+        return True
+    if language == "cpp" and name in _CPP_STDLIB:
         return True
     if name.startswith("__") and name.endswith("__"):
         return True
@@ -257,6 +275,13 @@ def sibling_call_redundancy_kernel(
             pairs.extend(file_pairs)
             total_functions += fn_count
             errors.extend(file_errors)
+        elif lang == "cpp":
+            file_pairs, fn_count, file_errors = _analyze_cpp_file(
+                fp, root, min_shared, min_score
+            )
+            pairs.extend(file_pairs)
+            total_functions += fn_count
+            errors.extend(file_errors)
 
     pairs.sort(key=lambda p: -p.score)
     return SiblingCallResult(
@@ -371,6 +396,158 @@ def _analyze_c_file(
             body = node.child_by_field_name("body") or node  # type: ignore[attr-defined]
             callees = _gather_callees_c(body, content)
             top_level.append((fn_name, fn_line, callees))
+
+    pairs: list[SiblingPair] = []
+    for (name_a, line_a, callees_a), (name_b, line_b, callees_b) in combinations(top_level, 2):
+        if not callees_a or not callees_b:
+            continue
+        shared = callees_a & callees_b
+        if not shared:
+            continue
+        max_size = max(len(callees_a), len(callees_b))
+        score = len(shared) / max_size
+        if len(shared) >= min_shared and score >= min_score:
+            pairs.append(SiblingPair(
+                file=rel,
+                fn_a=name_a,
+                fn_b=name_b,
+                fn_a_line=line_a,
+                fn_b_line=line_b,
+                shared_callees=sorted(shared),
+                score=round(score, 3),
+            ))
+
+    return pairs, len(top_level), []
+
+
+# ---------------------------------------------------------------------------
+# C++ implementation
+# ---------------------------------------------------------------------------
+
+
+def _gather_callees_cpp(body: object, content: bytes) -> set[str]:
+    """DFS collect call names in a C++ subtree.
+
+    Picks up plain ``call_expression`` (identifier function), method
+    calls (``obj.method()`` / ``ptr->method()``) via ``field_expression``,
+    and namespace-qualified calls (``ns::fn()``) via ``qualified_identifier``.
+    """
+    callees: set[str] = set()
+    stack = [body]
+    while stack:
+        node = stack.pop()
+        if node.type == "call_expression":  # type: ignore[attr-defined]
+            fn_child = node.child_by_field_name("function")  # type: ignore[attr-defined]
+            if fn_child is not None:
+                if fn_child.type == "identifier":  # type: ignore[attr-defined]
+                    name = content[fn_child.start_byte:fn_child.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+                    if not _is_trivial_callee(name, "cpp"):
+                        callees.add(name)
+                elif fn_child.type == "field_expression":  # type: ignore[attr-defined]
+                    field = fn_child.child_by_field_name("field")  # type: ignore[attr-defined]
+                    if field is not None and field.type in ("identifier", "field_identifier"):  # type: ignore[attr-defined]
+                        name = content[field.start_byte:field.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+                        if not _is_trivial_callee(name, "cpp"):
+                            callees.add(name)
+                elif fn_child.type == "qualified_identifier":  # type: ignore[attr-defined]
+                    last = None
+                    for c in fn_child.children:  # type: ignore[attr-defined]
+                        if c.type == "identifier":  # type: ignore[attr-defined]
+                            last = c
+                    if last is not None:
+                        name = content[last.start_byte:last.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+                        if not _is_trivial_callee(name, "cpp"):
+                            callees.add(name)
+        stack.extend(node.children)  # type: ignore[attr-defined]
+    return callees
+
+
+def _cpp_function_name(node: object, content: bytes) -> str:
+    """Extract a C++ function_definition's name."""
+    declarator = node.child_by_field_name("declarator")  # type: ignore[attr-defined]
+    for _ in range(8):
+        if declarator is None:
+            return "<anonymous>"
+        if declarator.type == "function_declarator":  # type: ignore[attr-defined]
+            inner = declarator.child_by_field_name("declarator")  # type: ignore[attr-defined]
+            if inner is None:
+                return "<anonymous>"
+            if inner.type in ("identifier", "field_identifier"):  # type: ignore[attr-defined]
+                return content[inner.start_byte:inner.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+            if inner.type == "qualified_identifier":  # type: ignore[attr-defined]
+                for c in reversed(inner.children):  # type: ignore[attr-defined]
+                    if c.type == "identifier":  # type: ignore[attr-defined]
+                        return content[c.start_byte:c.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+                return "<anonymous>"
+            if inner.type == "operator_name":  # type: ignore[attr-defined]
+                for c in inner.children:  # type: ignore[attr-defined]
+                    if c.type != "operator":  # type: ignore[attr-defined]
+                        return content[c.start_byte:c.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+                return "<anonymous>"
+            if inner.type == "destructor_name":  # type: ignore[attr-defined]
+                for c in inner.children:  # type: ignore[attr-defined]
+                    if c.type == "identifier":  # type: ignore[attr-defined]
+                        return "~" + content[c.start_byte:c.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+                return "<anonymous>"
+            return "<anonymous>"
+        if declarator.type in ("pointer_declarator", "reference_declarator", "parenthesized_declarator"):  # type: ignore[attr-defined]
+            declarator = declarator.child_by_field_name("declarator")  # type: ignore[attr-defined]
+            continue
+        break
+    return "<anonymous>"
+
+
+def _analyze_cpp_file(
+    fp: Path,
+    root: Path,
+    min_shared: int,
+    min_score: float,
+) -> tuple[list[SiblingPair], int, list[str]]:
+    """Return (sibling_pairs, function_count, errors) for one C++ file.
+
+    Top-level free functions only — class methods (in-class or
+    out-of-line) are skipped because their caller relationship is
+    structurally different from free-function siblings.
+    """
+    tree_lang = load_language("cpp")
+    if tree_lang is None:
+        return [], 0, []
+    try:
+        import tree_sitter
+        content = fp.read_bytes()
+        try:
+            parser = tree_sitter.Parser(tree_lang)
+            tree = parser.parse(content)
+        except TypeError:
+            parser = tree_sitter.Parser()
+            parser.language = tree_lang  # type: ignore[assignment]
+            tree = parser.parse(content)
+    except Exception as exc:
+        return [], 0, [f"{fp}: {exc}"]
+
+    rel = str(fp.relative_to(root))
+
+    top_level: list[tuple[str, int, set[str]]] = []
+    for node in tree.root_node.children:  # type: ignore[attr-defined]
+        if node.type != "function_definition":  # type: ignore[attr-defined]
+            continue
+        # Skip out-of-line method definitions (qualified_identifier
+        # at the end of the declarator chain).
+        declarator = node.child_by_field_name("declarator")  # type: ignore[attr-defined]
+        while declarator is not None and declarator.type in (  # type: ignore[attr-defined]
+            "pointer_declarator", "reference_declarator", "parenthesized_declarator",
+        ):
+            declarator = declarator.child_by_field_name("declarator")  # type: ignore[attr-defined]
+        if declarator is not None and declarator.type == "function_declarator":  # type: ignore[attr-defined]
+            inner = declarator.child_by_field_name("declarator")  # type: ignore[attr-defined]
+            if inner is not None and inner.type == "qualified_identifier":  # type: ignore[attr-defined]
+                continue
+
+        fn_name = _cpp_function_name(node, content)
+        fn_line = node.start_point[0] + 1  # type: ignore[attr-defined]
+        body = node.child_by_field_name("body") or node  # type: ignore[attr-defined]
+        callees = _gather_callees_cpp(body, content)
+        top_level.append((fn_name, fn_line, callees))
 
     pairs: list[SiblingPair] = []
     for (name_a, line_a, callees_a), (name_b, line_b, callees_b) in combinations(top_level, 2):

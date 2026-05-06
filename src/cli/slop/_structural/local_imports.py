@@ -26,6 +26,7 @@ IMPORT_NODE_TYPES: dict[str, frozenset[str]] = {
     "python": frozenset({"import_statement", "import_from_statement"}),
     "julia":  frozenset({"import_statement", "using_statement"}),
     "c":      frozenset({"preproc_include"}),
+    "cpp":    frozenset({"preproc_include", "using_declaration"}),
 }
 
 #: Node types that constitute a function / method boundary.
@@ -33,6 +34,7 @@ FUNCTION_NODE_TYPES: dict[str, frozenset[str]] = {
     "python": frozenset({"function_definition"}),
     "julia":  frozenset({"function_definition", "arrow_function_expression"}),
     "c":      frozenset({"function_definition"}),
+    "cpp":    frozenset({"function_definition", "lambda_expression"}),
 }
 
 #: Extension → language for discovery.
@@ -42,6 +44,11 @@ _EXT_MAP: dict[str, str] = {
     ".rs": "rust",
     ".c":  "c",
     ".h":  "c",
+    ".cpp": "cpp",
+    ".cc":  "cpp",
+    ".cxx": "cpp",
+    ".hpp": "cpp",
+    ".hxx": "cpp",
 }
 
 # ---------------------------------------------------------------------------

@@ -51,6 +51,7 @@ _FUNCTION_NODES: dict[str, frozenset[str]] = {
                            "local_function_statement"}),
     "julia": frozenset({"function_definition", "short_function_definition"}),
     "c": frozenset({"function_definition"}),
+    "cpp": frozenset({"function_definition", "lambda_expression"}),
 }
 
 _LANG_GLOBS: dict[str, list[str]] = {
@@ -63,6 +64,7 @@ _LANG_GLOBS: dict[str, list[str]] = {
     "c_sharp":    ["**/*.cs"],
     "julia":      ["**/*.jl"],
     "c":          ["**/*.c", "**/*.h"],
+    "cpp":        ["**/*.cpp", "**/*.cc", "**/*.cxx", "**/*.hpp", "**/*.hxx"],
 }
 
 # ---------------------------------------------------------------------------

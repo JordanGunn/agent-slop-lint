@@ -37,6 +37,8 @@ EXT_LANGUAGE_MAP: dict[str, str] = {
     ".cpp": "cpp",
     ".cc": "cpp",
     ".cxx": "cpp",
+    ".hpp": "cpp",
+    ".hxx": "cpp",
     ".rb": "ruby",
     ".sh": "bash",
     ".bash": "bash",

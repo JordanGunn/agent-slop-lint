@@ -152,6 +152,77 @@ def _c_name_extractor(node, content: bytes) -> str:
     return content[ident.start_byte:ident.end_byte].decode("utf-8", errors="replace")
 
 
+def _cpp_find_function_identifier(node):
+    """Walk a C++ ``function_definition``'s declarator chain.
+
+    Handles in-class methods (field_identifier), out-of-line methods
+    (qualified_identifier), operator overloads (operator_name),
+    destructors (destructor_name), and pointer / reference / paren
+    declarator wrappers. See ``slop._structural.ccx`` for the
+    canonical implementation.
+    """
+    declarator = node.child_by_field_name("declarator")
+    for _ in range(8):
+        if declarator is None:
+            return None
+        if declarator.type == "function_declarator":
+            inner = declarator.child_by_field_name("declarator")
+            if inner is None:
+                return None
+            if inner.type in ("identifier", "field_identifier"):
+                return inner
+            if inner.type == "qualified_identifier":
+                for child in reversed(inner.children):
+                    if child.type == "identifier":
+                        return child
+                return None
+            if inner.type == "operator_name":
+                for child in inner.children:
+                    if child.type != "operator":
+                        return child
+                return None
+            if inner.type == "destructor_name":
+                for child in inner.children:
+                    if child.type == "identifier":
+                        return child
+                return None
+            return None
+        if declarator.type in (
+            "pointer_declarator",
+            "reference_declarator",
+            "parenthesized_declarator",
+        ):
+            declarator = declarator.child_by_field_name("declarator")
+            continue
+        break
+    return None
+
+
+def _cpp_is_destructor(node) -> bool:
+    declarator = node.child_by_field_name("declarator")
+    while declarator is not None and declarator.type in (
+        "pointer_declarator", "reference_declarator", "parenthesized_declarator",
+    ):
+        declarator = declarator.child_by_field_name("declarator")
+    if declarator is None or declarator.type != "function_declarator":
+        return False
+    inner = declarator.child_by_field_name("declarator")
+    return inner is not None and inner.type == "destructor_name"
+
+
+def _cpp_name_extractor(node, content: bytes) -> str:
+    """C++ name extraction. See `slop._structural.ccx` for details."""
+    if node.type == "lambda_expression":
+        return "<lambda>"
+    if node.type != "function_definition":
+        return "<anonymous>"
+    ident = _cpp_find_function_identifier(node)
+    if ident is None:
+        return "<anonymous>"
+    name = content[ident.start_byte:ident.end_byte].decode("utf-8", errors="replace")
+    return f"~{name}" if _cpp_is_destructor(node) else name
+
+
 # ---------------------------------------------------------------------------
 # Per-language configuration
 # ---------------------------------------------------------------------------
@@ -183,6 +254,11 @@ class _NpathLangConfig:
     # Empty default preserves prior behaviour for languages that don't
     # need it (Python's ``match_statement``, JS/TS, Go, Rust).
     switch_body_types: frozenset[str] = frozenset()
+    # Wrapper node types that contain a single function/class definition.
+    # The kernel descends through these to find the wrapped definition.
+    # C++ ``template_declaration`` is the canonical example. Default
+    # empty preserves existing behaviour.
+    definition_unwrap_types: frozenset[str] = frozenset()
     # Per-language callables. Defaults match the conventional tree-sitter
     # shape; languages whose AST diverges register their own.
     name_extractor: NameExtractor = _default_name_extractor
@@ -355,6 +431,28 @@ _LANG_CONFIG: dict[str, _NpathLangConfig] = {
         switch_body_types=frozenset({"compound_statement"}),
         name_extractor=_c_name_extractor,
     ),
+    "cpp": _NpathLangConfig(
+        function_nodes=frozenset({
+            "function_definition",
+            "lambda_expression",
+        }),
+        if_node="if_statement",
+        else_clause="else_clause",
+        elif_clause=None,                  # else-if = nested if_statement
+        loop_nodes=frozenset({
+            "while_statement", "do_statement",
+            "for_statement", "for_range_loop",
+        }),
+        switch_node="switch_statement",
+        case_node="case_statement",
+        try_node="try_statement",
+        catch_node="catch_clause",
+        body_field="body",
+        block_types=frozenset({"compound_statement"}),
+        switch_body_types=frozenset({"compound_statement"}),
+        definition_unwrap_types=frozenset({"template_declaration"}),
+        name_extractor=_cpp_name_extractor,
+    ),
 }
 
 _LANG_GLOBS: dict[str, list[str]] = {
@@ -367,6 +465,7 @@ _LANG_GLOBS: dict[str, list[str]] = {
     "c_sharp": ["**/*.cs"],
     "julia": ["**/*.jl"],
     "c": ["**/*.c", "**/*.h"],
+    "cpp": ["**/*.cpp", "**/*.cc", "**/*.cxx", "**/*.hpp", "**/*.hxx"],
 }
 
 

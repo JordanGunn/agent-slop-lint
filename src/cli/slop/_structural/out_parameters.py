@@ -67,6 +67,7 @@ _LANG_GLOBS: dict[str, list[str]] = {
     "typescript": ["**/*.ts", "**/*.tsx"],
     "go":         ["**/*.go"],
     "c":          ["**/*.c", "**/*.h"],
+    "cpp":        ["**/*.cpp", "**/*.cc", "**/*.cxx", "**/*.hpp", "**/*.hxx"],
 }
 
 # ---------------------------------------------------------------------------
@@ -167,6 +168,9 @@ def out_parameters_kernel(
             _scan_go_text(fp, root, entries, errors)
         elif lang == "c":
             fn_count = _scan_c(fp, root, entries, errors)
+            total_functions += fn_count
+        elif lang == "cpp":
+            fn_count = _scan_cpp(fp, root, entries, errors)
             total_functions += fn_count
 
     entries.sort(key=lambda e: -e.mutation_count)
@@ -645,6 +649,302 @@ def _c_lhs_mutates_param(
                 if name in param_names:
                     return (name, "subscript-assign")
                 break
+        return None
+
+    return None
+
+
+# ---------------------------------------------------------------------------
+# C++ AST scanner
+# ---------------------------------------------------------------------------
+
+
+def _scan_cpp(
+    fp: Path,
+    root: Path,
+    out: list[OutParamEntry],
+    errors: list[str],
+) -> int:
+    """Scan one C++ file for pointer / non-const reference parameter mutations.
+
+    Detection extends the C scanner (``_scan_c``) with two C++-specific
+    additions:
+
+    - **Reference parameters** (``T& p``) that are mutated via plain
+      ``p = ...`` (assignment) or ``p.field = ...`` (field assign).
+      ``const T& p`` is excluded by design.
+    - All C pointer-mutation patterns (``*p = X``, ``p->x = Y``,
+      ``p[i] = Z``).
+
+    Walks every ``function_definition`` (in-class methods, out-of-line
+    methods, free functions, template-wrapped functions) plus
+    ``lambda_expression``s with named captures. Returns function count.
+    """
+    tree_lang = load_language("cpp")
+    if tree_lang is None:
+        return 0
+    try:
+        import tree_sitter
+        content = fp.read_bytes()
+        try:
+            parser = tree_sitter.Parser(tree_lang)
+            tree = parser.parse(content)
+        except TypeError:
+            parser = tree_sitter.Parser()
+            parser.language = tree_lang  # type: ignore[assignment]
+            tree = parser.parse(content)
+    except Exception as exc:
+        errors.append(f"{fp}: {exc}")
+        return 0
+
+    rel = str(fp.relative_to(root))
+    fn_count = 0
+    stack = [tree.root_node]
+    while stack:
+        node = stack.pop()
+        if node.type == "function_definition":  # type: ignore[attr-defined]
+            fn_count += 1
+            _process_cpp_function(node, content, rel, out)
+            # Don't descend into the body (no nested fn defs in standard C++)
+        else:
+            stack.extend(node.children)  # type: ignore[attr-defined]
+    return fn_count
+
+
+def _process_cpp_function(
+    fn_node: object,
+    content: bytes,
+    rel: str,
+    out: list[OutParamEntry],
+) -> None:
+    """Extract pointer + reference mutation entries from one C++ function."""
+    fn_name = _cpp_fn_name(fn_node, content)
+    fn_start = fn_node.start_point[0] + 1  # type: ignore[attr-defined]
+    fn_end = fn_node.end_point[0] + 1      # type: ignore[attr-defined]
+
+    pointer_params, reference_params = _cpp_extract_mutable_params(fn_node, content)
+    if not pointer_params and not reference_params:
+        return
+
+    body = fn_node.child_by_field_name("body") or fn_node  # type: ignore[attr-defined]
+    mutations = _cpp_find_mutations(body, content, pointer_params, reference_params)
+    if mutations:
+        out.append(OutParamEntry(
+            file=rel, name=fn_name, line=fn_start, end_line=fn_end,
+            language="cpp", mutations=mutations,
+        ))
+
+
+def _cpp_fn_name(fn_node: object, content: bytes) -> str:
+    """Walk the C++ declarator chain to extract a function name."""
+    declarator = fn_node.child_by_field_name("declarator")  # type: ignore[attr-defined]
+    for _ in range(8):
+        if declarator is None:
+            return "<anonymous>"
+        if declarator.type == "function_declarator":  # type: ignore[attr-defined]
+            inner = declarator.child_by_field_name("declarator")  # type: ignore[attr-defined]
+            if inner is None:
+                return "<anonymous>"
+            if inner.type in ("identifier", "field_identifier"):  # type: ignore[attr-defined]
+                return content[inner.start_byte:inner.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+            if inner.type == "qualified_identifier":  # type: ignore[attr-defined]
+                for c in reversed(inner.children):  # type: ignore[attr-defined]
+                    if c.type == "identifier":  # type: ignore[attr-defined]
+                        return content[c.start_byte:c.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+                return "<anonymous>"
+            if inner.type == "operator_name":  # type: ignore[attr-defined]
+                for c in inner.children:  # type: ignore[attr-defined]
+                    if c.type != "operator":  # type: ignore[attr-defined]
+                        return content[c.start_byte:c.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+                return "<anonymous>"
+            return "<anonymous>"
+        if declarator.type in ("pointer_declarator", "reference_declarator", "parenthesized_declarator"):  # type: ignore[attr-defined]
+            declarator = declarator.child_by_field_name("declarator")  # type: ignore[attr-defined]
+            continue
+        break
+    return "<anonymous>"
+
+
+def _cpp_extract_mutable_params(
+    fn_node: object, content: bytes,
+) -> tuple[set[str], set[str]]:
+    """Return ``(pointer_params, reference_params)`` excluding ``const T &/*``.
+
+    Pointer parameters: declarator chain includes ``pointer_declarator``.
+    Reference parameters: declarator chain includes ``reference_declarator``.
+    A leading ``type_qualifier "const"`` on the parameter declaration
+    excludes the parameter (read-only by contract).
+    """
+    pointer_params: set[str] = set()
+    reference_params: set[str] = set()
+
+    declarator = fn_node.child_by_field_name("declarator")  # type: ignore[attr-defined]
+    while declarator is not None and declarator.type in (  # type: ignore[attr-defined]
+        "pointer_declarator", "reference_declarator", "parenthesized_declarator",
+    ):
+        declarator = declarator.child_by_field_name("declarator")  # type: ignore[attr-defined]
+    if declarator is None or declarator.type != "function_declarator":  # type: ignore[attr-defined]
+        return pointer_params, reference_params
+
+    plist = declarator.child_by_field_name("parameters")  # type: ignore[attr-defined]
+    if plist is None:
+        return pointer_params, reference_params
+
+    for param in plist.children:  # type: ignore[attr-defined]
+        if param.type != "parameter_declaration":  # type: ignore[attr-defined]
+            continue
+
+        has_const = False
+        ptr_decl = None
+        ref_decl = None
+        for child in param.children:  # type: ignore[attr-defined]
+            ctype = child.type  # type: ignore[attr-defined]
+            if ctype == "type_qualifier":
+                qtext = content[child.start_byte:child.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+                if qtext.strip() == "const":
+                    has_const = True
+            elif ctype == "pointer_declarator":
+                ptr_decl = child
+            elif ctype == "reference_declarator":
+                ref_decl = child
+
+        if has_const:
+            continue
+
+        # Resolve the parameter identifier.
+        target_decl = ptr_decl or ref_decl
+        if target_decl is None:
+            continue
+
+        param_name: str | None = None
+        if target_decl is ref_decl:
+            # reference_declarator uses positional children (& + identifier),
+            # not a `declarator` field.
+            for c in target_decl.children:  # type: ignore[attr-defined]
+                if c.type == "identifier":  # type: ignore[attr-defined]
+                    param_name = content[c.start_byte:c.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+                    break
+        else:
+            # pointer_declarator uses a `declarator` field that may be
+            # nested through additional pointer_declarator / parenthesized
+            # wrappers.
+            cur = target_decl
+            for _ in range(4):
+                if cur is None:
+                    break
+                inner = cur.child_by_field_name("declarator")  # type: ignore[attr-defined]
+                if inner is None:
+                    break
+                if inner.type == "identifier":  # type: ignore[attr-defined]
+                    param_name = content[inner.start_byte:inner.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+                    break
+                cur = inner
+        if param_name is None:
+            continue
+
+        if ptr_decl is not None:
+            pointer_params.add(param_name)
+        else:
+            reference_params.add(param_name)
+
+    return pointer_params, reference_params
+
+
+def _cpp_find_mutations(
+    body_node: object,
+    content: bytes,
+    pointer_params: set[str],
+    reference_params: set[str],
+) -> list[OutParamMutation]:
+    """DFS for pointer-mutation and reference-mutation patterns."""
+    mutations: list[OutParamMutation] = []
+    stack = [body_node]
+    while stack:
+        node = stack.pop()
+        if node.type == "assignment_expression":  # type: ignore[attr-defined]
+            lhs = node.child_by_field_name("left")  # type: ignore[attr-defined]
+            if lhs is not None:
+                mutated = _cpp_lhs_mutates_param(
+                    lhs, content, pointer_params, reference_params,
+                )
+                if mutated is not None:
+                    name, kind = mutated
+                    mutations.append(OutParamMutation(
+                        param_name=name,
+                        method=kind,
+                        line=node.start_point[0] + 1,  # type: ignore[attr-defined]
+                    ))
+        stack.extend(node.children)  # type: ignore[attr-defined]
+    return mutations
+
+
+def _cpp_lhs_mutates_param(
+    lhs: object,
+    content: bytes,
+    pointer_params: set[str],
+    reference_params: set[str],
+) -> tuple[str, str] | None:
+    """Detect if ``lhs`` mutates a pointer or reference parameter."""
+    ltype = lhs.type  # type: ignore[attr-defined]
+
+    # ``*p = X`` — pointer dereference assignment
+    if ltype == "pointer_expression":
+        for child in lhs.children:  # type: ignore[attr-defined]
+            if child.type == "identifier":  # type: ignore[attr-defined]
+                name = content[child.start_byte:child.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+                if name in pointer_params:
+                    return (name, "deref-assign")
+        return None
+
+    # ``p->field = X`` (pointer) or ``r.field = X`` (reference)
+    if ltype == "field_expression":
+        op_present = False
+        op_kind = "field-assign"
+        for c in lhs.children:  # type: ignore[attr-defined]
+            if c.type == "->":  # type: ignore[attr-defined]
+                op_present = True
+                op_kind = "field-assign"
+                break
+            if c.type == ".":  # type: ignore[attr-defined]
+                op_present = True
+                op_kind = "ref-field-assign"
+                break
+        if not op_present:
+            return None
+        obj = lhs.child_by_field_name("argument")  # type: ignore[attr-defined]
+        if obj is None:
+            for c in lhs.children:  # type: ignore[attr-defined]
+                if c.type == "identifier":  # type: ignore[attr-defined]
+                    obj = c
+                    break
+        if obj is not None and obj.type == "identifier":  # type: ignore[attr-defined]
+            name = content[obj.start_byte:obj.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+            if op_kind == "field-assign" and name in pointer_params:
+                return (name, "field-assign")
+            if op_kind == "ref-field-assign" and name in reference_params:
+                return (name, "ref-field-assign")
+        return None
+
+    # ``p[i] = X`` — subscript assignment
+    if ltype == "subscript_expression":
+        argument = lhs.child_by_field_name("argument")  # type: ignore[attr-defined]
+        if argument is not None and argument.type == "identifier":  # type: ignore[attr-defined]
+            name = content[argument.start_byte:argument.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+            if name in pointer_params or name in reference_params:
+                return (name, "subscript-assign")
+        for c in lhs.children:  # type: ignore[attr-defined]
+            if c.type == "identifier":  # type: ignore[attr-defined]
+                name = content[c.start_byte:c.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+                if name in pointer_params or name in reference_params:
+                    return (name, "subscript-assign")
+                break
+        return None
+
+    # ``r = X`` — bare reference reassignment
+    if ltype == "identifier":
+        name = content[lhs.start_byte:lhs.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+        if name in reference_params:
+            return (name, "ref-assign")
         return None
 
     return None

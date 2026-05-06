@@ -52,6 +52,7 @@ _NUMERIC_NODES: dict[str, frozenset[str]] = {
     "c_sharp":    frozenset({"integer_literal", "real_literal"}),
     "julia":      frozenset({"integer_literal", "float_literal"}),
     "c":          frozenset({"number_literal"}),
+    "cpp":        frozenset({"number_literal"}),
 }
 
 _FUNCTION_NODES: dict[str, frozenset[str]] = {
@@ -69,6 +70,7 @@ _FUNCTION_NODES: dict[str, frozenset[str]] = {
                               "local_function_statement"}),
     "julia":      frozenset({"function_definition", "short_function_definition"}),
     "c":          frozenset({"function_definition"}),
+    "cpp":        frozenset({"function_definition", "lambda_expression"}),
 }
 
 _LANG_GLOBS: dict[str, list[str]] = {
@@ -81,6 +83,7 @@ _LANG_GLOBS: dict[str, list[str]] = {
     "c_sharp":    ["**/*.cs"],
     "julia":      ["**/*.jl"],
     "c":          ["**/*.c", "**/*.h"],
+    "cpp":        ["**/*.cpp", "**/*.cc", "**/*.cxx", "**/*.hpp", "**/*.hxx"],
 }
 
 # ---------------------------------------------------------------------------
@@ -137,21 +140,45 @@ def _fn_name(node: object, content: bytes) -> str:
     name_node = node.child_by_field_name("name")  # type: ignore[attr-defined]
     if name_node is not None:
         return content[name_node.start_byte:name_node.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
-    # C ``function_definition`` exposes the name through the declarator
-    # chain rather than a ``name`` field. Walk it: function_declarator →
-    # declarator field → identifier. Pointer return types wrap the
-    # function_declarator in pointer_declarator.
-    if node.type == "function_definition":  # type: ignore[attr-defined]
+    # C / C++ ``function_definition`` exposes the name through the
+    # declarator chain rather than a ``name`` field. Walk it through
+    # pointer / reference / parenthesized declarator wrappers to the
+    # inner ``function_declarator``, then take its ``declarator`` field
+    # which is one of: identifier (plain C), field_identifier (C++
+    # in-class method), qualified_identifier (C++ out-of-line method —
+    # rightmost identifier), operator_name (C++ operator overload —
+    # the operator-symbol child), or destructor_name (C++ destructor —
+    # inner identifier, prefixed with ~).
+    if node.type in ("function_definition", "lambda_expression"):  # type: ignore[attr-defined]
+        if node.type == "lambda_expression":  # type: ignore[attr-defined]
+            return "<lambda>"
         declarator = node.child_by_field_name("declarator")  # type: ignore[attr-defined]
-        for _ in range(6):
+        for _ in range(8):
             if declarator is None:
                 break
             if declarator.type == "function_declarator":  # type: ignore[attr-defined]
                 inner = declarator.child_by_field_name("declarator")  # type: ignore[attr-defined]
-                if inner is not None and inner.type == "identifier":  # type: ignore[attr-defined]
+                if inner is None:
+                    break
+                if inner.type in ("identifier", "field_identifier"):  # type: ignore[attr-defined]
                     return content[inner.start_byte:inner.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+                if inner.type == "qualified_identifier":  # type: ignore[attr-defined]
+                    for c in reversed(inner.children):  # type: ignore[attr-defined]
+                        if c.type == "identifier":  # type: ignore[attr-defined]
+                            return content[c.start_byte:c.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+                    break
+                if inner.type == "operator_name":  # type: ignore[attr-defined]
+                    for c in inner.children:  # type: ignore[attr-defined]
+                        if c.type != "operator":  # type: ignore[attr-defined]
+                            return content[c.start_byte:c.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+                    break
+                if inner.type == "destructor_name":  # type: ignore[attr-defined]
+                    for c in inner.children:  # type: ignore[attr-defined]
+                        if c.type == "identifier":  # type: ignore[attr-defined]
+                            return "~" + content[c.start_byte:c.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+                    break
                 break
-            if declarator.type in ("pointer_declarator", "parenthesized_declarator"):  # type: ignore[attr-defined]
+            if declarator.type in ("pointer_declarator", "reference_declarator", "parenthesized_declarator"):  # type: ignore[attr-defined]
                 declarator = declarator.child_by_field_name("declarator")  # type: ignore[attr-defined]
                 continue
             break

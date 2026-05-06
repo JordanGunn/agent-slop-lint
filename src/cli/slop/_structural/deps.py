@@ -53,6 +53,14 @@ IMPORT_QUERIES: dict[str, list[tuple[str, str]]] = {
         ('(preproc_include path: (system_lib_string) @module)',
          "include_system"),
     ],
+    "cpp": [
+        # Same shape as C — tree-sitter-cpp inherits the C preprocessor
+        # node types.
+        ('(preproc_include path: (string_literal (string_content) @module))',
+         "include_local"),
+        ('(preproc_include path: (system_lib_string) @module)',
+         "include_system"),
+    ],
 }
 
 # Text-tier per-language regex fallback (applied to raw file content)
@@ -94,6 +102,10 @@ TEXT_IMPORT_REGEXES: dict[str, list[tuple[str, str]]] = {
         # `#include "foo.h"` — captures `foo.h`
         (r'^\s*#\s*include\s+"([^"]+)"', "include_local"),
         # `#include <stdio.h>` — captures `stdio.h`
+        (r"^\s*#\s*include\s+<([^>]+)>", "include_system"),
+    ],
+    "cpp": [
+        (r'^\s*#\s*include\s+"([^"]+)"', "include_local"),
         (r"^\s*#\s*include\s+<([^>]+)>", "include_system"),
     ],
 }
@@ -684,5 +696,10 @@ def _detect_file_language(fp: Path) -> str | None:
         ".jl": "julia",
         ".c": "c",
         ".h": "c",
+        ".cpp": "cpp",
+        ".cc": "cpp",
+        ".cxx": "cpp",
+        ".hpp": "cpp",
+        ".hxx": "cpp",
     }
     return ext_map.get(ext)

@@ -59,6 +59,7 @@ _LANG_GLOBS: dict[str, list[str]] = {
     "rust": ["**/*.rs"],
     "julia": ["**/*.jl"],
     "c": ["**/*.c", "**/*.h"],
+    "cpp": ["**/*.cpp", "**/*.cc", "**/*.cxx", "**/*.hpp", "**/*.hxx"],
 }
 
 
@@ -386,6 +387,34 @@ _C_TYPEDEF_QUERY = """
 (type_definition declarator: (type_identifier) @name)
 """
 
+# C++: same shape as C plus class_specifier. Abstractness is handled
+# separately in `_compute_abstractness_ast` because the pure-virtual
+# check requires inspecting field_declaration_list contents (not a
+# query the tree-sitter query language can express ergonomically).
+_CPP_CLASS_QUERY = """
+(class_specifier
+  name: (type_identifier) @name
+  body: (field_declaration_list))
+"""
+_CPP_STRUCT_QUERY = """
+(struct_specifier
+  name: (type_identifier) @name
+  body: (field_declaration_list))
+"""
+_CPP_UNION_QUERY = """
+(union_specifier
+  name: (type_identifier) @name
+  body: (field_declaration_list))
+"""
+_CPP_ENUM_QUERY = """
+(enum_specifier
+  name: (type_identifier) @name
+  body: (enumerator_list))
+"""
+_CPP_TYPEDEF_QUERY = """
+(type_definition declarator: (type_identifier) @name)
+"""
+
 _RUST_TRAIT_QUERY = """
 (trait_item name: (type_identifier) @name)
 """
@@ -509,6 +538,123 @@ def _count_query_matches(
     return len(names)
 
 
+def _split_cpp_classes_by_abstract(
+    pkg_files: list[Path],
+    errors: list[str],
+) -> tuple[int, int]:
+    """Split C++ ``class_specifier`` definitions into abstract and concrete.
+
+    A class is abstract if its ``field_declaration_list`` contains at
+    least one ``field_declaration`` with both a ``function_declarator``
+    and an ``=`` `0` token sequence (the pure-virtual marker), AND the
+    class itself does NOT carry a ``virtual_specifier "final"`` child
+    (``final`` classes cannot be subclassed and so cannot be abstract).
+    """
+    from slop._ast.query import query_kernel
+
+    res = query_kernel(files=pkg_files, query_str=_CPP_CLASS_QUERY,
+                       language="cpp")
+    errors.extend(res.errors)
+
+    abstract = 0
+    concrete = 0
+    seen: set[str] = set()
+    for ast_match in res.matches:
+        # Track a class-by-class identity so we don't double-count the
+        # same class definition across multiple captures within a single
+        # match.
+        name_caps = [c for c in ast_match.captures if c.name == "name"]
+        if not name_caps:
+            continue
+        name_cap = name_caps[0]
+        identity = f"{ast_match.file}:{name_cap.line}:{name_cap.text}"
+        if identity in seen:
+            continue
+        seen.add(identity)
+
+        # The class node is the parent of the captured `name` field
+        # (handled at query level, but we need to read the file to
+        # inspect its body). Re-parse and walk to find this specific
+        # class_specifier — cheaper than reshaping the query for now.
+        try:
+            content = Path(ast_match.file).read_bytes()
+        except OSError as e:
+            errors.append(f"{ast_match.file}: {e}")
+            continue
+
+        from slop._ast.treesitter import load_language
+        tree_lang = load_language("cpp")
+        if tree_lang is None:
+            concrete += 1
+            continue
+        try:
+            import tree_sitter
+            try:
+                parser = tree_sitter.Parser(tree_lang)
+            except TypeError:
+                parser = tree_sitter.Parser()
+                parser.language = tree_lang  # type: ignore[assignment]
+            tree = parser.parse(content)
+        except Exception as e:
+            errors.append(f"{ast_match.file}: {e}")
+            concrete += 1
+            continue
+
+        # Walk for the class_specifier matching this name+line.
+        target = None
+        stack = [tree.root_node]
+        while stack:
+            node = stack.pop()
+            if node.type == "class_specifier":
+                name_node = node.child_by_field_name("name")
+                if (name_node is not None
+                    and name_node.start_point[0] + 1 == name_cap.line
+                    and content[name_node.start_byte:name_node.end_byte].decode(
+                        errors="replace") == name_cap.text):
+                    target = node
+                    break
+            stack.extend(node.children)
+
+        if target is None:
+            concrete += 1
+            continue
+
+        # ``final`` disqualifies — class cannot be subclassed.
+        is_final = False
+        for child in target.children:
+            if child.type == "virtual_specifier":
+                spec_text = content[child.start_byte:child.end_byte].decode(
+                    errors="replace").strip()
+                if "final" in spec_text:
+                    is_final = True
+                    break
+        if is_final:
+            concrete += 1
+            continue
+
+        # Pure-virtual scan: any field_declaration with function_declarator AND `=`.
+        body = target.child_by_field_name("body")
+        is_abstract = False
+        if body is not None:
+            for child in body.children:
+                if child.type != "field_declaration":
+                    continue
+                has_func = any(
+                    g.type == "function_declarator" for g in child.children
+                )
+                has_eq = any(g.type == "=" for g in child.children)
+                if has_func and has_eq:
+                    is_abstract = True
+                    break
+
+        if is_abstract:
+            abstract += 1
+        else:
+            concrete += 1
+
+    return abstract, concrete
+
+
 def _split_classes_by_abstract_modifier(
     pkg_files: list[Path],
     query_str: str,
@@ -629,6 +775,23 @@ def _compute_abstractness_ast(
         nc += _count_query_matches(pkg_files, _C_ENUM_QUERY, "c", errors)
         nc += _count_query_matches(pkg_files, _C_TYPEDEF_QUERY, "c", errors)
 
+    elif language == "cpp":
+        # C++ classes are abstract iff they (a) have at least one pure-
+        # virtual method (``virtual T f() = 0;``) and (b) are not
+        # declared ``final``. Other classes are concrete. Structs are
+        # treated as concrete (rare to use struct-with-pure-virtual in
+        # idiomatic C++; could be extended). Unions, enums, typedefs
+        # are concrete.
+        cpp_abstract, cpp_concrete = _split_cpp_classes_by_abstract(
+            pkg_files, errors,
+        )
+        na += cpp_abstract
+        nc += cpp_concrete
+        nc += _count_query_matches(pkg_files, _CPP_STRUCT_QUERY, "cpp", errors)
+        nc += _count_query_matches(pkg_files, _CPP_UNION_QUERY, "cpp", errors)
+        nc += _count_query_matches(pkg_files, _CPP_ENUM_QUERY, "cpp", errors)
+        nc += _count_query_matches(pkg_files, _CPP_TYPEDEF_QUERY, "cpp", errors)
+
     else:
         return _compute_abstractness_text(pkg_files, language, errors)
 
@@ -700,7 +863,48 @@ def _compute_abstractness_text(
             nc += len(_C_ENUM_RE.findall(content))
             nc += len(_C_TYPEDEF_RE.findall(content))
 
+        elif language == "cpp":
+            # Text-tier C++ abstractness: classes containing ``= 0;`` and
+            # not declared ``final`` are abstract. Approximate.
+            class_blocks = list(re.finditer(
+                r"^\s*class\s+(\w+)(?:\s+final)?\s*[:{]",
+                content, re.MULTILINE,
+            ))
+            for m in class_blocks:
+                class_text = content[m.start():_find_block_end(content, m.end())]
+                # ``final`` disqualifies
+                if re.search(r"^\s*class\s+\w+\s+final\b", m.group(0)):
+                    nc += 1
+                elif re.search(r"=\s*0\s*;", class_text):
+                    na += 1
+                else:
+                    nc += 1
+            nc += len(_C_STRUCT_RE.findall(content))
+            nc += len(_C_UNION_RE.findall(content))
+            nc += len(_C_ENUM_RE.findall(content))
+            nc += len(_C_TYPEDEF_RE.findall(content))
+
     return na, nc, errors
+
+
+def _find_block_end(content: str, start: int) -> int:
+    """Find the closing ``}`` matching the brace at or after ``start``.
+
+    Best-effort brace matcher for the text-tier abstractness fallback;
+    handles nested braces. Returns ``len(content)`` if no match.
+    """
+    depth = 0
+    started = False
+    for i in range(start, len(content)):
+        c = content[i]
+        if c == "{":
+            depth += 1
+            started = True
+        elif c == "}":
+            depth -= 1
+            if started and depth == 0:
+                return i + 1
+    return len(content)
 
 
 # ---------------------------------------------------------------------------

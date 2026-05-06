@@ -7,6 +7,87 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-05-05
+
+C++ language support across the full applicable rule set, **including
+the CK class-metrics suite** (CBO, DIT, NOC, WMC). Same shape of
+hotfix as v1.0.1 was for C: `tree-sitter-cpp` was a wheel dependency
+and `.cpp` / `.cc` / `.cxx` were registered in the AST extension map,
+but no kernel `_LANG_CONFIG` registered `"cpp"` — every metric kernel
+silently skipped C++ files.
+
+### Added
+
+- **C++ language support** across structural, information, and
+  lexical rule families. `structural.complexity.{cyclomatic,cognitive,
+  npath}`, `information.{volume,difficulty,magic_literals,
+  section_comments}`, `structural.{god_module,duplication,redundancy,
+  hotspots,orphans,deps,packages,local_imports}`, `structural.types.
+  {escape_hatches,hidden_mutators,sentinels}`, `lexical.{stutter,
+  verbosity,tersity}`, **and** `structural.class.{complexity,coupling,
+  inheritance.depth,inheritance.children}` all run on C++ files. See
+  `docs/CPP.md` for the full status sheet.
+- New `_cpp_*` helpers in `_structural/{ccx,npath,halstead}.py`
+  paralleling the v1.0.1 `_c_*` helpers but extended to handle every
+  C++ name shape: in-class methods (`field_identifier`), out-of-line
+  methods (`qualified_identifier`), operator overloads
+  (`operator_name`), destructors (`destructor_name`), pointer/
+  reference-return wrappers, and lambda expressions
+  (`lambda_expression` → named `<lambda>`).
+- New `_extract_cpp_superclasses` callable on `_CkLangConfig["cpp"]`
+  that walks `base_class_clause` children for `type_identifier` /
+  `qualified_identifier` to support single + multiple inheritance.
+- New `_collect_cpp_outofline_methods` second-pass walker in the CK
+  kernel. C++ codebases conventionally declare classes in headers
+  and define methods in `.cpp` files (`void Foo::bar() {}`); these
+  out-of-line definitions parse as top-level `function_definition`s
+  outside the class body. The walker catalogues them, and the WMC
+  computation attributes each one's CCX back to the matching class
+  by name.
+- New `definition_unwrap_types: frozenset[str]` field on
+  `_LangConfig` / `_NpathLangConfig` / `_HalsteadLangConfig`. Lets
+  the kernel descend through wrapper node types (C++
+  `template_declaration` is the canonical example) to find the
+  wrapped `function_definition` / `class_specifier`. Default empty
+  preserves existing behaviour for every other language.
+- `_split_cpp_classes_by_abstract` in `_structural/robert.py`. A
+  C++ class is **abstract** iff it has at least one pure-virtual
+  method (`virtual T f() = 0;`) AND is not declared `final`.
+  Drives the `structural.packages` abstractness term. Default
+  `severity = "warning"`.
+- `.hpp` and `.hxx` registered in `EXT_LANGUAGE_MAP` for C++.
+  `.h` continues to default to C (conservative; codebases that use
+  `.h` for C++ headers can override with explicit globs).
+
+### Fixed
+
+- **`structural.class.*` rules now cleanly silent-no-op when the
+  user-requested language set excludes every CK-supported
+  language.** The v1.0.1 fix to "no supported languages" returned
+  an empty result without an error; v1.0.2 keeps that behaviour.
+
+### Behaviour change
+
+Users upgrading from v1.0.1 with C++ files in their codebase will
+see new violations across the full rule set. By design — those
+files were silently passing v1.0.1.
+
+### Out of scope (logged, deferred)
+
+- Java's npath `switch_node = "switch_statement"` mismatch with the
+  grammar's `switch_expression` emission (still an unfixed
+  pre-existing bug discovered during v1.0.1).
+- `lexical.stutter`'s missing Java/C#/Julia entries in
+  `_SCOPE_NODES` (still an unfixed pre-existing audit gap).
+- C++20 / C++23 features that older `tree-sitter-cpp` versions
+  don't emit (concepts, modules, coroutines).
+- C++ class methods inside `structural.redundancy` (free-function
+  only).
+- Bare-name namespace collisions in WMC out-of-line attribution
+  (documented in `docs/CPP.md`).
+- Cross-translation-unit method definitions whose declaring header
+  is outside the scanned set.
+
 ## [1.0.1] - 2026-05-05
 
 C language support across the applicable rule set. Discovered during a

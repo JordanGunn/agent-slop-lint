@@ -223,6 +223,90 @@ def _c_name_extractor(node, content: bytes) -> str:
     return content[ident.start_byte:ident.end_byte].decode("utf-8", errors="replace")
 
 
+def _cpp_find_function_identifier(node):
+    """Walk a C++ ``function_definition``'s declarator chain.
+
+    Cases handled (extends ``_c_find_function_identifier``):
+
+    - In-class method: ``function_declarator → field_identifier``.
+    - Out-of-line method: ``function_declarator → qualified_identifier``;
+      return the rightmost ``identifier`` (the method name).
+    - Operator overload: ``function_declarator → operator_name``;
+      return the operator-symbol leaf (skipping the ``operator`` keyword).
+    - Destructor: ``function_declarator → destructor_name``; return
+      the inner ``identifier`` (caller prefixes ``~`` for display).
+    - Pointer / reference return wrappers and parenthesized
+      declarators are skipped through.
+    """
+    declarator = node.child_by_field_name("declarator")
+    for _ in range(8):
+        if declarator is None:
+            return None
+        if declarator.type == "function_declarator":
+            inner = declarator.child_by_field_name("declarator")
+            if inner is None:
+                return None
+            if inner.type in ("identifier", "field_identifier"):
+                return inner
+            if inner.type == "qualified_identifier":
+                for child in reversed(inner.children):
+                    if child.type == "identifier":
+                        return child
+                return None
+            if inner.type == "operator_name":
+                for child in inner.children:
+                    if child.type != "operator":
+                        return child
+                return None
+            if inner.type == "destructor_name":
+                for child in inner.children:
+                    if child.type == "identifier":
+                        return child
+                return None
+            return None
+        if declarator.type in (
+            "pointer_declarator",
+            "reference_declarator",
+            "parenthesized_declarator",
+        ):
+            declarator = declarator.child_by_field_name("declarator")
+            continue
+        break
+    return None
+
+
+def _cpp_is_destructor(node) -> bool:
+    """True if ``node`` is a ``function_definition`` whose declarator points
+    at a ``destructor_name``."""
+    declarator = node.child_by_field_name("declarator")
+    while declarator is not None and declarator.type in (
+        "pointer_declarator", "reference_declarator", "parenthesized_declarator",
+    ):
+        declarator = declarator.child_by_field_name("declarator")
+    if declarator is None or declarator.type != "function_declarator":
+        return False
+    inner = declarator.child_by_field_name("declarator")
+    return inner is not None and inner.type == "destructor_name"
+
+
+def _cpp_name_extractor(node, content: bytes) -> str:
+    """C++ function-name extraction.
+
+    Lambdas are anonymous (``"<lambda>"``). Destructor names are
+    prefixed with ``~``. Everything else delegates to
+    ``_cpp_find_function_identifier``.
+    """
+    if node.type == "lambda_expression":
+        return "<lambda>"
+    if node.type != "function_definition":
+        return "<anonymous>"
+    ident = _cpp_find_function_identifier(node)
+    if ident is None:
+        return "<anonymous>"
+    name = content[ident.start_byte:ident.end_byte].decode("utf-8", errors="replace")
+    return f"~{name}" if _cpp_is_destructor(node) else name
+
+
 # ---------------------------------------------------------------------------
 # Per-language configuration
 # ---------------------------------------------------------------------------
@@ -240,6 +324,12 @@ class _LangConfig:
     # if, switch_case of switch, match_arm of match) but conceptually live at
     # the same logical depth. Their cog increment uses depth-1 to compensate.
     compensating_decisions: frozenset[str] = frozenset()
+    # Wrapper node types that contain a single function/class/struct
+    # definition. The kernel descends through these to find the wrapped
+    # definition. C++ ``template_declaration`` is the canonical
+    # example; default is empty (preserves Python/JS/Go/Rust/Java/C#/
+    # Julia/C behaviour).
+    definition_unwrap_types: frozenset[str] = frozenset()
     # Per-language callables. Defaults match the conventional tree-sitter
     # shape; languages whose AST diverges register their own.
     name_extractor: NameExtractor = _default_name_extractor
@@ -518,6 +608,40 @@ _LANG_CONFIG: dict[str, _LangConfig] = {
         boolean_op_filter=frozenset({"&&", "||"}),
         name_extractor=_c_name_extractor,
     ),
+    "cpp": _LangConfig(
+        function_nodes=frozenset({
+            "function_definition",
+            "lambda_expression",       # anonymous; named "<lambda>"
+        }),
+        decision_nodes=frozenset({
+            "if_statement",
+            "for_statement",
+            "for_range_loop",          # C++ range-based for
+            "while_statement",
+            "do_statement",
+            "case_statement",          # case X: / default:
+            "conditional_expression",  # ternary
+            "catch_clause",            # try/catch decision
+        }),
+        nesting_nodes=frozenset({
+            "if_statement",
+            "for_statement",
+            "for_range_loop",
+            "while_statement",
+            "do_statement",
+            "switch_statement",
+            "conditional_expression",
+            "try_statement",           # container for catch_clause
+            "catch_clause",
+        }),
+        compensating_decisions=frozenset({
+            "case_statement",
+        }),
+        boolean_op_node="binary_expression",
+        boolean_op_filter=frozenset({"&&", "||"}),
+        definition_unwrap_types=frozenset({"template_declaration"}),
+        name_extractor=_cpp_name_extractor,
+    ),
 }
 
 # Glob patterns per language for find_kernel discovery.
@@ -531,6 +655,7 @@ _LANG_GLOBS: dict[str, list[str]] = {
     "c_sharp": ["**/*.cs"],
     "julia": ["**/*.jl"],
     "c": ["**/*.c", "**/*.h"],
+    "cpp": ["**/*.cpp", "**/*.cc", "**/*.cxx", "**/*.hpp", "**/*.hxx"],
 }
 
 # Bash files are explicitly excluded — see 03_POLICIES.md.

@@ -86,6 +86,57 @@ DEFINITION_QUERIES: dict[str, list[tuple[str, str]]] = {
         # declarator is the new name)
         ("(type_definition declarator: (type_identifier) @name)", "typedef"),
     ],
+    "cpp": [
+        # Plain free function: ``int f(...) { ... }``
+        ("(function_definition"
+         " declarator: (function_declarator declarator: (identifier) @name))",
+         "function"),
+        # In-class method definition: ``void Foo::bar() {}`` is collected
+        # via the qualified_identifier query below; in-class inline methods
+        # use field_identifier.
+        ("(function_definition"
+         " declarator: (function_declarator declarator: (field_identifier) @name))",
+         "method"),
+        # Out-of-line method: ``void Foo::bar() {}`` — capture the
+        # rightmost identifier in the qualified path.
+        ("(function_definition"
+         " declarator: (function_declarator"
+         "   declarator: (qualified_identifier (identifier) @name)))",
+         "method"),
+        # Pointer return: ``int *f(...)`` / ``Foo *Bar::baz(...)``
+        ("(function_definition"
+         " declarator: (pointer_declarator"
+         "   declarator: (function_declarator"
+         "     declarator: (identifier) @name)))",
+         "function"),
+        # Reference return: ``int& f(...)``
+        ("(function_definition"
+         " declarator: (reference_declarator"
+         "   (function_declarator declarator: (identifier) @name)))",
+         "function"),
+        # Class / struct definitions (with body to filter forward
+        # declarations and references)
+        ("(class_specifier"
+         " name: (type_identifier) @name"
+         " body: (field_declaration_list))",
+         "class"),
+        ("(struct_specifier"
+         " name: (type_identifier) @name"
+         " body: (field_declaration_list))",
+         "struct"),
+        ("(union_specifier"
+         " name: (type_identifier) @name"
+         " body: (field_declaration_list))",
+         "union"),
+        ("(enum_specifier"
+         " name: (type_identifier) @name"
+         " body: (enumerator_list))",
+         "enum"),
+        ("(type_definition declarator: (type_identifier) @name)", "typedef"),
+        # Namespace declarations
+        ("(namespace_definition name: (namespace_identifier) @name)",
+         "namespace"),
+    ],
 }
 
 
