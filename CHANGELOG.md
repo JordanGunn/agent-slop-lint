@@ -7,6 +7,82 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-05-06
+
+The composition suite + lexical expansion release. Two new rule
+suites address agent-written-code patterns that the v1.0.x lexical
+rules couldn't reach: hidden-class candidates buried in flat function
+families, and naming smells too narrow for the unified
+`lexical.stutter`. Both suites are grounded in three rounds of
+empirical PoC research (recorded under
+`docs/observations/composition/`) and published prior art (Wille
+1982; Caprile & Tonella 2000; Bavota et al.; Lawrie et al.;
+Deissenboeck & Pizka; Harris 1955).
+
+### Added
+
+- **`composition.*` (new suite, 2 rules).**
+  - `composition.affix_polymorphism` — Formal-Concept-Analysis-based
+    detection of missing namespaces / inheritance hierarchies from
+    affix-polymorphism patterns. Surfaces the inheritance lattice
+    when one entity's operations strictly contain another's.
+  - `composition.first_parameter_drift` — clusters of free functions
+    sharing a first-parameter name; flags strong / weak / false-
+    positive candidates. Strong clusters signal a missing receiver
+    / hidden class.
+  - Both default to `severity = "warning"` — these rules surface
+    candidates, not violations of an objective threshold.
+- **`lexical.*` expansion (6 new rules).**
+  - `lexical.name_verbosity` — function/class names with too many
+    word-tokens (class-without-class signal). Independent from
+    `lexical.verbosity` (which measures *body* identifiers).
+  - `lexical.numbered_variants` — identifiers ending in
+    disambiguator suffixes (`_1`, `_v2`, `_old`, `_new`, `_local`).
+  - `lexical.weasel_words` — configurable banlist for catchall
+    vocabulary (`Manager`, `Helper`, `Util`, `Spec`, `Object`, …)
+    with per-word position config (prefix/suffix/any/module_name)
+    and per-word severity overrides.
+  - `lexical.type_tag_suffixes` — identifier suffixes restating the
+    type annotation (`result_dict: dict[...]`, `config_path: Path`).
+  - `lexical.boilerplate_docstrings` — docstrings whose first-
+    sentence content is a subset of function-name tokens.
+  - `lexical.identifier_singletons` — functions where most named
+    locals are write-once-read-once (default `severity = "info"`).
+- **Methodology + citations docs.** New
+  `docs/philosophy/composition-and-lexical.md` documents the
+  empirical grounding and prior-art chain for the new suites.
+  `docs/philosophy/references.md` extended with FCA, identifier-
+  quality, and Extract-Class refactoring citations.
+- **Shared function-definition enumerator** at
+  `_lexical/_naming.py` (cross-language tree-sitter walk used by
+  both composition rules and the new lexical rules).
+
+### Changed
+
+- **`lexical.stutter` split into three rules** so each smell can be
+  configured independently:
+  - `lexical.stutter.namespaces` — symbol stutters with module path.
+  - `lexical.stutter.callers` — method/attribute stutters with
+    enclosing class.
+  - `lexical.stutter.identifiers` — local variable stutters with
+    enclosing function (default `severity = "info"`).
+- **Stutter token comparison is now case-insensitive.** The original
+  unified rule missed cross-case stutters
+  (`UserService` ↔ `user_service_helper`). Now matches correctly.
+
+### Compatibility
+
+- Legacy rule name `lexical.stutter` translates automatically to
+  `lexical.stutter.identifiers` via `slop._compat`. The closest
+  single-rule successor, chosen because it's what the original rule
+  fired on most often in practice.
+- Legacy TOML table `[rules.lexical.stutter]` migrates its keys to
+  `[rules.lexical.stutter.identifiers]` at config-load time.
+- Existing waivers referencing `lexical.stutter` keep working
+  (translated through the same shim).
+- A consolidated deprecation notice prints to stderr at config-load
+  time; the canonical names appear in `docs/rules/`.
+
 ## [1.0.3] - 2026-05-05
 
 Ruby language support across the full applicable rule set, **including

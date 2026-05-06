@@ -42,6 +42,11 @@ LEGACY_RULE_NAMES: dict[str, str] = {
     "halstead.difficulty": "information.difficulty",
     "lexical.identifier_token_count": "lexical.verbosity",
     "lexical.short_identifier_density": "lexical.tersity",
+    # 1.1.0 split: ``lexical.stutter`` covered three smells; map the
+    # legacy name to ``lexical.stutter.identifiers`` since that's what
+    # the rule actually fired on most often in practice (function-
+    # body locals stuttering with the enclosing function name).
+    "lexical.stutter": "lexical.stutter.identifiers",
 }
 
 
@@ -271,6 +276,35 @@ def _collect_legacy_derivations(
     return derived, deprecations
 
 
+def _migrate_split_stutter_table(
+    raw_rules: dict,
+) -> tuple[dict, list[str]]:
+    """Map the legacy nested ``[rules.lexical.stutter]`` leaf table to
+    ``lexical.stutter.identifiers`` (the closest single-rule successor
+    in the 1.1.0 split).
+
+    Only fires when ``rules.lexical.stutter`` is a leaf table (scalar
+    values only). If the user has already adopted any of the new
+    split rules under ``rules.lexical.stutter.<mode>``, the parent
+    table holds nested dicts and this migration is skipped.
+    """
+    derived: dict = {}
+    deprecations: list[str] = []
+    lexical = raw_rules.get("lexical")
+    if not isinstance(lexical, dict):
+        return derived, deprecations
+    stutter = lexical.get("stutter")
+    if not isinstance(stutter, dict):
+        return derived, deprecations
+    if not _is_leaf_legacy_table(stutter):
+        return derived, deprecations
+    derived["lexical.stutter.identifiers"] = dict(stutter)
+    deprecations.append(
+        "  [rules.lexical.stutter] -> [rules.lexical.stutter.identifiers]"
+    )
+    return derived, deprecations
+
+
 def migrate_legacy_rule_tables(
     raw_rules: dict, canonical_keys: set[str],
 ) -> tuple[dict, list[str]]:
@@ -286,6 +320,9 @@ def migrate_legacy_rule_tables(
     the input win over values derived from legacy tables.
     """
     derived, deprecations = _collect_legacy_derivations(raw_rules)
+    stutter_derived, stutter_deprecations = _migrate_split_stutter_table(raw_rules)
+    derived.update(stutter_derived)
+    deprecations.extend(stutter_deprecations)
     canonical = _flatten_canonical_tables(raw_rules, canonical_keys)
 
     merged: dict = dict(derived)

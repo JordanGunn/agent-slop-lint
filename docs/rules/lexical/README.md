@@ -4,9 +4,17 @@ Lexical rules measure vocabulary quality. They operate on tokenized identifier s
 
 | Rule | Default | What it catches |
 |---|---|---|
-| [`lexical.stutter`](stutter.md) | ≥ 2 tokens | Identifiers repeating tokens from enclosing scope |
+| [`lexical.stutter.namespaces`](stutter.md) | ≥ 2 tokens | Symbol stutters with module path |
+| [`lexical.stutter.callers`](stutter.md) | ≥ 2 tokens | Method/attribute stutters with enclosing class |
+| [`lexical.stutter.identifiers`](stutter.md) | ≥ 2 tokens | Local variable stutters with enclosing function |
 | [`lexical.verbosity`](verbosity.md) | mean > 3.0 | Functions with overly verbose multi-token identifiers |
 | [`lexical.tersity`](tersity.md) | > 50% | Overuse of very short (≤ 2 char) identifiers (guardrail) |
+| [`lexical.name_verbosity`](name_verbosity.md) | > 3 tokens | Function/class names with too many tokens (class-without-class signal) |
+| [`lexical.numbered_variants`](numbered_variants.md) | any match | Identifiers ending in disambiguator suffixes (`_1`, `_v2`, `_old`, `_new`) |
+| [`lexical.weasel_words`](weasel_words.md) | banlist match | Catchall vocabulary (`Manager`, `Helper`, `Util`, `Spec`, …) |
+| [`lexical.type_tag_suffixes`](type_tag_suffixes.md) | suffix matches type | Identifier suffixes that restate the type annotation |
+| [`lexical.boilerplate_docstrings`](boilerplate_docstrings.md) | content ⊆ name | Docstrings that just restate the function name |
+| [`lexical.identifier_singletons`](identifier_singletons.md) | > 60% singleton | Functions where most locals are write-once-read-once |
 
 ## Category properties
 

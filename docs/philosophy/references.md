@@ -48,6 +48,54 @@ Full bibliography of the research slop's metrics are built on.
   Algorithms." *SIAM Journal on Computing*, 1(2), 146-160.
   → `deps` (SCC detection algorithm)
 
+- **Wille, R.** (1982). "Restructuring lattice theory: an approach
+  based on hierarchies of concepts." *Ordered Sets*, NATO Advanced
+  Study Institutes Series 83, 445-470.
+  → `composition.affix_polymorphism` (Formal Concept Analysis;
+  inheritance lattice extraction)
+
+- **Ganter, B. & Wille, R.** (1999). *Formal Concept Analysis:
+  Mathematical Foundations*. Springer.
+  → `composition.affix_polymorphism` (canonical FCA reference)
+
+- **Caprile, B. & Tonella, P.** (2000). "Restructuring program
+  identifiers based on word usage and stop-word filtering."
+  *Proceedings of the 8th International Workshop on Program
+  Comprehension*, 97-104.
+  → `composition.affix_polymorphism` (identifier-pattern
+  restructuring; affix detection)
+
+- **Bavota, G., Oliveto, R., De Lucia, A., Antoniol, G., &
+  Guéhéneuc, Y-G.** (2014). "Methodbook: Recommending Move Method
+  Refactorings via Relational Topic Models." *IEEE Transactions on
+  Software Engineering*, 40(7), 671-694.
+  → `composition.first_parameter_drift` (Extract Class /
+  Move Method refactoring detection lineage)
+
+- **Harris, Z.S.** (1955). "From Phoneme to Morpheme." *Language*,
+  31(2), 190-222.
+  → `lexical.numbered_variants` (morpheme-boundary detection
+  on identifiers; the segmentation principle behind suffix
+  classification)
+
+- **Lawrie, D., Feild, H., & Binkley, D.** (2006). "Quantifying
+  Identifier Quality: An Analysis of Trends." *Empirical Software
+  Engineering*, 12(4), 359-388.
+  → `lexical.verbosity`, `lexical.tersity`, `lexical.name_verbosity`
+  (identifier-quality metrics)
+
+- **Deissenboeck, F. & Pizka, M.** (2006). "Concise and Consistent
+  Naming." *Software Quality Journal*, 14(3), 261-282.
+  → `lexical.weasel_words`, `lexical.boilerplate_docstrings`
+  (naming-discipline foundations; concise-and-consistent rule)
+
+- **Rissanen, J.** (1978). "Modeling by shortest data description."
+  *Automatica*, 14(5), 465-471.
+  → Methodology — MDL principle informs the
+  `composition.affix_polymorphism` cluster filtering (a cluster
+  earns its description length by reducing the codebase's
+  description length).
+
 ## Secondary sources (cited in rationale)
 
 - **Bainbridge, L.** (1983). "Ironies of Automation." *Automatica*,

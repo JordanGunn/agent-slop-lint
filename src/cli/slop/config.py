@@ -155,9 +155,19 @@ DEFAULT_RULE_CONFIGS: dict[str, dict[str, Any]] = {
         "severity": "warning",
         "threshold": 2,
     },
-    "lexical.stutter": {
+    "lexical.stutter.namespaces": {
         "enabled": True,
         "severity": "warning",
+        "min_overlap_tokens": 2,
+    },
+    "lexical.stutter.callers": {
+        "enabled": True,
+        "severity": "warning",
+        "min_overlap_tokens": 2,
+    },
+    "lexical.stutter.identifiers": {
+        "enabled": True,
+        "severity": "info",
         "min_overlap_tokens": 2,
     },
     "lexical.verbosity": {
@@ -172,6 +182,48 @@ DEFAULT_RULE_CONFIGS: dict[str, dict[str, Any]] = {
         "max_density": 0.50,
         "max_len": 2,
         "min_identifiers": 5,
+    },
+    "lexical.name_verbosity": {
+        "enabled": True,
+        "severity": "warning",
+        "max_tokens": 3,
+        "check_classes": True,
+    },
+    "lexical.numbered_variants": {
+        "enabled": True,
+        "severity": "warning",
+        "min_stem_tokens": 1,
+    },
+    "lexical.weasel_words": {
+        "enabled": True,
+        "severity": "warning",
+    },
+    "lexical.type_tag_suffixes": {
+        "enabled": True,
+        "severity": "warning",
+    },
+    "lexical.boilerplate_docstrings": {
+        "enabled": True,
+        "severity": "warning",
+    },
+    "lexical.identifier_singletons": {
+        "enabled": True,
+        "severity": "info",
+        "min_locals": 4,
+        "max_singleton_fraction": 0.6,
+    },
+    "composition.affix_polymorphism": {
+        "enabled": True,
+        "severity": "warning",
+        "min_alphabet": 3,
+        "min_concept_extent": 2,
+        "min_concept_intent": 2,
+    },
+    "composition.first_parameter_drift": {
+        "enabled": True,
+        "severity": "warning",
+        "min_cluster": 3,
+        "exempt_names": ["self", "cls"],
     },
 }
 

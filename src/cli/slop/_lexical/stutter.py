@@ -94,12 +94,28 @@ class StutterResult:
     files_searched: int = 0
     errors: list[str] = field(default_factory=list)
 
+#: Valid ``scope_filter`` members. ``module`` is the namespace level
+#: (file stem); ``class`` is the caller level (enclosing class); and
+#: ``function`` is the identifier level (local stutter with enclosing
+#: function name). The default is the full set, which preserves the
+#: pre-1.1.0 behaviour for the legacy ``lexical.stutter`` rule.
+ALL_SCOPES: frozenset[str] = frozenset({"module", "class", "function"})
+
+
 def stutter_kernel(
     root: Path,
     *,
     languages: list[str] | None = None,
     excludes: list[str] | None = None,
+    scope_filter: frozenset[str] = ALL_SCOPES,
 ) -> StutterResult:
+    """Run scope-stutter detection.
+
+    ``scope_filter`` selects which enclosing-scope kinds count as a
+    stutter source. Defaults to all three (legacy behaviour). The
+    1.1.0 split rules pass narrowed sets so each rule reports a
+    single, distinct smell.
+    """
     active = ({l.lower() for l in languages} & set(_SCOPE_NODES)) if languages else set(_SCOPE_NODES)
     find_globs = [g for l in sorted(active) for g in _LANG_GLOBS.get(l, [])]
 
@@ -125,14 +141,22 @@ def stutter_kernel(
 
             rel = str(fp.relative_to(root))
             module_name = fp.stem
-            _scan_file(tree.root_node, content, rel, lang, module_name, results)
+            _scan_file(tree.root_node, content, rel, lang, module_name, results, scope_filter)
         except Exception as exc:
             errors.append(f"{fp}: {exc}")
 
     return StutterResult(functions=results, files_searched=len(files), errors=errors)
 
-def _scan_file(root_node, content, rel, lang, module_name, out):
-    module_tokens = set(split_identifier(module_name))
+def _lowercase_tokens(name: str) -> set[str]:
+    """Tokenise an identifier and lowercase the tokens for case-
+    insensitive overlap comparison. CamelCase classes (``UserService``)
+    and snake_case locals (``user_service_helper``) need to be compared
+    case-insensitively or cross-case stutters never surface."""
+    return {t.lower() for t in split_identifier(name)}
+
+
+def _scan_file(root_node, content, rel, lang, module_name, out, scope_filter):
+    module_tokens = _lowercase_tokens(module_name)
     # Stack stores (node, scope_stack)
     # scope_stack is a list of (name, type, tokens)
     stack = [(root_node, [ (module_name, 'module', module_tokens) ])]
@@ -147,11 +171,11 @@ def _scan_file(root_node, content, rel, lang, module_name, out):
 
         if node.type in fn_nodes:
             name = _get_name(node, content)
-            tokens = set(split_identifier(name))
+            tokens = _lowercase_tokens(name)
             next_scope_stack = scope_stack + [(name, 'function', tokens)]
 
             # Process function body for stutters
-            violations = _process_function_body(node, content, next_scope_stack)
+            violations = _process_function_body(node, content, next_scope_stack, scope_filter)
             if violations:
                 out.append(FunctionStutters(
                     name=name,
@@ -163,13 +187,13 @@ def _scan_file(root_node, content, rel, lang, module_name, out):
                 ))
         elif node.type in class_nodes:
             name = _get_name(node, content)
-            tokens = set(split_identifier(name))
+            tokens = _lowercase_tokens(name)
             next_scope_stack = scope_stack + [(name, 'class', tokens)]
 
         for child in reversed(node.children):
             stack.append((child, next_scope_stack))
 
-def _process_function_body(fn_node, content, scope_stack) -> list[StutterViolation]:
+def _process_function_body(fn_node, content, scope_stack, scope_filter) -> list[StutterViolation]:
     body = fn_node.child_by_field_name("body") or fn_node
     identifiers = []
     _collect_identifier_nodes(body, identifiers)
@@ -182,10 +206,13 @@ def _process_function_body(fn_node, content, scope_stack) -> list[StutterViolati
         tokens = split_identifier(name)
         if not tokens: continue
 
-        token_set = set(tokens)
+        token_set = {t.lower() for t in tokens}
 
-        # Check against all scopes in stack (module, class, function)
+        # Check against scopes in stack (module, class, function),
+        # filtered to the requested ``scope_filter`` set.
         for scope_name, scope_type, scope_tokens in reversed(scope_stack):
+            if scope_type not in scope_filter:
+                continue
             # If we're checking a function's local variables against THAT function's name,
             # that's a stutter.
             overlap = token_set & scope_tokens
