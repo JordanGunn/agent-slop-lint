@@ -111,12 +111,24 @@ and the `qualified_identifier` parsing for out-of-line methods.
 
 ## What's not yet supported
 
-- **C++20/23 features that older grammar versions don't emit**: `co_await`/`co_yield`/`co_return` (coroutines), concepts (`requires`), modules (`import`/`export`). The Halstead operator table includes these tokens speculatively; they'll count if emitted, otherwise harmlessly absent.
-- **Macro-aware analysis.** Same limitation as every other tree-sitter-based tool. A `#define` macro that expands to control flow is invisible.
-- **Cross-translation-unit out-of-line method attribution** (see above).
-- **Bare-name namespace collision** in WMC attribution (see above).
-- **Class methods inside `structural.redundancy`.** Sibling-call redundancy is free-function-only on C++ for now.
-- **`final` on individual methods.** `final` on a class disqualifies abstractness; `final` on a method does not currently affect any rule.
+Each item is tagged with **why** it isn't shipped — distinguishing deferrals (solvable, just not done) from genuinely structural limits (bounded by the underlying tooling).
+
+### Deferred (solvable, queued for a follow-up)
+
+- **Bare-name namespace collisions in WMC out-of-line attribution.** `ns_a::Foo::bar()` is matched against class `Foo` ignoring the namespace, so two `Foo` classes in different namespaces can collide. *Solvable* by tracking each class declaration's enclosing `namespace_definition` during the class-collection pass and matching against the full qualified path. ~50-100 lines plus tests. Deferred because real-world C++ rarely reuses class names across namespaces; the WMC error is bounded to the colliding methods.
+- **Diagnostic when out-of-line methods can't bind to a class.** If `Foo::bar()` is in the scanned set but `class Foo` is not (e.g. header outside the scan), the method's CCX is silently dropped. *Solvable* with a per-file warning surfacing the orphan attributions so the user knows to widen their globs. ~10 lines.
+- **C++20/23 grammar features.** `co_await` / `co_yield` / `co_return` are speculatively listed in the Halstead operator table — they'll count if a recent enough `tree-sitter-cpp` emits them, otherwise harmlessly absent. `concepts` (`requires_clause`, `concept_definition`) and `modules` (`module_declaration`) are not yet probed against the installed grammar version; node types may need to be added to the operator/decision sets. *Solvable* with an AST probe against a current grammar wheel.
+
+### Structural (bounded by the substrate)
+
+- **Cross-translation-unit definitions whose declaring header is outside the scan.** slop sees only what's in your `--root` glob set; a method whose class is declared in a header file you didn't scan can't bind back. The diagnostic above narrows the visibility of this gap; widening the scan is the user's call.
+- **Macro-aware analysis.** A `#define` macro that expands to control flow is invisible to every tree-sitter-based tool — slop sees the `preproc_function_def` shell, not the expansion. Solving this requires a real preprocessor; out of slop's substrate.
+- **`-I` include paths in `structural.deps`.** Same posture as Rust deps. Resolving compiler-context include paths means parsing a build system; out of slop's substrate.
+
+### Scope decisions (intentionally not implemented)
+
+- **Class methods inside `structural.redundancy`.** Sibling-call redundancy is free-function-only on C++ for now. Class methods coordinate behaviour within a class — the redundancy signal is structurally different from free-function siblings, and pretending the same threshold means the same thing would be misleading. Could be reopened with a separate per-class shape if calibration suggests it's useful.
+- **`final` on individual methods.** `final` on a class disqualifies abstractness (a `final` class can't be subclassed, so it can't be the abstract endpoint of a hierarchy). `final` on a single method has no effect on any rule today; it's a hint about override safety, not coupling or complexity. No clear metric maps to it.
 
 ## Header / source split convention
 
