@@ -7,6 +7,109 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-05-05
+
+C language support across the applicable rule set. Discovered during a
+coverage audit that `tree-sitter-c` was a wheel dependency and `.c` /
+`.h` were registered in the AST extension map but no kernel
+`_LANG_CONFIG` registered `"c"` — same shape of silent-skip failure
+that v0.7.0 had with Julia short-form functions. Hotfix.
+
+### Added
+
+- **C language support** (`.c`, `.h`) across structural, information,
+  and lexical rule families. `structural.complexity.{cyclomatic,
+  cognitive,npath}`, `information.{volume,difficulty,magic_literals,
+  section_comments}`, `structural.{god_module,duplication,redundancy,
+  hotspots,orphans,deps,packages,local_imports}`, `structural.types.
+  {escape_hatches,hidden_mutators,sentinels}`, and `lexical.{stutter,
+  verbosity,tersity}` all run on C files. The CK class metric family
+  (`structural.class.*`) silently no-ops on `.c` / `.h` files (C has
+  no class concept; same posture as Julia for CK). New `tree-sitter-c
+  >= 0.21.0` was already a dependency; v1.0.1 wires it into the
+  kernels. See `docs/C.md` for the full status sheet, including the
+  documented limitations (no `-I` path resolution, A=0 always for
+  packages, three-pattern out-parameter mutation detection).
+- New `_c_find_function_identifier` and `_c_name_extractor` helpers
+  on the `_LangConfig` Callable seam in `_structural/ccx.py`,
+  `_structural/npath.py`, and `_structural/halstead.py`. Same shape
+  as the Julia precedent — tree-sitter-c does not expose function
+  names through a `name` field; the name lives in
+  `function_declarator.declarator (identifier)`, optionally wrapped
+  in `pointer_declarator` for pointer return types. Smaller kernels
+  (`magic_literals`, `section_comments`, lexical) inline the
+  declarator-chain walk in their generic `_fn_name` helpers.
+- New `switch_body_types: frozenset[str]` field on the npath
+  `_NpathLangConfig` dataclass. Lets the kernel descend through
+  body-wrapper node types between a switch and its cases — required
+  for C (`compound_statement`), Java (`switch_block` /
+  `switch_block_statement_group`), and C# (`switch_body`). Default
+  empty-frozenset preserves existing behaviour for Python/JS/TS/Go/
+  Rust which expose cases as direct switch children.
+
+### Fixed
+
+- **`structural.complexity.npath` under-counted switches in C, C#, and
+  Java**. Pre-1.0.1 the kernel iterated direct switch children
+  looking for case nodes, but C wraps cases in `compound_statement`,
+  C# in `switch_body`, and Java in `switch_block` /
+  `switch_block_statement_group`. Cases were therefore invisible and
+  every switch contributed `npath = 1`. v1.0.1 walks through the
+  language's `switch_body_types` to find cases. Java's case shape
+  remains constrained by a separate pre-existing issue
+  (`switch_node = "switch_statement"` does not match tree-sitter-
+  java's actual `switch_expression` emission for classic switches);
+  that's tracked for a follow-up.
+- **`structural.class.*` rules now silently no-op on languages that
+  don't register CK metrics**, instead of returning a "No supported
+  languages" error. Previously, running CK on a Julia or C codebase
+  produced a per-rule error that polluted output and could fail CI.
+  v1.0.1 returns a clean empty result when the user explicitly
+  requested languages that this rule does not apply to.
+- **`structural.deps` module-resolution index now includes
+  extension-preserving keys**. C `#include "foo.h"` resolves to
+  `foo.h` (not `foo`, which strips the suffix). The same change also
+  picks up other languages that include extensions in their import
+  strings; existing Python/JS/TS/Go/Java/C# tests are unaffected.
+
+### Changed
+
+- `structural.types.escape_hatches` (any-type density) regex pattern
+  for C: escape hatch is `void *`; annotation pattern is calibrated
+  tentatively. Default `severity = "warning"`. See `docs/C.md`.
+- Section-comment divider regex widened to also match C block-style
+  dividers (`/* === ... ===` and `/* --- ... ---`) alongside the
+  existing `#`-style and `//`-style markers.
+
+### Behaviour change to be aware of
+
+Users upgrading from v1.0.0 with C files in their codebase may see
+new violations across complexity, npath, halstead, packages, deps,
+god_module, duplication, redundancy, magic_literals,
+section_comments, types.{escape_hatches,hidden_mutators,sentinels},
+local_imports, and lexical.* rules. This is by design — C files were
+silently passing every rule in v1.0.0. To suppress the new output
+gradually, set `severity = "warning"` per rule or disable
+specific rules while you triage.
+
+C, C# and Java codebases that have switch statements will see NPath
+counts increase to reflect the actual case count. Tighten thresholds
+if you previously calibrated against the under-counted numbers.
+
+### Discoveries (out of scope; logged for follow-up)
+
+- Java's `structural.complexity.npath` `switch_node = "switch_statement"`
+  does not match tree-sitter-java's `switch_expression` node type for
+  classic switch syntax. The v1.0.1 `switch_body_types` fix only
+  helps on the wrapper-descent side; Java still needs a switch-node
+  type fix.
+- `lexical.stutter` is missing per-language entries for Java, C#, and
+  Julia in `_SCOPE_NODES` — same shape of silent-skip failure C had
+  pre-1.0.1.
+- `structural.types.sentinels` advisory message text references
+  Python remedies ("Literal[...] or Enum") even when reporting C
+  violations. Wording will be language-aware in a follow-up.
+
 ## [1.0.0] - 2026-05-04
 
 First stable release. The 0.9.0 → 1.0.0 jump is mostly additive: a new

@@ -531,6 +531,15 @@ def _interpret(cm: ClassMetrics) -> str:
 # ---------------------------------------------------------------------------
 
 
+# Note on absent languages
+# ------------------------
+# C is intentionally NOT registered. C has no class concept — structs are
+# data-only with no methods or inheritance — so CBO/DIT/NOC/WMC have no
+# meaningful definition. The kernel filters by ``_LANG_CONFIG`` membership
+# and silently produces no results for ``.c`` / ``.h`` files. Same posture
+# as Julia (multiple dispatch). C++ will be registered separately in v1.0.2.
+# Ruby is also pending (v1.0.3).
+
 _LANG_CONFIG: dict[str, _CkLangConfig] = {
     "python": _CkLangConfig(
         class_nodes=frozenset({"class_definition"}),
@@ -629,13 +638,22 @@ def ck_kernel(
     # Step 1: Active languages
     if languages:
         active = {lang.lower() for lang in languages} & set(_LANG_CONFIG)
+        # If the user explicitly listed languages but none of them are
+        # CK-supported, this rule is structurally not applicable (e.g.
+        # C, Julia — no class concept). Return a clean empty result
+        # rather than an error.
+        if not active:
+            return CkResult(
+                classes=[], files_searched=0, classes_analyzed=0, languages={},
+                errors=[],
+            )
     else:
         active = set(_LANG_CONFIG)
-    if not active:
-        return CkResult(
-            classes=[], files_searched=0, classes_analyzed=0, languages={},
-            errors=[f"No supported languages. Supported: {sorted(_LANG_CONFIG)}"],
-        )
+        if not active:
+            return CkResult(
+                classes=[], files_searched=0, classes_analyzed=0, languages={},
+                errors=[f"No supported languages. Supported: {sorted(_LANG_CONFIG)}"],
+            )
 
     # Step 2: File discovery
     if globs:

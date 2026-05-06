@@ -44,6 +44,15 @@ IMPORT_QUERIES: dict[str, list[tuple[str, str]]] = {
         # `import Base: show` — only the leading identifier is the module
         ("(import_statement (selected_import . (identifier) @module))", "julia_import"),
     ],
+    "c": [
+        # `#include "foo.h"` — capture the inner content (already unquoted)
+        ('(preproc_include path: (string_literal (string_content) @module))',
+         "include_local"),
+        # `#include <stdio.h>` — system_lib_string includes angle brackets;
+        # they're stripped in the capture loop alongside quote chars.
+        ('(preproc_include path: (system_lib_string) @module)',
+         "include_system"),
+    ],
 }
 
 # Text-tier per-language regex fallback (applied to raw file content)
@@ -80,6 +89,12 @@ TEXT_IMPORT_REGEXES: dict[str, list[tuple[str, str]]] = {
         (r"^\s*import\s+([\w.]+)", "julia_import"),
         # `import Foo: a, b` — captures Foo
         (r"^\s*import\s+([\w.]+)\s*:", "julia_import"),
+    ],
+    "c": [
+        # `#include "foo.h"` — captures `foo.h`
+        (r'^\s*#\s*include\s+"([^"]+)"', "include_local"),
+        # `#include <stdio.h>` — captures `stdio.h`
+        (r"^\s*#\s*include\s+<([^>]+)>", "include_system"),
     ],
 }
 
@@ -275,8 +290,22 @@ def _build_module_index(root: Path, file_paths: list[Path]) -> _ModuleIndex:
     for fp in file_paths:
         fp_str = str(fp)
         stem.setdefault(fp.stem, fp_str)
+        # Also index by the full filename (with extension). This is
+        # primarily for C/C++ ``#include "foo.h"`` resolution from a peer
+        # file; languages whose import strings do not include the file
+        # extension never query this key.
+        stem.setdefault(fp.name, fp_str)
         for name in _module_names_for_path(root, fp):
             exact.setdefault(name, fp_str)
+        # Index by extension-preserving relative path so
+        # ``#include "subdir/foo.h"`` resolves exactly to subdir/foo.h.
+        try:
+            rel = fp.relative_to(root)
+            rel_with_ext = "/".join(rel.parts)
+            if rel_with_ext:
+                exact.setdefault(rel_with_ext, fp_str)
+        except ValueError:
+            pass
     return _ModuleIndex(exact=exact, stem=stem)
 
 
@@ -455,7 +484,9 @@ def _extract_imports_ast(fp: Path, language: str) -> list[ImportEdge]:
                 if cap.name == "module":
                     edges.append(ImportEdge(
                         source=str(fp),
-                        module=cap.text.strip('"\''),
+                        # Strip surrounding quotes (most langs) and angle
+                        # brackets (C/C++ system includes: ``<stdio.h>``).
+                        module=cap.text.strip('"\'<>'),
                         kind=kind,
                         line=cap.line,
                     ))
@@ -566,8 +597,13 @@ def _resolve_module(
         return exact
 
     last = normalized.replace("\\", "/").rstrip("/")
-    last = last.split("/")[-1].split(".")[-1]
-    return module_index.stem.get(last)
+    last = last.split("/")[-1]
+    # Try the full last component first ("foo.h" — C/C++ include); fall
+    # back to the suffix-stripped last component (Python dotted-name
+    # convention, "foo.bar.baz" → "baz").
+    return module_index.stem.get(last) or module_index.stem.get(
+        last.split(".")[-1]
+    )
 
 
 def _normalize_module_name(module: str) -> str:
@@ -646,5 +682,7 @@ def _detect_file_language(fp: Path) -> str | None:
         ".java": "java",
         ".cs": "c_sharp",
         ".jl": "julia",
+        ".c": "c",
+        ".h": "c",
     }
     return ext_map.get(ext)

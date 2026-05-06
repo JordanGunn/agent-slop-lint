@@ -48,8 +48,29 @@ _PYTHON_BUILTINS: frozenset[str] = frozenset({
     "True", "False", "None",
 })
 
+# C standard-library callees that show up in many functions and create
+# spurious sibling pairs. Shared callees that are part of the language's
+# allocation/IO/string idioms are not the redundancy signal we want to
+# surface.
+_C_STDLIB: frozenset[str] = frozenset({
+    "malloc", "calloc", "realloc", "free", "alloca",
+    "memcpy", "memmove", "memset", "memcmp",
+    "strlen", "strcpy", "strncpy", "strcat", "strncat",
+    "strcmp", "strncmp", "strdup", "strchr", "strrchr",
+    "strstr", "strtok", "strerror",
+    "printf", "fprintf", "sprintf", "snprintf", "vprintf",
+    "scanf", "fscanf", "sscanf",
+    "fopen", "fclose", "fread", "fwrite", "fseek", "ftell",
+    "fgets", "fputs", "fgetc", "fputc", "feof", "fflush", "ferror",
+    "atoi", "atol", "atoll", "atof",
+    "abort", "exit", "_exit", "atexit",
+    "getenv", "setenv", "unsetenv",
+    "assert", "perror", "errno",
+})
+
 _LANG_GLOBS: dict[str, list[str]] = {
     "python": ["**/*.py"],
+    "c":      ["**/*.c", "**/*.h"],
 }
 
 # ---------------------------------------------------------------------------
@@ -85,9 +106,16 @@ class SiblingCallResult:
 # ---------------------------------------------------------------------------
 
 
-def _is_trivial_callee(name: str) -> bool:
-    """True if the callee name should be excluded from the analysis."""
-    if name in _PYTHON_BUILTINS:
+def _is_trivial_callee(name: str, language: str = "python") -> bool:
+    """True if the callee name should be excluded from the analysis.
+
+    The ``language`` argument selects the per-language exclusion list:
+    Python builtins for ``"python"``, C stdlib for ``"c"``. The length
+    and dunder filters apply to every language.
+    """
+    if language == "python" and name in _PYTHON_BUILTINS:
+        return True
+    if language == "c" and name in _C_STDLIB:
         return True
     if name.startswith("__") and name.endswith("__"):
         return True
@@ -104,7 +132,7 @@ def _fn_name_from_node(node: object, content: bytes) -> str:
 
 
 def _gather_callees(body: object, content: bytes) -> set[str]:
-    """DFS collect all function call names in a subtree."""
+    """DFS collect all function call names in a Python subtree."""
     callees: set[str] = set()
     stack = [body]
     while stack:
@@ -114,16 +142,58 @@ def _gather_callees(body: object, content: bytes) -> set[str]:
             if fn_child is not None:
                 if fn_child.type == "identifier":  # type: ignore[attr-defined]
                     name = content[fn_child.start_byte:fn_child.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
-                    if not _is_trivial_callee(name):
+                    if not _is_trivial_callee(name, "python"):
                         callees.add(name)
                 elif fn_child.type == "attribute":  # type: ignore[attr-defined]
                     attr = fn_child.child_by_field_name("attribute")  # type: ignore[attr-defined]
                     if attr:
                         name = content[attr.start_byte:attr.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
-                        if not _is_trivial_callee(name):
+                        if not _is_trivial_callee(name, "python"):
                             callees.add(name)
         stack.extend(node.children)  # type: ignore[attr-defined]
     return callees
+
+
+def _gather_callees_c(body: object, content: bytes) -> set[str]:
+    """DFS collect all function call names in a C subtree.
+
+    Tree-sitter-c emits ``call_expression`` with ``function: (identifier)``
+    for plain calls, ``function: (field_expression)`` for ``ptr->fn(...)``
+    and ``obj.fn(...)`` shapes (uncommon in C; mostly function-pointer
+    members on structs). We ignore field-expression callees because they
+    typically dispatch through a struct member rather than naming a
+    sibling function.
+    """
+    callees: set[str] = set()
+    stack = [body]
+    while stack:
+        node = stack.pop()
+        if node.type == "call_expression":  # type: ignore[attr-defined]
+            fn_child = node.child_by_field_name("function")  # type: ignore[attr-defined]
+            if fn_child is not None and fn_child.type == "identifier":  # type: ignore[attr-defined]
+                name = content[fn_child.start_byte:fn_child.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+                if not _is_trivial_callee(name, "c"):
+                    callees.add(name)
+        stack.extend(node.children)  # type: ignore[attr-defined]
+    return callees
+
+
+def _c_function_name(node: object, content: bytes) -> str:
+    """Extract a C function_definition's name via the declarator chain."""
+    declarator = node.child_by_field_name("declarator")  # type: ignore[attr-defined]
+    for _ in range(6):
+        if declarator is None:
+            return "<anonymous>"
+        if declarator.type == "function_declarator":  # type: ignore[attr-defined]
+            inner = declarator.child_by_field_name("declarator")  # type: ignore[attr-defined]
+            if inner is not None and inner.type == "identifier":  # type: ignore[attr-defined]
+                return content[inner.start_byte:inner.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+            return "<anonymous>"
+        if declarator.type in ("pointer_declarator", "parenthesized_declarator"):  # type: ignore[attr-defined]
+            declarator = declarator.child_by_field_name("declarator")  # type: ignore[attr-defined]
+            continue
+        break
+    return "<anonymous>"
 
 
 # ---------------------------------------------------------------------------
@@ -180,6 +250,13 @@ def sibling_call_redundancy_kernel(
             pairs.extend(file_pairs)
             total_functions += fn_count
             errors.extend(file_errors)
+        elif lang == "c":
+            file_pairs, fn_count, file_errors = _analyze_c_file(
+                fp, root, min_shared, min_score
+            )
+            pairs.extend(file_pairs)
+            total_functions += fn_count
+            errors.extend(file_errors)
 
     pairs.sort(key=lambda p: -p.score)
     return SiblingCallResult(
@@ -229,6 +306,70 @@ def _analyze_python_file(
             fn_line = node.start_point[0] + 1  # type: ignore[attr-defined]
             body = node.child_by_field_name("body") or node  # type: ignore[attr-defined]
             callees = _gather_callees(body, content)
+            top_level.append((fn_name, fn_line, callees))
+
+    pairs: list[SiblingPair] = []
+    for (name_a, line_a, callees_a), (name_b, line_b, callees_b) in combinations(top_level, 2):
+        if not callees_a or not callees_b:
+            continue
+        shared = callees_a & callees_b
+        if not shared:
+            continue
+        max_size = max(len(callees_a), len(callees_b))
+        score = len(shared) / max_size
+        if len(shared) >= min_shared and score >= min_score:
+            pairs.append(SiblingPair(
+                file=rel,
+                fn_a=name_a,
+                fn_b=name_b,
+                fn_a_line=line_a,
+                fn_b_line=line_b,
+                shared_callees=sorted(shared),
+                score=round(score, 3),
+            ))
+
+    return pairs, len(top_level), []
+
+
+# ---------------------------------------------------------------------------
+# C implementation
+# ---------------------------------------------------------------------------
+
+
+def _analyze_c_file(
+    fp: Path,
+    root: Path,
+    min_shared: int,
+    min_score: float,
+) -> tuple[list[SiblingPair], int, list[str]]:
+    """Return (sibling_pairs, function_count, errors) for one C file."""
+    tree_lang = load_language("c")
+    if tree_lang is None:
+        return [], 0, []
+    try:
+        import tree_sitter
+        content = fp.read_bytes()
+        try:
+            parser = tree_sitter.Parser(tree_lang)
+            tree = parser.parse(content)
+        except TypeError:
+            parser = tree_sitter.Parser()
+            parser.language = tree_lang  # type: ignore[assignment]
+            tree = parser.parse(content)
+    except Exception as exc:
+        return [], 0, [f"{fp}: {exc}"]
+
+    rel = str(fp.relative_to(root))
+
+    # Top-level function_definitions only — C has no nested functions
+    # (GCC's nested-function extension excepted; ignored).
+    top_level: list[tuple[str, int, set[str]]] = []
+    for node in tree.root_node.children:  # type: ignore[attr-defined]
+        if node.type == "function_definition":  # type: ignore[attr-defined]
+            fn_name = _c_function_name(node, content)
+            fn_line = node.start_point[0] + 1  # type: ignore[attr-defined]
+            body = node.child_by_field_name("body") or node  # type: ignore[attr-defined]
+            callees = _gather_callees_c(body, content)
             top_level.append((fn_name, fn_line, callees))
 
     pairs: list[SiblingPair] = []

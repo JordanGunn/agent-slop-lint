@@ -56,6 +56,7 @@ _STR_ANNOTATION_RE = re.compile(
 
 _LANG_GLOBS: dict[str, list[str]] = {
     "python": ["**/*.py"],
+    "c":      ["**/*.c", "**/*.h"],
 }
 
 # ---------------------------------------------------------------------------
@@ -141,7 +142,8 @@ def stringly_typed_kernel(
                 fp, root, entries, errors, require_str_annotation
             )
             total_functions += _count_python_functions(fp)
-        # Other languages: skip for now (placeholder for future extension)
+        elif lang == "c":
+            total_functions += _scan_c_file(fp, root, entries, errors)
 
     # Pass 2: call-site literal collection via ripgrep
     _enrich_with_call_sites(entries, root, excludes or [], max_cardinality)
@@ -327,3 +329,144 @@ def _enrich_with_call_sites(
                 e.call_site_count = len(literals)
         except Exception:
             pass  # Best-effort; leave call_site_count=0
+
+
+# ---------------------------------------------------------------------------
+# C AST pass
+# ---------------------------------------------------------------------------
+
+
+def _scan_c_file(
+    fp: Path,
+    root: Path,
+    out: list[StringlyEntry],
+    errors: list[str],
+) -> int:
+    """Scan one C file for ``char *`` parameters with sentinel-shaped names.
+
+    Walks every ``function_definition`` and inspects its ``parameter_list``.
+    A parameter is flagged when:
+
+    - Its declarator chain ends in a ``pointer_declarator`` whose innermost
+      identifier is the parameter name.
+    - The parameter type is ``char`` (with optional ``const`` qualifier;
+      ``const char *`` is the canonical C "string parameter" shape).
+    - The parameter name (lowercased, stripped of trailing ``_``) is in
+      ``_SENTINEL_NAMES``.
+
+    Returns the count of functions analysed.
+    """
+    tree_lang = load_language("c")
+    if tree_lang is None:
+        return 0
+    try:
+        import tree_sitter
+        content = fp.read_bytes()
+        try:
+            parser = tree_sitter.Parser(tree_lang)
+            tree = parser.parse(content)
+        except TypeError:
+            parser = tree_sitter.Parser()
+            parser.language = tree_lang  # type: ignore[assignment]
+            tree = parser.parse(content)
+    except Exception as exc:
+        errors.append(f"{fp}: {exc}")
+        return 0
+
+    rel = str(fp.relative_to(root))
+    fn_count = 0
+    stack = [tree.root_node]
+    while stack:
+        node = stack.pop()
+        if node.type == "function_definition":  # type: ignore[attr-defined]
+            fn_count += 1
+            _process_c_function(node, content, rel, out)
+        else:
+            stack.extend(node.children)  # type: ignore[attr-defined]
+    return fn_count
+
+
+def _process_c_function(
+    fn_node: object,
+    content: bytes,
+    rel: str,
+    out: list[StringlyEntry],
+) -> None:
+    """Extract sentinel-shaped ``char *`` parameters from one C function."""
+    fn_name = _c_fn_name(fn_node, content)
+    fn_line = fn_node.start_point[0] + 1  # type: ignore[attr-defined]
+
+    declarator = fn_node.child_by_field_name("declarator")  # type: ignore[attr-defined]
+    while declarator is not None and declarator.type == "pointer_declarator":  # type: ignore[attr-defined]
+        declarator = declarator.child_by_field_name("declarator")  # type: ignore[attr-defined]
+    if declarator is None or declarator.type != "function_declarator":  # type: ignore[attr-defined]
+        return
+
+    plist = declarator.child_by_field_name("parameters")  # type: ignore[attr-defined]
+    if plist is None:
+        return
+
+    for param in plist.children:  # type: ignore[attr-defined]
+        if param.type != "parameter_declaration":  # type: ignore[attr-defined]
+            continue
+
+        is_char_ptr = False
+        ptr_decl = None
+        for child in param.children:  # type: ignore[attr-defined]
+            ctype = child.type  # type: ignore[attr-defined]
+            if ctype == "primitive_type":
+                ptext = content[child.start_byte:child.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+                if ptext.strip() == "char":
+                    is_char_ptr = True
+            elif ctype == "pointer_declarator":
+                ptr_decl = child
+
+        if not is_char_ptr or ptr_decl is None:
+            continue
+
+        # Find the parameter identifier inside the (possibly nested)
+        # pointer_declarator chain.
+        cur = ptr_decl
+        param_name: str | None = None
+        for _ in range(4):
+            if cur is None:
+                break
+            inner = cur.child_by_field_name("declarator")  # type: ignore[attr-defined]
+            if inner is None:
+                break
+            if inner.type == "identifier":  # type: ignore[attr-defined]
+                param_name = content[inner.start_byte:inner.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+                break
+            cur = inner
+        if param_name is None:
+            continue
+
+        sentinel_key = _STRIP_TRAILING.sub("", param_name).lower()
+        if sentinel_key not in _SENTINEL_NAMES:
+            continue
+
+        out.append(StringlyEntry(
+            file=rel,
+            function_name=fn_name,
+            param_name=param_name,
+            param_line=fn_line,
+            annotated=True,    # ``char *`` is the explicit annotation
+        ))
+
+
+def _c_fn_name(fn_node: object, content: bytes) -> str:
+    """Walk the declarator chain to extract a C function name."""
+    declarator = fn_node.child_by_field_name("declarator")  # type: ignore[attr-defined]
+    for _ in range(6):
+        if declarator is None:
+            return "<anonymous>"
+        if declarator.type == "function_declarator":  # type: ignore[attr-defined]
+            inner = declarator.child_by_field_name("declarator")  # type: ignore[attr-defined]
+            if inner is not None and inner.type == "identifier":  # type: ignore[attr-defined]
+                return content[inner.start_byte:inner.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+            return "<anonymous>"
+        if declarator.type in ("pointer_declarator", "parenthesized_declarator"):  # type: ignore[attr-defined]
+            declarator = declarator.child_by_field_name("declarator")  # type: ignore[attr-defined]
+            continue
+        break
+    return "<anonymous>"

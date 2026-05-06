@@ -58,6 +58,7 @@ _LANG_GLOBS: dict[str, list[str]] = {
     "javascript": ["**/*.js", "**/*.mjs", "**/*.cjs"],
     "rust": ["**/*.rs"],
     "julia": ["**/*.jl"],
+    "c": ["**/*.c", "**/*.h"],
 }
 
 
@@ -366,6 +367,25 @@ _JS_CLASS_QUERY = """
 """
 
 # --- Rust ---
+_C_STRUCT_QUERY = """
+(struct_specifier
+  name: (type_identifier) @name
+  body: (field_declaration_list))
+"""
+_C_UNION_QUERY = """
+(union_specifier
+  name: (type_identifier) @name
+  body: (field_declaration_list))
+"""
+_C_ENUM_QUERY = """
+(enum_specifier
+  name: (type_identifier) @name
+  body: (enumerator_list))
+"""
+_C_TYPEDEF_QUERY = """
+(type_definition declarator: (type_identifier) @name)
+"""
+
 _RUST_TRAIT_QUERY = """
 (trait_item name: (type_identifier) @name)
 """
@@ -440,6 +460,16 @@ _JS_CLASS_RE = re.compile(r"^\s*(?:export\s+|default\s+)*class\s+\w+", re.MULTIL
 _RUST_TRAIT_RE = re.compile(r"^\s*(?:pub(?:\([^)]*\))?\s+)?(?:unsafe\s+)?trait\s+\w+", re.MULTILINE)
 _RUST_STRUCT_RE = re.compile(r"^\s*(?:pub(?:\([^)]*\))?\s+)?struct\s+\w+", re.MULTILINE)
 _RUST_ENUM_RE = re.compile(r"^\s*(?:pub(?:\([^)]*\))?\s+)?enum\s+\w+", re.MULTILINE)
+
+# C: no abstract construct exists in the language. Counts named
+# struct/union/enum specifiers and ``typedef`` declarations as concrete
+# types. Na is always zero, so C packages with Ca>0 inevitably land in
+# the Zone of Pain — see docs/C.md and the severity = "warning"
+# default.
+_C_STRUCT_RE = re.compile(r"^\s*struct\s+\w+\s*[\{;]", re.MULTILINE)
+_C_UNION_RE = re.compile(r"^\s*union\s+\w+\s*[\{;]", re.MULTILINE)
+_C_ENUM_RE = re.compile(r"^\s*enum\s+\w+\s*[\{;]", re.MULTILINE)
+_C_TYPEDEF_RE = re.compile(r"^\s*typedef\b[^;]*\s(\w+)\s*;", re.MULTILINE)
 
 
 def _compute_abstractness(
@@ -589,6 +619,16 @@ def _compute_abstractness_ast(
         nc += _count_query_matches(pkg_files, _RUST_STRUCT_QUERY, "rust", errors)
         nc += _count_query_matches(pkg_files, _RUST_ENUM_QUERY, "rust", errors)
 
+    elif language == "c":
+        # C has no abstract construct; Na is always zero. Counts named
+        # struct/union/enum specifiers and typedef declarations as
+        # concrete types. Inner unnamed specifiers under a typedef are
+        # counted via the type_definition.
+        nc += _count_query_matches(pkg_files, _C_STRUCT_QUERY, "c", errors)
+        nc += _count_query_matches(pkg_files, _C_UNION_QUERY, "c", errors)
+        nc += _count_query_matches(pkg_files, _C_ENUM_QUERY, "c", errors)
+        nc += _count_query_matches(pkg_files, _C_TYPEDEF_QUERY, "c", errors)
+
     else:
         return _compute_abstractness_text(pkg_files, language, errors)
 
@@ -652,6 +692,13 @@ def _compute_abstractness_text(
             na += len(_RUST_TRAIT_RE.findall(content))
             nc += len(_RUST_STRUCT_RE.findall(content))
             nc += len(_RUST_ENUM_RE.findall(content))
+
+        elif language == "c":
+            # No abstract concept in C; Na = 0 always.
+            nc += len(_C_STRUCT_RE.findall(content))
+            nc += len(_C_UNION_RE.findall(content))
+            nc += len(_C_ENUM_RE.findall(content))
+            nc += len(_C_TYPEDEF_RE.findall(content))
 
     return na, nc, errors
 

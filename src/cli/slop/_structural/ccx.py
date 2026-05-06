@@ -175,6 +175,54 @@ def _julia_is_function_node(node, config: "_LangConfig") -> bool:
     return False
 
 
+def _c_find_function_identifier(node):
+    """Walk a C ``function_definition``'s declarator chain to the identifier.
+
+    Tree-sitter-c parses ``int f(...) {...}`` as ``function_definition``
+    with a ``declarator`` field. The chain to the function's name is:
+
+    - plain                → ``function_declarator → identifier``
+    - pointer return       → ``pointer_declarator → function_declarator → identifier``
+    - ``static``/``inline``→ same chain (qualifiers are siblings, not wrappers)
+
+    Function-pointer typedefs (``typedef int (*f)(int);``) parse as
+    ``type_definition``, not ``function_definition``, so they never
+    reach this routine. Function-returning-function-pointer
+    (``int (*f())(int)``) is rare in real C and falls back to
+    ``"<anonymous>"`` rather than handled exhaustively.
+    """
+    declarator = node.child_by_field_name("declarator")
+    for _ in range(6):  # bound; real-world C pointer chains are shallow
+        if declarator is None:
+            return None
+        if declarator.type == "function_declarator":
+            inner = declarator.child_by_field_name("declarator")
+            if inner is not None and inner.type == "identifier":
+                return inner
+            return None
+        if declarator.type in ("pointer_declarator", "parenthesized_declarator"):
+            declarator = declarator.child_by_field_name("declarator")
+            continue
+        break
+    return None
+
+
+def _c_name_extractor(node, content: bytes) -> str:
+    """C-specific function-name extraction.
+
+    tree-sitter-c exposes the function name through the declarator
+    chain, not a ``name`` field, so the default extractor returns
+    ``"<anonymous>"`` for every C function. See
+    ``_c_find_function_identifier`` for the chain shape.
+    """
+    if node.type != "function_definition":
+        return "<anonymous>"
+    ident = _c_find_function_identifier(node)
+    if ident is None:
+        return "<anonymous>"
+    return content[ident.start_byte:ident.end_byte].decode("utf-8", errors="replace")
+
+
 # ---------------------------------------------------------------------------
 # Per-language configuration
 # ---------------------------------------------------------------------------
@@ -445,6 +493,31 @@ _LANG_CONFIG: dict[str, _LangConfig] = {
         name_extractor=_julia_name_extractor,
         is_function_node=_julia_is_function_node,
     ),
+    "c": _LangConfig(
+        function_nodes=frozenset({"function_definition"}),
+        decision_nodes=frozenset({
+            "if_statement",
+            "for_statement",
+            "while_statement",
+            "do_statement",
+            "case_statement",          # both `case X:` and `default:`
+            "conditional_expression",  # ternary `?:`
+        }),
+        nesting_nodes=frozenset({
+            "if_statement",
+            "for_statement",
+            "while_statement",
+            "do_statement",
+            "switch_statement",        # container for case_statement
+            "conditional_expression",
+        }),
+        compensating_decisions=frozenset({
+            "case_statement",          # syntactically inside switch_statement
+        }),
+        boolean_op_node="binary_expression",
+        boolean_op_filter=frozenset({"&&", "||"}),
+        name_extractor=_c_name_extractor,
+    ),
 }
 
 # Glob patterns per language for find_kernel discovery.
@@ -457,6 +530,7 @@ _LANG_GLOBS: dict[str, list[str]] = {
     "java": ["**/*.java"],
     "c_sharp": ["**/*.cs"],
     "julia": ["**/*.jl"],
+    "c": ["**/*.c", "**/*.h"],
 }
 
 # Bash files are explicitly excluded — see 03_POLICIES.md.

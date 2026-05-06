@@ -25,12 +25,14 @@ from slop._fs.find import find_kernel
 IMPORT_NODE_TYPES: dict[str, frozenset[str]] = {
     "python": frozenset({"import_statement", "import_from_statement"}),
     "julia":  frozenset({"import_statement", "using_statement"}),
+    "c":      frozenset({"preproc_include"}),
 }
 
 #: Node types that constitute a function / method boundary.
 FUNCTION_NODE_TYPES: dict[str, frozenset[str]] = {
     "python": frozenset({"function_definition"}),
     "julia":  frozenset({"function_definition", "arrow_function_expression"}),
+    "c":      frozenset({"function_definition"}),
 }
 
 #: Extension → language for discovery.
@@ -38,6 +40,8 @@ _EXT_MAP: dict[str, str] = {
     ".py": "python",
     ".jl": "julia",
     ".rs": "rust",
+    ".c":  "c",
+    ".h":  "c",
 }
 
 # ---------------------------------------------------------------------------

@@ -79,6 +79,25 @@ _LANG_CONFIG: dict[str, tuple[str, str, list[str]]] = {
         r"::[A-Za-z_]\w*",
         ["**/*.jl"],
     ),
+    # C has no parametric "Any" type. ``void *`` is the universal escape
+    # hatch — opaque pointer that defeats the type checker. The
+    # annotation regex matches type-prefixed declarations (parameters,
+    # variable declarations, function returns); calibration is tentative
+    # and may flag noisily on macro-heavy or const-laden codebases.
+    # Default severity = "warning"; see docs/C.md.
+    "c": (
+        r"\bvoid\s*\*",
+        r"(?:^|[\s,(])"
+        r"(?:const\s+|register\s+|volatile\s+|restrict\s+|"
+        r"static\s+|extern\s+|inline\s+|auto\s+)*"
+        r"(?:unsigned\s+|signed\s+)?"
+        r"(?:int|char|float|double|long|short|void|size_t|ssize_t|"
+        r"int\d{1,2}_t|uint\d{1,2}_t|ptrdiff_t|"
+        r"struct\s+\w+|enum\s+\w+|union\s+\w+|"
+        r"[A-Z]\w*_t|[A-Z]\w*)"
+        r"\s*\*?\s*\w+\s*[,;()=\[]",
+        ["**/*.c", "**/*.h"],
+    ),
 }
 
 # ---------------------------------------------------------------------------

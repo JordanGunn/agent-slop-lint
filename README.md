@@ -77,8 +77,9 @@ The full rule index with default thresholds, citations, and per-rule pages lives
 | Python, JavaScript, TypeScript, Go, Java, C# | yes | yes | yes | yes | yes |
 | Rust | yes | yes | yes | — | yes |
 | Julia | yes | yes | yes | yes | — |
+| C | yes | yes | yes (warn) | yes (best-effort) | — |
 
-Language-specific caveats (JavaScript packages, Rust deps, Julia CK metrics and short-form functions) are documented in [docs/JULIA.md](./docs/JULIA.md) and the relevant rule pages.
+Language-specific caveats (JavaScript packages, Rust deps, Julia CK metrics, C class metrics and `-I`-path resolution) are documented in [docs/C.md](./docs/C.md), [docs/JULIA.md](./docs/JULIA.md), and the relevant rule pages.
 
 ## CLI
 

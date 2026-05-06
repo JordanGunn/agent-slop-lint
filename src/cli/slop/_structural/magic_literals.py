@@ -51,6 +51,7 @@ _NUMERIC_NODES: dict[str, frozenset[str]] = {
                               "hex_integer_literal", "octal_integer_literal"}),
     "c_sharp":    frozenset({"integer_literal", "real_literal"}),
     "julia":      frozenset({"integer_literal", "float_literal"}),
+    "c":          frozenset({"number_literal"}),
 }
 
 _FUNCTION_NODES: dict[str, frozenset[str]] = {
@@ -67,6 +68,7 @@ _FUNCTION_NODES: dict[str, frozenset[str]] = {
     "c_sharp":    frozenset({"method_declaration", "constructor_declaration",
                               "local_function_statement"}),
     "julia":      frozenset({"function_definition", "short_function_definition"}),
+    "c":          frozenset({"function_definition"}),
 }
 
 _LANG_GLOBS: dict[str, list[str]] = {
@@ -78,6 +80,7 @@ _LANG_GLOBS: dict[str, list[str]] = {
     "java":       ["**/*.java"],
     "c_sharp":    ["**/*.cs"],
     "julia":      ["**/*.jl"],
+    "c":          ["**/*.c", "**/*.h"],
 }
 
 # ---------------------------------------------------------------------------
@@ -134,6 +137,24 @@ def _fn_name(node: object, content: bytes) -> str:
     name_node = node.child_by_field_name("name")  # type: ignore[attr-defined]
     if name_node is not None:
         return content[name_node.start_byte:name_node.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+    # C ``function_definition`` exposes the name through the declarator
+    # chain rather than a ``name`` field. Walk it: function_declarator →
+    # declarator field → identifier. Pointer return types wrap the
+    # function_declarator in pointer_declarator.
+    if node.type == "function_definition":  # type: ignore[attr-defined]
+        declarator = node.child_by_field_name("declarator")  # type: ignore[attr-defined]
+        for _ in range(6):
+            if declarator is None:
+                break
+            if declarator.type == "function_declarator":  # type: ignore[attr-defined]
+                inner = declarator.child_by_field_name("declarator")  # type: ignore[attr-defined]
+                if inner is not None and inner.type == "identifier":  # type: ignore[attr-defined]
+                    return content[inner.start_byte:inner.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+                break
+            if declarator.type in ("pointer_declarator", "parenthesized_declarator"):  # type: ignore[attr-defined]
+                declarator = declarator.child_by_field_name("declarator")  # type: ignore[attr-defined]
+                continue
+            break
     for child in node.children:  # type: ignore[attr-defined]
         if child.type == "identifier":
             return content[child.start_byte:child.end_byte].decode(errors="replace")

@@ -120,6 +120,38 @@ def _julia_is_function_node(node, config: "_NpathLangConfig") -> bool:
     return False
 
 
+def _c_find_function_identifier(node):
+    """Walk a C ``function_definition``'s declarator chain to the identifier.
+
+    See ``slop._structural.ccx._c_find_function_identifier`` for the
+    chain shapes covered.
+    """
+    declarator = node.child_by_field_name("declarator")
+    for _ in range(6):
+        if declarator is None:
+            return None
+        if declarator.type == "function_declarator":
+            inner = declarator.child_by_field_name("declarator")
+            if inner is not None and inner.type == "identifier":
+                return inner
+            return None
+        if declarator.type in ("pointer_declarator", "parenthesized_declarator"):
+            declarator = declarator.child_by_field_name("declarator")
+            continue
+        break
+    return None
+
+
+def _c_name_extractor(node, content: bytes) -> str:
+    """C-specific name extraction. See `slop._structural.ccx` for details."""
+    if node.type != "function_definition":
+        return "<anonymous>"
+    ident = _c_find_function_identifier(node)
+    if ident is None:
+        return "<anonymous>"
+    return content[ident.start_byte:ident.end_byte].decode("utf-8", errors="replace")
+
+
 # ---------------------------------------------------------------------------
 # Per-language configuration
 # ---------------------------------------------------------------------------
@@ -144,6 +176,13 @@ class _NpathLangConfig:
     # the structural-keyword child types here lets the kernel walk the body
     # by iterating over children minus these. Empty for non-flat langs.
     body_skip_types: frozenset[str] = frozenset()
+    # Wrapper node types between ``switch_node`` and ``case_node``. Some
+    # grammars (Java's ``switch_block`` / ``switch_block_statement_group``,
+    # C#'s ``switch_body``, C's ``compound_statement``) nest cases inside
+    # one or more of these wrappers rather than as direct switch children.
+    # Empty default preserves prior behaviour for languages that don't
+    # need it (Python's ``match_statement``, JS/TS, Go, Rust).
+    switch_body_types: frozenset[str] = frozenset()
     # Per-language callables. Defaults match the conventional tree-sitter
     # shape; languages whose AST diverges register their own.
     name_extractor: NameExtractor = _default_name_extractor
@@ -250,6 +289,9 @@ _LANG_CONFIG: dict[str, _NpathLangConfig] = {
         catch_node="catch_clause",
         body_field="body",
         block_types=frozenset({"block"}),
+        switch_body_types=frozenset({
+            "switch_block", "switch_block_statement_group",
+        }),
     ),
     "c_sharp": _NpathLangConfig(
         function_nodes=frozenset({
@@ -270,6 +312,7 @@ _LANG_CONFIG: dict[str, _NpathLangConfig] = {
         body_field="body",
         block_types=frozenset({"block"}),
         bare_else_keyword="else",
+        switch_body_types=frozenset({"switch_body"}),
     ),
     "julia": _NpathLangConfig(
         function_nodes=frozenset({
@@ -295,6 +338,23 @@ _LANG_CONFIG: dict[str, _NpathLangConfig] = {
         name_extractor=_julia_name_extractor,
         is_function_node=_julia_is_function_node,
     ),
+    "c": _NpathLangConfig(
+        function_nodes=frozenset({"function_definition"}),
+        if_node="if_statement",
+        else_clause="else_clause",
+        elif_clause=None,                  # else-if = nested if_statement
+        loop_nodes=frozenset({
+            "while_statement", "do_statement", "for_statement",
+        }),
+        switch_node="switch_statement",
+        case_node="case_statement",        # both `case X:` and `default:`
+        try_node=None,
+        catch_node=None,
+        body_field="body",
+        block_types=frozenset({"compound_statement"}),
+        switch_body_types=frozenset({"compound_statement"}),
+        name_extractor=_c_name_extractor,
+    ),
 }
 
 _LANG_GLOBS: dict[str, list[str]] = {
@@ -306,6 +366,7 @@ _LANG_GLOBS: dict[str, list[str]] = {
     "java": ["**/*.java"],
     "c_sharp": ["**/*.cs"],
     "julia": ["**/*.jl"],
+    "c": ["**/*.c", "**/*.h"],
 }
 
 
@@ -406,14 +467,22 @@ def _npath_of_node(node, config: _NpathLangConfig) -> int:
     # --- switch/match ---
     if config.switch_node and ntype == config.switch_node:
         total = 0
-        for child in node.children:
-            if config.case_node and child.type == config.case_node:
-                # Each case contributes its body's NPATH
-                case_npath = 1
-                for cc in child.children:
-                    if cc.type in config.block_types:
-                        case_npath = _npath_of_block(cc, config)
-                total += case_npath
+
+        def _iter_cases(parent):
+            """Yield case nodes, descending through any switch_body wrappers."""
+            for child in parent.children:
+                if config.case_node and child.type == config.case_node:
+                    yield child
+                elif child.type in config.switch_body_types:
+                    yield from _iter_cases(child)
+
+        for case_child in _iter_cases(node):
+            # Each case contributes its body's NPATH (1 if inline / no block)
+            case_npath = 1
+            for cc in case_child.children:
+                if cc.type in config.block_types:
+                    case_npath = _npath_of_block(cc, config)
+            total += case_npath
         return max(total, 1)
 
     # --- try/catch ---

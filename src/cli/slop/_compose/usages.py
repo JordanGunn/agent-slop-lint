@@ -55,6 +55,37 @@ DEFINITION_QUERIES: dict[str, list[tuple[str, str]]] = {
         # abstract type X end
         ("(abstract_definition (type_head (identifier) @name))", "abstract"),
     ],
+    "c": [
+        # Plain function: ``int f(...) { ... }``
+        ("(function_definition"
+         " declarator: (function_declarator declarator: (identifier) @name))",
+         "function"),
+        # Pointer return: ``int *f(...) { ... }`` / ``void *f(...) { ... }``
+        ("(function_definition"
+         " declarator: (pointer_declarator"
+         "   declarator: (function_declarator"
+         "     declarator: (identifier) @name)))",
+         "function"),
+        # Named struct/union/enum definitions (require body to exclude
+        # references like ``struct Foo`` used as a type)
+        ("(struct_specifier"
+         " name: (type_identifier) @name"
+         " body: (field_declaration_list))",
+         "struct"),
+        ("(union_specifier"
+         " name: (type_identifier) @name"
+         " body: (field_declaration_list))",
+         "union"),
+        ("(enum_specifier"
+         " name: (type_identifier) @name"
+         " body: (enumerator_list))",
+         "enum"),
+        # ``typedef ... Name;`` — covers typedef-struct, typedef-enum,
+        # typedef-primitive, and typedef-function-pointer (the inner
+        # specifier may be unnamed; the outer type_definition's
+        # declarator is the new name)
+        ("(type_definition declarator: (type_identifier) @name)", "typedef"),
+    ],
 }
 
 

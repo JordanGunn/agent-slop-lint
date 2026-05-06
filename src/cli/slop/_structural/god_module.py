@@ -77,6 +77,13 @@ _TOP_LEVEL_NODES: dict[str, frozenset[str]] = {
         "struct_definition",
         "abstract_type_definition",
     }),
+    "c": frozenset({
+        "function_definition",
+        "type_definition",
+        "struct_specifier",
+        "union_specifier",
+        "enum_specifier",
+    }),
 }
 
 _LANG_GLOBS: dict[str, list[str]] = {
@@ -88,6 +95,7 @@ _LANG_GLOBS: dict[str, list[str]] = {
     "java":       ["**/*.java"],
     "c_sharp":    ["**/*.cs"],
     "julia":      ["**/*.jl"],
+    "c":          ["**/*.c", "**/*.h"],
 }
 
 # ---------------------------------------------------------------------------

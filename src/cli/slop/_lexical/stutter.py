@@ -38,6 +38,12 @@ _SCOPE_NODES: dict[str, dict[str, frozenset[str]]] = {
         "function": frozenset({"function_item"}),
         "class": frozenset({"struct_item", "enum_item", "impl_item"}),
     },
+    "c": {
+        "function": frozenset({"function_definition"}),
+        # C has no class concept; structs do not own scope. Empty set
+        # disables class-scope stutter checks for .c/.h files.
+        "class": frozenset(),
+    },
 }
 
 _LANG_GLOBS: dict[str, list[str]] = {
@@ -46,6 +52,7 @@ _LANG_GLOBS: dict[str, list[str]] = {
     "typescript": ["**/*.ts", "**/*.tsx"],
     "go":         ["**/*.go"],
     "rust":       ["**/*.rs"],
+    "c":          ["**/*.c", "**/*.h"],
 }
 
 @dataclass
@@ -192,6 +199,21 @@ def _get_name(node, content) -> str:
     name_node = node.child_by_field_name("name")
     if name_node:
         return content[name_node.start_byte:name_node.end_byte].decode(errors="replace")
+    # C ``function_definition`` walks the declarator chain.
+    if node.type == "function_definition":
+        declarator = node.child_by_field_name("declarator")
+        for _ in range(6):
+            if declarator is None:
+                break
+            if declarator.type == "function_declarator":
+                inner = declarator.child_by_field_name("declarator")
+                if inner is not None and inner.type == "identifier":
+                    return content[inner.start_byte:inner.end_byte].decode(errors="replace")
+                break
+            if declarator.type in ("pointer_declarator", "parenthesized_declarator"):
+                declarator = declarator.child_by_field_name("declarator")
+                continue
+            break
     for child in node.children:
         if child.type == "identifier":
             return content[child.start_byte:child.end_byte].decode(errors="replace")

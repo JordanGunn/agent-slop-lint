@@ -347,8 +347,9 @@ slop lint --root C:\path\to\your\project
 | Java | `.java` | Yes |
 | C# | `.cs` | Yes |
 | Julia | `.jl` | Mostly — see `JULIA.md` |
+| C | `.c`, `.h` | Mostly — see `C.md` |
 
-Every rule covers every listed language, with three documented caveats: `structural.deps` is not implemented for Rust (no import graph extractor yet); `structural.packages` on JavaScript will always count every class as concrete because JavaScript has no `interface` or `abstract class` in the language itself; and `structural.class.*` (CK CBO/DIT/NOC) is deferred for Julia because multiple dispatch doesn't map cleanly to method-on-class semantics. Julia `structural.complexity.npath` also under-counts nested control flow inside `elseif`/`else` clause bodies. See CONFIG.md for per-rule detail and JULIA.md for Julia specifics.
+Every rule covers every listed language, with these documented caveats: `structural.deps` is not implemented for Rust (no import graph extractor yet); `structural.packages` on JavaScript will always count every class as concrete because JavaScript has no `interface` or `abstract class` in the language itself; `structural.class.*` (CK CBO/DIT/NOC/WMC) is N/A for Julia (multiple dispatch) and C (no class concept); Julia `structural.complexity.npath` under-counts nested control flow inside `elseif`/`else` clause bodies; and C `structural.deps` does not follow `-I` include paths (relative-include resolution only). See CONFIG.md for per-rule detail, JULIA.md for Julia specifics, and C.md for C specifics.
 
 ## Troubleshooting
 

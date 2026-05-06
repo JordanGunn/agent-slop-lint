@@ -19,6 +19,8 @@ Supported languages
 Python (tree-sitter AST, full parameter-type inference).
 JavaScript / TypeScript (text-tier; detects .push/.splice/.set on params).
 Go (text-tier; detects append(param, ...) patterns).
+C (tree-sitter AST; flags non-``const`` pointer parameters that are
+   mutated through ``*p = ...``, ``p->x = ...``, or ``p[i] = ...``).
 
 """
 
@@ -64,6 +66,7 @@ _LANG_GLOBS: dict[str, list[str]] = {
     "javascript": ["**/*.js", "**/*.mjs", "**/*.cjs"],
     "typescript": ["**/*.ts", "**/*.tsx"],
     "go":         ["**/*.go"],
+    "c":          ["**/*.c", "**/*.h"],
 }
 
 # ---------------------------------------------------------------------------
@@ -162,6 +165,9 @@ def out_parameters_kernel(
             _scan_js_text(fp, root, entries, errors)
         elif lang == "go":
             _scan_go_text(fp, root, entries, errors)
+        elif lang == "c":
+            fn_count = _scan_c(fp, root, entries, errors)
+            total_functions += fn_count
 
     entries.sort(key=lambda e: -e.mutation_count)
     return OutParamResult(
@@ -404,3 +410,241 @@ def _scan_go_text(fp: Path, root: Path, out: list[OutParamEntry], errors: list[s
                 out.append(entry)
     except Exception as exc:
         errors.append(f"{fp}: {exc}")
+
+
+# ---------------------------------------------------------------------------
+# C AST scanner
+# ---------------------------------------------------------------------------
+
+
+def _scan_c(
+    fp: Path,
+    root: Path,
+    out: list[OutParamEntry],
+    errors: list[str],
+) -> int:
+    """Scan one C file for pointer-parameter mutations.
+
+    Detects three mutation shapes for non-``const`` pointer parameters:
+
+    - ``*p = X``        — assignment_expression with LHS pointer_expression
+    - ``p->field = Y``  — assignment_expression with LHS field_expression (``->``)
+    - ``p[i] = Z``      — assignment_expression with LHS subscript_expression
+
+    Skips ``const T *p`` parameters (read-only data by convention).
+    Returns the count of functions analysed (for stats).
+    """
+    tree_lang = load_language("c")
+    if tree_lang is None:
+        return 0
+    try:
+        import tree_sitter
+        content = fp.read_bytes()
+        try:
+            parser = tree_sitter.Parser(tree_lang)
+            tree = parser.parse(content)
+        except TypeError:
+            parser = tree_sitter.Parser()
+            parser.language = tree_lang  # type: ignore[assignment]
+            tree = parser.parse(content)
+    except Exception as exc:
+        errors.append(f"{fp}: {exc}")
+        return 0
+
+    rel = str(fp.relative_to(root))
+    fn_count = 0
+    stack = [tree.root_node]
+    while stack:
+        node = stack.pop()
+        if node.type == "function_definition":  # type: ignore[attr-defined]
+            fn_count += 1
+            _process_c_function(node, content, rel, out)
+        # Don't descend into function bodies — top-level functions only
+        # are real C functions (no nested fn defs in standard C).
+        else:
+            stack.extend(node.children)  # type: ignore[attr-defined]
+    return fn_count
+
+
+def _process_c_function(
+    fn_node: object,
+    content: bytes,
+    rel: str,
+    out: list[OutParamEntry],
+) -> None:
+    """Extract pointer-mutation entries from one C function_definition."""
+    fn_name = _c_fn_name(fn_node, content)
+    fn_start = fn_node.start_point[0] + 1  # type: ignore[attr-defined]
+    fn_end = fn_node.end_point[0] + 1      # type: ignore[attr-defined]
+
+    pointer_params = _c_extract_pointer_params(fn_node, content)
+    if not pointer_params:
+        return
+
+    body = fn_node.child_by_field_name("body") or fn_node  # type: ignore[attr-defined]
+    mutations = _c_find_mutations(body, content, pointer_params)
+    if mutations:
+        out.append(OutParamEntry(
+            file=rel, name=fn_name, line=fn_start, end_line=fn_end,
+            language="c", mutations=mutations,
+        ))
+
+
+def _c_fn_name(fn_node: object, content: bytes) -> str:
+    """Walk the declarator chain to extract a C function name."""
+    declarator = fn_node.child_by_field_name("declarator")  # type: ignore[attr-defined]
+    for _ in range(6):
+        if declarator is None:
+            return "<anonymous>"
+        if declarator.type == "function_declarator":  # type: ignore[attr-defined]
+            inner = declarator.child_by_field_name("declarator")  # type: ignore[attr-defined]
+            if inner is not None and inner.type == "identifier":  # type: ignore[attr-defined]
+                return content[inner.start_byte:inner.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+            return "<anonymous>"
+        if declarator.type in ("pointer_declarator", "parenthesized_declarator"):  # type: ignore[attr-defined]
+            declarator = declarator.child_by_field_name("declarator")  # type: ignore[attr-defined]
+            continue
+        break
+    return "<anonymous>"
+
+
+def _c_extract_pointer_params(fn_node: object, content: bytes) -> set[str]:
+    """Return names of pointer parameters that are NOT ``const T *``.
+
+    Walks the function_declarator's parameter_list. For each
+    parameter_declaration:
+
+    - Has a child of type ``pointer_declarator`` (otherwise non-pointer).
+    - No top-level ``type_qualifier`` whose text is ``const`` precedes
+      the pointer_declarator (read-only data; would be misleading to
+      flag mutations through it — likely the caller is wrong, not
+      the callee).
+    """
+    params: set[str] = set()
+    declarator = fn_node.child_by_field_name("declarator")  # type: ignore[attr-defined]
+    # Walk through pointer_declarator wrappers (pointer return type)
+    # to reach the function_declarator.
+    while declarator is not None and declarator.type == "pointer_declarator":  # type: ignore[attr-defined]
+        declarator = declarator.child_by_field_name("declarator")  # type: ignore[attr-defined]
+    if declarator is None or declarator.type != "function_declarator":  # type: ignore[attr-defined]
+        return params
+
+    plist = declarator.child_by_field_name("parameters")  # type: ignore[attr-defined]
+    if plist is None:
+        return params
+
+    for param in plist.children:  # type: ignore[attr-defined]
+        if param.type != "parameter_declaration":  # type: ignore[attr-defined]
+            continue
+
+        has_const = False
+        ptr_decl = None
+        for child in param.children:  # type: ignore[attr-defined]
+            ctype = child.type  # type: ignore[attr-defined]
+            if ctype == "type_qualifier":
+                qtext = content[child.start_byte:child.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+                if qtext.strip() == "const":
+                    has_const = True
+            elif ctype == "pointer_declarator":
+                ptr_decl = child
+
+        if has_const or ptr_decl is None:
+            continue
+
+        # Find the parameter identifier inside the (possibly nested)
+        # pointer_declarator.
+        cur = ptr_decl
+        for _ in range(4):
+            if cur is None:
+                break
+            inner = cur.child_by_field_name("declarator")  # type: ignore[attr-defined]
+            if inner is None:
+                break
+            if inner.type == "identifier":  # type: ignore[attr-defined]
+                params.add(content[inner.start_byte:inner.end_byte].decode(errors="replace"))  # type: ignore[attr-defined]
+                break
+            cur = inner
+    return params
+
+
+def _c_find_mutations(
+    body_node: object,
+    content: bytes,
+    param_names: set[str],
+) -> list[OutParamMutation]:
+    """DFS walk for ``*p = X`` / ``p->x = Y`` / ``p[i] = Z`` patterns
+    where ``p`` is one of ``param_names``.
+    """
+    mutations: list[OutParamMutation] = []
+    stack = [body_node]
+    while stack:
+        node = stack.pop()
+        if node.type == "assignment_expression":  # type: ignore[attr-defined]
+            lhs = node.child_by_field_name("left")  # type: ignore[attr-defined]
+            if lhs is not None:
+                mutated = _c_lhs_mutates_param(lhs, content, param_names)
+                if mutated is not None:
+                    name, kind = mutated
+                    mutations.append(OutParamMutation(
+                        param_name=name,
+                        method=kind,
+                        line=node.start_point[0] + 1,  # type: ignore[attr-defined]
+                    ))
+        stack.extend(node.children)  # type: ignore[attr-defined]
+    return mutations
+
+
+def _c_lhs_mutates_param(
+    lhs: object,
+    content: bytes,
+    param_names: set[str],
+) -> tuple[str, str] | None:
+    """If ``lhs`` mutates a pointer parameter, return (param_name, kind)."""
+    ltype = lhs.type  # type: ignore[attr-defined]
+
+    if ltype == "pointer_expression":
+        # ``*p`` — any child identifier matches.
+        for child in lhs.children:  # type: ignore[attr-defined]
+            if child.type == "identifier":  # type: ignore[attr-defined]
+                name = content[child.start_byte:child.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+                if name in param_names:
+                    return (name, "deref-assign")
+        return None
+
+    if ltype == "field_expression":
+        # ``p->x`` (we only care about ``->``; ``p.x`` doesn't mutate
+        # through a pointer parameter).
+        op_present = any(c.type == "->" for c in lhs.children)  # type: ignore[attr-defined]
+        if not op_present:
+            return None
+        obj = lhs.child_by_field_name("argument")  # type: ignore[attr-defined]
+        if obj is None:
+            # Some grammar versions expose object via a different field
+            # or as the first identifier child.
+            for c in lhs.children:  # type: ignore[attr-defined]
+                if c.type == "identifier":  # type: ignore[attr-defined]
+                    obj = c
+                    break
+        if obj is not None and obj.type == "identifier":  # type: ignore[attr-defined]
+            name = content[obj.start_byte:obj.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+            if name in param_names:
+                return (name, "field-assign")
+        return None
+
+    if ltype == "subscript_expression":
+        # ``p[i]`` mutation
+        argument = lhs.child_by_field_name("argument")  # type: ignore[attr-defined]
+        if argument is not None and argument.type == "identifier":  # type: ignore[attr-defined]
+            name = content[argument.start_byte:argument.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+            if name in param_names:
+                return (name, "subscript-assign")
+        # Fallback — first identifier child
+        for c in lhs.children:  # type: ignore[attr-defined]
+            if c.type == "identifier":  # type: ignore[attr-defined]
+                name = content[c.start_byte:c.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+                if name in param_names:
+                    return (name, "subscript-assign")
+                break
+        return None
+
+    return None
