@@ -1,0 +1,36 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'command -v mainline \u003e/dev/null 2\u003e\u00261 \u0026\u0026 exec mainline hooks codex session-start || exit 0'",
+            "statusMessage": "Loading Mainline context"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'command -v mainline \u003e/dev/null 2\u003e\u00261 \u0026\u0026 exec mainline hooks codex stop || exit 0'"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'command -v mainline \u003e/dev/null 2\u003e\u00261 \u0026\u0026 exec mainline hooks codex user-prompt-submit || exit 0'"
+          }
+        ]
+      }
+    ]
+  }
+}

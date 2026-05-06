@@ -1,2 +1,4 @@
 # Local agent tooling
 .engram/
+.ml-cache/
+.mainline/local.toml

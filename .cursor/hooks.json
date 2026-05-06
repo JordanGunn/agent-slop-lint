@@ -1,0 +1,30 @@
+{
+  "hooks": {
+    "beforeSubmitPrompt": [
+      {
+        "command": "sh -c 'command -v mainline \u003e/dev/null 2\u003e\u00261 \u0026\u0026 exec mainline hooks cursor before-submit-prompt || exit 0'"
+      }
+    ],
+    "sessionEnd": [
+      {
+        "command": "sh -c 'command -v mainline \u003e/dev/null 2\u003e\u00261 \u0026\u0026 exec mainline hooks cursor session-end || exit 0'"
+      }
+    ],
+    "sessionStart": [
+      {
+        "command": "sh -c 'command -v mainline \u003e/dev/null 2\u003e\u00261 \u0026\u0026 exec mainline hooks cursor session-start || exit 0'"
+      }
+    ],
+    "stop": [
+      {
+        "command": "sh -c 'command -v mainline \u003e/dev/null 2\u003e\u00261 \u0026\u0026 exec mainline hooks cursor stop || exit 0'"
+      }
+    ],
+    "subagentStop": [
+      {
+        "command": "sh -c 'command -v mainline \u003e/dev/null 2\u003e\u00261 \u0026\u0026 exec mainline hooks cursor subagent-stop || exit 0'"
+      }
+    ]
+  },
+  "version": 1
+}

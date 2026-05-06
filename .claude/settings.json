@@ -1,0 +1,64 @@
+{
+  "hooks": {
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'command -v mainline \u003e/dev/null 2\u003e\u00261 \u0026\u0026 exec mainline hooks claudecode pre-compact || exit 0'"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'command -v mainline \u003e/dev/null 2\u003e\u00261 \u0026\u0026 exec mainline hooks claudecode session-end || exit 0'"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'command -v mainline \u003e/dev/null 2\u003e\u00261 \u0026\u0026 exec mainline hooks claudecode session-start || exit 0'"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'command -v mainline \u003e/dev/null 2\u003e\u00261 \u0026\u0026 exec mainline hooks claudecode stop || exit 0'"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'command -v mainline \u003e/dev/null 2\u003e\u00261 \u0026\u0026 exec mainline hooks claudecode subagent-stop || exit 0'"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'command -v mainline \u003e/dev/null 2\u003e\u00261 \u0026\u0026 exec mainline hooks claudecode user-prompt-submit || exit 0'"
+          }
+        ]
+      }
+    ]
+  }
+}
