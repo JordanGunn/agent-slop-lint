@@ -289,6 +289,84 @@ def _collect_cpp_outofline_methods(tree, content: bytes) -> list[tuple[str, int,
     return out
 
 
+def _extract_ruby_superclasses(node, content: bytes) -> list[str]:
+    """Extract base class name from a Ruby ``class`` node.
+
+    Ruby has single inheritance via the ``superclass`` child node:
+    ``class Dog < Animal``. Modules have no superclass concept.
+    Mixins (``include MyMod``) are call-statements inside the body
+    and are NOT counted as inheritance for DIT — Ruby community
+    convention treats them as composition; CBO captures the coupling.
+    """
+    if node.type == "module":
+        return []
+    for child in node.children:
+        if child.type == "superclass":
+            for sub in child.children:
+                if sub.type == "constant":
+                    return [_node_text(sub, content)]
+    return []
+
+
+def _collect_ruby_classes(
+    tree, content: bytes, rel: str, abs_path: str, lang: str,
+) -> list[_ClassInfo]:
+    """Collect Ruby class / module definitions.
+
+    Ruby's class name lives positionally (a ``constant`` direct child
+    after the ``class`` / ``module`` keyword) rather than via a
+    ``name`` field. This collector walks the tree, finds class and
+    module nodes, and extracts the constant manually.
+
+    Open-class re-opens (the same ``class Foo`` appearing in multiple
+    files) are returned as separate ``_ClassInfo`` entries here;
+    aggregation by name happens post-WMC in
+    ``_aggregate_ruby_open_classes``.
+    """
+    classes: list[_ClassInfo] = []
+
+    def walk(node):
+        if node.type in ("class", "module"):
+            name = None
+            body_node = None
+            for child in node.children:
+                if child.type == "constant" and name is None:
+                    name = _node_text(child, content)
+                elif child.type == "body_statement":
+                    body_node = child
+            if name is None:
+                # Defensive: malformed class/module; skip
+                return
+
+            superclasses = _extract_ruby_superclasses(node, content)
+            method_count = 0
+            if body_node is not None:
+                for child in body_node.children:
+                    if child.type in ("method", "singleton_method"):
+                        method_count += 1
+
+            kind = "module" if node.type == "module" else "class"
+            classes.append(_ClassInfo(
+                name=name,
+                file=rel,
+                path=abs_path,
+                line=node.start_point[0] + 1,
+                end_line=node.end_point[0] + 1,
+                language=lang,
+                kind=kind,
+                superclasses=superclasses,
+                scan_nodes=[body_node] if body_node is not None else [],
+                method_count=method_count,
+            ))
+
+        # Continue walking — Ruby allows nested class / module definitions
+        for child in node.children:
+            walk(child)
+
+    walk(tree.root_node)
+    return classes
+
+
 def _extract_no_superclasses(_node, _content: bytes) -> list[str]:
     return []
 
@@ -578,6 +656,50 @@ def _compute_dit(
 # ---------------------------------------------------------------------------
 
 
+def _aggregate_ruby_open_classes(
+    class_metrics: list[ClassMetrics],
+) -> list[ClassMetrics]:
+    """Merge Ruby ``class Foo`` re-openings into a single entry.
+
+    Ruby allows the same class to be re-declared across multiple
+    files; each declaration parses as its own ``class`` node, so each
+    becomes a separate ``ClassMetrics`` entry. This aggregator
+    collapses them by name within the Ruby subset, summing WMC and
+    method_count, taking the max of CBO / DIT / NOC, unioning
+    superclasses, and attributing the canonical file:line to the
+    first-encountered definition.
+
+    Non-Ruby entries pass through unchanged.
+    """
+    others: list[ClassMetrics] = []
+    by_name: dict[str, ClassMetrics] = {}
+    by_name_order: list[str] = []
+    for cm in class_metrics:
+        if cm.language != "ruby":
+            others.append(cm)
+            continue
+        if cm.name not in by_name:
+            by_name[cm.name] = cm
+            by_name_order.append(cm.name)
+            continue
+        primary = by_name[cm.name]
+        primary.wmc += cm.wmc
+        primary.method_count += cm.method_count
+        primary.cbo = max(primary.cbo, cm.cbo)
+        # DIT and NOC are already keyed by name in the kernel's parent_map
+        # and children_map, so they should match across re-openings; we
+        # take max defensively.
+        primary.dit = max(primary.dit, cm.dit)
+        primary.noc = max(primary.noc, cm.noc)
+        primary.superclasses = list(dict.fromkeys(
+            primary.superclasses + cm.superclasses
+        ))
+        # Re-run the interpretation against the merged values.
+        primary.interpretation = _interpret(primary)
+
+    return others + [by_name[n] for n in by_name_order]
+
+
 def _interpret(cm: ClassMetrics) -> str:
     issues: list[str] = []
     if cm.cbo > 8:
@@ -621,7 +743,15 @@ def _interpret(cm: ClassMetrics) -> str:
 # second pass (``_collect_cpp_outofline_methods``) to attribute them to
 # their class for WMC.
 #
-# Ruby is pending (v1.0.3).
+# Ruby IS registered (v1.0.3). Classes, modules (treated as the
+# "abstract" analog for ``structural.packages`` — see robert.py), and
+# single inheritance via the ``superclass`` field translate cleanly.
+# Mixins (``include MyMod``) are NOT counted as inheritance for DIT
+# (Ruby community convention treats them as composition); CBO picks up
+# the coupling. Open-class re-openings of the same ``class Foo`` across
+# multiple files are aggregated post-WMC by name in
+# ``_aggregate_ruby_open_classes`` so a single class appears once in
+# the output.
 
 _LANG_CONFIG: dict[str, _CkLangConfig] = {
     "python": _CkLangConfig(
@@ -697,6 +827,21 @@ _LANG_CONFIG: dict[str, _CkLangConfig] = {
         }),
         extract_superclasses=_extract_cpp_superclasses,
     ),
+    "ruby": _CkLangConfig(
+        # Ruby's class name lives positionally, not in a `name` field,
+        # so the body-walking collector path (`_collect_body_classes`)
+        # doesn't fit. Ruby uses the dedicated `_collect_ruby_classes`
+        # below; the fields here are placeholders.
+        class_nodes=frozenset({"class", "module"}),
+        class_name_field="name",
+        body_field="body_statement",
+        method_nodes=frozenset({"method", "singleton_method"}),
+        ref_node_types=frozenset({
+            "constant", "identifier", "instance_variable",
+        }),
+        extract_superclasses=_extract_ruby_superclasses,
+        kind_label="class",
+    ),
 }
 
 _LANG_GLOBS: dict[str, list[str]] = {
@@ -708,6 +853,7 @@ _LANG_GLOBS: dict[str, list[str]] = {
     "java": ["**/*.java"],
     "c_sharp": ["**/*.cs"],
     "cpp": ["**/*.cpp", "**/*.cc", "**/*.cxx", "**/*.hpp", "**/*.hxx"],
+    "ruby": ["**/*.rb"],
 }
 
 
@@ -791,6 +937,11 @@ def ck_kernel(
             classes_in_file = _collect_go_classes(tree, content, rel, str(fp), lang)
         elif config.is_impl_based:
             classes_in_file = _collect_rust_classes(tree, content, rel, str(fp), lang)
+        elif lang == "ruby":
+            # Ruby's class name is a positional ``constant`` child rather
+            # than a ``name`` field, so the body-walking collector
+            # doesn't fit. Use the dedicated Ruby collector.
+            classes_in_file = _collect_ruby_classes(tree, content, rel, str(fp), lang)
         else:
             classes_in_file = _collect_body_classes(tree, content, rel, str(fp), lang, config)
 
@@ -902,6 +1053,13 @@ def ck_kernel(
         )
         cm.interpretation = _interpret(cm)
         class_metrics.append(cm)
+
+    # Step 6b: Aggregate Ruby open-class re-openings into a single entity.
+    # Ruby's open classes can be redefined in multiple files; each
+    # definition lands as its own _ClassInfo / ClassMetrics entry. The
+    # aggregator merges them by name, summing WMC, taking max DIT, max
+    # NOC (already correct), and unioning method counts.
+    class_metrics = _aggregate_ruby_open_classes(class_metrics)
 
     # Step 7: Sort + truncate
     class_metrics.sort(key=lambda c: (-c.cbo, -c.wmc, c.name))

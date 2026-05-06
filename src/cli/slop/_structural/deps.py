@@ -61,6 +61,20 @@ IMPORT_QUERIES: dict[str, list[tuple[str, str]]] = {
         ('(preproc_include path: (system_lib_string) @module)',
          "include_system"),
     ],
+    "ruby": [
+        # Ruby imports are method calls, not statements:
+        #   require 'json'                — gem (external)
+        #   require_relative './foo'      — peer file
+        #   load 'config.rb'              — relative
+        # The capture matches every ``call`` with a string argument
+        # whose method-name is one of these; the kernel's resolution
+        # treats ``./``-prefixed paths and ``require_relative`` as
+        # local, others as external.
+        ('((call method: (identifier) @method'
+         ' arguments: (argument_list (string (string_content) @module)))'
+         ' (#match? @method "^(require|require_relative|load)$"))',
+         "ruby_require"),
+    ],
 }
 
 # Text-tier per-language regex fallback (applied to raw file content)
@@ -107,6 +121,14 @@ TEXT_IMPORT_REGEXES: dict[str, list[tuple[str, str]]] = {
     "cpp": [
         (r'^\s*#\s*include\s+"([^"]+)"', "include_local"),
         (r"^\s*#\s*include\s+<([^>]+)>", "include_system"),
+    ],
+    "ruby": [
+        # require 'foo' / require "foo"
+        (r"""^\s*require\s+['"]([^'"]+)['"]""", "ruby_require"),
+        # require_relative './foo'
+        (r"""^\s*require_relative\s+['"]([^'"]+)['"]""", "ruby_require_relative"),
+        # load 'foo.rb'
+        (r"""^\s*load\s+['"]([^'"]+)['"]""", "ruby_load"),
     ],
 }
 
@@ -701,5 +723,6 @@ def _detect_file_language(fp: Path) -> str | None:
         ".cxx": "cpp",
         ".hpp": "cpp",
         ".hxx": "cpp",
+        ".rb": "ruby",
     }
     return ext_map.get(ext)

@@ -60,6 +60,7 @@ _LANG_GLOBS: dict[str, list[str]] = {
     "julia": ["**/*.jl"],
     "c": ["**/*.c", "**/*.h"],
     "cpp": ["**/*.cpp", "**/*.cc", "**/*.cxx", "**/*.hpp", "**/*.hxx"],
+    "ruby": ["**/*.rb"],
 }
 
 
@@ -415,6 +416,16 @@ _CPP_TYPEDEF_QUERY = """
 (type_definition declarator: (type_identifier) @name)
 """
 
+# Ruby: modules are the natural "abstract" analog (Module instances
+# can't be instantiated, only mixed in via include/extend). Classes
+# are concrete. Ruby has no `final` keyword.
+_RUBY_MODULE_QUERY = """
+(module name: (constant) @name)
+"""
+_RUBY_CLASS_QUERY = """
+(class name: (constant) @name)
+"""
+
 _RUST_TRAIT_QUERY = """
 (trait_item name: (type_identifier) @name)
 """
@@ -499,6 +510,10 @@ _C_STRUCT_RE = re.compile(r"^\s*struct\s+\w+\s*[\{;]", re.MULTILINE)
 _C_UNION_RE = re.compile(r"^\s*union\s+\w+\s*[\{;]", re.MULTILINE)
 _C_ENUM_RE = re.compile(r"^\s*enum\s+\w+\s*[\{;]", re.MULTILINE)
 _C_TYPEDEF_RE = re.compile(r"^\s*typedef\b[^;]*\s(\w+)\s*;", re.MULTILINE)
+
+# Ruby text-tier fallback. Module count = abstract; class count = concrete.
+_RUBY_MODULE_RE = re.compile(r"^\s*module\s+([A-Z]\w*)", re.MULTILINE)
+_RUBY_CLASS_RE = re.compile(r"^\s*class\s+([A-Z]\w*)", re.MULTILINE)
 
 
 def _compute_abstractness(
@@ -775,6 +790,13 @@ def _compute_abstractness_ast(
         nc += _count_query_matches(pkg_files, _C_ENUM_QUERY, "c", errors)
         nc += _count_query_matches(pkg_files, _C_TYPEDEF_QUERY, "c", errors)
 
+    elif language == "ruby":
+        # Ruby: modules are abstract (cannot be instantiated; only
+        # mixed in via include/extend). Classes are concrete. Ruby
+        # has no ``final`` keyword.
+        na += _count_query_matches(pkg_files, _RUBY_MODULE_QUERY, "ruby", errors)
+        nc += _count_query_matches(pkg_files, _RUBY_CLASS_QUERY, "ruby", errors)
+
     elif language == "cpp":
         # C++ classes are abstract iff they (a) have at least one pure-
         # virtual method (``virtual T f() = 0;``) and (b) are not
@@ -862,6 +884,10 @@ def _compute_abstractness_text(
             nc += len(_C_UNION_RE.findall(content))
             nc += len(_C_ENUM_RE.findall(content))
             nc += len(_C_TYPEDEF_RE.findall(content))
+
+        elif language == "ruby":
+            na += len(_RUBY_MODULE_RE.findall(content))
+            nc += len(_RUBY_CLASS_RE.findall(content))
 
         elif language == "cpp":
             # Text-tier C++ abstractness: classes containing ``= 0;`` and

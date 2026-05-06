@@ -27,7 +27,33 @@ IMPORT_NODE_TYPES: dict[str, frozenset[str]] = {
     "julia":  frozenset({"import_statement", "using_statement"}),
     "c":      frozenset({"preproc_include"}),
     "cpp":    frozenset({"preproc_include", "using_declaration"}),
+    # Ruby imports are method calls (``require 'foo'``), not statement
+    # nodes. We register ``call`` as the matching node type and rely
+    # on ``IMPORT_NODE_PREDICATES`` below to filter to require-style
+    # calls only.
+    "ruby":   frozenset({"call"}),
 }
+
+#: Per-language predicate that, given an import-typed node, returns
+#: True only if the node is *actually* an import. For most languages
+#: the node-type match is sufficient and no entry is needed; Ruby uses
+#: this hook because every method call shares the ``call`` node type.
+IMPORT_NODE_PREDICATES: dict[str, "object"] = {}
+
+
+def _ruby_is_require_call(node: object, content: bytes) -> bool:
+    """True if ``node`` is a Ruby ``require``/``require_relative``/``load`` call."""
+    if node.type != "call":  # type: ignore[attr-defined]
+        return False
+    method = node.child_by_field_name("method")  # type: ignore[attr-defined]
+    if method is None or method.type != "identifier":  # type: ignore[attr-defined]
+        return False
+    name = content[method.start_byte:method.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+    return name in ("require", "require_relative", "load")
+
+
+IMPORT_NODE_PREDICATES["ruby"] = _ruby_is_require_call
+
 
 #: Node types that constitute a function / method boundary.
 FUNCTION_NODE_TYPES: dict[str, frozenset[str]] = {
@@ -35,6 +61,7 @@ FUNCTION_NODE_TYPES: dict[str, frozenset[str]] = {
     "julia":  frozenset({"function_definition", "arrow_function_expression"}),
     "c":      frozenset({"function_definition"}),
     "cpp":    frozenset({"function_definition", "lambda_expression"}),
+    "ruby":   frozenset({"method", "singleton_method"}),
 }
 
 #: Extension → language for discovery.
@@ -49,6 +76,7 @@ _EXT_MAP: dict[str, str] = {
     ".cxx": "cpp",
     ".hpp": "cpp",
     ".hxx": "cpp",
+    ".rb":  "ruby",
 }
 
 # ---------------------------------------------------------------------------
@@ -170,16 +198,22 @@ def _walk(
     """Depth-first AST walk; emit a LocalImport for each function-nested import node."""
     node_type = node.type  # type: ignore[attr-defined]
     if node_type in import_types:
-        func_node = _enclosing_function(node, function_types)
-        if func_node is not None:
-            out.append(LocalImport(
-                file=file,
-                line=node.start_point[0] + 1,  # type: ignore[attr-defined]
-                module=_import_text(node, content),
-                function=_function_name(func_node, content),
-                language=language,
-            ))
-        return  # import nodes cannot contain further imports
+        # Per-language predicate filter (Ruby uses this to distinguish
+        # ``require``-style calls from ordinary calls; other languages
+        # don't register and pass straight through).
+        predicate = IMPORT_NODE_PREDICATES.get(language)
+        is_import = predicate is None or predicate(node, content)  # type: ignore[operator]
+        if is_import:
+            func_node = _enclosing_function(node, function_types)
+            if func_node is not None:
+                out.append(LocalImport(
+                    file=file,
+                    line=node.start_point[0] + 1,  # type: ignore[attr-defined]
+                    module=_import_text(node, content),
+                    function=_function_name(func_node, content),
+                    language=language,
+                ))
+            return  # import nodes cannot contain further imports
 
     for child in node.children:  # type: ignore[attr-defined]
         _walk(child, content, file, language, import_types, function_types, out)
@@ -200,6 +234,26 @@ def _function_name(node: object, content: bytes) -> str:
     name_node = node.child_by_field_name("name")  # type: ignore[attr-defined]
     if name_node is not None:
         return content[name_node.start_byte:name_node.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+    # Ruby method / singleton_method: name is positional after ``def``.
+    if node.type in ("method", "singleton_method"):  # type: ignore[attr-defined]
+        saw_def = False
+        saw_self = False
+        saw_dot = False
+        for child in node.children:  # type: ignore[attr-defined]
+            ctype = child.type  # type: ignore[attr-defined]
+            if ctype == "def":
+                saw_def = True
+                continue
+            if not saw_def:
+                continue
+            if ctype == "self" and not saw_self:
+                saw_self = True
+                continue
+            if ctype == "." and saw_self and not saw_dot:
+                saw_dot = True
+                continue
+            if ctype in ("identifier", "operator"):
+                return content[child.start_byte:child.end_byte].decode(errors="replace").strip()  # type: ignore[attr-defined]
     for child in node.children:  # type: ignore[attr-defined]
         if child.type == "identifier":
             return content[child.start_byte:child.end_byte].decode(errors="replace")

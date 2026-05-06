@@ -82,10 +82,31 @@ _CPP_STDLIB: frozenset[str] = _C_STDLIB | frozenset({
     "get", "set",
 })
 
+# Ruby stdlib / built-in callees. Pervasive idioms that should not
+# inflate sibling-redundancy scores.
+_RUBY_STDLIB: frozenset[str] = frozenset({
+    "puts", "print", "pp", "raise",
+    "require", "require_relative", "load",
+    "attr_reader", "attr_writer", "attr_accessor",
+    "include", "extend", "prepend",
+    "lambda", "proc", "new",
+    "to_s", "to_i", "to_a", "to_h", "to_sym",
+    "inspect", "send", "public_send",
+    "freeze", "dup", "clone",
+    "kind_of?", "is_a?", "respond_to?", "nil?", "empty?",
+    "each", "map", "select", "reject", "reduce", "inject",
+    "find", "any?", "all?", "none?", "first", "last",
+    "size", "length", "count", "include?",
+    "<<", "push", "pop", "shift", "unshift",
+    "sort", "sort_by", "uniq", "flatten",
+    "keys", "values", "fetch",
+})
+
 _LANG_GLOBS: dict[str, list[str]] = {
     "python": ["**/*.py"],
     "c":      ["**/*.c", "**/*.h"],
     "cpp":    ["**/*.cpp", "**/*.cc", "**/*.cxx", "**/*.hpp", "**/*.hxx"],
+    "ruby":   ["**/*.rb"],
 }
 
 # ---------------------------------------------------------------------------
@@ -126,7 +147,7 @@ def _is_trivial_callee(name: str, language: str = "python") -> bool:
 
     The ``language`` argument selects the per-language exclusion list:
     Python builtins for ``"python"``, C stdlib for ``"c"``, C++ stdlib
-    (which includes the C stdlib) for ``"cpp"``. The length and dunder
+    for ``"cpp"``, Ruby stdlib for ``"ruby"``. The length and dunder
     filters apply to every language.
     """
     if language == "python" and name in _PYTHON_BUILTINS:
@@ -134,6 +155,8 @@ def _is_trivial_callee(name: str, language: str = "python") -> bool:
     if language == "c" and name in _C_STDLIB:
         return True
     if language == "cpp" and name in _CPP_STDLIB:
+        return True
+    if language == "ruby" and name in _RUBY_STDLIB:
         return True
     if name.startswith("__") and name.endswith("__"):
         return True
@@ -277,6 +300,13 @@ def sibling_call_redundancy_kernel(
             errors.extend(file_errors)
         elif lang == "cpp":
             file_pairs, fn_count, file_errors = _analyze_cpp_file(
+                fp, root, min_shared, min_score
+            )
+            pairs.extend(file_pairs)
+            total_functions += fn_count
+            errors.extend(file_errors)
+        elif lang == "ruby":
+            file_pairs, fn_count, file_errors = _analyze_ruby_file(
                 fp, root, min_shared, min_score
             )
             pairs.extend(file_pairs)
@@ -547,6 +577,133 @@ def _analyze_cpp_file(
         fn_line = node.start_point[0] + 1  # type: ignore[attr-defined]
         body = node.child_by_field_name("body") or node  # type: ignore[attr-defined]
         callees = _gather_callees_cpp(body, content)
+        top_level.append((fn_name, fn_line, callees))
+
+    pairs: list[SiblingPair] = []
+    for (name_a, line_a, callees_a), (name_b, line_b, callees_b) in combinations(top_level, 2):
+        if not callees_a or not callees_b:
+            continue
+        shared = callees_a & callees_b
+        if not shared:
+            continue
+        max_size = max(len(callees_a), len(callees_b))
+        score = len(shared) / max_size
+        if len(shared) >= min_shared and score >= min_score:
+            pairs.append(SiblingPair(
+                file=rel,
+                fn_a=name_a,
+                fn_b=name_b,
+                fn_a_line=line_a,
+                fn_b_line=line_b,
+                shared_callees=sorted(shared),
+                score=round(score, 3),
+            ))
+
+    return pairs, len(top_level), []
+
+
+# ---------------------------------------------------------------------------
+# Ruby implementation
+# ---------------------------------------------------------------------------
+
+
+def _gather_callees_ruby(body: object, content: bytes) -> set[str]:
+    """DFS collect call names in a Ruby subtree.
+
+    Picks up plain ``call`` whose receiver-less form is just an
+    identifier (``foo(args)``), method-style calls (``obj.method``),
+    and constant calls (``Foo.new``). The callee name is the
+    identifier or operator token; for ``obj.method`` we record the
+    method, not the receiver.
+    """
+    callees: set[str] = set()
+    stack = [body]
+    while stack:
+        node = stack.pop()
+        if node.type == "call":  # type: ignore[attr-defined]
+            method_node = node.child_by_field_name("method")  # type: ignore[attr-defined]
+            if method_node is not None:
+                if method_node.type in ("identifier", "operator"):  # type: ignore[attr-defined]
+                    name = content[method_node.start_byte:method_node.end_byte].decode(errors="replace").strip()  # type: ignore[attr-defined]
+                    if not _is_trivial_callee(name, "ruby"):
+                        callees.add(name)
+                elif method_node.type == "constant":  # type: ignore[attr-defined]
+                    name = content[method_node.start_byte:method_node.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+                    if not _is_trivial_callee(name, "ruby"):
+                        callees.add(name)
+            else:
+                for c in node.children:  # type: ignore[attr-defined]
+                    if c.type == "identifier":  # type: ignore[attr-defined]
+                        name = content[c.start_byte:c.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+                        if not _is_trivial_callee(name, "ruby"):
+                            callees.add(name)
+                        break
+        stack.extend(node.children)  # type: ignore[attr-defined]
+    return callees
+
+
+def _ruby_function_name(node: object, content: bytes) -> str:
+    """Extract a Ruby method name."""
+    saw_def = False
+    saw_self = False
+    saw_dot = False
+    for child in node.children:  # type: ignore[attr-defined]
+        ctype = child.type  # type: ignore[attr-defined]
+        if ctype == "def":
+            saw_def = True
+            continue
+        if not saw_def:
+            continue
+        if ctype == "self" and not saw_self:
+            saw_self = True
+            continue
+        if ctype == "." and saw_self and not saw_dot:
+            saw_dot = True
+            continue
+        if ctype in ("identifier", "operator"):
+            return content[child.start_byte:child.end_byte].decode(errors="replace").strip()  # type: ignore[attr-defined]
+    return "<anonymous>"
+
+
+def _analyze_ruby_file(
+    fp: Path,
+    root: Path,
+    min_shared: int,
+    min_score: float,
+) -> tuple[list[SiblingPair], int, list[str]]:
+    """Top-level free methods only — class methods aren't free-function siblings."""
+    tree_lang = load_language("ruby")
+    if tree_lang is None:
+        return [], 0, []
+    try:
+        import tree_sitter
+        content = fp.read_bytes()
+        try:
+            parser = tree_sitter.Parser(tree_lang)
+            tree = parser.parse(content)
+        except TypeError:
+            parser = tree_sitter.Parser()
+            parser.language = tree_lang  # type: ignore[assignment]
+            tree = parser.parse(content)
+    except Exception as exc:
+        return [], 0, [f"{fp}: {exc}"]
+
+    rel = str(fp.relative_to(root))
+
+    top_level: list[tuple[str, int, set[str]]] = []
+    for node in tree.root_node.children:  # type: ignore[attr-defined]
+        if node.type not in ("method", "singleton_method"):  # type: ignore[attr-defined]
+            continue
+        fn_name = _ruby_function_name(node, content)
+        fn_line = node.start_point[0] + 1  # type: ignore[attr-defined]
+        body = None
+        for child in node.children:  # type: ignore[attr-defined]
+            if child.type == "body_statement":  # type: ignore[attr-defined]
+                body = child
+                break
+        if body is None:
+            body = node
+        callees = _gather_callees_ruby(body, content)
         top_level.append((fn_name, fn_line, callees))
 
     pairs: list[SiblingPair] = []

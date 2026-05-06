@@ -223,6 +223,46 @@ def _cpp_name_extractor(node, content: bytes) -> str:
     return f"~{name}" if _cpp_is_destructor(node) else name
 
 
+def _ruby_find_method_name(node):
+    """Locate the Ruby method-name node. See `slop._structural.ccx`."""
+    saw_def = False
+    saw_self = False
+    saw_dot = False
+    for child in node.children:
+        if child.type == "def":
+            saw_def = True
+            continue
+        if not saw_def:
+            continue
+        if child.type == "self" and not saw_self:
+            saw_self = True
+            continue
+        if child.type == "." and saw_self and not saw_dot:
+            saw_dot = True
+            continue
+        if child.type in ("identifier", "operator"):
+            return child
+    return None
+
+
+def _ruby_name_extractor(node, content: bytes) -> str:
+    """Ruby name extraction. See `slop._structural.ccx`."""
+    if node.type in ("lambda", "do_block", "block"):
+        return "<lambda>"
+    if node.type not in ("method", "singleton_method"):
+        return "<anonymous>"
+    name_node = _ruby_find_method_name(node)
+    if name_node is None:
+        return "<anonymous>"
+    return content[name_node.start_byte:name_node.end_byte].decode(
+        "utf-8", errors="replace",
+    ).strip()
+
+
+def _ruby_is_function_node(node, config: "_NpathLangConfig") -> bool:
+    return node.type in config.function_nodes
+
+
 # ---------------------------------------------------------------------------
 # Per-language configuration
 # ---------------------------------------------------------------------------
@@ -431,6 +471,36 @@ _LANG_CONFIG: dict[str, _NpathLangConfig] = {
         switch_body_types=frozenset({"compound_statement"}),
         name_extractor=_c_name_extractor,
     ),
+    "ruby": _NpathLangConfig(
+        function_nodes=frozenset({
+            "method", "singleton_method",
+            "lambda", "do_block", "block",
+        }),
+        if_node="if",
+        else_clause="else",
+        elif_clause="elsif",
+        loop_nodes=frozenset({"while", "until", "for"}),
+        switch_node="case",
+        case_node="when",
+        try_node="begin",
+        catch_node="rescue",
+        body_field="",                 # Ruby uses positional body_statement
+        block_types=frozenset({"body_statement"}),
+        # Ruby's class/method/module bodies are positional; the kernel's
+        # body-walker iterates children minus these structural keywords.
+        body_skip_types=frozenset({
+            "def", "end", "do", "then",
+            "identifier", "operator",
+            "method_parameters", "block_parameters", "lambda_parameters",
+            "self", ".",
+            "class", "module", "constant", "superclass",
+            "if", "elsif", "else", "case", "when",
+            "while", "until", "for", "in",
+            "begin", "rescue", "ensure", "exceptions", "exception_variable",
+        }),
+        name_extractor=_ruby_name_extractor,
+        is_function_node=_ruby_is_function_node,
+    ),
     "cpp": _NpathLangConfig(
         function_nodes=frozenset({
             "function_definition",
@@ -466,6 +536,7 @@ _LANG_GLOBS: dict[str, list[str]] = {
     "julia": ["**/*.jl"],
     "c": ["**/*.c", "**/*.h"],
     "cpp": ["**/*.cpp", "**/*.cc", "**/*.cxx", "**/*.hpp", "**/*.hxx"],
+    "ruby": ["**/*.rb"],
 }
 
 

@@ -7,6 +7,95 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.3] - 2026-05-05
+
+Ruby language support across the full applicable rule set, **including
+the CK class-metrics suite with open-class aggregation**. Same shape
+of hotfix as v1.0.1 (C) and v1.0.2 (C++): `tree-sitter-ruby` was a
+wheel dependency and `.rb` was registered in the AST extension map,
+but no kernel `_LANG_CONFIG` registered `"ruby"`. Final of the three
+planned single-language hotfixes.
+
+### Added
+
+- **Ruby language support** across structural, information, and
+  lexical rule families. `structural.complexity.{cyclomatic,cognitive,
+  npath}`, `information.{volume,difficulty,magic_literals,
+  section_comments}`, `structural.{god_module,duplication,redundancy,
+  hotspots,orphans,deps,packages,local_imports}`,
+  `structural.types.sentinels`, `lexical.{stutter,verbosity,tersity}`,
+  **and** `structural.class.{complexity,coupling,inheritance.depth,
+  inheritance.children}` all run on Ruby files. See `docs/RUBY.md`.
+- New `_ruby_*` helpers in `_structural/{ccx,npath,halstead}.py`.
+  Method name extraction handles regular methods (`def foo`),
+  singleton/class methods (`def self.foo`), operator overloads
+  (`def ==`, `def []`, `def []=`, `def <=>`), and treats lambdas
+  (`->{ }`), do-blocks (`do |x| end`), and curly blocks (`{ |x| }`)
+  as anonymous (`<lambda>`).
+- New `_extract_ruby_superclasses` and `_collect_ruby_classes` in the
+  CK kernel. Ruby's class name is positional (a `constant` direct
+  child) rather than a field, so it has its own collector path.
+- New `_aggregate_ruby_open_classes` post-WMC pass. Ruby's open-class
+  semantics let the same `class Foo` be re-declared across files;
+  each declaration parses as a separate `class` node. The aggregator
+  merges them by name within the Ruby subset, summing WMC and method
+  counts, taking max CBO/DIT/NOC, and unioning superclasses. See
+  `docs/RUBY.md` "Open-class aggregation".
+- New `IMPORT_NODE_PREDICATES` hook on `_structural/local_imports.py`.
+  Ruby's imports are method calls (`require 'foo'`), not statement
+  nodes; the predicate distinguishes require-style calls from
+  ordinary calls. Other languages don't register and pass through
+  unchanged.
+- `structural.packages` for Ruby treats `module` as the abstract
+  analog (modules cannot be instantiated, only mixed in via
+  `include`/`extend`). Classes are concrete. Ruby has no `final`.
+  Default `severity = "warning"`.
+- `structural.deps` for Ruby resolves `require_relative './foo'` to
+  peer files; `require 'gem'` is treated as external.
+
+### Structurally N/A — silent no-op
+
+- **`structural.types.escape_hatches`** (any-type density). Ruby is
+  dynamically typed; every parameter is implicitly `Object`. There
+  is no type system to escape. Silent no-op via missing kernel
+  registration; documented in `_structural/any_type_density.py`.
+- **`structural.types.hidden_mutators`** (out-parameters). Ruby's
+  parameter passing is always by reference; every object is mutable.
+  Without a type system the rule has no signal-to-noise floor.
+  Silent no-op via missing kernel registration; documented in
+  `_structural/out_parameters.py`.
+
+Both match the C-CK and Julia-CK silent-no-op posture established in
+v1.0.1.
+
+### Mixin posture (intentional, documented)
+
+Ruby mixins (`include MyMod` / `extend MyMod`) count toward CBO
+(captured as type references inside the class body) but NOT toward
+DIT (Ruby community convention treats them as composition). NOC is
+unaffected. See `docs/RUBY.md` "Mixin coupling" for the rationale
+and the per-rule param hook for projects that want different
+semantics.
+
+### Behaviour change
+
+Users upgrading from v1.0.2 with `.rb` files in their codebase will
+see new violations across the full applicable rule set. By design —
+those files were silently passing v1.0.2.
+
+### Out of scope (logged, deferred)
+
+Same pre-existing audit gaps carried forward from v1.0.1 / v1.0.2:
+Java's npath `switch_node` mismatch; `lexical.stutter`'s missing
+Java/C#/Julia entries; type-discipline message wording for non-Python
+languages.
+
+Ruby-specific deferrals:
+- Mixin-aware DIT (could become a per-rule `include_mixins=true` param).
+- `define_method` and metaprogramming visibility.
+- `$LOAD_PATH` / Bundler / `RUBYLIB` resolution for `structural.deps`.
+- Class methods inside `structural.redundancy` (free-method only).
+
 ## [1.0.2] - 2026-05-05
 
 C++ language support across the full applicable rule set, **including

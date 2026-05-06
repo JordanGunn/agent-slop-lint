@@ -58,6 +58,7 @@ _LANG_GLOBS: dict[str, list[str]] = {
     "python": ["**/*.py"],
     "c":      ["**/*.c", "**/*.h"],
     "cpp":    ["**/*.cpp", "**/*.cc", "**/*.cxx", "**/*.hpp", "**/*.hxx"],
+    "ruby":   ["**/*.rb"],
 }
 
 # ---------------------------------------------------------------------------
@@ -147,6 +148,8 @@ def stringly_typed_kernel(
             total_functions += _scan_c_file(fp, root, entries, errors)
         elif lang == "cpp":
             total_functions += _scan_cpp_file(fp, root, entries, errors)
+        elif lang == "ruby":
+            total_functions += _scan_ruby_file(fp, root, entries, errors)
 
     # Pass 2: call-site literal collection via ripgrep
     _enrich_with_call_sites(entries, root, excludes or [], max_cardinality)
@@ -642,4 +645,128 @@ def _cpp_fn_name_local(fn_node: object, content: bytes) -> str:
             declarator = declarator.child_by_field_name("declarator")  # type: ignore[attr-defined]
             continue
         break
+    return "<anonymous>"
+
+
+# ---------------------------------------------------------------------------
+# Ruby AST pass
+# ---------------------------------------------------------------------------
+
+
+def _scan_ruby_file(
+    fp: Path,
+    root: Path,
+    out: list[StringlyEntry],
+    errors: list[str],
+) -> int:
+    """Scan one Ruby file for sentinel-shaped parameters.
+
+    Ruby methods don't carry type annotations, but the convention of
+    string / symbol "kind" / "mode" / "level" parameters is common.
+    Flags any ``method`` or ``singleton_method`` parameter whose name
+    (lowercased, trailing ``_`` stripped) is in ``_SENTINEL_NAMES``.
+    """
+    tree_lang = load_language("ruby")
+    if tree_lang is None:
+        return 0
+    try:
+        import tree_sitter
+        content = fp.read_bytes()
+        try:
+            parser = tree_sitter.Parser(tree_lang)
+            tree = parser.parse(content)
+        except TypeError:
+            parser = tree_sitter.Parser()
+            parser.language = tree_lang  # type: ignore[assignment]
+            tree = parser.parse(content)
+    except Exception as exc:
+        errors.append(f"{fp}: {exc}")
+        return 0
+
+    rel = str(fp.relative_to(root))
+    fn_count = 0
+    stack = [tree.root_node]
+    while stack:
+        node = stack.pop()
+        if node.type in ("method", "singleton_method"):  # type: ignore[attr-defined]
+            fn_count += 1
+            _process_ruby_method(node, content, rel, out)
+        # Continue walking — Ruby allows methods nested inside class /
+        # module bodies.
+        stack.extend(node.children)  # type: ignore[attr-defined]
+    return fn_count
+
+
+def _process_ruby_method(
+    node: object,
+    content: bytes,
+    rel: str,
+    out: list[StringlyEntry],
+) -> None:
+    """Extract sentinel-shaped parameters from a Ruby method."""
+    fn_name = _ruby_fn_name_local(node, content)
+    fn_line = node.start_point[0] + 1  # type: ignore[attr-defined]
+
+    # Find method_parameters child
+    params_node = None
+    for child in node.children:  # type: ignore[attr-defined]
+        if child.type == "method_parameters":  # type: ignore[attr-defined]
+            params_node = child
+            break
+    if params_node is None:
+        return
+
+    # Walk parameter children for identifiers (and for default-valued
+    # parameters, optional_parameter and keyword_parameter shapes).
+    for child in params_node.children:  # type: ignore[attr-defined]
+        ctype = child.type  # type: ignore[attr-defined]
+        param_name: str | None = None
+        if ctype == "identifier":
+            param_name = content[child.start_byte:child.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+        elif ctype in ("optional_parameter", "keyword_parameter"):
+            # First identifier child is the parameter name.
+            for sub in child.children:  # type: ignore[attr-defined]
+                if sub.type == "identifier":  # type: ignore[attr-defined]
+                    param_name = content[sub.start_byte:sub.end_byte].decode(errors="replace")  # type: ignore[attr-defined]
+                    break
+
+        if param_name is None:
+            continue
+
+        sentinel_key = _STRIP_TRAILING.sub("", param_name).lower()
+        if sentinel_key not in _SENTINEL_NAMES:
+            continue
+
+        out.append(StringlyEntry(
+            file=rel,
+            function_name=fn_name,
+            param_name=param_name,
+            param_line=fn_line,
+            # Ruby has no static type annotations, so ``annotated``
+            # reflects "the parameter is named for a sentinel" rather
+            # than "the parameter is annotated str".
+            annotated=False,
+        ))
+
+
+def _ruby_fn_name_local(node: object, content: bytes) -> str:
+    """Walk Ruby method children for the name node."""
+    saw_def = False
+    saw_self = False
+    saw_dot = False
+    for child in node.children:  # type: ignore[attr-defined]
+        ctype = child.type  # type: ignore[attr-defined]
+        if ctype == "def":
+            saw_def = True
+            continue
+        if not saw_def:
+            continue
+        if ctype == "self" and not saw_self:
+            saw_self = True
+            continue
+        if ctype == "." and saw_self and not saw_dot:
+            saw_dot = True
+            continue
+        if ctype in ("identifier", "operator"):
+            return content[child.start_byte:child.end_byte].decode(errors="replace").strip()  # type: ignore[attr-defined]
     return "<anonymous>"

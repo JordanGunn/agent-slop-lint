@@ -52,6 +52,10 @@ _SCOPE_NODES: dict[str, dict[str, frozenset[str]]] = {
             "class_specifier", "struct_specifier", "namespace_definition",
         }),
     },
+    "ruby": {
+        "function": frozenset({"method", "singleton_method", "lambda", "do_block", "block"}),
+        "class": frozenset({"class", "module"}),
+    },
 }
 
 _LANG_GLOBS: dict[str, list[str]] = {
@@ -62,6 +66,7 @@ _LANG_GLOBS: dict[str, list[str]] = {
     "rust":       ["**/*.rs"],
     "c":          ["**/*.c", "**/*.h"],
     "cpp":        ["**/*.cpp", "**/*.cc", "**/*.cxx", "**/*.hpp", "**/*.hxx"],
+    "ruby":       ["**/*.rb"],
 }
 
 @dataclass
@@ -208,6 +213,28 @@ def _get_name(node, content) -> str:
     name_node = node.child_by_field_name("name")
     if name_node:
         return content[name_node.start_byte:name_node.end_byte].decode(errors="replace")
+    # Ruby method / singleton_method: name lives positionally.
+    if node.type in ("lambda", "do_block", "block"):
+        return "<lambda>"
+    if node.type in ("method", "singleton_method"):
+        saw_def = False
+        saw_self = False
+        saw_dot = False
+        for child in node.children:
+            ctype = child.type
+            if ctype == "def":
+                saw_def = True
+                continue
+            if not saw_def:
+                continue
+            if ctype == "self" and not saw_self:
+                saw_self = True
+                continue
+            if ctype == "." and saw_self and not saw_dot:
+                saw_dot = True
+                continue
+            if ctype in ("identifier", "operator"):
+                return content[child.start_byte:child.end_byte].decode(errors="replace").strip()
     # C / C++ ``function_definition`` walks the declarator chain.
     if node.type in ("function_definition", "lambda_expression"):
         if node.type == "lambda_expression":

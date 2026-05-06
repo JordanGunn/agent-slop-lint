@@ -224,6 +224,46 @@ def _cpp_name_extractor(node, content: bytes) -> str:
     return f"~{name}" if _cpp_is_destructor(node) else name
 
 
+def _ruby_find_method_name(node):
+    """Locate the Ruby method-name node. See `slop._structural.ccx`."""
+    saw_def = False
+    saw_self = False
+    saw_dot = False
+    for child in node.children:
+        if child.type == "def":
+            saw_def = True
+            continue
+        if not saw_def:
+            continue
+        if child.type == "self" and not saw_self:
+            saw_self = True
+            continue
+        if child.type == "." and saw_self and not saw_dot:
+            saw_dot = True
+            continue
+        if child.type in ("identifier", "operator"):
+            return child
+    return None
+
+
+def _ruby_name_extractor(node, content: bytes) -> str:
+    """Ruby name extraction. See `slop._structural.ccx`."""
+    if node.type in ("lambda", "do_block", "block"):
+        return "<lambda>"
+    if node.type not in ("method", "singleton_method"):
+        return "<anonymous>"
+    name_node = _ruby_find_method_name(node)
+    if name_node is None:
+        return "<anonymous>"
+    return content[name_node.start_byte:name_node.end_byte].decode(
+        "utf-8", errors="replace",
+    ).strip()
+
+
+def _ruby_is_function_node(node, config: "_HalsteadLangConfig") -> bool:
+    return node.type in config.function_nodes
+
+
 # ---------------------------------------------------------------------------
 # Per-language configuration
 # ---------------------------------------------------------------------------
@@ -484,6 +524,49 @@ _LANG_CONFIG: dict[str, _HalsteadLangConfig] = {
         }),
         name_extractor=_c_name_extractor,
     ),
+    "ruby": _HalsteadLangConfig(
+        function_nodes=frozenset({
+            "method", "singleton_method",
+            "lambda", "do_block", "block",
+        }),
+        operator_types=frozenset({
+            # Keywords
+            "def", "end", "class", "module",
+            "if", "elsif", "else", "unless",
+            "while", "until", "for", "in",
+            "case", "when", "then", "do",
+            "return", "yield", "break", "next", "redo", "retry",
+            "begin", "rescue", "ensure", "raise",
+            "require", "require_relative", "load",
+            "include", "extend", "prepend",
+            "public", "private", "protected",
+            "attr_reader", "attr_writer", "attr_accessor",
+            "lambda", "proc", "super",
+            "self", "nil", "true", "false",
+            "not", "and", "or",
+            # Symbols
+            "=", "+", "-", "*", "/", "%", "**",
+            "==", "===", "!=", "<", ">", "<=", ">=", "<=>",
+            "&&", "||", "!",
+            "&", "|", "^", "~", "<<", ">>",
+            "+=", "-=", "*=", "/=", "%=", "**=",
+            "&&=", "||=",
+            "..", "...",
+            "=>", "->",
+            "?", ":", ",", ".", "::",
+        }),
+        operand_types=frozenset({
+            "identifier",
+            "instance_variable", "class_variable", "global_variable",
+            "constant",
+            "integer", "float", "complex", "rational",
+            "string", "string_content",
+            "symbol", "simple_symbol", "hash_key_symbol",
+            "true", "false", "nil",
+        }),
+        name_extractor=_ruby_name_extractor,
+        is_function_node=_ruby_is_function_node,
+    ),
     "cpp": _HalsteadLangConfig(
         function_nodes=frozenset({
             "function_definition",
@@ -545,6 +628,7 @@ _LANG_GLOBS: dict[str, list[str]] = {
     "julia": ["**/*.jl"],
     "c": ["**/*.c", "**/*.h"],
     "cpp": ["**/*.cpp", "**/*.cc", "**/*.cxx", "**/*.hpp", "**/*.hxx"],
+    "ruby": ["**/*.rb"],
 }
 
 

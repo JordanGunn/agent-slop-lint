@@ -79,8 +79,9 @@ The full rule index with default thresholds, citations, and per-rule pages lives
 | Julia | yes | yes | yes | yes | — |
 | C | yes | yes | yes (warn) | yes (best-effort) | — |
 | C++ | yes | yes | yes | yes (best-effort) | yes |
+| Ruby | yes | yes | yes (warn) | yes (best-effort) | yes |
 
-Language-specific caveats (JavaScript packages, Rust deps, Julia CK metrics, C class metrics, C/C++ `-I`-path resolution and out-of-line method attribution) are documented in the [C notes](https://github.com/JordanGunn/agent-slop-lint/blob/main/docs/C.md), the [C++ notes](https://github.com/JordanGunn/agent-slop-lint/blob/main/docs/CPP.md), the [Julia notes](https://github.com/JordanGunn/agent-slop-lint/blob/main/docs/JULIA.md), and the relevant rule pages.
+Language-specific caveats (JavaScript packages, Rust deps, Julia CK metrics, C class metrics, C/C++ `-I`-path resolution and out-of-line method attribution, Ruby type-discipline rules silent-skip and open-class WMC aggregation) are documented in the [C notes](https://github.com/JordanGunn/agent-slop-lint/blob/main/docs/C.md), the [C++ notes](https://github.com/JordanGunn/agent-slop-lint/blob/main/docs/CPP.md), the [Julia notes](https://github.com/JordanGunn/agent-slop-lint/blob/main/docs/JULIA.md), the [Ruby notes](https://github.com/JordanGunn/agent-slop-lint/blob/main/docs/RUBY.md), and the relevant rule pages.
 
 ## CLI
 

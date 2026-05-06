@@ -38,6 +38,13 @@ from slop._text.grep import grep_kernel
 # ---------------------------------------------------------------------------
 
 # (escape_pattern, annotation_pattern, globs)
+#
+# Ruby is intentionally NOT registered. Ruby is dynamically typed —
+# every parameter is implicitly ``Object``, every return is implicit,
+# and there are no type-annotation patterns to count. The rule's
+# premise (fraction of type annotations using an escape-hatch type)
+# has no meaningful definition. Same posture as CK on C (no class
+# concept) — silent no-op via missing registration.
 _LANG_CONFIG: dict[str, tuple[str, str, list[str]]] = {
     "python": (
         r"\bAny\b",

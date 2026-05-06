@@ -61,6 +61,11 @@ _COLLECTION_TYPES = frozenset({
     "Counter",
 })
 
+# Ruby is intentionally NOT registered. Ruby's parameter passing is
+# always by reference (every object is mutable), so "the callee
+# mutates a parameter" is the default rather than an anti-pattern.
+# Without a static type system the rule has no signal-to-noise floor;
+# silent no-op via missing registration.
 _LANG_GLOBS: dict[str, list[str]] = {
     "python":     ["**/*.py"],
     "javascript": ["**/*.js", "**/*.mjs", "**/*.cjs"],

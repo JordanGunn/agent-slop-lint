@@ -94,6 +94,10 @@ _TOP_LEVEL_NODES: dict[str, frozenset[str]] = {
         "template_declaration",
         "namespace_definition",
     }),
+    "ruby": frozenset({
+        "method", "singleton_method",
+        "class", "module",
+    }),
 }
 
 _LANG_GLOBS: dict[str, list[str]] = {
@@ -107,6 +111,7 @@ _LANG_GLOBS: dict[str, list[str]] = {
     "julia":      ["**/*.jl"],
     "c":          ["**/*.c", "**/*.h"],
     "cpp":        ["**/*.cpp", "**/*.cc", "**/*.cxx", "**/*.hpp", "**/*.hxx"],
+    "ruby":       ["**/*.rb"],
 }
 
 # ---------------------------------------------------------------------------

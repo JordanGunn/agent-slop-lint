@@ -52,6 +52,7 @@ _FUNCTION_NODES: dict[str, frozenset[str]] = {
     "julia": frozenset({"function_definition", "short_function_definition"}),
     "c": frozenset({"function_definition"}),
     "cpp": frozenset({"function_definition", "lambda_expression"}),
+    "ruby": frozenset({"method", "singleton_method", "lambda", "do_block", "block"}),
 }
 
 _LANG_GLOBS: dict[str, list[str]] = {
@@ -65,6 +66,7 @@ _LANG_GLOBS: dict[str, list[str]] = {
     "julia":      ["**/*.jl"],
     "c":          ["**/*.c", "**/*.h"],
     "cpp":        ["**/*.cpp", "**/*.cc", "**/*.cxx", "**/*.hpp", "**/*.hxx"],
+    "ruby":       ["**/*.rb"],
 }
 
 # ---------------------------------------------------------------------------

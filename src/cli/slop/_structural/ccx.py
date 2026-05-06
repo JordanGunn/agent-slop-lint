@@ -307,6 +307,61 @@ def _cpp_name_extractor(node, content: bytes) -> str:
     return f"~{name}" if _cpp_is_destructor(node) else name
 
 
+def _ruby_find_method_name(node):
+    """Locate a Ruby method's name node (an ``identifier`` or ``operator``).
+
+    Cases:
+
+    - ``def foo(...)``: skip ``def``, return first ``identifier``.
+    - ``def self.foo(...)``: skip ``def``, ``self``, ``.``, return ``identifier``.
+    - ``def ==(other)``: skip ``def``, return ``operator``.
+    - ``def [](i)`` / ``def []=(i, v)``: skip ``def``, return ``operator``.
+    """
+    saw_def = False
+    saw_self = False
+    saw_dot = False
+    for child in node.children:
+        if child.type == "def":
+            saw_def = True
+            continue
+        if not saw_def:
+            continue
+        if child.type == "self" and not saw_self:
+            saw_self = True
+            continue
+        if child.type == "." and saw_self and not saw_dot:
+            saw_dot = True
+            continue
+        if child.type in ("identifier", "operator"):
+            return child
+    return None
+
+
+def _ruby_name_extractor(node, content: bytes) -> str:
+    """Ruby method-name extraction.
+
+    Lambdas (``lambda``) and blocks (``do_block`` / ``block``) are
+    anonymous and named ``<lambda>``. Methods (``method``) and
+    singleton methods (``singleton_method``) walk children to find
+    the name node, which may be an ``identifier`` or an ``operator``
+    (for operator-overload methods like ``def ==``).
+    """
+    if node.type in ("lambda", "do_block", "block"):
+        return "<lambda>"
+    if node.type not in ("method", "singleton_method"):
+        return "<anonymous>"
+    name_node = _ruby_find_method_name(node)
+    if name_node is None:
+        return "<anonymous>"
+    return content[name_node.start_byte:name_node.end_byte].decode(
+        "utf-8", errors="replace",
+    ).strip()
+
+
+def _ruby_is_function_node(node, config: "_LangConfig") -> bool:
+    return node.type in config.function_nodes
+
+
 # ---------------------------------------------------------------------------
 # Per-language configuration
 # ---------------------------------------------------------------------------
@@ -608,6 +663,37 @@ _LANG_CONFIG: dict[str, _LangConfig] = {
         boolean_op_filter=frozenset({"&&", "||"}),
         name_extractor=_c_name_extractor,
     ),
+    "ruby": _LangConfig(
+        function_nodes=frozenset({
+            "method", "singleton_method",
+            "lambda", "do_block", "block",  # anonymous; named "<lambda>"
+        }),
+        decision_nodes=frozenset({
+            "if", "elsif",
+            "unless_modifier", "if_modifier",
+            "while_modifier", "until_modifier",
+            "rescue_modifier",
+            "while", "until", "for",
+            "when",
+            "rescue",
+            "conditional",  # ternary x ? a : b
+        }),
+        nesting_nodes=frozenset({
+            "if", "unless_modifier",
+            "while", "until", "for",
+            "case", "begin",
+            "conditional",
+            "do_block", "block",
+        }),
+        compensating_decisions=frozenset({
+            "elsif",  # syntactically inside if
+            "when",   # syntactically inside case
+        }),
+        boolean_op_node="binary",
+        boolean_op_filter=frozenset({"&&", "||", "and", "or"}),
+        name_extractor=_ruby_name_extractor,
+        is_function_node=_ruby_is_function_node,
+    ),
     "cpp": _LangConfig(
         function_nodes=frozenset({
             "function_definition",
@@ -656,6 +742,7 @@ _LANG_GLOBS: dict[str, list[str]] = {
     "julia": ["**/*.jl"],
     "c": ["**/*.c", "**/*.h"],
     "cpp": ["**/*.cpp", "**/*.cc", "**/*.cxx", "**/*.hpp", "**/*.hxx"],
+    "ruby": ["**/*.rb"],
 }
 
 # Bash files are explicitly excluded — see 03_POLICIES.md.

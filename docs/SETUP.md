@@ -349,8 +349,9 @@ slop lint --root C:\path\to\your\project
 | Julia | `.jl` | Mostly — see `JULIA.md` |
 | C | `.c`, `.h` | Mostly — see `C.md` |
 | C++ | `.cpp`, `.cc`, `.cxx`, `.hpp`, `.hxx` | Yes (full CK) — see `CPP.md` |
+| Ruby | `.rb` | Mostly — see `RUBY.md` |
 
-Every rule covers every listed language, with these documented caveats: `structural.deps` is not implemented for Rust (no import graph extractor yet); `structural.packages` on JavaScript will always count every class as concrete because JavaScript has no `interface` or `abstract class` in the language itself; `structural.class.*` (CK CBO/DIT/NOC/WMC) is N/A for Julia (multiple dispatch) and C (no class concept); Julia `structural.complexity.npath` under-counts nested control flow inside `elseif`/`else` clause bodies; C and C++ `structural.deps` does not follow `-I` include paths (relative-include resolution only); C++ out-of-line method attribution uses bare class name and may collide across namespaces. See CONFIG.md for per-rule detail, and JULIA.md / C.md / CPP.md for per-language specifics.
+Every rule covers every listed language, with these documented caveats: `structural.deps` is not implemented for Rust (no import graph extractor yet); `structural.packages` on JavaScript will always count every class as concrete because JavaScript has no `interface` or `abstract class` in the language itself; `structural.class.*` (CK CBO/DIT/NOC/WMC) is N/A for Julia (multiple dispatch) and C (no class concept); Julia `structural.complexity.npath` under-counts nested control flow inside `elseif`/`else` clause bodies; C and C++ `structural.deps` do not follow `-I` include paths and Ruby's does not follow `$LOAD_PATH`; C++ out-of-line method attribution uses bare class name and may collide across namespaces; Ruby `structural.types.escape_hatches` and `structural.types.hidden_mutators` are silent no-op (Ruby is dynamically typed). See CONFIG.md for per-rule detail, and JULIA.md / C.md / CPP.md / RUBY.md for per-language specifics.
 
 ## Troubleshooting
 

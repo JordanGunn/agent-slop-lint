@@ -126,7 +126,8 @@ def test_robert_rust_counts_trait_struct_enum(tmp_path: Path):
 
 
 def test_robert_unsupported_language_returns_error(tmp_path: Path):
-    (tmp_path / "main.rb").write_text("class Foo; end\n")
-    result = robert_kernel(tmp_path, language="ruby")
+    """Use a truly unsupported language (bash) — Ruby is supported as of v1.0.3."""
+    (tmp_path / "main.sh").write_text("echo hello\n")
+    result = robert_kernel(tmp_path, language="bash")
     assert result.packages == []
     assert any("Unsupported language" in e for e in result.errors)

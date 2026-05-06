@@ -86,6 +86,19 @@ DEFINITION_QUERIES: dict[str, list[tuple[str, str]]] = {
         # declarator is the new name)
         ("(type_definition declarator: (type_identifier) @name)", "typedef"),
     ],
+    "ruby": [
+        # Regular method: ``def foo``
+        ("(method name: (identifier) @name)", "method"),
+        # Singleton (class) method: ``def self.foo``
+        ("(singleton_method name: (identifier) @name)", "method"),
+        # Operator overloads: ``def ==``, ``def []``, etc.
+        ("(method name: (operator) @name)", "method"),
+        ("(singleton_method name: (operator) @name)", "method"),
+        # Class definition
+        ("(class name: (constant) @name)", "class"),
+        # Module definition
+        ("(module name: (constant) @name)", "module"),
+    ],
     "cpp": [
         # Plain free function: ``int f(...) { ... }``
         ("(function_definition"

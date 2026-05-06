@@ -62,6 +62,7 @@ _FUNCTION_NODES: dict[str, frozenset[str]] = {
     "julia": frozenset({"function_definition", "short_function_definition"}),
     "c": frozenset({"function_definition"}),
     "cpp": frozenset({"function_definition", "lambda_expression"}),
+    "ruby": frozenset({"method", "singleton_method", "lambda", "do_block", "block"}),
 }
 
 _LANG_GLOBS: dict[str, list[str]] = {
@@ -75,6 +76,7 @@ _LANG_GLOBS: dict[str, list[str]] = {
     "julia":      ["**/*.jl"],
     "c":          ["**/*.c", "**/*.h"],
     "cpp":        ["**/*.cpp", "**/*.cc", "**/*.cxx", "**/*.hpp", "**/*.hxx"],
+    "ruby":       ["**/*.rb"],
 }
 
 # ---------------------------------------------------------------------------
@@ -230,6 +232,27 @@ def _fn_name(node: object, content: bytes) -> str:
     # ``slop._structural.magic_literals._fn_name`` for the canonical
     # cases handled (plain, in-class field_identifier, out-of-line
     # qualified_identifier, operator_name, destructor_name).
+    if node.type in ("lambda", "do_block", "block"):  # type: ignore[attr-defined]
+        return "<lambda>"
+    if node.type in ("method", "singleton_method"):  # type: ignore[attr-defined]
+        saw_def = False
+        saw_self = False
+        saw_dot = False
+        for child in node.children:  # type: ignore[attr-defined]
+            ctype = child.type  # type: ignore[attr-defined]
+            if ctype == "def":
+                saw_def = True
+                continue
+            if not saw_def:
+                continue
+            if ctype == "self" and not saw_self:
+                saw_self = True
+                continue
+            if ctype == "." and saw_self and not saw_dot:
+                saw_dot = True
+                continue
+            if ctype in ("identifier", "operator"):
+                return content[child.start_byte:child.end_byte].decode(errors="replace").strip()  # type: ignore[attr-defined]
     if node.type in ("function_definition", "lambda_expression"):  # type: ignore[attr-defined]
         if node.type == "lambda_expression":  # type: ignore[attr-defined]
             return "<lambda>"

@@ -79,8 +79,9 @@ The full rule index with default thresholds, citations, and per-rule pages lives
 | Julia | yes | yes | yes | yes | — |
 | C | yes | yes | yes (warn) | yes (best-effort) | — |
 | C++ | yes | yes | yes | yes (best-effort) | yes |
+| Ruby | yes | yes | yes (warn) | yes (best-effort) | yes |
 
-Language-specific caveats (JavaScript packages, Rust deps, Julia CK metrics, C class metrics, C/C++ `-I`-path resolution and out-of-line method attribution) are documented in [docs/C.md](./docs/C.md), [docs/CPP.md](./docs/CPP.md), [docs/JULIA.md](./docs/JULIA.md), and the relevant rule pages.
+Language-specific caveats (JavaScript packages, Rust deps, Julia CK metrics, C class metrics, C/C++ `-I`-path resolution and out-of-line method attribution, Ruby type-discipline rules silent-skip and open-class WMC aggregation) are documented in [docs/C.md](./docs/C.md), [docs/CPP.md](./docs/CPP.md), [docs/JULIA.md](./docs/JULIA.md), [docs/RUBY.md](./docs/RUBY.md), and the relevant rule pages.
 
 ## CLI
 
