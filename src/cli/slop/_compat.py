@@ -40,13 +40,42 @@ LEGACY_RULE_NAMES: dict[str, str] = {
     "class.inheritance.children": "structural.class.inheritance.children",
     "halstead.volume": "information.volume",
     "halstead.difficulty": "information.difficulty",
+    # v1.1.0 names that didn't ship; collapsed in v1.2.0
+    "composition.affix_polymorphism": "lexical.sprawl",
+    "composition.first_parameter_drift": "lexical.imposters",
+    "lexical.name_verbosity": "lexical.verbosity",
+    "lexical.numbered_variants": "lexical.cowards",
+    "lexical.weasel_words": "lexical.hammers",
+    "lexical.type_tag_suffixes": "lexical.tautology",
+    # v1.1.0 stutter split; v1.2.0 unified back into a single
+    # hierarchy-aware rule. All three sub-rules map to the unified
+    # name; the new rule's per-level toggles preserve dial-down.
+    "lexical.stutter.namespaces": "lexical.stutter",
+    "lexical.stutter.callers": "lexical.stutter",
+    "lexical.stutter.identifiers": "lexical.stutter",
+    # Pre-1.0 names (still translated; pre-existing).
     "lexical.identifier_token_count": "lexical.verbosity",
     "lexical.short_identifier_density": "lexical.tersity",
-    # 1.1.0 split: ``lexical.stutter`` covered three smells; map the
-    # legacy name to ``lexical.stutter.identifiers`` since that's what
-    # the rule actually fired on most often in practice (function-
-    # body locals stuttering with the enclosing function name).
-    "lexical.stutter": "lexical.stutter.identifiers",
+}
+
+
+# Rules removed entirely in v1.2.0. Stored as
+# ``rule_name -> removal_reason``. The compat layer detects
+# references to these and emits "removed in v1.2.0" stderr
+# warnings rather than translating to a successor.
+REMOVED_RULES: dict[str, str] = {
+    "lexical.tersity": (
+        "removed in v1.2.0 — body-identifier-mean rules were style "
+        "measurements that didn't validate slop's structural-debt thesis."
+    ),
+    "lexical.boilerplate_docstrings": (
+        "removed in v1.2.0 — docstring-quality smells are easy fixes "
+        "that don't validate slop's structural-debt thesis."
+    ),
+    "lexical.identifier_singletons": (
+        "removed in v1.2.0 — overlapped weakly with structural concerns; "
+        "weaker than other v1.2.0 rules in the same space."
+    ),
 }
 
 
@@ -276,17 +305,21 @@ def _collect_legacy_derivations(
     return derived, deprecations
 
 
-def _migrate_split_stutter_table(
+def _migrate_v110_stutter_subrules(
     raw_rules: dict,
 ) -> tuple[dict, list[str]]:
-    """Map the legacy nested ``[rules.lexical.stutter]`` leaf table to
-    ``lexical.stutter.identifiers`` (the closest single-rule successor
-    in the 1.1.0 split).
+    """Map v1.1.0 stutter sub-rule tables to the v1.2.0 unified rule.
 
-    Only fires when ``rules.lexical.stutter`` is a leaf table (scalar
-    values only). If the user has already adopted any of the new
-    split rules under ``rules.lexical.stutter.<mode>``, the parent
-    table holds nested dicts and this migration is skipped.
+    v1.1.0 split ``lexical.stutter`` into three sub-rules
+    (``namespaces`` / ``callers`` / ``identifiers``); v1.2.0 unified
+    them back into a single hierarchy-aware ``lexical.stutter`` rule
+    with per-level toggle parameters. Convert any
+    ``[rules.lexical.stutter.<level>]`` table into the corresponding
+    ``check_<level>`` parameter on the unified rule.
+
+    The v1.1.0 release was held and never tagged, so any user with
+    these sub-rule tables predates the v1.2.0 ship — but the dogfood
+    config and tests reference them, hence the migration.
     """
     derived: dict = {}
     deprecations: list[str] = []
@@ -296,12 +329,26 @@ def _migrate_split_stutter_table(
     stutter = lexical.get("stutter")
     if not isinstance(stutter, dict):
         return derived, deprecations
-    if not _is_leaf_legacy_table(stutter):
-        return derived, deprecations
-    derived["lexical.stutter.identifiers"] = dict(stutter)
-    deprecations.append(
-        "  [rules.lexical.stutter] -> [rules.lexical.stutter.identifiers]"
-    )
+    # Legacy sub-tables present?
+    sub_to_param = {
+        "namespaces": "check_modules",
+        "callers": "check_classes",
+        "identifiers": "check_functions",
+    }
+    target: dict = {}
+    for sub, param in sub_to_param.items():
+        sub_table = stutter.get(sub)
+        if isinstance(sub_table, dict) and _is_leaf_legacy_table(sub_table):
+            target[param] = bool(sub_table.get("enabled", True))
+            for shared_key in ("min_overlap_tokens", "severity"):
+                if shared_key in sub_table:
+                    target.setdefault(shared_key, sub_table[shared_key])
+            deprecations.append(
+                f"  [rules.lexical.stutter.{sub}] -> [rules.lexical.stutter] "
+                f"(check_{sub.rstrip('s') + 's'} parameter)"
+            )
+    if target:
+        derived["lexical.stutter"] = target
     return derived, deprecations
 
 
@@ -320,7 +367,7 @@ def migrate_legacy_rule_tables(
     the input win over values derived from legacy tables.
     """
     derived, deprecations = _collect_legacy_derivations(raw_rules)
-    stutter_derived, stutter_deprecations = _migrate_split_stutter_table(raw_rules)
+    stutter_derived, stutter_deprecations = _migrate_v110_stutter_subrules(raw_rules)
     derived.update(stutter_derived)
     deprecations.extend(stutter_deprecations)
     canonical = _flatten_canonical_tables(raw_rules, canonical_keys)

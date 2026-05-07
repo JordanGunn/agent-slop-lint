@@ -155,71 +155,42 @@ DEFAULT_RULE_CONFIGS: dict[str, dict[str, Any]] = {
         "severity": "warning",
         "threshold": 2,
     },
-    "lexical.stutter.namespaces": {
+    "lexical.stutter": {
         "enabled": True,
         "severity": "warning",
         "min_overlap_tokens": 2,
-    },
-    "lexical.stutter.callers": {
-        "enabled": True,
-        "severity": "warning",
-        "min_overlap_tokens": 2,
-    },
-    "lexical.stutter.identifiers": {
-        "enabled": True,
-        "severity": "info",
-        "min_overlap_tokens": 2,
+        "check_packages": True,
+        "check_modules": True,
+        "check_classes": True,
+        "check_functions": True,
     },
     "lexical.verbosity": {
-        "enabled": True,
-        "severity": "warning",
-        "max_mean_tokens": 3.0,
-        "min_identifiers": 5,
-    },
-    "lexical.tersity": {
-        "enabled": True,
-        "severity": "warning",
-        "max_density": 0.50,
-        "max_len": 2,
-        "min_identifiers": 5,
-    },
-    "lexical.name_verbosity": {
         "enabled": True,
         "severity": "warning",
         "max_tokens": 3,
         "check_classes": True,
     },
-    "lexical.numbered_variants": {
+    "lexical.cowards": {
         "enabled": True,
         "severity": "warning",
         "min_stem_tokens": 1,
     },
-    "lexical.weasel_words": {
+    "lexical.hammers": {
         "enabled": True,
         "severity": "warning",
     },
-    "lexical.type_tag_suffixes": {
+    "lexical.tautology": {
         "enabled": True,
         "severity": "warning",
     },
-    "lexical.boilerplate_docstrings": {
-        "enabled": True,
-        "severity": "warning",
-    },
-    "lexical.identifier_singletons": {
-        "enabled": True,
-        "severity": "info",
-        "min_locals": 4,
-        "max_singleton_fraction": 0.6,
-    },
-    "composition.affix_polymorphism": {
+    "lexical.sprawl": {
         "enabled": True,
         "severity": "warning",
         "min_alphabet": 3,
         "min_concept_extent": 2,
         "min_concept_intent": 2,
     },
-    "composition.first_parameter_drift": {
+    "lexical.imposters": {
         "enabled": True,
         "severity": "warning",
         "min_cluster": 3,
@@ -719,20 +690,43 @@ severity = "warning"
 
 [rules.lexical.stutter]
 enabled = true
-min_overlap_tokens = 2   # flag identifiers repeating \u2265 N tokens from enclosing scope
+min_overlap_tokens = 2     # flag names repeating >= N tokens from any enclosing scope
+check_packages = true
+check_modules = true
+check_classes = true
+check_functions = true
 severity = "warning"
 
 [rules.lexical.verbosity]
 enabled = true
-max_mean_tokens = 3.0   # flag functions where mean word-tokens-per-identifier > this
-min_identifiers = 5     # skip functions with fewer identifiers than this
+max_tokens = 3             # flag function/class names with more tokens than this
+check_classes = true
 severity = "warning"
 
-[rules.lexical.tersity]
+[rules.lexical.cowards]
 enabled = true
-max_density = 0.50      # flag functions where > 50% of identifiers are ≤ max_len chars
-max_len = 2
-min_identifiers = 5
-# allow_list = ["i", "j", "k", "x", "y", "z", "ok", "n"]   # conventional short names
+min_stem_tokens = 1
+severity = "warning"
+
+[rules.lexical.hammers]
+enabled = true
+severity = "warning"
+# terms = [...]            # see docs/rules/lexical/hammers.md for per-word config
+
+[rules.lexical.tautology]
+enabled = true
+severity = "warning"
+
+[rules.lexical.sprawl]
+enabled = true
+min_alphabet = 3
+min_concept_extent = 2
+min_concept_intent = 2
+severity = "warning"
+
+[rules.lexical.imposters]
+enabled = true
+min_cluster = 3
+exempt_names = ["self", "cls"]
 severity = "warning"
 '''

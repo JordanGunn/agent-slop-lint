@@ -1,11 +1,14 @@
-"""Name verbosity kernel — flag function/class names exceeding N tokens.
+"""Verbosity kernel — flag function/class names exceeding N tokens.
 
-A long *function name* is usually a class-without-class:
+A long function name is usually a class-without-class:
 ``check_required_binaries`` is three tokens because the namespace it
-should belong to doesn't exist yet. Independent from
-``lexical.verbosity`` (which measures *body* identifier verbosity).
+should belong to doesn't exist yet. The smell is structural — the
+name compensates for missing scope.
 
-See ``docs/backlog/01.md`` item 3 for the design.
+(In v1.1.x this was ``lexical.name_verbosity`` paired with a body-
+mean ``lexical.verbosity``. The body-mean rule was a style
+measurement and is cut in v1.2.0; the structural rule keeps the
+``verbosity`` name.)
 """
 from __future__ import annotations
 
@@ -15,7 +18,7 @@ from pathlib import Path
 from slop._ast.treesitter import detect_language, load_language
 from slop._fs.find import find_kernel
 from slop._lexical._naming import enumerate_functions
-from slop._lexical.identifier_tokens import split_identifier
+from slop._lexical._naming import split_identifier
 
 
 @dataclass
@@ -30,7 +33,7 @@ class VerboseName:
 
 
 @dataclass
-class NameVerbosityResult:
+class VerbosityResult:
     items: list[VerboseName] = field(default_factory=list)
     files_searched: int = 0
     items_analyzed: int = 0
@@ -64,7 +67,7 @@ _LANG_GLOBS: dict[str, list[str]] = {
 }
 
 
-def name_verbosity_kernel(
+def verbosity_kernel(
     root: Path,
     *,
     languages: list[str] | None = None,
@@ -74,7 +77,7 @@ def name_verbosity_kernel(
     no_ignore: bool = False,
     max_tokens: int = 3,
     check_classes: bool = True,
-) -> NameVerbosityResult:
+) -> VerbosityResult:
     """Walk every function and class definition; flag names with > max_tokens
     word-tokens after snake/Camel split."""
     items: list[VerboseName] = []
@@ -160,7 +163,7 @@ def name_verbosity_kernel(
                             ))
                 stack.extend(reversed(node.children))
 
-    return NameVerbosityResult(
+    return VerbosityResult(
         items=items,
         files_searched=len(files_set),
         items_analyzed=fn_count + len(items),

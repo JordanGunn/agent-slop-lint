@@ -1,16 +1,21 @@
-"""lexical.type_tag_suffixes — flag identifiers whose suffix restates their type."""
+"""lexical.tautology — flag identifier suffixes that restate the type.
+
+``result_dict: dict[...]``, ``config_path: Path``, ``user_obj: User``
+— the suffix is logically tautologous with the annotation. The type
+system already carries the type; the suffix is just ornamentation.
+"""
 from __future__ import annotations
 
 from pathlib import Path
 
-from slop._lexical.type_tag_suffixes import (
+from slop._lexical.tautology import (
     DEFAULT_TAG_TO_TYPES,
-    type_tag_suffixes_kernel,
+    tautology_kernel,
 )
 from slop.models import RuleConfig, RuleResult, SlopConfig, Violation
 
 
-def run_type_tag_suffixes(
+def run_tautology(
     root: Path, rule_config: RuleConfig, slop_config: SlopConfig,
 ) -> RuleResult:
     raw_tags = rule_config.params.get("tag_to_types")
@@ -21,7 +26,7 @@ def run_type_tag_suffixes(
     )
     severity = rule_config.severity
 
-    result = type_tag_suffixes_kernel(
+    result = tautology_kernel(
         root=root,
         languages=slop_config.languages or None,
         excludes=slop_config.exclude or None,
@@ -31,7 +36,7 @@ def run_type_tag_suffixes(
     violations: list[Violation] = []
     for item in result.items:
         violations.append(Violation(
-            rule="lexical.type_tag_suffixes",
+            rule="lexical.tautology",
             file=item.file,
             line=item.line,
             symbol=item.identifier,
@@ -50,7 +55,7 @@ def run_type_tag_suffixes(
         ))
 
     return RuleResult(
-        rule="lexical.type_tag_suffixes",
+        rule="lexical.tautology",
         status="fail" if violations else "pass",
         violations=violations,
         summary={

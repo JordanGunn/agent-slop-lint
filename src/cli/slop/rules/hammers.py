@@ -1,23 +1,29 @@
-"""lexical.weasel_words — flag catchall identifier vocabulary against a banlist."""
+"""lexical.hammers — flag catchall identifier vocabulary against a banlist.
+
+When all you have is a hammer, everything looks like a nail.
+``Manager``, ``Helper``, ``Util``, ``Spec``, ``Object`` are the
+nouns the codebase reaches for when it doesn't have a real one —
+hammering every responsibility into the same shape.
+"""
 from __future__ import annotations
 
 from pathlib import Path
 
-from slop._lexical.weasel_words import (
+from slop._lexical.hammers import (
     DEFAULT_PROFILE,
-    WeaselTerm,
-    weasel_words_kernel,
+    HammerTerm,
+    hammers_kernel,
 )
 from slop.models import RuleConfig, RuleResult, SlopConfig, Violation
 
 
-def _terms_from_config(rule_config: RuleConfig) -> tuple[WeaselTerm, ...]:
-    """Parse user-provided terms (a list of dicts) into ``WeaselTerm``
+def _terms_from_config(rule_config: RuleConfig) -> tuple[HammerTerm, ...]:
+    """Parse user-provided terms (a list of dicts) into ``HammerTerm``
     tuples. Falls back to the default profile if no override given."""
     raw = rule_config.params.get("terms")
     if not raw:
         return DEFAULT_PROFILE
-    parsed: list[WeaselTerm] = []
+    parsed: list[HammerTerm] = []
     for entry in raw:
         if not isinstance(entry, dict):
             continue
@@ -25,7 +31,7 @@ def _terms_from_config(rule_config: RuleConfig) -> tuple[WeaselTerm, ...]:
         positions = entry.get("positions") or ["suffix"]
         if not word:
             continue
-        parsed.append(WeaselTerm(
+        parsed.append(HammerTerm(
             word=str(word),
             positions=tuple(str(p) for p in positions),
             severity=entry.get("severity"),
@@ -34,13 +40,13 @@ def _terms_from_config(rule_config: RuleConfig) -> tuple[WeaselTerm, ...]:
     return tuple(parsed) if parsed else DEFAULT_PROFILE
 
 
-def run_weasel_words(
+def run_hammers(
     root: Path, rule_config: RuleConfig, slop_config: SlopConfig,
 ) -> RuleResult:
     default_severity = rule_config.severity
     terms = _terms_from_config(rule_config)
 
-    result = weasel_words_kernel(
+    result = hammers_kernel(
         root=root,
         languages=slop_config.languages or None,
         excludes=slop_config.exclude or None,
@@ -51,12 +57,12 @@ def run_weasel_words(
     violations: list[Violation] = []
     for item in result.items:
         violations.append(Violation(
-            rule="lexical.weasel_words",
+            rule="lexical.hammers",
             file=item.file,
             line=item.line,
             symbol=item.name,
             message=(
-                f"{item.kind} `{item.name}` matches weasel-word "
+                f"{item.kind} `{item.name}` matches hammer-word "
                 f"`{item.matched_word}` ({item.matched_position}); "
                 f"the term carries no semantic content"
             ),
@@ -70,7 +76,7 @@ def run_weasel_words(
         ))
 
     return RuleResult(
-        rule="lexical.weasel_words",
+        rule="lexical.hammers",
         status="fail" if violations else "pass",
         violations=violations,
         summary={

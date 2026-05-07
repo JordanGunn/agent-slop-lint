@@ -370,7 +370,7 @@ def test_c_verbosity_runs_without_error(tmp_path: Path):
         "}\n"
     )
     result = run_verbosity(tmp_path, _rule_config(), _slop_config())
-    assert result.summary.get("functions_checked", 0) >= 1
+    assert result.summary.get("items_checked", 0) >= 1
 
 
 # ---------------------------------------------------------------------------

@@ -1,71 +1,60 @@
-"""Lexical verbosity rule.
+"""lexical.verbosity — flag function/class names with too many tokens.
 
-Rules:
-  lexical.verbosity  — flag functions whose identifiers average
-                        more than `max_mean_tokens` word-tokens
-
-A high mean (e.g. > 3.0) means the function body is dominated by overly
-wordy identifiers. Agents often produce excessively descriptive names that
-repeat context already available in the scope.
-
-The threshold `max_mean_tokens` defaults to 3.0.
+A long function or class name compensates for a missing namespace
+or class. The smell is structural — the name encodes scope the
+codebase doesn't have.
 """
-
 from __future__ import annotations
 
 from pathlib import Path
 
-from slop._lexical.identifier_tokens import identifier_token_kernel
+from slop._lexical.verbosity import verbosity_kernel
 from slop.models import RuleConfig, RuleResult, SlopConfig, Violation
 
 
 def run_verbosity(
-    root: Path, rule_config: RuleConfig, slop_config: SlopConfig
+    root: Path, rule_config: RuleConfig, slop_config: SlopConfig,
 ) -> RuleResult:
-    """Flag functions where mean identifier tokens-per-name is above threshold."""
-    max_mean: float = rule_config.params.get("max_mean_tokens", 3.0)
-    min_identifiers: int = rule_config.params.get("min_identifiers", 5)
+    max_tokens: int = int(rule_config.params.get("max_tokens", 3))
+    check_classes: bool = bool(rule_config.params.get("check_classes", True))
     severity = rule_config.severity
 
-    result = identifier_token_kernel(
+    result = verbosity_kernel(
         root=root,
         languages=slop_config.languages or None,
         excludes=slop_config.exclude or None,
+        max_tokens=max_tokens,
+        check_classes=check_classes,
     )
 
     violations: list[Violation] = []
-    for fn in result.functions:
-        if fn.total_identifiers < min_identifiers:
-            continue
-        if fn.mean_tokens > max_mean:
-            violations.append(
-                Violation(
-                    rule="lexical.verbosity",
-                    file=fn.file,
-                    line=fn.line,
-                    symbol=fn.name,
-                    message=(
-                        f"mean identifier tokens {fn.mean_tokens:.2f} > {max_mean} "
-                        f"({fn.total_identifiers} identifiers)"
-                    ),
-                    severity=severity,
-                    value=fn.mean_tokens,
-                    threshold=max_mean,
-                    metadata={
-                        "total_identifiers": fn.total_identifiers,
-                        "total_tokens": fn.total_tokens,
-                        "end_line": fn.end_line,
-                        "language": fn.language,
-                    },
-                )
-            )
+    for item in result.items:
+        violations.append(Violation(
+            rule="lexical.verbosity",
+            file=item.file,
+            line=item.line,
+            symbol=item.name,
+            message=(
+                f"{item.kind} name `{item.name}` has {item.token_count} tokens "
+                f"(> {max_tokens}); consider extracting a namespace or class"
+            ),
+            severity=severity,
+            value=item.token_count,
+            threshold=max_tokens,
+            metadata={
+                "kind": item.kind,
+                "tokens": item.tokens,
+                "language": item.language,
+            },
+        ))
 
     return RuleResult(
         rule="lexical.verbosity",
         status="fail" if violations else "pass",
         violations=violations,
         summary={
-            "functions_checked": result.functions_analyzed,
+            "items_checked": result.items_analyzed,
+            "files_searched": result.files_searched,
             "violation_count": len(violations),
         },
         errors=list(result.errors),

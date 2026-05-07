@@ -1,12 +1,13 @@
-"""Numbered variants kernel — flag identifiers ending in disambiguator suffixes.
+"""Cowards kernel — flag identifiers ending in disambiguator suffixes.
 
 Detects names ending in numeric suffixes (``result1``, ``attempt_2``,
 ``_v3``) or alphabetic disambiguators (``_old``, ``_new``, ``_local``,
-``_alt``, ``_inner``, ``_helper``, ``_temp``). These are agent tells
-for "named two related things by sequencing them rather than describing
-them."
+``_alt``, ``_inner``, ``_helper``, ``_temp``).
 
-See ``docs/backlog/01.md`` item 5.
+These are the artifact of failure to commit. Two related things
+exist; instead of picking one or describing what differs, both
+are kept with arbitrary disambiguating suffixes. The suffix is
+provenance collapse — it marks the codebase's inability to decide.
 """
 from __future__ import annotations
 
@@ -42,14 +43,14 @@ class NumberedVariant:
 
 
 @dataclass
-class NumberedVariantsResult:
+class CowardsResult:
     items: list[NumberedVariant] = field(default_factory=list)
     files_searched: int = 0
     functions_analyzed: int = 0
     errors: list[str] = field(default_factory=list)
 
 
-def numbered_variants_kernel(
+def cowards_kernel(
     root: Path,
     *,
     languages: list[str] | None = None,
@@ -59,7 +60,7 @@ def numbered_variants_kernel(
     no_ignore: bool = False,
     alpha_suffixes: frozenset[str] = DEFAULT_ALPHA_SUFFIXES,
     min_stem_tokens: int = 1,
-) -> NumberedVariantsResult:
+) -> CowardsResult:
     """Flag function names matching disambiguation-suffix patterns.
 
     ``min_stem_tokens`` filters out single-letter prefixes (``a1``,
@@ -89,7 +90,7 @@ def numbered_variants_kernel(
             language=ctx.language, suffix=suffix, kind=kind,
         ))
 
-    return NumberedVariantsResult(
+    return CowardsResult(
         items=items,
         files_searched=len(files_set),
         functions_analyzed=fn_count,

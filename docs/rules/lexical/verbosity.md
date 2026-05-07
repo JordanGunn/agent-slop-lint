@@ -1,35 +1,56 @@
-# lexical.verbosity
+# lexical.name_verbosity
 
-**What it measures:** Mean word-token count per identifier within a function. High verbosity (mean > 3.0) signals systemic naming bloat — `parsed_word_to_pdf_trimmed` rather than `parsed`.
+**What it measures:** Function and class names whose own token count
+exceeds a threshold. Independent from `lexical.verbosity` (which
+measures the verbosity of *body* identifiers). A long function name is
+usually a class-without-class symptom: `check_required_binaries` is
+three tokens because the namespace it should belong to doesn't exist
+yet.
 
-**Default threshold:** mean > `3.0` word-tokens per identifier. Severity `warning`.
+**Default threshold:** flag function or class names with `> 3` word-
+tokens after snake/Camel split. Severity `warning`.
 
-**What the numbers mean:** A function whose locals are mostly single-word names (`x`, `points`, `header`) lands around mean 1.0–1.5. A function leaning heavily on multi-token names (`extracted_lidar_point_x_coordinate`) crosses 3.0 quickly. The metric is a per-function aggregate, so one long name does not push a function over by itself.
+**Settings:**
 
-## What it prevents
+| Setting | Default | Description |
+|---|---|---|
+| `max_tokens` | `3` | Maximum allowed word-tokens per function/class name. |
+| `check_classes` | `true` | Also check class/struct/interface/trait names. |
 
-Every identifier tries to explain itself in full. By the time you've parsed a name you've lost track of what the function is actually doing.
+## What it surfaces
 
 ```python
-# ❌ flagged — mean token count ≈ 3.8
-def parse_config(path):
-    raw_configuration_file_contents = path.read_text()
-    parsed_configuration_dictionary = json.loads(raw_configuration_file_contents)
-    validated_configuration_result = validate(parsed_configuration_dictionary)
-    return validated_configuration_result
+# ❌ flagged — 5 tokens
+def check_required_binaries_for_python_runtime(): ...
 
-# ✓ the function name already says "parse config"
-def parse_config(path):
-    raw = path.read_text()
-    data = json.loads(raw)
-    return validate(data)
+# ✓ — 2 tokens
+def check_runtime(): ...
+
+# ✓ — same logic in a class
+class PythonRuntime:
+    def check(self): ...
 ```
 
-**When to raise it:** Domains where compound names carry essential disambiguation (e.g. event-sourcing handlers like `on_user_account_balance_changed`). Raising to 4.0 leaves room for legitimate compound naming.
+A 4+ token function name almost always means the function is doing
+class-level work without a class. The function name re-creates the
+namespace inline. The fix is rarely "rename"; it's "extract the
+abstraction the name is begging for."
 
-**When to lower it:** Greenfield projects pushing for terse, type-aware naming. Lowering to 2.5 catches verbosity drift earlier.
+## When to lower it
+
+Greenfield projects, or codebases where function names already trend
+short — `max_tokens = 2` flags more aggressively.
+
+## When to raise it
+
+DDD-style codebases with intentionally long behaviour-describing names.
+Setting `max_tokens = 4` or `5` reduces noise without disabling the
+rule.
 
 ```toml
-[rules.lexical.verbosity]
-max_mean_tokens = 3.0
+[rules.lexical.name_verbosity]
+enabled = true
+severity = "warning"
+max_tokens = 3
+check_classes = true
 ```

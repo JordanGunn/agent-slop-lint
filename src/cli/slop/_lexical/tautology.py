@@ -1,15 +1,13 @@
-"""Type-tag-suffix kernel — flag identifiers whose suffix re-states the type.
+"""Tautology kernel — flag identifiers whose suffix tautologically restates the type.
 
-``result_dict: dict[str, int]`` — the type system already says ``dict``;
-the suffix is ornamentation. ``config_path: Path`` — same problem.
-This is a pure-lexical refactor signal: drop the suffix; the
-annotation carries the type.
+``result_dict: dict[str, int]`` — the type system already says
+``dict``; the suffix is logically tautologous with the annotation.
+``config_path: Path`` — same problem. This is a pure-lexical
+refactor signal: drop the suffix; the annotation carries the type.
 
 Restricted to identifiers ending in a recognised type-tag suffix
 (``_dict``, ``_list``, ``_path``, ``_obj``, etc.) AFTER underscore
 parsing, to avoid false-positives like ``username``.
-
-See ``docs/backlog/01.md`` item 2.
 """
 from __future__ import annotations
 
@@ -49,7 +47,7 @@ class TypeTagHit:
 
 
 @dataclass
-class TypeTagSuffixesResult:
+class TautologyResult:
     items: list[TypeTagHit] = field(default_factory=list)
     files_searched: int = 0
     functions_analyzed: int = 0
@@ -63,7 +61,7 @@ class TypeTagSuffixesResult:
 _IDENT_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 
 
-def type_tag_suffixes_kernel(
+def tautology_kernel(
     root: Path,
     *,
     languages: list[str] | None = None,
@@ -72,7 +70,7 @@ def type_tag_suffixes_kernel(
     hidden: bool = False,
     no_ignore: bool = False,
     tag_to_types: dict[str, frozenset[str]] | None = None,
-) -> TypeTagSuffixesResult:
+) -> TautologyResult:
     """Walk every function definition; for each annotated parameter,
     check whether the identifier suffix restates its type.
 
@@ -97,7 +95,7 @@ def type_tag_suffixes_kernel(
             continue
         items.extend(_check_python_params(ctx, tags))
 
-    return TypeTagSuffixesResult(
+    return TautologyResult(
         items=items,
         files_searched=len(files_set),
         functions_analyzed=fn_count,

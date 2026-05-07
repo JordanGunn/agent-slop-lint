@@ -1,29 +1,83 @@
-"""Shared function-definition enumeration for lexical / composition kernels.
+"""Shared function-definition enumeration + identifier tokenisation.
 
-Several rules need the same primitive: "walk the AST of every file in
-scope, yield each function definition with enough context to do per-
-function analysis." Without sharing, each rule re-implements the
-file-discovery + tree-sitter loading + node-walking boilerplate.
+Several rules need the same primitives:
 
-This module provides ``enumerate_functions`` as the canonical entry
-point. Callers iterate ``FunctionContext`` records and do per-rule
-work. File discovery uses ``_fs.find_kernel``; AST loading uses
+- "walk the AST of every file in scope, yield each function
+  definition with enough context to do per-function analysis"
+- "split an identifier into word tokens"
+
+Without sharing, each rule re-implements the file-discovery + tree-
+sitter loading + node-walking boilerplate, and each rule duplicates
+identifier tokenisation.
+
+This module provides:
+
+- ``enumerate_functions`` — the canonical function-definition walker
+- ``split_identifier`` — snake_case + CamelCase + acronym tokeniser
+
+Callers iterate ``FunctionContext`` records and do per-rule work.
+File discovery uses ``_fs.find_kernel``; AST loading uses
 ``_ast.treesitter``.
 
 Per-language ``function_definition`` node types are listed in
-``_FUNCTION_NODES``. The set is duplicated from
-``_lexical/identifier_tokens.py`` for now (centralising is a separate
-refactor); the canonical sources are the per-kernel ``_LangConfig``
-dataclasses in ``_structural/``.
+``_FUNCTION_NODES``. The canonical sources for grammar node names
+are the per-kernel ``_LangConfig`` dataclasses in ``_structural/``.
 """
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterator
 
 from slop._ast.treesitter import detect_language, load_language
 from slop._fs.find import find_kernel
+
+
+# ---------------------------------------------------------------------------
+# Identifier tokenisation
+# ---------------------------------------------------------------------------
+
+_CAMEL_LOWER_UPPER = re.compile(r"([a-z])([A-Z])")
+_CAMEL_UPPER_TITLE = re.compile(r"([A-Z]+)([A-Z][a-z])")
+
+
+def split_identifier(name: str) -> list[str]:
+    """Split a snake_case or CamelCase identifier into word tokens.
+
+    Examples::
+
+        split_identifier("my_func")       -> ["my", "func"]
+        split_identifier("processData")   -> ["process", "Data"]
+        split_identifier("HTTPClient")    -> ["HTTP", "Client"]
+        split_identifier("__init__")      -> ["init"]
+        split_identifier("x")             -> ["x"]
+    """
+    name = name.strip("_")
+    name = _CAMEL_LOWER_UPPER.sub(r"\1_\2", name)
+    name = _CAMEL_UPPER_TITLE.sub(r"\1_\2", name)
+    return [p for p in re.split(r"[_\d]+", name) if p]
+
+
+def scope_label(parts: tuple[str, ...]) -> tuple[str, str]:
+    """Render a path-parts tuple to ``(scope_str, scope_kind)``.
+
+    ``parts`` is a tuple of path components (e.g. ``("cli", "slop",
+    "output.py")``). Returns the joined-path string plus a kind label
+    used by rules that report findings at hierarchical scope:
+
+        ()                          -> ("<root>", "root")
+        ("cli", "slop")             -> ("cli/slop", "package")
+        ("cli", "slop", "output.py")-> ("cli/slop/output.py", "file")
+
+    The "file" check is heuristic — last component contains a dot.
+    Sufficient for the kinds of paths slop's rules walk.
+    """
+    if not parts:
+        return ("<root>", "root")
+    last = parts[-1]
+    is_file = "." in last
+    return ("/".join(parts), "file" if is_file else "package")
 
 
 # ---------------------------------------------------------------------------

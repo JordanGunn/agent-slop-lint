@@ -153,26 +153,34 @@ def test_stutter_identifiers_ignores_module_overlap(tmp_path: Path):
 
 
 # ---------------------------------------------------------------------------
-# Compat shim: legacy [rules.lexical.stutter] table → identifiers
+# Compat shim: v1.1.0 stutter sub-rules migrate to v1.2.0 unified rule
 # ---------------------------------------------------------------------------
 
 
-def test_legacy_stutter_table_migrates_to_identifiers():
+def test_legacy_v110_subrule_table_migrates_to_unified():
     from slop._compat import migrate_legacy_rule_tables
-    raw = {"lexical": {"stutter": {"min_overlap_tokens": 3, "severity": "info"}}}
-    canonical = {
-        "lexical.stutter.namespaces", "lexical.stutter.callers",
-        "lexical.stutter.identifiers",
+    raw = {
+        "lexical": {
+            "stutter": {
+                "namespaces": {
+                    "min_overlap_tokens": 3, "severity": "info", "enabled": True,
+                },
+            }
+        }
     }
+    canonical = {"lexical.stutter"}
     migrated, deprecations = migrate_legacy_rule_tables(raw, canonical)
-    assert "lexical.stutter.identifiers" in migrated
-    assert migrated["lexical.stutter.identifiers"]["min_overlap_tokens"] == 3
-    assert migrated["lexical.stutter.identifiers"]["severity"] == "info"
-    assert any("lexical.stutter" in d for d in deprecations)
+    assert "lexical.stutter" in migrated
+    assert migrated["lexical.stutter"]["min_overlap_tokens"] == 3
+    assert migrated["lexical.stutter"]["check_modules"] is True
+    assert any("lexical.stutter.namespaces" in d for d in deprecations)
 
 
-def test_legacy_stutter_rule_name_aliases_to_identifiers():
+def test_legacy_stutter_subrule_name_aliases_to_unified():
     from slop._compat import canonical_rule_name
-    canonical, was_legacy = canonical_rule_name("lexical.stutter")
-    assert canonical == "lexical.stutter.identifiers"
-    assert was_legacy is True
+    for legacy in ("lexical.stutter.namespaces",
+                   "lexical.stutter.callers",
+                   "lexical.stutter.identifiers"):
+        canonical, was_legacy = canonical_rule_name(legacy)
+        assert canonical == "lexical.stutter"
+        assert was_legacy is True

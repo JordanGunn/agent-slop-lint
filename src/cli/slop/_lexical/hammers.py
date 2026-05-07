@@ -1,13 +1,13 @@
-"""Weasel-words kernel — configurable banlist of catchall identifier terms.
+"""Hammers kernel — configurable banlist of catchall identifier terms.
 
 Catchall words (``Manager``, ``Helper``, ``Util``, ``Spec``, ``Object``,
-…) are single-word agent tells. They appear when the agent needed a
-noun and didn't have one. The harm is two-stage: the original miss,
-plus the gravitational sink the catchall becomes for unrelated future
-responsibilities.
+…) are single-word agent tells. When all you have is a hammer,
+everything looks like a nail: the codebase reaches for the same
+generic noun every time it needs one, and every responsibility gets
+hammered into the same shape regardless of fit.
 
-See ``docs/backlog/02.md`` for the full design (per-word position
-config, profiles, exempt-when predicates).
+The harm is two-stage: the original miss, plus the gravitational
+sink the catchall becomes for unrelated future responsibilities.
 """
 from __future__ import annotations
 
@@ -18,8 +18,8 @@ from pathlib import Path
 from slop._ast.treesitter import detect_language, load_language
 from slop._fs.find import find_kernel
 from slop._lexical._naming import enumerate_functions
-from slop._lexical.identifier_tokens import split_identifier
-from slop._lexical.name_verbosity import _CLASS_NODES, _LANG_GLOBS, _extract_type_name
+from slop._lexical._naming import split_identifier
+from slop._lexical.verbosity import _CLASS_NODES, _LANG_GLOBS, _extract_type_name
 
 
 # ---------------------------------------------------------------------------
@@ -28,7 +28,7 @@ from slop._lexical.name_verbosity import _CLASS_NODES, _LANG_GLOBS, _extract_typ
 
 
 @dataclass(frozen=True)
-class WeaselTerm:
+class HammerTerm:
     """One configured banlist entry."""
     word: str
     positions: tuple[str, ...]    # subset of ("prefix", "suffix", "any", "module_name")
@@ -37,43 +37,43 @@ class WeaselTerm:
 
 
 # Default profile — see docs/backlog/02.md for the full rationale.
-DEFAULT_PROFILE: tuple[WeaselTerm, ...] = (
-    WeaselTerm("Manager",      ("suffix",), "warning"),
-    WeaselTerm("Coordinator",  ("suffix",), "warning"),
-    WeaselTerm("Helper",       ("any", "module_name"), "warning"),
-    WeaselTerm("Utility",      ("any", "module_name"), "warning"),
-    WeaselTerm("Util",         ("any", "module_name"), "warning"),
-    WeaselTerm("Utils",        ("any", "module_name"), "warning"),
-    WeaselTerm("Handler",      ("suffix",), "info"),
-    WeaselTerm("Processor",    ("suffix",), "info"),
-    WeaselTerm("Service",      ("suffix",), "info"),
-    WeaselTerm("Provider",     ("suffix",), "info"),
-    WeaselTerm("Engine",       ("suffix",), "info"),
-    WeaselTerm("Factory",      ("suffix",), "info"),
-    WeaselTerm("Builder",      ("suffix",), "info"),
-    WeaselTerm("Wrapper",      ("suffix",), "info"),
-    WeaselTerm("Adapter",      ("suffix",), "info"),
-    WeaselTerm("Spec",         ("suffix",), "warning",
+DEFAULT_PROFILE: tuple[HammerTerm, ...] = (
+    HammerTerm("Manager",      ("suffix",), "warning"),
+    HammerTerm("Coordinator",  ("suffix",), "warning"),
+    HammerTerm("Helper",       ("any", "module_name"), "warning"),
+    HammerTerm("Utility",      ("any", "module_name"), "warning"),
+    HammerTerm("Util",         ("any", "module_name"), "warning"),
+    HammerTerm("Utils",        ("any", "module_name"), "warning"),
+    HammerTerm("Handler",      ("suffix",), "info"),
+    HammerTerm("Processor",    ("suffix",), "info"),
+    HammerTerm("Service",      ("suffix",), "info"),
+    HammerTerm("Provider",     ("suffix",), "info"),
+    HammerTerm("Engine",       ("suffix",), "info"),
+    HammerTerm("Factory",      ("suffix",), "info"),
+    HammerTerm("Builder",      ("suffix",), "info"),
+    HammerTerm("Wrapper",      ("suffix",), "info"),
+    HammerTerm("Adapter",      ("suffix",), "info"),
+    HammerTerm("Spec",         ("suffix",), "warning",
                exempt_when=("module_is_test",)),
-    WeaselTerm("Specification", ("suffix",), "warning",
+    HammerTerm("Specification", ("suffix",), "warning",
                exempt_when=("module_is_test",)),
-    WeaselTerm("Base",         ("suffix",), "warning"),
-    WeaselTerm("Abstract",     ("prefix",), "info"),
-    WeaselTerm("Object",       ("suffix",), "error"),
-    WeaselTerm("Item",         ("suffix",), "error"),
-    WeaselTerm("Element",      ("suffix",), "error"),
-    WeaselTerm("Thing",        ("suffix",), "error"),
-    WeaselTerm("Data",         ("suffix",), "warning"),
-    WeaselTerm("Info",         ("suffix",), "warning"),
-    WeaselTerm("Container",    ("suffix",), "warning"),
-    WeaselTerm("Holder",       ("suffix",), "warning"),
-    WeaselTerm("Common",       ("module_name", "suffix"), "warning"),
-    WeaselTerm("Core",         ("module_name", "suffix"), "warning"),
-    WeaselTerm("Misc",         ("module_name", "suffix"), "warning"),
-    WeaselTerm("Extra",        ("module_name", "suffix"), "warning"),
-    WeaselTerm("Shared",       ("module_name", "suffix"), "warning"),
-    WeaselTerm("Stuff",        ("any",), "error"),
-    WeaselTerm("Things",       ("any",), "error"),
+    HammerTerm("Base",         ("suffix",), "warning"),
+    HammerTerm("Abstract",     ("prefix",), "info"),
+    HammerTerm("Object",       ("suffix",), "error"),
+    HammerTerm("Item",         ("suffix",), "error"),
+    HammerTerm("Element",      ("suffix",), "error"),
+    HammerTerm("Thing",        ("suffix",), "error"),
+    HammerTerm("Data",         ("suffix",), "warning"),
+    HammerTerm("Info",         ("suffix",), "warning"),
+    HammerTerm("Container",    ("suffix",), "warning"),
+    HammerTerm("Holder",       ("suffix",), "warning"),
+    HammerTerm("Common",       ("module_name", "suffix"), "warning"),
+    HammerTerm("Core",         ("module_name", "suffix"), "warning"),
+    HammerTerm("Misc",         ("module_name", "suffix"), "warning"),
+    HammerTerm("Extra",        ("module_name", "suffix"), "warning"),
+    HammerTerm("Shared",       ("module_name", "suffix"), "warning"),
+    HammerTerm("Stuff",        ("any",), "error"),
+    HammerTerm("Things",       ("any",), "error"),
 )
 
 
@@ -99,7 +99,7 @@ class WeaselHit:
 
 
 @dataclass
-class WeaselWordsResult:
+class HammersResult:
     items: list[WeaselHit] = field(default_factory=list)
     files_searched: int = 0
     items_analyzed: int = 0
@@ -111,7 +111,7 @@ class WeaselWordsResult:
 # ---------------------------------------------------------------------------
 
 
-def weasel_words_kernel(
+def hammers_kernel(
     root: Path,
     *,
     languages: list[str] | None = None,
@@ -119,9 +119,9 @@ def weasel_words_kernel(
     excludes: list[str] | None = None,
     hidden: bool = False,
     no_ignore: bool = False,
-    terms: tuple[WeaselTerm, ...] = DEFAULT_PROFILE,
+    terms: tuple[HammerTerm, ...] = DEFAULT_PROFILE,
     default_severity: str = "warning",
-) -> WeaselWordsResult:
+) -> HammersResult:
     """Scan function names, class names, and module file names for
     weasel-word matches against the configured banlist."""
     items: list[WeaselHit] = []
@@ -129,7 +129,7 @@ def weasel_words_kernel(
     files_set: set[str] = set()
     items_analyzed = 0
 
-    by_word: dict[str, WeaselTerm] = {t.word.lower(): t for t in terms}
+    by_word: dict[str, HammerTerm] = {t.word.lower(): t for t in terms}
 
     # 1. Function names
     for ctx in enumerate_functions(
@@ -229,7 +229,7 @@ def weasel_words_kernel(
                         ))
             stack.extend(reversed(node.children))
 
-    return WeaselWordsResult(
+    return HammersResult(
         items=items,
         files_searched=len(files_set),
         items_analyzed=items_analyzed,
@@ -244,7 +244,7 @@ def weasel_words_kernel(
 
 def _check_identifier(
     name: str,
-    by_word: dict[str, WeaselTerm],
+    by_word: dict[str, HammerTerm],
     file_path: str,
     default_severity: str,
 ) -> tuple[str, str, str] | None:
@@ -276,7 +276,7 @@ def _check_identifier(
 
 def _check_module_name(
     stem: str,
-    by_word: dict[str, WeaselTerm],
+    by_word: dict[str, HammerTerm],
     file_path: str,
     default_severity: str,
 ) -> tuple[str, str] | None:
@@ -296,7 +296,7 @@ def _check_module_name(
     return None
 
 
-def _is_exempt(term: WeaselTerm, file_path: str) -> bool:
+def _is_exempt(term: HammerTerm, file_path: str) -> bool:
     for predicate in term.exempt_when:
         if predicate == "module_is_test" and _TEST_PATH_RE.search(file_path):
             return True

@@ -12,7 +12,7 @@ from pathlib import Path
 
 from slop._ast.treesitter import detect_language, load_language
 from slop._fs.find import find_kernel
-from slop._lexical.identifier_tokens import split_identifier
+from slop._lexical._naming import split_identifier
 
 # Node types for scopes
 _SCOPE_NODES: dict[str, dict[str, frozenset[str]]] = {
