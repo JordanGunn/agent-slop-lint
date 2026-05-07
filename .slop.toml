@@ -97,3 +97,9 @@ id = "weasel-tests-info-suffix"
 path = "tests/**"
 rule = "lexical.weasel_words"
 reason = "Test function names referencing rule severities (`_info`, `_warning`, `_error`) describe the severity under test, not catchall vocabulary."
+
+[[waivers]]
+id = "name-verbosity-pending-composition-refactor"
+path = "**"
+rule = "lexical.name_verbosity"
+reason = "Volume of multi-token function names in this codebase is itself a slop signal — the names accurately describe what the functions do, but the prevalence indicates missing namespaces. Tracked under composition.* findings (run `slop check composition.first_parameter_drift`); the count is expected to decrease mechanically as those refactors land. Threshold stays at the honest default; this waiver silences the dogfood, not the measurement."
