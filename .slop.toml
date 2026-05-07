@@ -87,6 +87,12 @@ rule = "composition.first_parameter_drift"
 reason = "Test functions taking `tmp_path` as first argument are pytest fixtures, not methods on a missing class. The `tmp_path` clustering is a property of the test framework, not of the test code."
 
 [[waivers]]
+id = "affix-tests-language-fixtures"
+path = "tests/**"
+rule = "composition.affix_polymorphism"
+reason = "Per-language test files (test_c.py, test_cpp.py, test_ruby.py) intentionally share parallel function names exercising the same rules per language. The composition rule correctly detects this as a closed-alphabet pattern, but it's the test design — not architectural drift in the source."
+
+[[waivers]]
 id = "numbered-variants-tests-descriptive-suffix"
 path = "tests/**"
 rule = "lexical.numbered_variants"

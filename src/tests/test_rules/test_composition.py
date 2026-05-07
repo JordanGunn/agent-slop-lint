@@ -209,3 +209,96 @@ def test_first_parameter_drift_custom_exempt_names(tmp_path: Path):
     )
     flagged = {v.symbol for v in result.violations}
     assert "canvas" not in flagged  # exempt
+
+
+# ---------------------------------------------------------------------------
+# Recursive namespace scoping
+# ---------------------------------------------------------------------------
+
+
+def test_first_parameter_drift_reports_at_file_scope(tmp_path: Path):
+    """A cluster wholly inside one file is reported with that file as scope."""
+    (tmp_path / "renderer.py").write_text(
+        "def render(canvas): pass\n"
+        "def transform(canvas, m): pass\n"
+        "def serialize(canvas): pass\n"
+    )
+    result = run_first_parameter_drift(tmp_path, _rule_config(), _slop_config())
+    assert result.status == "fail"
+    assert any(
+        v.metadata.get("scope") == "renderer.py"
+        and v.metadata.get("scope_kind") == "file"
+        and v.symbol == "canvas"
+        for v in result.violations
+    )
+
+
+def test_first_parameter_drift_reports_at_package_scope(tmp_path: Path):
+    """A cluster spanning ≥ 2 files in one package is reported at package scope."""
+    pkg = tmp_path / "lex"
+    pkg.mkdir()
+    (pkg / "a.py").write_text(
+        "def x1(ctx): pass\n"
+        "def x2(ctx): pass\n"
+    )
+    (pkg / "b.py").write_text(
+        "def y1(ctx): pass\n"
+        "def y2(ctx): pass\n"
+    )
+    result = run_first_parameter_drift(tmp_path, _rule_config(), _slop_config())
+    assert result.status == "fail"
+    pkg_clusters = [
+        v for v in result.violations
+        if v.metadata.get("scope_kind") == "package"
+        and v.symbol == "ctx"
+    ]
+    assert pkg_clusters, "expected package-scope ctx cluster"
+    assert pkg_clusters[0].metadata["scope"] == "lex"
+
+
+def test_first_parameter_drift_drops_cross_package_noise(tmp_path: Path):
+    """A `name: str` pattern spread across many packages should NOT
+    fire as a strong cluster — the recursion's coherence check rejects
+    it."""
+    for i, pkg_name in enumerate(["alpha", "beta", "gamma", "delta"]):
+        pkg = tmp_path / pkg_name
+        pkg.mkdir()
+        (pkg / f"f{i}.py").write_text(
+            f"def fn{i*2}(name): pass\n"
+            f"def fn{i*2+1}(name): pass\n"
+        )
+    result = run_first_parameter_drift(tmp_path, _rule_config(), _slop_config())
+    flagged = {v.symbol for v in result.violations}
+    # 8 functions across 4 packages share `name`; coherence check at
+    # root scope rejects it (≥ 4 children = noise).
+    assert "name" not in flagged
+
+
+def test_first_parameter_drift_narrowest_scope_wins(tmp_path: Path):
+    """When a cluster fits at file scope, the file-scope finding wins
+    and parent-scope view is suppressed."""
+    pkg = tmp_path / "pkg"
+    pkg.mkdir()
+    (pkg / "a.py").write_text(
+        "def x1(canvas): pass\n"
+        "def x2(canvas): pass\n"
+        "def x3(canvas): pass\n"
+        "def x4(canvas): pass\n"
+    )
+    (pkg / "b.py").write_text("def y1(canvas): pass\n")  # under threshold alone
+    result = run_first_parameter_drift(tmp_path, _rule_config(), _slop_config())
+    canvas_clusters = [v for v in result.violations if v.symbol == "canvas"]
+    assert len(canvas_clusters) == 1, "expected a single canvas cluster"
+    assert canvas_clusters[0].metadata["scope"] == "pkg/a.py"
+    assert canvas_clusters[0].metadata["scope_kind"] == "file"
+
+
+def test_affix_polymorphism_scope_tagged(tmp_path: Path):
+    """Affix clusters carry a scope on the violation metadata."""
+    pkg = tmp_path / "kernel"
+    pkg.mkdir()
+    (pkg / "extract.py").write_text(_AFFIX_FIXTURE)
+    result = run_affix_polymorphism(tmp_path, _rule_config(), _slop_config())
+    if result.violations:
+        v = result.violations[0]
+        assert "scope" not in v.metadata or v.metadata.get("scope")

@@ -162,19 +162,26 @@ def run_first_parameter_drift(
         if cluster.verdict != "strong":
             continue
         anchor_name, anchor_file, anchor_line = cluster.members[0]
+        scope_phrase = (
+            f"in `{cluster.scope}`" if cluster.scope_kind == "file"
+            else f"under `{cluster.scope}/`" if cluster.scope_kind == "package"
+            else "across the codebase"
+        )
         violations.append(Violation(
             rule="composition.first_parameter_drift",
             file=anchor_file,
             line=anchor_line,
             symbol=cluster.parameter_name,
             message=(
-                f"{len(cluster.members)} functions share `"
-                f"{cluster.parameter_name}` as first parameter. "
+                f"{len(cluster.members)} functions {scope_phrase} share "
+                f"`{cluster.parameter_name}` as first parameter. "
                 f"{cluster.advisory}"
             ),
             severity=severity,
             metadata={
                 "verdict": cluster.verdict,
+                "scope": cluster.scope,
+                "scope_kind": cluster.scope_kind,
                 "members": [
                     {"name": n, "file": f, "line": l}
                     for n, f, l in cluster.members

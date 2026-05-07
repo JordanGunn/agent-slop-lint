@@ -65,6 +65,8 @@ class AffixCluster:
     entity_label: str             # "language" / "metric" / "<unnamed>"
     alphabet: frozenset[str]
     patterns: list[AffixPattern]
+    scope: str = "<root>"         # narrowest namespace where the cluster cohered
+    scope_kind: str = "root"      # "file" | "package" | "root"
 
 
 @dataclass
@@ -72,6 +74,8 @@ class FCAConcept:
     """One formal concept: (extent, intent) closed pair."""
     extent: frozenset[str]   # entities sharing all operations in intent
     intent: frozenset[str]   # operations shared by all entities in extent
+    scope: str = "<root>"
+    scope_kind: str = "root"
 
 
 @dataclass
@@ -254,6 +258,43 @@ def _find_inheritance_pairs(
 # ---------------------------------------------------------------------------
 
 
+def _affix_at_scope(
+    items_at_scope: list[tuple[str, str, int, list[str]]],
+    scope_path: tuple[str, ...],
+    min_alphabet: int,
+) -> tuple[list[AffixCluster], list[FCAConcept], list[tuple[str, str]]]:
+    """Run pattern detection + FCA + inheritance lattice on one scope's
+    items. Returns ``(clusters, concepts, inheritance_pairs)`` all
+    tagged with the given scope.
+    """
+    if len(items_at_scope) < 2:
+        return ([], [], [])
+
+    scope_str, scope_kind = _scope_label(scope_path)
+
+    patterns = _build_affix_patterns(items_at_scope)
+    clusters = _cluster_patterns_by_alphabet(patterns, min_alphabet=min_alphabet)
+    for c in clusters:
+        c.scope = scope_str
+        c.scope_kind = scope_kind
+
+    relation: dict[str, set[str]] = {}
+    if clusters:
+        primary = max(clusters, key=lambda c: sum(len(p.variants) for p in c.patterns))
+        for pattern in primary.patterns:
+            stem_no_star = "_".join(t for t in pattern.stem if t != "*")
+            for entity, members in pattern.variants.items():
+                relation.setdefault(entity, set()).add(stem_no_star or "<empty>")
+
+    concepts = _compute_concepts(relation) if relation else []
+    for c in concepts:
+        c.scope = scope_str
+        c.scope_kind = scope_kind
+    inheritance = _find_inheritance_pairs(relation) if relation else []
+
+    return (clusters, concepts, inheritance)
+
+
 def affix_polymorphism_kernel(
     root: Path,
     *,
@@ -266,13 +307,20 @@ def affix_polymorphism_kernel(
 ) -> AffixPolymorphismResult:
     """Detect missing-namespace candidates via affix polymorphism + FCA.
 
+    Recursive scoping: pattern detection runs per-namespace (file → package
+    → root). A cluster is reported at the narrowest scope where its
+    full alphabet lives. Cross-package alphabets (e.g. test/source name
+    overlap producing spurious concepts) only emerge at root scope and
+    only if no narrower scope contains the pattern — the typical
+    test/source false-positive vanishes because both halves cohere
+    independently within their own packages and never share a scope.
+
     Args:
         root: Search root.
-        languages: Restrict to these languages (passed to enumerate_functions).
+        languages: Restrict to these languages.
         globs / excludes / hidden / no_ignore: file-discovery args.
         min_alphabet: minimum number of varying tokens in a pattern's
-            alphabet for it to qualify (default 3 — fewer values is too
-            weak a signal).
+            alphabet for it to qualify (default 3).
     """
     items: list[tuple[str, str, int, list[str]]] = []
     files_seen: set[str] = set()
@@ -285,43 +333,97 @@ def affix_polymorphism_kernel(
             continue
         items.append((ctx.name, ctx.file, ctx.line, _split(ctx.name)))
 
-    patterns = _build_affix_patterns(items)
-    clusters = _cluster_patterns_by_alphabet(patterns, min_alphabet=min_alphabet)
+    # Index every item under every prefix of its path.
+    by_prefix: dict[tuple[str, ...], list[tuple[str, str, int, list[str]]]] = {
+        (): list(items)
+    }
+    for it in items:
+        parts = tuple(it[1].replace("\\", "/").split("/"))
+        for depth in range(1, len(parts) + 1):
+            by_prefix.setdefault(parts[:depth], []).append(it)
 
-    # FCA over the (entity, operation) relation derived from the largest
-    # cluster (typically the "language" cluster). If no clusters, FCA is empty.
-    relation: dict[str, set[str]] = {}
-    if clusters:
-        primary = max(clusters, key=lambda c: sum(len(p.variants) for p in c.patterns))
-        for pattern in primary.patterns:
-            stem_no_star = "_".join(t for t in pattern.stem if t != "*")
-            for entity, members in pattern.variants.items():
-                relation.setdefault(entity, set()).add(stem_no_star or "<empty>")
+    # Walk deepest first; claim alphabet members at narrowest scope.
+    paths = sorted(by_prefix.keys(), key=lambda p: -len(p))
+    claimed_entities: set[tuple[tuple[str, ...], str]] = set()
+    # ``claimed_entities`` keys are ``(parent_scope_path, entity)`` so the
+    # same entity can appear in clusters at disjoint scopes (a `python`
+    # alphabet member can show up in both ``_lexical/`` and ``_structural/``
+    # if both packages have a ``_python_*`` family).
 
-    concepts = _compute_concepts(relation) if relation else []
-    inheritance = _find_inheritance_pairs(relation) if relation else []
+    all_clusters: list[AffixCluster] = []
+    all_concepts: list[FCAConcept] = []
+    all_pairs: list[tuple[str, str]] = []
+    # Track which (scope, alphabet) pairs we've already emitted so that
+    # the same alphabet doesn't surface again at every parent scope.
+    emitted_alphabets: list[tuple[tuple[str, ...], frozenset[str]]] = []
 
-    # Kernel × language density matrix (per-file count of behaviour
-    # references per entity). Same closed-alphabet view as the PoC5 output.
+    for path in paths:
+        clusters, concepts, inheritance = _affix_at_scope(
+            by_prefix[path], path, min_alphabet,
+        )
+        # Filter clusters whose alphabet has already been claimed at a
+        # narrower scope inside this subtree. A cluster only counts at
+        # this scope if it brings ≥ ``min_alphabet`` new entities.
+        kept_alphabet = frozenset()
+        for cluster in clusters:
+            unclaimed = {
+                e for e in cluster.alphabet
+                if not any(
+                    cp != path
+                    and len(cp) >= len(path)
+                    and cp[:len(path)] == path
+                    and (cp, e) in claimed_entities
+                    for cp in by_prefix
+                )
+            }
+            if len(unclaimed) < min_alphabet:
+                continue
+            # Also drop if a parent already emitted this alphabet at a
+            # broader scope (shouldn't happen with deepest-first walk
+            # but defensive).
+            if any(
+                a == cluster.alphabet and len(p) <= len(path)
+                for p, a in emitted_alphabets
+            ):
+                continue
+            all_clusters.append(cluster)
+            kept_alphabet = kept_alphabet | cluster.alphabet
+            emitted_alphabets.append((path, cluster.alphabet))
+            for e in cluster.alphabet:
+                claimed_entities.add((path, e))
+        # Only emit concepts and inheritance pairs that come from
+        # clusters we actually kept at this scope. Same-alphabet
+        # patterns at parent scopes are filtered out.
+        if kept_alphabet:
+            for c in concepts:
+                if len(c.extent) >= 2 and len(c.intent) >= 2 and c.extent <= kept_alphabet:
+                    all_concepts.append(c)
+            for parent, child in inheritance:
+                if parent in kept_alphabet and child in kept_alphabet:
+                    all_pairs.append((parent, child))
+
+    # Kernel × language density matrix derived from the deepest-scope
+    # primary cluster (kept for reporting; not used for filtering).
     kernel_matrix: dict[str, dict[str, int]] = {}
-    if relation:
-        for entity in relation:
+    if all_clusters:
+        primary = max(all_clusters, key=lambda c: len(c.alphabet))
+        for entity in primary.alphabet:
             kernel_matrix[entity] = {}
         for ctx in enumerate_functions(
             root, languages=languages, globs=globs, excludes=excludes,
             hidden=hidden, no_ignore=no_ignore,
         ):
             tokens = _split(ctx.name)
-            for entity in relation:
+            for entity in primary.alphabet:
                 if entity in tokens:
                     kernel_matrix[entity][ctx.file] = (
                         kernel_matrix[entity].get(ctx.file, 0) + 1
                     )
 
     return AffixPolymorphismResult(
-        clusters=clusters,
-        concepts=concepts,
-        inheritance_pairs=inheritance,
+        clusters=all_clusters,
+        concepts=all_concepts,
+        inheritance_pairs=all_pairs,
         kernel_matrix=kernel_matrix,
         files_searched=len(files_seen),
         functions_analyzed=len(items),
@@ -340,6 +442,8 @@ class FirstParameterCluster:
     members: list[tuple[str, str, int]]  # (function_name, file, line)
     verdict: str                 # "strong" | "weak" | "false_positive"
     advisory: str
+    scope: str                   # narrowest namespace where cluster cohered
+    scope_kind: str              # "file" | "package" | "root"
 
 
 @dataclass
@@ -439,6 +543,124 @@ def _classify_cluster(
             f"as ``self`` is the textbook conversion.")
 
 
+# ---------------------------------------------------------------------------
+# Recursive namespace traversal — narrowest-scope-first cluster claiming
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class _FuncEntry:
+    """One function with everything the recursive walk needs."""
+    name: str
+    file: str               # relative path with ``/`` separators
+    line: int
+    parts: tuple[str, ...]  # tuple form of file path (("cli", "slop", "output.py"))
+    param_name: str | None
+    param_type: str | None
+
+
+def _scope_label(parts: tuple[str, ...]) -> tuple[str, str]:
+    """Render ``parts`` to a (scope_str, scope_kind) pair."""
+    if not parts:
+        return ("<root>", "root")
+    last = parts[-1]
+    is_file = "." in last
+    return ("/".join(parts), "file" if is_file else "package")
+
+
+def _recursive_first_param_findings(
+    entries: list[_FuncEntry],
+    min_cluster: int,
+    exempt_names: frozenset[str],
+) -> list[FirstParameterCluster]:
+    """Walk the namespace tree deepest-first; emit clusters at the
+    narrowest scope where they cohere. A function can appear in at
+    most one cluster — once claimed at a leaf, it's invisible at
+    parent scopes.
+    """
+    # Index every entry under every prefix of its path so that scope-
+    # level lookups are O(1). Empty prefix = root.
+    by_prefix: dict[tuple[str, ...], list[_FuncEntry]] = {(): list(entries)}
+    for e in entries:
+        for depth in range(1, len(e.parts) + 1):
+            by_prefix.setdefault(e.parts[:depth], []).append(e)
+
+    # Visit deepest paths first. Leaves (files) before parents
+    # (packages) before root. Same-depth ordering doesn't matter since
+    # disjoint subtrees can't share entries.
+    paths = sorted(by_prefix.keys(), key=lambda p: -len(p))
+
+    findings: list[FirstParameterCluster] = []
+    claimed: set[tuple[str, str]] = set()  # (file, function_name)
+
+    for path in paths:
+        scope_funcs = [
+            e for e in by_prefix[path] if (e.file, e.name) not in claimed
+        ]
+        if len(scope_funcs) < min_cluster:
+            continue
+
+        is_root = not path
+        is_file = bool(path) and "." in path[-1]
+
+        # Cluster by first-param name
+        by_param: dict[str, list[_FuncEntry]] = {}
+        for e in scope_funcs:
+            if e.param_name is None or len(e.param_name) < 2:
+                continue
+            by_param.setdefault(e.param_name, []).append(e)
+
+        for pname, members in by_param.items():
+            if len(members) < min_cluster:
+                continue
+
+            # Coherence check.
+            #
+            # File scope: by construction, every member is in this file.
+            # Trivially coherent.
+            #
+            # Package scope: claim only if members span ≥ 2 children of
+            # this node. If they all share one child, the file-level pass
+            # (deeper depth) would already have claimed them — so reaching
+            # here means they didn't reach threshold there. Lowering the
+            # bar at the parent isn't a real cluster, just threshold
+            # inflation by the parent. Skip.
+            #
+            # Root scope: same rule (≥ 2 children) plus a stricter
+            # spread test. A cluster touching every top-level package
+            # is generic-parameter noise (`name: str`, `text: str`).
+            if not is_file:
+                child_keys = {
+                    m.parts[len(path)] for m in members
+                    if len(m.parts) > len(path)
+                }
+                if len(child_keys) < 2:
+                    continue
+                if is_root and len(child_keys) >= 4:
+                    # Spread across 4+ top-level packages → not a class
+                    continue
+
+            types = {m.param_type for m in members if m.param_type}
+            verdict, advisory = _classify_cluster(pname, types, exempt_names)
+
+            scope_str, scope_kind = _scope_label(path)
+            findings.append(FirstParameterCluster(
+                parameter_name=pname,
+                parameter_types=types,
+                members=[(m.name, m.file, m.line) for m in members],
+                verdict=verdict,
+                advisory=advisory,
+                scope=scope_str,
+                scope_kind=scope_kind,
+            ))
+            for m in members:
+                claimed.add((m.file, m.name))
+
+    # Sort: deepest scope (most actionable) first, then by cluster size
+    findings.sort(key=lambda c: (-c.scope.count("/"), -len(c.members)))
+    return findings
+
+
 def first_parameter_drift_kernel(
     root: Path,
     *,
@@ -450,8 +672,16 @@ def first_parameter_drift_kernel(
     min_cluster: int = 3,
     exempt_names: frozenset[str] = frozenset(),
 ) -> FirstParameterDriftResult:
-    """Cluster functions by first-parameter name; classify each cluster."""
-    by_name: dict[str, list[tuple[str, str, int, str | None]]] = {}
+    """Cluster functions by first-parameter name; classify each cluster.
+
+    Recursive namespace scoping: clusters are claimed at the narrowest
+    scope where they cohere. A 5-function cluster whose members all
+    live in ``output.py`` is reported with ``scope="cli/slop/output.py"``;
+    a 5-function cluster spanning three files in ``_lexical/`` is
+    reported with ``scope="cli/slop/_lexical"``. Cross-package noise
+    fails the coherence test at every scope and drops out.
+    """
+    entries: list[_FuncEntry] = []
     files_seen: set[str] = set()
     total = 0
     for ctx in enumerate_functions(
@@ -461,29 +691,20 @@ def first_parameter_drift_kernel(
         files_seen.add(ctx.file)
         total += 1
         pname, ptype = _extract_first_param(ctx)
-        if pname is None:
-            continue
-        by_name.setdefault(pname, []).append((ctx.name, ctx.file, ctx.line, ptype))
-
-    clusters: list[FirstParameterCluster] = []
-    for pname, entries in by_name.items():
-        if len(entries) < min_cluster:
-            continue
-        if len(pname) < 2:
-            # Single-character parameters (i, x, n, …) are almost always
-            # loop variables or short-form math; not domain receivers.
-            continue
-        types = {t for _, _, _, t in entries if t}
-        verdict, advisory = _classify_cluster(pname, types, exempt_names)
-        clusters.append(FirstParameterCluster(
-            parameter_name=pname,
-            parameter_types=types,
-            members=[(n, f, l) for n, f, l, _ in entries],
-            verdict=verdict,
-            advisory=advisory,
+        # Path-component split. Use ``/`` as separator regardless of
+        # platform — file paths from enumerate_functions are already
+        # POSIX-ish and we want stable scope labels across OSes.
+        parts = tuple(ctx.file.replace("\\", "/").split("/"))
+        entries.append(_FuncEntry(
+            name=ctx.name,
+            file=ctx.file,
+            line=ctx.line,
+            parts=parts,
+            param_name=pname,
+            param_type=ptype,
         ))
 
-    clusters.sort(key=lambda c: -len(c.members))
+    clusters = _recursive_first_param_findings(entries, min_cluster, exempt_names)
 
     return FirstParameterDriftResult(
         clusters=clusters,
