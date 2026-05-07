@@ -63,7 +63,7 @@ Every rule's name is a dotted path. Each segment between dots is a
 - **Single word preferred.** `verbosity`, `tersity`, `stutter`,
   `sprawl`, `imposters`, `slackers`, `confusion`. A reader scanning
   the rule list can intuit each one before reading the docs.
-- **Two-word compound tolerated.** `weasel_words`, `numbered_variants`,
+- **Two-word compound tolerated.** `weasel_words`, `name_verbosity`,
   `boilerplate_docstrings`. Joined by underscore. Acceptable when
   no single word captures the smell.
 - **Three-word never.** `type_tag_suffixes` was a violation —
@@ -90,6 +90,8 @@ over the gerund form (`-ing`).
 | `crowding` | (no clean agent form; use abstract state noun like `confusion`) |
 | `imposing` | `imposters` |
 | `slacking` | `slackers` |
+| `cowering` | `cowards` |
+| `tagging` | (no good agent form; use `tautology` instead — abstract noun) |
 
 The linguistic distinction:
 
@@ -189,17 +191,15 @@ names tell a story about identifier discipline:
 ```
 lexical.boilerplate_docstrings    — docstrings that just restate the function name
 lexical.confusion                 — scope holds multiple distinct lexicons
-lexical.identifier_singletons     — locals named once, used once, abandoned
+lexical.cowards                   — _v1, _v2, _old, _new — couldn't commit, kept both
 lexical.imposters                 — parameters camouflaged as ordinary dependencies
 lexical.name_verbosity            — names that overstate to compensate for missing namespace
-lexical.numbered_variants         — _v1, _v2 instead of saying what differs
+lexical.singletons                — locals named once, used once, abandoned
 lexical.slackers                  — siblings refusing to align without enforcement
 lexical.sprawl.scoped             — closed alphabet sprawls within a scope
 lexical.sprawl.global             — closed alphabet sprawls across the codebase
-lexical.stutter.callers           — method names repeating enclosing class
-lexical.stutter.identifiers       — locals repeating enclosing function
-lexical.stutter.namespaces        — symbol stutters with module path
-lexical.tagging                   — names restating the type system
+lexical.stutter                   — names repeating tokens from any enclosing scope
+lexical.tautology                 — suffix tautologically restates the type
 lexical.tersity                   — names too short to say anything
 lexical.verbosity                 — names too long to read
 lexical.weasel_words              — Manager, Helper, Spec, Util — naming surrender
@@ -209,13 +209,22 @@ Each name is in spec. Each name is diagnostic at first read. The
 list as a whole reads as the agent's lexicon-of-failures: a
 catalog of what naming looks like when no one is checking.
 
+Note the rogues' gallery emerging in the agent-noun rules:
+`cowards`, `imposters`, `singletons`, `slackers`. Each is a kind
+of bad actor in the codebase, named directly. Reading the list
+straight gives the diagnostic energy slop is built on — these are
+the *kinds of things* that slip past unscrutinized review.
+
 ## When the spec applies
 
 - **All new rules.** Any rule added after this spec is in force
   must conform.
 - **Renames in flight.** Existing rules being renamed (the
   `composition.*` collapse, `lexical.type_tag_suffixes` →
-  `lexical.tagging`) must conform on the way out.
+  `lexical.tautology`, `lexical.numbered_variants` →
+  `lexical.cowards`, `lexical.identifier_singletons` →
+  `lexical.singletons`, `lexical.stutter.*` unified) must conform
+  on the way out.
 - **Existing rules that already conform.** No retroactive churn.
   The `lexical.*` rules from v1.1.0 that already follow the spec
   stay as-is.
