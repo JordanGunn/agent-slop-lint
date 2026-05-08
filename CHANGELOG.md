@@ -7,6 +7,140 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-05-07
+
+The composition collapse + audit-driven release. v1.1.0 was held
+on the feature branch and not tagged; multi-step review surfaced
+that several v1.1.0 rule names violated slop's own naming
+convention (`docs/philosophy/naming-spec.md`), the proposed
+`composition.*` suite was named for what it implied rather than
+what it measured, and several rules didn't validate slop's
+structural-debt thesis. v1.2.0 ships the rework.
+
+### Removed
+
+Six rules cut entirely:
+
+- `lexical.verbosity` (body identifier mean) — style measurement,
+  not structural. The body-mean rule's name is *reused* in v1.2.0
+  for what was `lexical.name_verbosity` (entity-name token count).
+  Configs using `max_mean_tokens` against the old rule should
+  switch to `max_tokens`.
+- `lexical.tersity` — style guardrail; not currently an agentic
+  concern.
+- `lexical.boilerplate_docstrings` — easy fix; doesn't validate
+  the structural-debt thesis.
+- `lexical.identifier_singletons` — overlaps weakly with
+  structural concerns.
+- `composition.affix_polymorphism`, `composition.first_parameter_drift`
+  — never tagged on PyPI; renamed and folded into `lexical.*`
+  (see Renamed below).
+- The v1.1.0 stutter split (`lexical.stutter.{namespaces, callers,
+  identifiers}`) — unified back into single hierarchy-aware rule.
+- Halstead's optional `token_weight_alpha` penalty — depended on
+  the cut body-mean primitive.
+
+### Added
+
+Two new rules:
+
+- **`lexical.slackers`** — sibling functions sharing a first
+  parameter but refusing to follow any common naming template.
+  Real cluster, slack naming. Per-cluster within-affix coverage
+  threshold (default ≤ 30%). Excludes `strategy_family` clusters
+  (where absent template is intentional, e.g., `color.py` red/
+  green/yellow).
+- **`lexical.confusion`** — file holds multiple distinct
+  strong-receiver clusters (Lanza & Marinescu Extract Class
+  detection adapted from class-level to module-level). Fires
+  when a file has ≥ 5 functions, ≥ 2 distinct first-parameter
+  clusters, ≥ 2 of those clusters classified as `missing_class`
+  per the imposters profile.
+
+### Renamed
+
+Five rules:
+
+| Old name | New name | Reason |
+|---|---|---|
+| `lexical.name_verbosity` | `lexical.verbosity` | name reused; old body-mean rule cut |
+| `lexical.numbered_variants` | `lexical.cowards` | old name was misleadingly narrow (covers `_old`, `_new`, `_local` not just numbers) |
+| `lexical.weasel_words` | `lexical.hammers` | Maslow's-hammer metaphor sharper than weasel-words |
+| `lexical.type_tag_suffixes` | `lexical.tautology` | spec violation (3 underscored tokens); new name names the smell directly |
+| `composition.affix_polymorphism` | `lexical.sprawl` | suite collapse + descriptive single-word name |
+| `composition.first_parameter_drift` | `lexical.imposters` | suite collapse + agent-noun-plural |
+
+### Changed
+
+- **`composition.*` suite removed.** All composition rules collapse
+  into `lexical.*` per slop's substrate-naming convention. The
+  composition rules measured identifier tokens; their substrate is
+  lexical, regardless of architectural implication.
+
+- **`lexical.stutter` unified and hierarchy-aware.** v1.1.0 split
+  was a workaround; v1.2.0 has a single rule that walks every
+  named entity AND every body identifier against the full
+  enclosing-scope chain (package → module → class → function),
+  with per-finding metadata tagged by level. Per-level toggle
+  parameters preserve the v1.1.0 split's dial-down ability without
+  splitting the rule. New capability: catches method NAMES
+  stuttering with class names (e.g., `class UserService: def
+  get_user_service_id` — the method name itself stutters).
+
+- **`lexical.imposters` upgraded to multi-signal profiling.**
+  Single-signal first-parameter clustering produced ~25%
+  actionable findings on the v1.1.0 dogfood. The kernel now
+  computes per-cluster body-shape Jaccard mean, mean
+  receiver-call density, and modal-token overlap, then
+  classifies each cluster into one of:
+  - `missing_class` — receiver-calls ≥ 1.0/member; extract a class
+  - `strategy_family` — body Jaccard ≥ 0.7 + receiver-calls < 0.5;
+    do NOT extract a class (consider dispatch table)
+  - `heterogeneous` — neither; surface for review without
+    prescribing a refactor
+  - `infrastructure` / `false_positive` — preserved verdicts
+
+- **Methods directory moved** from `docs/methods/composition/` to
+  `docs/methods/lexical/`. Methods unchanged; path follows the
+  rule suite they feed.
+
+### Compatibility
+
+- Legacy rule names translate via `slop._compat.LEGACY_RULE_NAMES`:
+  ```
+  composition.affix_polymorphism      → lexical.sprawl
+  composition.first_parameter_drift   → lexical.imposters
+  lexical.name_verbosity              → lexical.verbosity
+  lexical.numbered_variants           → lexical.cowards
+  lexical.weasel_words                → lexical.hammers
+  lexical.type_tag_suffixes           → lexical.tautology
+  lexical.stutter.{namespaces,callers,identifiers}
+                                      → lexical.stutter
+  ```
+- Cut rules (`lexical.tersity`, `lexical.boilerplate_docstrings`,
+  `lexical.identifier_singletons`) tracked in
+  `slop._compat.REMOVED_RULES` with removal-reason strings.
+- v1.1.0 stutter sub-rule TOML tables migrate automatically:
+  `[rules.lexical.stutter.namespaces]` → unified rule's
+  `check_modules` parameter, etc.
+- A consolidated deprecation notice prints to stderr at
+  config-load time.
+
+### Methodology + framing
+
+- New `docs/philosophy/naming-spec.md` — codifies the naming
+  convention every rule conforms to. Substrate-named suites,
+  agent-noun preference, single-word + two-word-tolerated +
+  three-token-forbidden, diagnostic energy. The leading
+  principle is the meta-irony: slop catches user complacency,
+  and the v1.1.0 names being currently in need of cleanup is
+  the same anti-pattern at the meta level.
+- `docs/observations/composition/03.md` — captures the cross-
+  method evaluation that drove the v1.2.0 layout.
+- `docs/methods/lexical/` (renamed from `composition/`) — per-
+  method documentation for the seven detection methods exercised
+  in the v2 PoC battery.
+
 ## [1.1.0] - 2026-05-06
 
 The composition suite + lexical expansion release. Two new rule

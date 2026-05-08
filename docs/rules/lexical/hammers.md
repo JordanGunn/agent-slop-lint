@@ -1,43 +1,48 @@
-# lexical.weasel_words
+# lexical.hammers
 
-**What it measures:** Identifier vocabulary against a configurable
-banlist of catchall terms (`Manager`, `Helper`, `Util`, `Spec`,
-`Object`, `Item`, `Data`, `Common`, `Core`, …). These single-word
-agent tells appear when the agent needed a noun and didn't have one.
-The harm is two-stage: the original miss, plus the gravitational sink
-the catchall becomes for unrelated future responsibilities ("just
-shove it in `FooManager`").
+**What it measures:** Identifier vocabulary against a
+configurable banlist of catchall terms — `Manager`, `Helper`,
+`Util`, `Spec`, `Object`, `Item`, `Data`, `Common`, `Core`, etc.
+When all you have is a hammer, everything looks like a nail: the
+codebase reaches for the same generic noun every time it needs
+one, and every responsibility gets hammered into the same shape
+regardless of fit.
 
-**Default threshold:** any identifier or module name matching a
-configured term at a configured position. Per-term severity overrides;
-exempt-when predicates suppress matches in test/main modules.
+> **v1.2.0 note.** Renamed from `lexical.weasel_words`. The
+> hammer metaphor (Maslow's hammer) is sharper for what the rule
+> catches: the agent has one tool of last resort and uses it as
+> the tool of first resort.
+
+**Default threshold:** any identifier matching a configured term
+at a configured position. Per-term severity overrides; `exempt_when`
+predicates suppress matches in test/main modules.
 
 **Settings:**
 
 | Setting | Default | Description |
 |---|---|---|
-| `terms` | (default profile) | List of term entries. Each entry: `word`, `positions`, `severity`, `exempt_when`. |
+| `terms` | (default profile) | List of term entries with per-term position config |
 
-Each term entry has:
+Each term entry:
 
 | Field | Description |
 |---|---|
-| `word` | Term to match (case-insensitive against tokens after snake/Camel split). |
-| `positions` | List from `"prefix"`, `"suffix"`, `"any"`, `"module_name"`. |
-| `severity` | Optional per-term severity override (`info` / `warning` / `error`). |
-| `exempt_when` | Optional list of context predicates: `"module_is_test"`, `"module_is_main"`. |
+| `word` | Term to match (case-insensitive against snake/Camel-split tokens) |
+| `positions` | Subset of `"prefix"`, `"suffix"`, `"any"`, `"module_name"` |
+| `severity` | Optional per-term override (`info` / `warning` / `error`) |
+| `exempt_when` | Optional list: `"module_is_test"`, `"module_is_main"` |
 
 ## Default profile
 
 | Term(s) | Positions | Severity | Notes |
 |---|---|---|---|
-| `Manager`, `Coordinator` | suffix | warning | DI codebases use legitimately; per-team tunable |
+| `Manager`, `Coordinator` | suffix | warning | DI-codebase legitimate; per-team tunable |
 | `Helper`, `Utility`, `Util`, `Utils` | any, module_name | warning | almost never a real noun |
-| `Handler`, `Processor` | suffix | info | sometimes a legit role |
-| `Service`, `Provider`, `Engine` | suffix | info | DDD-legitimate; controversial in non-DDD |
+| `Handler`, `Processor` | suffix | info | sometimes legit |
+| `Service`, `Provider`, `Engine` | suffix | info | DDD-controversial |
 | `Factory`, `Builder` | suffix | info | named patterns; tunable |
 | `Wrapper`, `Adapter` | suffix | info | sometimes pattern, sometimes drift |
-| `Spec`, `Specification` | suffix | warning | the canonical reflex agent term; exempt in tests |
+| `Spec`, `Specification` | suffix | warning | reflexive agent term; exempt in tests |
 | `Base` | suffix | warning | suspect when not actually abstract |
 | `Abstract` | prefix | info | ABC pattern is legit |
 | `Object`, `Item`, `Element`, `Thing` | suffix | error | zero semantic content |
@@ -48,51 +53,45 @@ Each term entry has:
 
 ## Position rationale
 
-Position matters because the same term is a legit pattern at one
-position and a smell at another:
+Same term is legit at one position and a smell at another:
 
-- `Helper` as a suffix (`MyHelper`) is the agent reflex.
-- `Helper` as a prefix (`HelperFoo`) is uncommon; usually a smell the
-  other way.
-- `Abstract` as a prefix is the ABC pattern.
-- `Abstract` as a suffix (`FooAbstract`) is noise.
+- `Helper` as suffix (`MyHelper`) — agent reflex
+- `Helper` as prefix (`HelperFoo`) — uncommon; usually wrong
+- `Abstract` as prefix — ABC pattern
+- `Abstract` as suffix (`FooAbstract`) — noise
 
-A flat banlist would miss these distinctions; the per-word position
-list is essential.
+A flat banlist would miss these distinctions. Per-word position
+is essential.
 
-## Custom config
+## Configuration
 
 ```toml
-[rules.lexical.weasel_words]
+[rules.lexical.hammers]
 enabled = true
-severity = "warning"   # default for any term without per-word override
+severity = "warning"   # default for terms without per-word override
 
-[[rules.lexical.weasel_words.terms]]
+[[rules.lexical.hammers.terms]]
 word = "Manager"
 positions = ["suffix"]
 severity = "warning"
 
-[[rules.lexical.weasel_words.terms]]
-word = "Util"
-positions = ["any", "module_name"]
-severity = "warning"
-
-[[rules.lexical.weasel_words.terms]]
+[[rules.lexical.hammers.terms]]
 word = "Object"
 positions = ["suffix"]
-severity = "error"     # zero semantic content; no excuse
+severity = "error"
 
-[[rules.lexical.weasel_words.terms]]
+[[rules.lexical.hammers.terms]]
 word = "Spec"
 positions = ["suffix"]
 severity = "warning"
 exempt_when = ["module_is_test"]
 ```
 
-## Why "weasel words"
+## Why "hammers"
 
-The term has decades of usage in English-prose criticism (technical
-writing, journalism). It carries the right connotation: words that
-*seem* informative but evade meaning. Compare with `catchall_terms`
-(bland), `banned_terms` (focuses on mechanism), or `naming_drift`
-(too abstract). The intent is immediately legible.
+Maslow's hammer ("if all you have is a hammer, everything looks
+like a nail") is the canonical reference for the smell: a tool
+applied to everything regardless of fit. `Manager`, `Helper`,
+`Spec` are the developer's hammers — the term they reach for
+when they don't have a real noun. The agent-noun-plural form
+matches the rogues' gallery (`cowards`, `imposters`, `slackers`).

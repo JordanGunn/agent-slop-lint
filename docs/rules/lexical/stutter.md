@@ -1,109 +1,112 @@
-# lexical.stutter.* (split)
+# lexical.stutter
 
-**What it measures:** Identifiers that repeat tokens from their
-enclosing scope. A v1.0.x dogfood pass found that the unified
-`lexical.stutter` rule conflated three different smells with very
-different per-instance impact, and users were writing waivers to dial
-down the variant they didn't care about. v1.1.0 splits the rule into
-three so each can be configured independently.
+**What it measures:** Names that repeat tokens from any enclosing
+scope. The hierarchy walked is: package (parent directory) →
+module (file stem) → class → function. Two kinds of stutter are
+detected:
 
-| Rule | Scope | Default severity | Catches |
-|---|---|---|---|
-| `lexical.stutter.namespaces` | module | `warning` | symbol stutters with module path |
-| `lexical.stutter.callers` | class | `warning` | method/attribute stutters with class |
-| `lexical.stutter.identifiers` | function | `info` | local variable stutters with function name |
+1. **Entity-name stutter.** A class/function/method NAME stutters
+   with one of its enclosing scope names. Example:
+   `class UserService: def get_user_service_id(self): ...` — the
+   method name itself stutters with the class name.
+2. **Identifier stutter.** A local identifier inside a function
+   body stutters with one of its enclosing scope names. Example:
+   `def check_required_binaries(): required_binaries = [...]` — the
+   local repeats the function name's tokens.
 
-All three rules share one detection kernel; they differ only in which
-enclosing-scope kind counts as a stutter source. Token comparison is
-case-insensitive (so `UserService` ↔ `user_service_helper` matches
-correctly).
+Each finding records which scope level (`package` / `module` /
+`class` / `function`) triggered it. Per-level toggle parameters
+let you dial down specific levels without splitting the rule.
 
-**Default threshold:** flag any identifier sharing `≥ 2` tokens with
-the configured enclosing-scope name.
+> **v1.2.0 note.** v1.1.x split this into three rules
+> (`lexical.stutter.{namespaces, callers, identifiers}`); v1.2.0
+> unifies them back into a single hierarchy-aware rule with
+> per-level toggles. The split rules' configuration migrates
+> automatically via `slop._compat`. The unified rule also catches
+> entity-name stutter (method names stuttering with class names),
+> a case the split rules missed.
 
-**Settings (per rule):**
+**Default threshold:** flag any name sharing `≥ 2` tokens with
+its enclosing scope. Severity `warning`. All four levels enabled
+by default.
+
+**Settings:**
 
 | Setting | Default | Description |
 |---|---|---|
-| `min_overlap_tokens` | `2` | Minimum number of shared tokens required to flag. |
+| `min_overlap_tokens` | `2` | Minimum shared tokens to flag |
+| `check_packages` | `true` | Check parent-directory level |
+| `check_modules` | `true` | Check file-stem level |
+| `check_classes` | `true` | Check enclosing class level |
+| `check_functions` | `true` | Check enclosing function level |
 
-## What each rule catches
+## What it catches at each level
 
-### `lexical.stutter.namespaces`
+### `package` level
 
-The module path is its own form of namespace. Symbols whose own
-tokens recapitulate the module path are leaning on the path for
-descriptive content.
-
-```python
-# slop/rules/complexity.py
-# ❌ flagged — `complexity_kernel` repeats the module name
-def complexity_kernel(...): ...
-
-# ✓ — module path already says "rules.complexity"
-def kernel(...): ...
+```
+slop/_lexical/_lexical_helper.py     # _lexical_helper stutters with _lexical
 ```
 
-Highest signal-to-noise of the three; the module already names the
-thing.
-
-### `lexical.stutter.callers`
-
-Method and attribute names that repeat tokens from their enclosing
-class. The strongest agent tell of the three — agents producing
-`UserService.get_user_user_id` is a recognisable failure mode.
+### `module` level
 
 ```python
-# ❌ flagged
-class UserService:
-    def get_user_id(self): ...    # `user` already in class name
-
-# ✓
-class UserService:
-    def get_id(self): ...
+# lidar_utils.py
+def load():
+    lidar_utils_config = {}    # local stutters with module name
+    return lidar_utils_config
 ```
 
-### `lexical.stutter.identifiers`
-
-Local variable names that stutter with the enclosing function. Lower
-per-instance impact but high frequency. Default severity `info` to
-keep the noise floor manageable.
+### `class` level (NEW capability — entity-name case)
 
 ```python
-# ❌ flagged
+class UserService:
+    def get_user_service_id(self):    # method NAME stutters with class
+        ...
+```
+
+### `function` level
+
+```python
 def check_required_binaries():
-    required_binaries = [...]    # everything in the function is about required binaries
+    required_binaries = [...]    # local stutters with function name
     for b in required_binaries: ...
-
-# ✓
-def check_required_binaries():
-    targets = [...]
-    for b in targets: ...
 ```
 
-## Migration from `lexical.stutter`
-
-Legacy `lexical.stutter` rule references and `[rules.lexical.stutter]`
-TOML tables are translated automatically:
-
-- The rule name `lexical.stutter` → `lexical.stutter.identifiers`
-  (the closest single-rule successor based on what the original rule
-  fired on most often in practice).
-- The TOML table `[rules.lexical.stutter]` → migrates its keys
-  to `[rules.lexical.stutter.identifiers]`. Existing waivers and
-  `min_overlap_tokens` settings keep working without edits.
-
-A consolidated deprecation notice prints to stderr at config-load
-time. To migrate cleanly, replace `lexical.stutter` with the
-specific rule name you want. If you want all three modes back, list
-all three.
+## Configuration
 
 ```toml
-# legacy (still works via compat shim, prints deprecation)
 [rules.lexical.stutter]
+enabled = true
 min_overlap_tokens = 2
+check_packages = true
+check_modules = true
+check_classes = true
+check_functions = true
+severity = "warning"
+```
 
-# canonical (preferred)
+To suppress a specific level (e.g., function-level stutter on a
+test corpus where it's expected):
+
+```toml
+[rules.lexical.stutter]
+check_functions = false
+```
+
+## Token comparison is case-insensitive
+
+`UserService` ↔ `user_service_helper` matches correctly. The
+v1.0.x kernel was case-sensitive, missing CamelCase ↔ snake_case
+stutters; this was fixed in v1.1.0.
+
+## Migration from v1.1.x split rules
+
+Legacy `[rules.lexical.stutter.X]` tables are translated by
+`slop._compat`:
+
+```toml
+# v1.1.x — three sub-rule tables
 [rules.lexical.stutter.namespaces]
 min_overlap_tokens = 2
 
@@ -112,5 +115,9 @@ min_overlap_tokens = 2
 
 [rules.lexical.stutter.identifiers]
 severity = "info"
-min_overlap_tokens = 2
 ```
+
+…translates to the unified rule's per-level toggles. A consolidated
+deprecation notice prints to stderr at config-load time. To migrate
+manually, replace the three tables with a single
+`[rules.lexical.stutter]` block setting per-level toggles.

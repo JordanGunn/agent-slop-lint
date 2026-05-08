@@ -7,7 +7,6 @@ slop rules are organised into three suites separated by measurement substrate, n
 | [`structural`](structural/README.md) | Shape and graph risk | AST, control flow, import graph, inheritance graph, package graph, git churn |
 | [`information`](information/README.md) | Information density and readability proxies | operator/operand counts, literal frequencies, comment markers |
 | [`lexical`](lexical/README.md) | Vocabulary discipline | identifier strings, AST scope names |
-| [`composition`](composition/README.md) | Missing namespace / receiver candidates | function definitions, identifier-token alphabets, first-parameter clusters |
 
 Rule names are fully qualified and dot-separated. The hierarchy under `structural.*` reflects the measurement target:
 
@@ -54,24 +53,15 @@ Rule names are fully qualified and dot-separated. The hierarchy under `structura
 
 | Rule | Default | Page |
 |---|---|---|
-| `lexical.stutter.namespaces` | ≥ 2 tokens | [→](lexical/stutter.md) |
-| `lexical.stutter.callers` | ≥ 2 tokens | [→](lexical/stutter.md) |
-| `lexical.stutter.identifiers` | ≥ 2 tokens | [→](lexical/stutter.md) |
-| `lexical.verbosity` | mean > 3.0 | [→](lexical/verbosity.md) |
-| `lexical.tersity` | > 50% | [→](lexical/tersity.md) |
-| `lexical.name_verbosity` | > 3 tokens | [→](lexical/name_verbosity.md) |
-| `lexical.numbered_variants` | any match | [→](lexical/numbered_variants.md) |
-| `lexical.weasel_words` | banlist match | [→](lexical/weasel_words.md) |
-| `lexical.type_tag_suffixes` | suffix matches type | [→](lexical/type_tag_suffixes.md) |
-| `lexical.boilerplate_docstrings` | content ⊆ name | [→](lexical/boilerplate_docstrings.md) |
-| `lexical.identifier_singletons` | > 60% singleton | [→](lexical/identifier_singletons.md) |
-
-### composition
-
-| Rule | Default | Page |
-|---|---|---|
-| `composition.affix_polymorphism` | ≥ 3 alphabet × ≥ 2 ops | [→](composition/affix_polymorphism.md) |
-| `composition.first_parameter_drift` | ≥ 3 fns sharing param | [→](composition/first_parameter_drift.md) |
+| `lexical.stutter` | ≥ 2 tokens | [→](lexical/stutter.md) |
+| `lexical.verbosity` | > 3 tokens | [→](lexical/verbosity.md) |
+| `lexical.cowards` | any match | [→](lexical/cowards.md) |
+| `lexical.hammers` | banlist match | [→](lexical/hammers.md) |
+| `lexical.tautology` | suffix matches type | [→](lexical/tautology.md) |
+| `lexical.sprawl` | ≥ 3 alphabet × ≥ 2 ops | [→](lexical/sprawl.md) |
+| `lexical.imposters` | ≥ 3 fns sharing param | [→](lexical/imposters.md) |
+| `lexical.slackers` | < 30% template coverage | [→](lexical/slackers.md) |
+| `lexical.confusion` | ≥ 2 strong receivers in one file | [→](lexical/confusion.md) |
 
 ## Naming principle
 

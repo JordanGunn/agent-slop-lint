@@ -1,8 +1,7 @@
-# Composition detection methods
+# Lexical detection methods
 
-This directory documents the detection methods that the
-`composition.*` rule suite (and adjacent rules in `structural.*`
-and `lexical.*`) draws from. Each method is documented with its
+This directory documents the detection methods that several
+`lexical.*` rules draw from. Each method is documented with its
 problem statement, signal purpose, algorithm sketch, citations,
 the modifications we made from the published version, and an
 ELI5 section.
@@ -13,6 +12,17 @@ production rule combines two or more profile signals to make a
 specific review-action recommendation. See
 [`docs/observations/composition/03.md`](../../observations/composition/03.md)
 for the cross-method evaluation that motivates this layout.
+
+> **Note on directory naming.** This directory was originally
+> ``docs/methods/composition/`` because the methods are about
+> detecting compositional debt. In v1.2.0 the rules these
+> methods feed were collapsed into the ``lexical.*`` suite (per
+> slop's substrate-naming convention — see
+> [`docs/philosophy/naming-spec.md`](../../philosophy/naming-spec.md)),
+> and the directory moved to ``docs/methods/lexical/`` to match.
+> The methods themselves are unchanged; the algorithms still
+> detect compositional patterns, but the rules they produce live
+> under ``lexical.*``.
 
 ## Method index
 
@@ -26,23 +36,25 @@ for the cross-method evaluation that motivates this layout.
 | Multi-criteria ranking | Is this individual function a strong cluster member? | [→](multi_criteria_ranking.md) |
 | Lanza/Marinescu detection | Is this whole file doing the work of multiple cohesive units? | [→](lanza_marinescu_detection.md) |
 
-## Method-to-rule mapping
+## Method-to-rule mapping (v1.2.0)
 
 The methods feed multiple rules. The mapping is many-to-many: a
 single method usually contributes to several rules, and a single
-rule usually consumes several methods. Approximate current
-allocation:
+rule usually consumes several methods.
 
 | Rule | Primary methods |
 |---|---|
-| `composition.first_parameter_drift` | multi-criteria + body-shape + within-cluster affix |
-| `composition.affix_polymorphism` | closed-alphabet entity (existing kernel; v2.3 is the planned successor) |
-| `composition.implicit_type` (proposed) | closed-alphabet entity |
-| `structural.extract_class` (proposed) | Lanza/Marinescu detection |
-| `lexical.inconsistent_naming` (proposed) | within-cluster affix (low coverage on real cluster) + dominant text |
+| `lexical.imposters` | multi-criteria ranking (body-shape + receiver-call density + modal-token overlap) |
+| `lexical.sprawl` | closed-alphabet entity + within-cluster affix |
+| `lexical.slackers` | within-cluster affix (LOW coverage on real cluster) |
+| `lexical.confusion` | Lanza/Marinescu detection (file-level multi-receiver) |
+| `lexical.stutter` | unified hierarchy-aware kernel (own implementation) |
 
-Latent topic modeling is currently retained for orientation
-research; it has not been promoted to a rule.
+Latent topic modeling and dominant-text labeling are currently
+retained for orientation research; they have not been promoted
+to rules. The PoC scripts under
+``scripts/research/composition_poc_v2/`` remain the canonical
+reference for the algorithms.
 
 ## Reading these docs
 
