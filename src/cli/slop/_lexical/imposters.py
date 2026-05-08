@@ -49,7 +49,7 @@ from slop._lexical._naming import (
     enumerate_functions,
     scope_label,
 )
-from slop._lexical._words import Lexeme, Lexicon
+from slop._lexical._words import UNIVERSAL_NOISE, Lexeme, Lexicon
 
 
 # ---------------------------------------------------------------------------
@@ -189,12 +189,17 @@ def _profile_cluster(
         sum(rc for _, rc in sigs) / len(sigs) if sigs else 0.0
     )
 
-    # Modal-token overlap mean
+    # Modal-token overlap mean. UNIVERSAL_NOISE strips Newman 14 +
+    # identifier glue before computing modal tokens — without it,
+    # generic words like "id", "result", "next" dominate the modal
+    # set and inflate overlap on clusters where those words happen
+    # to recur. See docs/research/identifier-vocabulary.md.
     lex = Lexicon(member_lexemes)
-    modal = lex.modal_tokens(k=3)
+    modal = lex.modal_tokens(k=3, exclude=UNIVERSAL_NOISE)
     if modal:
         per_member_overlap = [
-            lex.overlap(member, modal) for member in member_lexemes
+            lex.overlap(member, modal, exclude=UNIVERSAL_NOISE)
+            for member in member_lexemes
             if member.lower
         ]
         if per_member_overlap:
