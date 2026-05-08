@@ -32,7 +32,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from slop._lexical._words import Lexeme
+from slop._lexical._words import UNIVERSAL_NOISE, Lexeme
 from slop._lexical.imposters import (
     FirstParameterCluster,
     imposters_kernel,
@@ -100,7 +100,7 @@ def slackers_kernel(
             Lexeme.of(name, file=file, line=line)
             for name, file, line in cluster.members
         ]
-        patterns = _build_affix_patterns(items)
+        patterns = _build_affix_patterns(items, exclude=UNIVERSAL_NOISE)
         meaningful = [
             p for p in patterns
             if sum(len(v) for v in p.variants.values()) >= 2

@@ -35,7 +35,7 @@ from itertools import combinations
 from pathlib import Path
 
 from slop._lexical._naming import enumerate_functions, scope_label
-from slop._lexical._words import Lexeme
+from slop._lexical._words import UNIVERSAL_NOISE, Lexeme
 
 
 # ---------------------------------------------------------------------------
@@ -111,18 +111,27 @@ def _alphabet_label(alpha: frozenset[str]) -> str:
     return "<unnamed>"
 
 
-def _build_affix_patterns(items: list[Lexeme]) -> list[AffixPattern]:
+def _build_affix_patterns(
+    items: list[Lexeme],
+    exclude: frozenset[str] = frozenset(),
+) -> list[AffixPattern]:
     """Find pattern groups via pairwise token-edit distance.
 
     Returns one ``AffixPattern`` per ``(stem, swap_pos)`` group.
     Each Lexeme contributes its ``text``/``file``/``line`` triple
     when its tokenisation differs from a peer in exactly one position.
+    Tokens in ``exclude`` are stripped before edit-distance — useful
+    when generic identifier noise (Newman 14, glue) would otherwise
+    inflate alphabets with low-signal variants.
     """
+    def _tokens(lex: Lexeme) -> list[str]:
+        return [t for t in lex.lower if t not in exclude] if exclude else list(lex.lower)
+
     groups: dict[tuple[tuple[str, ...], int], dict[str, list[tuple[str, str, int]]]] = {}
     for i, lex_a in enumerate(items):
-        toks_a = list(lex_a.lower)
+        toks_a = _tokens(lex_a)
         for lex_b in items[i + 1:]:
-            toks_b = list(lex_b.lower)
+            toks_b = _tokens(lex_b)
             edit = _token_edit_distance_1(toks_a, toks_b)
             if edit is None:
                 continue
@@ -267,7 +276,7 @@ def _affix_at_scope(
 
     scope_str, scope_kind = scope_label(scope_path)
 
-    patterns = _build_affix_patterns(items_at_scope)
+    patterns = _build_affix_patterns(items_at_scope, exclude=UNIVERSAL_NOISE)
     clusters = _cluster_patterns_by_alphabet(patterns, min_alphabet=min_alphabet)
     for c in clusters:
         c.scope = scope_str
