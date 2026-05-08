@@ -41,7 +41,6 @@ PoC references: ``scripts/research/composition_poc/poc3_*.py``,
 """
 from __future__ import annotations
 
-from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -49,8 +48,8 @@ from slop._lexical._naming import (
     FunctionContext,
     enumerate_functions,
     scope_label,
-    split_identifier,
 )
+from slop._lexical._words import Lexeme, Lexicon
 
 
 # ---------------------------------------------------------------------------
@@ -167,14 +166,14 @@ def _profile_cluster(
         return
 
     sigs: list[tuple[set[tuple[str, ...]], int]] = []
-    name_tokens: list[str] = []
+    member_lexemes: list[Lexeme] = []
     for name, file, _line in members_with_body:
         body_node, content = bodies[(file, name)]
         sigs.append((
             _signature_ngrams(body_node),
             _receiver_call_count(body_node, content, cluster.parameter_name),
         ))
-        name_tokens.extend(t.lower() for t in split_identifier(name))
+        member_lexemes.append(Lexeme.of(name))
 
     # Body-shape Jaccard mean across all member pairs
     pair_scores: list[float] = []
@@ -191,14 +190,13 @@ def _profile_cluster(
     )
 
     # Modal-token overlap mean
-    modal = {t for t, _ in Counter(name_tokens).most_common(3)}
+    lex = Lexicon(member_lexemes)
+    modal = lex.modal_tokens(k=3)
     if modal:
-        per_member_overlap = []
-        for name, _f, _l in members_with_body:
-            my_tokens = {t.lower() for t in split_identifier(name)}
-            if not my_tokens:
-                continue
-            per_member_overlap.append(len(my_tokens & modal) / len(my_tokens))
+        per_member_overlap = [
+            lex.overlap(member, modal) for member in member_lexemes
+            if member.lower
+        ]
         if per_member_overlap:
             cluster.modal_overlap_mean = (
                 sum(per_member_overlap) / len(per_member_overlap)

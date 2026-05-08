@@ -32,7 +32,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from slop._lexical._naming import split_identifier
+from slop._lexical._words import Lexeme
 from slop._lexical.imposters import (
     FirstParameterCluster,
     imposters_kernel,
@@ -97,7 +97,7 @@ def slackers_kernel(
         if not _real_cluster(cluster):
             continue
         items = [
-            (name, file, line, [t.lower() for t in split_identifier(name)])
+            Lexeme.of(name, file=file, line=line)
             for name, file, line in cluster.members
         ]
         patterns = _build_affix_patterns(items)

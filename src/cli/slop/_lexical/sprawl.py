@@ -34,14 +34,8 @@ from dataclasses import dataclass, field
 from itertools import combinations
 from pathlib import Path
 
-from slop._lexical._naming import enumerate_functions, scope_label, split_identifier
-
-
-def _split_lower(name: str) -> list[str]:
-    """Tokenise + lowercase. Sprawl detection is case-insensitive
-    (``UserService`` and ``user_service`` should match the same
-    affix pattern)."""
-    return [t.lower() for t in split_identifier(name)]
+from slop._lexical._naming import enumerate_functions, scope_label
+from slop._lexical._words import Lexeme
 
 
 # ---------------------------------------------------------------------------
@@ -117,27 +111,32 @@ def _alphabet_label(alpha: frozenset[str]) -> str:
     return "<unnamed>"
 
 
-def _build_affix_patterns(
-    items: list[tuple[str, str, int, list[str]]],
-) -> list[AffixPattern]:
+def _build_affix_patterns(items: list[Lexeme]) -> list[AffixPattern]:
     """Find pattern groups via pairwise token-edit distance.
 
-    ``items`` is a list of ``(name, file, line, tokens)`` tuples.
     Returns one ``AffixPattern`` per ``(stem, swap_pos)`` group.
+    Each Lexeme contributes its ``text``/``file``/``line`` triple
+    when its tokenisation differs from a peer in exactly one position.
     """
     groups: dict[tuple[tuple[str, ...], int], dict[str, list[tuple[str, str, int]]]] = {}
-    for i, (na, fa, la, ta) in enumerate(items):
-        for nb, fb, lb, tb in items[i + 1:]:
-            edit = _token_edit_distance_1(ta, tb)
+    for i, lex_a in enumerate(items):
+        toks_a = list(lex_a.lower)
+        for lex_b in items[i + 1:]:
+            toks_b = list(lex_b.lower)
+            edit = _token_edit_distance_1(toks_a, toks_b)
             if edit is None:
                 continue
             pos, swap_a, swap_b = edit
-            stem = tuple(ta[:pos] + ["*"] + ta[pos + 1:])
+            stem = tuple(toks_a[:pos] + ["*"] + toks_a[pos + 1:])
             key = (stem, pos)
             if key not in groups:
                 groups[key] = {}
-            groups[key].setdefault(swap_a, []).append((na, fa, la))
-            groups[key].setdefault(swap_b, []).append((nb, fb, lb))
+            groups[key].setdefault(swap_a, []).append(
+                (lex_a.text, lex_a.file or "", lex_a.line or 0),
+            )
+            groups[key].setdefault(swap_b, []).append(
+                (lex_b.text, lex_b.file or "", lex_b.line or 0),
+            )
     return [
         AffixPattern(stem=stem, swap_position=pos, variants=variants)
         for (stem, pos), variants in groups.items()
@@ -258,7 +257,7 @@ def _find_inheritance_pairs(
 
 
 def _affix_at_scope(
-    items_at_scope: list[tuple[str, str, int, list[str]]],
+    items_at_scope: list[Lexeme],
     scope_path: tuple[str, ...],
     min_alphabet: int,
 ) -> tuple[list[AffixCluster], list[FCAConcept], list[tuple[str, str]]]:
@@ -307,7 +306,7 @@ def sprawl_kernel(
     narrowest scope where the pattern coheres. Reports per-scope
     clusters, formal concepts, and inheritance lattice pairs.
     """
-    items: list[tuple[str, str, int, list[str]]] = []
+    items: list[Lexeme] = []
     files_seen: set[str] = set()
     for ctx in enumerate_functions(
         root, languages=languages, globs=globs, excludes=excludes,
@@ -316,13 +315,11 @@ def sprawl_kernel(
         files_seen.add(ctx.file)
         if ctx.name.startswith("<") or len(ctx.name) < 2:
             continue
-        items.append((ctx.name, ctx.file, ctx.line, _split_lower(ctx.name)))
+        items.append(Lexeme.of(ctx.name, file=ctx.file, line=ctx.line))
 
-    by_prefix: dict[tuple[str, ...], list[tuple[str, str, int, list[str]]]] = {
-        (): list(items)
-    }
+    by_prefix: dict[tuple[str, ...], list[Lexeme]] = {(): list(items)}
     for it in items:
-        parts = tuple(it[1].replace("\\", "/").split("/"))
+        parts = tuple((it.file or "").replace("\\", "/").split("/"))
         for depth in range(1, len(parts) + 1):
             by_prefix.setdefault(parts[:depth], []).append(it)
 
@@ -379,7 +376,7 @@ def sprawl_kernel(
             root, languages=languages, globs=globs, excludes=excludes,
             hidden=hidden, no_ignore=no_ignore,
         ):
-            tokens = _split_lower(ctx.name)
+            tokens = Lexeme.of(ctx.name).lower
             for entity in primary.alphabet:
                 if entity in tokens:
                     kernel_matrix[entity][ctx.file] = (
