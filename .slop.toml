@@ -87,6 +87,12 @@ rule = "lexical.imposters"
 reason = "Test functions taking `tmp_path` as first argument are pytest fixtures, not methods on a missing class. The `tmp_path` clustering is a property of the test framework, not of the test code."
 
 [[waivers]]
+id = "slackers-tests-tmp-path"
+path = "tests/**"
+rule = "lexical.slackers"
+reason = "Same as the imposters case — test functions clustering on `tmp_path` are pytest fixtures, not a real cluster. Test names don't follow a common template by design (each name describes a distinct test case)."
+
+[[waivers]]
 id = "sprawl-tests-language-fixtures"
 path = "tests/**"
 rule = "lexical.sprawl"

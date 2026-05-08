@@ -30,6 +30,7 @@ from slop.rules.npath import run_npath
 from slop.rules.out_parameters import run_out_parameters
 from slop.rules.section_comments import run_section_comment_density
 from slop.rules.sibling_calls import run_sibling_call_redundancy
+from slop.rules.slackers import run_slackers
 from slop.rules.sprawl import run_sprawl
 from slop.rules.stringly_typed import run_stringly_typed
 from slop.rules.stutter import run_stutter  # unified in v1.2.0
@@ -326,6 +327,15 @@ RULE_REGISTRY: list[RuleDefinition] = [
         default_enabled=True,
         threshold_label="≥ 3 functions sharing param",
         run=run_imposters,
+    ),
+    RuleDefinition(
+        name="lexical.slackers",
+        category="lexical.slackers",
+        description="Sibling functions sharing input but refusing to align by naming template",
+        default_severity="warning",
+        default_enabled=True,
+        threshold_label="< 30% template coverage",
+        run=run_slackers,
     ),
 ]
 

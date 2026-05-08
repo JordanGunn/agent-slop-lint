@@ -196,6 +196,13 @@ DEFAULT_RULE_CONFIGS: dict[str, dict[str, Any]] = {
         "min_cluster": 3,
         "exempt_names": ["self", "cls"],
     },
+    "lexical.slackers": {
+        "enabled": True,
+        "severity": "warning",
+        "min_cluster": 3,
+        "exempt_names": ["self", "cls"],
+        "max_coverage": 0.30,
+    },
 }
 
 
