@@ -65,3 +65,33 @@ Information Flow Complexity (historical reference)
 
   Not directly implemented. Martin's Instability metric is a normalised
   refinement of Henry & Kafura's fan-in/fan-out model.
+
+Identifier Vocabulary — empirical noise list (lexical.*)
+  Newman, C.D., AlSuhaibani, R.S., Collard, M.L. & Maletic, J.I. (2017).
+  "Lexical Categories for Source Code Identifiers." 24th IEEE International
+  Conference on Software Analysis, Evolution and Reengineering (SANER 2017),
+  Klagenfurt, Austria, 228-237.
+
+  slop seeds its UNIVERSAL_NOISE constant with the 14 identifiers the
+  authors found common to all 50 C/C++ systems they studied (a, length, id,
+  pos, start, next, str, key, f, x, index, p, left, result). These 14 form
+  an empirically-grounded floor for noise filtering in identifier-token
+  analysis (modal-token detection, alphabet detection, frequency
+  comparison). The paper's wider lexical-category framework (s-noun /
+  s-pronoun / s-adjective / s-verb) is not adopted; slop does not
+  currently produce per-identifier POS-style tags.
+
+Stop-Word Principles for Software Engineering Text (lexical.*, design)
+  Fan, Y., Arora, C. & Treude, C. (2023). "Stop Words for Processing
+  Software Engineering Documents: Do they Matter?" University of Melbourne
+  & Monash University. arXiv:2303.10439. Online appendix:
+  https://zenodo.org/record/7865748
+
+  slop adopts two principles from this paper. First, no universal stop-word
+  list exists — the same word is signal in one task and noise in another.
+  Second, blind binary removal can degrade analyses; filtering is a
+  per-task choice. slop's Lexicon does not apply any ignore list by
+  default; rules opt in via per-query exclude= arguments. The paper's
+  specific 200-word SE-domain list is not adopted directly: their corpus
+  is Stack Overflow prose, not identifier streams. See
+  docs/research/identifier-vocabulary.md for the full discussion.

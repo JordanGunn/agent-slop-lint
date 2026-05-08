@@ -20,6 +20,8 @@ cited threshold. The shortest summary:
 - Tornhill (2015) — hotspot analysis
 - Campbell / SonarSource (2018) — cognitive complexity
 - Tarjan (1972) — strongly-connected component algorithm used in cycle detection
+- Newman et al. (2017) — empirical 14-identifier noise floor seeding the lexicon's UNIVERSAL_NOISE
+- Fan, Arora & Treude (2023) — design principles: no universal stop list, binary removal can hurt
 
 slop reimplements these formulas independently from tree-sitter ASTs. No code
 from the original authors' implementations is used. See NOTICE for full

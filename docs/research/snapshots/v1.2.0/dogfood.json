@@ -1,0 +1,3605 @@
+{
+  "version": "1.2.0",
+  "root": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop",
+  "languages": [
+    "python"
+  ],
+  "rules": {
+    "structural.complexity.cyclomatic": {
+      "status": "fail",
+      "violations": [
+        {
+          "rule": "structural.complexity.cyclomatic",
+          "file": "_lexical/stutter.py",
+          "line": 351,
+          "symbol": "_get_name",
+          "message": "CCX 32 exceeds 10 (complex)",
+          "severity": "error",
+          "value": 32,
+          "threshold": 10,
+          "metadata": {
+            "zone": "complex",
+            "cog": 92,
+            "end_line": 412
+          }
+        },
+        {
+          "rule": "structural.complexity.cyclomatic",
+          "file": "_lexical/sprawl.py",
+          "line": 294,
+          "symbol": "sprawl_kernel",
+          "message": "CCX 28 exceeds 10 (complex)",
+          "severity": "error",
+          "value": 28,
+          "threshold": 10,
+          "metadata": {
+            "zone": "complex",
+            "cog": 51,
+            "end_line": 396
+          }
+        },
+        {
+          "rule": "structural.complexity.cyclomatic",
+          "file": "rules/sprawl.py",
+          "line": 25,
+          "symbol": "run_sprawl",
+          "message": "CCX 24 exceeds 10 (complex)",
+          "severity": "error",
+          "value": 24,
+          "threshold": 10,
+          "metadata": {
+            "zone": "complex",
+            "cog": 51,
+            "end_line": 131
+          }
+        },
+        {
+          "rule": "structural.complexity.cyclomatic",
+          "file": "_lexical/hammers.py",
+          "line": 114,
+          "symbol": "hammers_kernel",
+          "message": "CCX 23 exceeds 10 (complex)",
+          "severity": "error",
+          "value": 23,
+          "threshold": 10,
+          "metadata": {
+            "zone": "complex",
+            "cog": 41,
+            "end_line": 237
+          }
+        },
+        {
+          "rule": "structural.complexity.cyclomatic",
+          "file": "_lexical/verbosity.py",
+          "line": 70,
+          "symbol": "verbosity_kernel",
+          "message": "CCX 19 exceeds 10 (moderate)",
+          "severity": "error",
+          "value": 19,
+          "threshold": 10,
+          "metadata": {
+            "zone": "moderate",
+            "cog": 47,
+            "end_line": 171
+          }
+        },
+        {
+          "rule": "structural.complexity.cyclomatic",
+          "file": "_lexical/_naming.py",
+          "line": 269,
+          "symbol": "_extract_c_or_cpp_name",
+          "message": "CCX 17 exceeds 10 (moderate)",
+          "severity": "error",
+          "value": 17,
+          "threshold": 10,
+          "metadata": {
+            "zone": "moderate",
+            "cog": 61,
+            "end_line": 315
+          }
+        },
+        {
+          "rule": "structural.complexity.cyclomatic",
+          "file": "_lexical/imposters.py",
+          "line": 343,
+          "symbol": "_recursive_first_param_findings",
+          "message": "CCX 16 exceeds 10 (moderate)",
+          "severity": "error",
+          "value": 16,
+          "threshold": 10,
+          "metadata": {
+            "zone": "moderate",
+            "cog": 33,
+            "end_line": 416
+          }
+        },
+        {
+          "rule": "structural.complexity.cyclomatic",
+          "file": "_lexical/imposters.py",
+          "line": 154,
+          "symbol": "_profile_cluster",
+          "message": "CCX 16 exceeds 10 (moderate)",
+          "severity": "error",
+          "value": 16,
+          "threshold": 10,
+          "metadata": {
+            "zone": "moderate",
+            "cog": 20,
+            "end_line": 227
+          }
+        },
+        {
+          "rule": "structural.complexity.cyclomatic",
+          "file": "_lexical/imposters.py",
+          "line": 271,
+          "symbol": "_extract_first_param",
+          "message": "CCX 15 exceeds 10 (moderate)",
+          "severity": "error",
+          "value": 15,
+          "threshold": 10,
+          "metadata": {
+            "zone": "moderate",
+            "cog": 43,
+            "end_line": 324
+          }
+        },
+        {
+          "rule": "structural.complexity.cyclomatic",
+          "file": "_lexical/hammers.py",
+          "line": 245,
+          "symbol": "_check_identifier",
+          "message": "CCX 13 exceeds 10 (moderate)",
+          "severity": "error",
+          "value": 13,
+          "threshold": 10,
+          "metadata": {
+            "zone": "moderate",
+            "cog": 17,
+            "end_line": 274
+          }
+        },
+        {
+          "rule": "structural.complexity.cyclomatic",
+          "file": "_lexical/_naming.py",
+          "line": 155,
+          "symbol": "enumerate_functions",
+          "message": "CCX 12 exceeds 10 (moderate)",
+          "severity": "error",
+          "value": 12,
+          "threshold": 10,
+          "metadata": {
+            "zone": "moderate",
+            "cog": 19,
+            "end_line": 231
+          }
+        },
+        {
+          "rule": "structural.complexity.cyclomatic",
+          "file": "_lexical/sprawl.py",
+          "line": 227,
+          "symbol": "_find_inheritance_pairs",
+          "message": "CCX 11 exceeds 10 (moderate)",
+          "severity": "error",
+          "value": 11,
+          "threshold": 10,
+          "metadata": {
+            "zone": "moderate",
+            "cog": 26,
+            "end_line": 252
+          }
+        },
+        {
+          "rule": "structural.complexity.cyclomatic",
+          "file": "_lexical/tautology.py",
+          "line": 106,
+          "symbol": "_check_python_params",
+          "message": "CCX 11 exceeds 10 (moderate)",
+          "severity": "error",
+          "value": 11,
+          "threshold": 10,
+          "metadata": {
+            "zone": "moderate",
+            "cog": 16,
+            "end_line": 140
+          }
+        }
+      ],
+      "waived_violations": [],
+      "summary": {
+        "functions_checked": 186,
+        "violation_count": 13,
+        "waived_count": 0
+      },
+      "errors": []
+    },
+    "structural.complexity.cognitive": {
+      "status": "fail",
+      "violations": [
+        {
+          "rule": "structural.complexity.cognitive",
+          "file": "_lexical/stutter.py",
+          "line": 351,
+          "symbol": "_get_name",
+          "message": "CogC 92 exceeds 15",
+          "severity": "error",
+          "value": 92,
+          "threshold": 15,
+          "metadata": {
+            "zone": "complex",
+            "ccx": 32,
+            "end_line": 412
+          }
+        },
+        {
+          "rule": "structural.complexity.cognitive",
+          "file": "_lexical/sprawl.py",
+          "line": 294,
+          "symbol": "sprawl_kernel",
+          "message": "CogC 51 exceeds 15",
+          "severity": "error",
+          "value": 51,
+          "threshold": 15,
+          "metadata": {
+            "zone": "complex",
+            "ccx": 28,
+            "end_line": 396
+          }
+        },
+        {
+          "rule": "structural.complexity.cognitive",
+          "file": "rules/sprawl.py",
+          "line": 25,
+          "symbol": "run_sprawl",
+          "message": "CogC 51 exceeds 15",
+          "severity": "error",
+          "value": 51,
+          "threshold": 15,
+          "metadata": {
+            "zone": "complex",
+            "ccx": 24,
+            "end_line": 131
+          }
+        },
+        {
+          "rule": "structural.complexity.cognitive",
+          "file": "_lexical/hammers.py",
+          "line": 114,
+          "symbol": "hammers_kernel",
+          "message": "CogC 41 exceeds 15",
+          "severity": "error",
+          "value": 41,
+          "threshold": 15,
+          "metadata": {
+            "zone": "complex",
+            "ccx": 23,
+            "end_line": 237
+          }
+        },
+        {
+          "rule": "structural.complexity.cognitive",
+          "file": "_lexical/verbosity.py",
+          "line": 70,
+          "symbol": "verbosity_kernel",
+          "message": "CogC 47 exceeds 15",
+          "severity": "error",
+          "value": 47,
+          "threshold": 15,
+          "metadata": {
+            "zone": "moderate",
+            "ccx": 19,
+            "end_line": 171
+          }
+        },
+        {
+          "rule": "structural.complexity.cognitive",
+          "file": "_lexical/_naming.py",
+          "line": 269,
+          "symbol": "_extract_c_or_cpp_name",
+          "message": "CogC 61 exceeds 15",
+          "severity": "error",
+          "value": 61,
+          "threshold": 15,
+          "metadata": {
+            "zone": "moderate",
+            "ccx": 17,
+            "end_line": 315
+          }
+        },
+        {
+          "rule": "structural.complexity.cognitive",
+          "file": "_lexical/imposters.py",
+          "line": 343,
+          "symbol": "_recursive_first_param_findings",
+          "message": "CogC 33 exceeds 15",
+          "severity": "error",
+          "value": 33,
+          "threshold": 15,
+          "metadata": {
+            "zone": "moderate",
+            "ccx": 16,
+            "end_line": 416
+          }
+        },
+        {
+          "rule": "structural.complexity.cognitive",
+          "file": "_lexical/imposters.py",
+          "line": 154,
+          "symbol": "_profile_cluster",
+          "message": "CogC 20 exceeds 15",
+          "severity": "error",
+          "value": 20,
+          "threshold": 15,
+          "metadata": {
+            "zone": "moderate",
+            "ccx": 16,
+            "end_line": 227
+          }
+        },
+        {
+          "rule": "structural.complexity.cognitive",
+          "file": "_lexical/imposters.py",
+          "line": 271,
+          "symbol": "_extract_first_param",
+          "message": "CogC 43 exceeds 15",
+          "severity": "error",
+          "value": 43,
+          "threshold": 15,
+          "metadata": {
+            "zone": "moderate",
+            "ccx": 15,
+            "end_line": 324
+          }
+        },
+        {
+          "rule": "structural.complexity.cognitive",
+          "file": "_lexical/hammers.py",
+          "line": 245,
+          "symbol": "_check_identifier",
+          "message": "CogC 17 exceeds 15",
+          "severity": "error",
+          "value": 17,
+          "threshold": 15,
+          "metadata": {
+            "zone": "moderate",
+            "ccx": 13,
+            "end_line": 274
+          }
+        },
+        {
+          "rule": "structural.complexity.cognitive",
+          "file": "_lexical/_naming.py",
+          "line": 155,
+          "symbol": "enumerate_functions",
+          "message": "CogC 19 exceeds 15",
+          "severity": "error",
+          "value": 19,
+          "threshold": 15,
+          "metadata": {
+            "zone": "moderate",
+            "ccx": 12,
+            "end_line": 231
+          }
+        },
+        {
+          "rule": "structural.complexity.cognitive",
+          "file": "_lexical/sprawl.py",
+          "line": 227,
+          "symbol": "_find_inheritance_pairs",
+          "message": "CogC 26 exceeds 15",
+          "severity": "error",
+          "value": 26,
+          "threshold": 15,
+          "metadata": {
+            "zone": "moderate",
+            "ccx": 11,
+            "end_line": 252
+          }
+        },
+        {
+          "rule": "structural.complexity.cognitive",
+          "file": "_lexical/tautology.py",
+          "line": 106,
+          "symbol": "_check_python_params",
+          "message": "CogC 16 exceeds 15",
+          "severity": "error",
+          "value": 16,
+          "threshold": 15,
+          "metadata": {
+            "zone": "moderate",
+            "ccx": 11,
+            "end_line": 140
+          }
+        },
+        {
+          "rule": "structural.complexity.cognitive",
+          "file": "_lexical/slackers.py",
+          "line": 69,
+          "symbol": "slackers_kernel",
+          "message": "CogC 16 exceeds 15",
+          "severity": "error",
+          "value": 16,
+          "threshold": 15,
+          "metadata": {
+            "zone": "simple",
+            "ccx": 8,
+            "end_line": 131
+          }
+        }
+      ],
+      "waived_violations": [],
+      "summary": {
+        "functions_checked": 186,
+        "violation_count": 14,
+        "waived_count": 0
+      },
+      "errors": []
+    },
+    "structural.complexity.npath": {
+      "status": "fail",
+      "violations": [
+        {
+          "rule": "structural.complexity.npath",
+          "file": "_lexical/stutter.py",
+          "line": 351,
+          "symbol": "_get_name",
+          "message": "NPath 840072 exceeds 400",
+          "severity": "error",
+          "value": 840072,
+          "threshold": 400,
+          "metadata": {
+            "end_line": 412,
+            "language": "python"
+          }
+        },
+        {
+          "rule": "structural.complexity.npath",
+          "file": "_lexical/sprawl.py",
+          "line": 294,
+          "symbol": "sprawl_kernel",
+          "message": "NPath 7371 exceeds 400",
+          "severity": "error",
+          "value": 7371,
+          "threshold": 400,
+          "metadata": {
+            "end_line": 396,
+            "language": "python"
+          }
+        },
+        {
+          "rule": "structural.complexity.npath",
+          "file": "_lexical/hammers.py",
+          "line": 114,
+          "symbol": "hammers_kernel",
+          "message": "NPath 1805 exceeds 400",
+          "severity": "error",
+          "value": 1805,
+          "threshold": 400,
+          "metadata": {
+            "end_line": 237,
+            "language": "python"
+          }
+        },
+        {
+          "rule": "structural.complexity.npath",
+          "file": "_lexical/_naming.py",
+          "line": 269,
+          "symbol": "_extract_c_or_cpp_name",
+          "message": "NPath 1045 exceeds 400",
+          "severity": "error",
+          "value": 1045,
+          "threshold": 400,
+          "metadata": {
+            "end_line": 315,
+            "language": "python"
+          }
+        },
+        {
+          "rule": "structural.complexity.npath",
+          "file": "_lexical/verbosity.py",
+          "line": 70,
+          "symbol": "verbosity_kernel",
+          "message": "NPath 610 exceeds 400",
+          "severity": "error",
+          "value": 610,
+          "threshold": 400,
+          "metadata": {
+            "end_line": 171,
+            "language": "python"
+          }
+        },
+        {
+          "rule": "structural.complexity.npath",
+          "file": "_lexical/imposters.py",
+          "line": 154,
+          "symbol": "_profile_cluster",
+          "message": "NPath 420 exceeds 400",
+          "severity": "error",
+          "value": 420,
+          "threshold": 400,
+          "metadata": {
+            "end_line": 227,
+            "language": "python"
+          }
+        }
+      ],
+      "waived_violations": [],
+      "summary": {
+        "functions_checked": 164,
+        "violation_count": 6,
+        "waived_count": 0
+      },
+      "errors": []
+    },
+    "structural.class.complexity": {
+      "status": "pass",
+      "violations": [],
+      "waived_violations": [],
+      "summary": {
+        "classes_checked": 32,
+        "violation_count": 0
+      },
+      "errors": []
+    },
+    "structural.class.coupling": {
+      "status": "pass",
+      "violations": [],
+      "waived_violations": [],
+      "summary": {
+        "classes_checked": 32,
+        "violation_count": 0
+      },
+      "errors": []
+    },
+    "structural.class.inheritance.depth": {
+      "status": "pass",
+      "violations": [],
+      "waived_violations": [],
+      "summary": {
+        "classes_checked": 32,
+        "violation_count": 0
+      },
+      "errors": []
+    },
+    "structural.class.inheritance.children": {
+      "status": "pass",
+      "violations": [],
+      "waived_violations": [],
+      "summary": {
+        "classes_checked": 32,
+        "violation_count": 0
+      },
+      "errors": []
+    },
+    "structural.hotspots": {
+      "status": "skip",
+      "violations": [],
+      "waived_violations": [],
+      "summary": {},
+      "errors": []
+    },
+    "structural.packages": {
+      "status": "skip",
+      "violations": [],
+      "waived_violations": [],
+      "summary": {},
+      "errors": []
+    },
+    "structural.deps": {
+      "status": "pass",
+      "violations": [],
+      "waived_violations": [],
+      "summary": {
+        "files_analyzed": 55,
+        "cycles_found": 0,
+        "violation_count": 0
+      },
+      "errors": []
+    },
+    "structural.local_imports": {
+      "status": "pass",
+      "violations": [],
+      "waived_violations": [
+        {
+          "rule": "structural.local_imports",
+          "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/_lexical/_naming.py",
+          "line": 199,
+          "symbol": "enumerate_functions",
+          "message": "import inside function 'enumerate_functions': import tree_sitter",
+          "severity": "warning",
+          "value": 1,
+          "threshold": 0,
+          "metadata": {
+            "module": "import tree_sitter",
+            "language": "python",
+            "function": "enumerate_functions",
+            "waiver": {
+              "id": "local-imports-optional-dep",
+              "reason": "tree_sitter is an optional heavy dependency; importing at module level would crash startup for users without the wheels installed. Deferred until the kernel is actually invoked.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "structural.local_imports",
+          "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/_lexical/confusion.py",
+          "line": 91,
+          "symbol": "confusion_kernel",
+          "message": "import inside function 'confusion_kernel': from slop._lexical._naming import enumerate_functions",
+          "severity": "warning",
+          "value": 1,
+          "threshold": 0,
+          "metadata": {
+            "module": "from slop._lexical._naming import enumerate_functions",
+            "language": "python",
+            "function": "confusion_kernel",
+            "waiver": {
+              "id": "local-imports-optional-dep",
+              "reason": "tree_sitter is an optional heavy dependency; importing at module level would crash startup for users without the wheels installed. Deferred until the kernel is actually invoked.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "structural.local_imports",
+          "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/_lexical/hammers.py",
+          "line": 200,
+          "symbol": "hammers_kernel",
+          "message": "import inside function 'hammers_kernel': import tree_sitter",
+          "severity": "warning",
+          "value": 1,
+          "threshold": 0,
+          "metadata": {
+            "module": "import tree_sitter",
+            "language": "python",
+            "function": "hammers_kernel",
+            "waiver": {
+              "id": "local-imports-optional-dep",
+              "reason": "tree_sitter is an optional heavy dependency; importing at module level would crash startup for users without the wheels installed. Deferred until the kernel is actually invoked.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "structural.local_imports",
+          "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/_lexical/stutter.py",
+          "line": 163,
+          "symbol": "stutter_kernel",
+          "message": "import inside function 'stutter_kernel': import tree_sitter",
+          "severity": "warning",
+          "value": 1,
+          "threshold": 0,
+          "metadata": {
+            "module": "import tree_sitter",
+            "language": "python",
+            "function": "stutter_kernel",
+            "waiver": {
+              "id": "local-imports-optional-dep",
+              "reason": "tree_sitter is an optional heavy dependency; importing at module level would crash startup for users without the wheels installed. Deferred until the kernel is actually invoked.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "structural.local_imports",
+          "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/_lexical/verbosity.py",
+          "line": 131,
+          "symbol": "verbosity_kernel",
+          "message": "import inside function 'verbosity_kernel': import tree_sitter",
+          "severity": "warning",
+          "value": 1,
+          "threshold": 0,
+          "metadata": {
+            "module": "import tree_sitter",
+            "language": "python",
+            "function": "verbosity_kernel",
+            "waiver": {
+              "id": "local-imports-optional-dep",
+              "reason": "tree_sitter is an optional heavy dependency; importing at module level would crash startup for users without the wheels installed. Deferred until the kernel is actually invoked.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "structural.local_imports",
+          "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/cli.py",
+          "line": 215,
+          "symbol": "cmd_check",
+          "message": "import inside function 'cmd_check': from slop._compat import LEGACY_CATEGORIES, canonical_rule_name",
+          "severity": "warning",
+          "value": 11,
+          "threshold": 0,
+          "metadata": {
+            "module": "from slop._compat import LEGACY_CATEGORIES, canonical_rule_name",
+            "language": "python",
+            "function": "cmd_check",
+            "waiver": {
+              "id": "local-imports-cli-startup",
+              "reason": "CLI subcommand handlers defer imports so only the invoked command pays the import cost. Standard CLI startup-time optimisation \u2014 importing everything at the top would slow down every slop invocation.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "structural.local_imports",
+          "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/cli.py",
+          "line": 216,
+          "symbol": "cmd_check",
+          "message": "import inside function 'cmd_check': from slop.rules import CATEGORIES, RULE_REGISTRY, RULES_BY_NAME",
+          "severity": "warning",
+          "value": 11,
+          "threshold": 0,
+          "metadata": {
+            "module": "from slop.rules import CATEGORIES, RULE_REGISTRY, RULES_BY_NAME",
+            "language": "python",
+            "function": "cmd_check",
+            "waiver": {
+              "id": "local-imports-cli-startup",
+              "reason": "CLI subcommand handlers defer imports so only the invoked command pays the import cost. Standard CLI startup-time optimisation \u2014 importing everything at the top would slow down every slop invocation.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "structural.local_imports",
+          "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/cli.py",
+          "line": 254,
+          "symbol": "cmd_hook",
+          "message": "import inside function 'cmd_hook': import stat",
+          "severity": "warning",
+          "value": 11,
+          "threshold": 0,
+          "metadata": {
+            "module": "import stat",
+            "language": "python",
+            "function": "cmd_hook",
+            "waiver": {
+              "id": "local-imports-cli-startup",
+              "reason": "CLI subcommand handlers defer imports so only the invoked command pays the import cost. Standard CLI startup-time optimisation \u2014 importing everything at the top would slow down every slop invocation.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "structural.local_imports",
+          "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/cli.py",
+          "line": 255,
+          "symbol": "cmd_hook",
+          "message": "import inside function 'cmd_hook': import subprocess",
+          "severity": "warning",
+          "value": 11,
+          "threshold": 0,
+          "metadata": {
+            "module": "import subprocess",
+            "language": "python",
+            "function": "cmd_hook",
+            "waiver": {
+              "id": "local-imports-cli-startup",
+              "reason": "CLI subcommand handlers defer imports so only the invoked command pays the import cost. Standard CLI startup-time optimisation \u2014 importing everything at the top would slow down every slop invocation.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "structural.local_imports",
+          "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/cli.py",
+          "line": 256,
+          "symbol": "cmd_hook",
+          "message": "import inside function 'cmd_hook': from pathlib import Path",
+          "severity": "warning",
+          "value": 11,
+          "threshold": 0,
+          "metadata": {
+            "module": "from pathlib import Path",
+            "language": "python",
+            "function": "cmd_hook",
+            "waiver": {
+              "id": "local-imports-cli-startup",
+              "reason": "CLI subcommand handlers defer imports so only the invoked command pays the import cost. Standard CLI startup-time optimisation \u2014 importing everything at the top would slow down every slop invocation.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "structural.local_imports",
+          "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/cli.py",
+          "line": 306,
+          "symbol": "cmd_skill",
+          "message": "import inside function 'cmd_skill': import importlib.resources",
+          "severity": "warning",
+          "value": 11,
+          "threshold": 0,
+          "metadata": {
+            "module": "import importlib.resources",
+            "language": "python",
+            "function": "cmd_skill",
+            "waiver": {
+              "id": "local-imports-cli-startup",
+              "reason": "CLI subcommand handlers defer imports so only the invoked command pays the import cost. Standard CLI startup-time optimisation \u2014 importing everything at the top would slow down every slop invocation.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "structural.local_imports",
+          "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/cli.py",
+          "line": 307,
+          "symbol": "cmd_skill",
+          "message": "import inside function 'cmd_skill': from pathlib import Path",
+          "severity": "warning",
+          "value": 11,
+          "threshold": 0,
+          "metadata": {
+            "module": "from pathlib import Path",
+            "language": "python",
+            "function": "cmd_skill",
+            "waiver": {
+              "id": "local-imports-cli-startup",
+              "reason": "CLI subcommand handlers defer imports so only the invoked command pays the import cost. Standard CLI startup-time optimisation \u2014 importing everything at the top would slow down every slop invocation.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "structural.local_imports",
+          "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/cli.py",
+          "line": 341,
+          "symbol": "cmd_init",
+          "message": "import inside function 'cmd_init': from pathlib import Path",
+          "severity": "warning",
+          "value": 11,
+          "threshold": 0,
+          "metadata": {
+            "module": "from pathlib import Path",
+            "language": "python",
+            "function": "cmd_init",
+            "waiver": {
+              "id": "local-imports-cli-startup",
+              "reason": "CLI subcommand handlers defer imports so only the invoked command pays the import cost. Standard CLI startup-time optimisation \u2014 importing everything at the top would slow down every slop invocation.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "structural.local_imports",
+          "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/cli.py",
+          "line": 374,
+          "symbol": "cmd_doctor",
+          "message": "import inside function 'cmd_doctor': from slop._util.doctor import run_doctor",
+          "severity": "warning",
+          "value": 11,
+          "threshold": 0,
+          "metadata": {
+            "module": "from slop._util.doctor import run_doctor",
+            "language": "python",
+            "function": "cmd_doctor",
+            "waiver": {
+              "id": "local-imports-cli-startup",
+              "reason": "CLI subcommand handlers defer imports so only the invoked command pays the import cost. Standard CLI startup-time optimisation \u2014 importing everything at the top would slow down every slop invocation.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "structural.local_imports",
+          "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/cli.py",
+          "line": 401,
+          "symbol": "cmd_rules",
+          "message": "import inside function 'cmd_rules': from slop.rules import RULE_REGISTRY",
+          "severity": "warning",
+          "value": 11,
+          "threshold": 0,
+          "metadata": {
+            "module": "from slop.rules import RULE_REGISTRY",
+            "language": "python",
+            "function": "cmd_rules",
+            "waiver": {
+              "id": "local-imports-cli-startup",
+              "reason": "CLI subcommand handlers defer imports so only the invoked command pays the import cost. Standard CLI startup-time optimisation \u2014 importing everything at the top would slow down every slop invocation.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "structural.local_imports",
+          "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/cli.py",
+          "line": 411,
+          "symbol": "cmd_schema",
+          "message": "import inside function 'cmd_schema': from slop.config import DEFAULT_RULE_CONFIGS",
+          "severity": "warning",
+          "value": 11,
+          "threshold": 0,
+          "metadata": {
+            "module": "from slop.config import DEFAULT_RULE_CONFIGS",
+            "language": "python",
+            "function": "cmd_schema",
+            "waiver": {
+              "id": "local-imports-cli-startup",
+              "reason": "CLI subcommand handlers defer imports so only the invoked command pays the import cost. Standard CLI startup-time optimisation \u2014 importing everything at the top would slow down every slop invocation.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        }
+      ],
+      "summary": {
+        "files_searched": 55,
+        "local_imports_found": 16,
+        "violation_count": 0,
+        "waived_count": 16
+      },
+      "errors": []
+    },
+    "structural.redundancy": {
+      "status": "fail",
+      "violations": [
+        {
+          "rule": "structural.redundancy",
+          "file": "rules/class_metrics.py",
+          "line": 26,
+          "symbol": "run_coupling",
+          "message": "'run_coupling' (line 26) and 'run_inheritance_depth' (line 57) share 5 callees (score 100%): RuleResult, Violation, _run_ck, append, get",
+          "severity": "warning",
+          "value": 1.0,
+          "threshold": 0.5,
+          "metadata": {
+            "fn_a": "run_coupling",
+            "fn_b": "run_inheritance_depth",
+            "fn_a_line": 26,
+            "fn_b_line": 57,
+            "shared_callees": [
+              "RuleResult",
+              "Violation",
+              "_run_ck",
+              "append",
+              "get"
+            ],
+            "score": 1.0
+          }
+        },
+        {
+          "rule": "structural.redundancy",
+          "file": "rules/class_metrics.py",
+          "line": 26,
+          "symbol": "run_coupling",
+          "message": "'run_coupling' (line 26) and 'run_inheritance_children' (line 90) share 5 callees (score 100%): RuleResult, Violation, _run_ck, append, get",
+          "severity": "warning",
+          "value": 1.0,
+          "threshold": 0.5,
+          "metadata": {
+            "fn_a": "run_coupling",
+            "fn_b": "run_inheritance_children",
+            "fn_a_line": 26,
+            "fn_b_line": 90,
+            "shared_callees": [
+              "RuleResult",
+              "Violation",
+              "_run_ck",
+              "append",
+              "get"
+            ],
+            "score": 1.0
+          }
+        },
+        {
+          "rule": "structural.redundancy",
+          "file": "rules/class_metrics.py",
+          "line": 57,
+          "symbol": "run_inheritance_depth",
+          "message": "'run_inheritance_depth' (line 57) and 'run_inheritance_children' (line 90) share 5 callees (score 100%): RuleResult, Violation, _run_ck, append, get",
+          "severity": "warning",
+          "value": 1.0,
+          "threshold": 0.5,
+          "metadata": {
+            "fn_a": "run_inheritance_depth",
+            "fn_b": "run_inheritance_children",
+            "fn_a_line": 57,
+            "fn_b_line": 90,
+            "shared_callees": [
+              "RuleResult",
+              "Violation",
+              "_run_ck",
+              "append",
+              "get"
+            ],
+            "score": 1.0
+          }
+        },
+        {
+          "rule": "structural.redundancy",
+          "file": "rules/complexity.py",
+          "line": 27,
+          "symbol": "run_cyclomatic",
+          "message": "'run_cyclomatic' (line 27) and 'run_cognitive' (line 63) share 5 callees (score 100%): RuleResult, Violation, _run_ccx, append, get",
+          "severity": "warning",
+          "value": 1.0,
+          "threshold": 0.5,
+          "metadata": {
+            "fn_a": "run_cyclomatic",
+            "fn_b": "run_cognitive",
+            "fn_a_line": 27,
+            "fn_b_line": 63,
+            "shared_callees": [
+              "RuleResult",
+              "Violation",
+              "_run_ccx",
+              "append",
+              "get"
+            ],
+            "score": 1.0
+          }
+        },
+        {
+          "rule": "structural.redundancy",
+          "file": "rules/halstead.py",
+          "line": 28,
+          "symbol": "run_volume",
+          "message": "'run_volume' (line 28) and 'run_difficulty' (line 70) share 5 callees (score 100%): RuleResult, Violation, _run_halstead, append, get",
+          "severity": "warning",
+          "value": 1.0,
+          "threshold": 0.5,
+          "metadata": {
+            "fn_a": "run_volume",
+            "fn_b": "run_difficulty",
+            "fn_a_line": 28,
+            "fn_b_line": 70,
+            "shared_callees": [
+              "RuleResult",
+              "Violation",
+              "_run_halstead",
+              "append",
+              "get"
+            ],
+            "score": 1.0
+          }
+        }
+      ],
+      "waived_violations": [],
+      "summary": {
+        "functions_analyzed": 162,
+        "files_searched": 47,
+        "pair_violations": 5,
+        "min_shared": 5,
+        "min_score": 0.5,
+        "waived_count": 0,
+        "violation_count": 5
+      },
+      "errors": []
+    },
+    "structural.types.sentinels": {
+      "status": "fail",
+      "violations": [
+        {
+          "rule": "structural.types.sentinels",
+          "file": "engine.py",
+          "line": 33,
+          "symbol": "_rules_for_category",
+          "message": "'_rules_for_category' parameter 'category' (str) looks stringly-typed \u2014 consider Literal[...] or Enum. no call sites found (advisory)",
+          "severity": "warning",
+          "value": 0,
+          "threshold": 8,
+          "metadata": {
+            "param_name": "category",
+            "annotated": true,
+            "call_site_literals": [],
+            "call_site_count": 0
+          }
+        },
+        {
+          "rule": "structural.types.sentinels",
+          "file": "models.py",
+          "line": 47,
+          "symbol": "rule_config",
+          "message": "'rule_config' parameter 'category' (str) looks stringly-typed \u2014 consider Literal[...] or Enum. no call sites found (advisory)",
+          "severity": "warning",
+          "value": 0,
+          "threshold": 8,
+          "metadata": {
+            "param_name": "category",
+            "annotated": true,
+            "call_site_literals": [],
+            "call_site_count": 0
+          }
+        }
+      ],
+      "waived_violations": [],
+      "summary": {
+        "functions_analyzed": 173,
+        "files_searched": 47,
+        "violations": 2,
+        "max_cardinality": 8,
+        "waived_count": 0,
+        "violation_count": 2
+      },
+      "errors": []
+    },
+    "structural.types.hidden_mutators": {
+      "status": "fail",
+      "violations": [
+        {
+          "rule": "structural.types.hidden_mutators",
+          "file": "engine.py",
+          "line": 33,
+          "symbol": "_rules_for_category",
+          "message": "'_rules_for_category' mutates parameter(s) seen via .add()",
+          "severity": "warning",
+          "value": 3,
+          "threshold": 1,
+          "metadata": {
+            "language": "python",
+            "mutations": [
+              {
+                "param": "seen",
+                "method": "add",
+                "line": 54
+              },
+              {
+                "param": "seen",
+                "method": "add",
+                "line": 49
+              },
+              {
+                "param": "seen",
+                "method": "add",
+                "line": 45
+              }
+            ],
+            "mutated_params": [
+              "seen"
+            ]
+          }
+        },
+        {
+          "rule": "structural.types.hidden_mutators",
+          "file": "_lexical/stutter.py",
+          "line": 199,
+          "symbol": "_check_against_scopes",
+          "message": "'_check_against_scopes' mutates parameter(s) out via .append()",
+          "severity": "warning",
+          "value": 1,
+          "threshold": 1,
+          "metadata": {
+            "language": "python",
+            "mutations": [
+              {
+                "param": "out",
+                "method": "append",
+                "line": 226
+              }
+            ],
+            "mutated_params": [
+              "out"
+            ]
+          }
+        },
+        {
+          "rule": "structural.types.hidden_mutators",
+          "file": "config.py",
+          "line": 294,
+          "symbol": "_build_waiver",
+          "message": "'_build_waiver' mutates parameter(s) seen_ids via .add()",
+          "severity": "warning",
+          "value": 1,
+          "threshold": 1,
+          "metadata": {
+            "language": "python",
+            "mutations": [
+              {
+                "param": "seen_ids",
+                "method": "add",
+                "line": 310
+              }
+            ],
+            "mutated_params": [
+              "seen_ids"
+            ]
+          }
+        }
+      ],
+      "waived_violations": [],
+      "summary": {
+        "functions_analyzed": 173,
+        "files_searched": 47,
+        "violations": 3,
+        "require_type_annotation": true,
+        "waived_count": 0,
+        "violation_count": 3
+      },
+      "errors": []
+    },
+    "structural.types.escape_hatches": {
+      "status": "pass",
+      "violations": [],
+      "waived_violations": [],
+      "summary": {
+        "files_scanned": 45,
+        "violations": 0,
+        "threshold": 0.3
+      },
+      "errors": []
+    },
+    "structural.duplication": {
+      "status": "fail",
+      "violations": [
+        {
+          "rule": "structural.duplication",
+          "file": "output.py",
+          "line": 129,
+          "symbol": "_rules_with_violations",
+          "message": "function '_rules_with_violations' is a Type-2 clone (fingerprint 0d9e842d65c5) \u2014 also at: output.py:140",
+          "severity": "warning",
+          "value": 2,
+          "threshold": 2,
+          "metadata": {
+            "fingerprint": "0d9e842d65c5",
+            "clone_count": 2,
+            "members": [
+              {
+                "file": "output.py",
+                "line": 129,
+                "name": "_rules_with_violations"
+              },
+              {
+                "file": "output.py",
+                "line": 140,
+                "name": "_rules_with_waivers"
+              }
+            ]
+          }
+        },
+        {
+          "rule": "structural.duplication",
+          "file": "rules/class_metrics.py",
+          "line": 17,
+          "symbol": "_run_ck",
+          "message": "function '_run_ck' is a Type-2 clone (fingerprint 5e1fa2f3756a) \u2014 also at: rules/complexity.py:18",
+          "severity": "warning",
+          "value": 2,
+          "threshold": 2,
+          "metadata": {
+            "fingerprint": "5e1fa2f3756a",
+            "clone_count": 2,
+            "members": [
+              {
+                "file": "rules/class_metrics.py",
+                "line": 17,
+                "name": "_run_ck"
+              },
+              {
+                "file": "rules/complexity.py",
+                "line": 18,
+                "name": "_run_ccx"
+              }
+            ]
+          }
+        }
+      ],
+      "waived_violations": [],
+      "summary": {
+        "functions_analyzed": 173,
+        "files_searched": 47,
+        "clone_clusters": 2,
+        "clone_fraction": 0.0231,
+        "threshold": 0.05,
+        "waived_count": 0,
+        "violation_count": 2
+      },
+      "errors": []
+    },
+    "structural.god_module": {
+      "status": "pass",
+      "violations": [],
+      "waived_violations": [],
+      "summary": {
+        "files_checked": 47,
+        "violation_count": 0
+      },
+      "errors": []
+    },
+    "structural.orphans": {
+      "status": "skip",
+      "violations": [],
+      "waived_violations": [],
+      "summary": {},
+      "errors": []
+    },
+    "information.volume": {
+      "status": "fail",
+      "violations": [
+        {
+          "rule": "information.volume",
+          "file": "_lexical/hammers.py",
+          "line": 114,
+          "symbol": "hammers_kernel",
+          "message": "Volume 2933 exceeds 1500",
+          "severity": "error",
+          "value": 2932.68,
+          "threshold": 1500,
+          "metadata": {
+            "difficulty": 33.33,
+            "effort": 97734.65,
+            "vocabulary": 113,
+            "length": 430,
+            "end_line": 237
+          }
+        },
+        {
+          "rule": "information.volume",
+          "file": "_lexical/sprawl.py",
+          "line": 294,
+          "symbol": "sprawl_kernel",
+          "message": "Volume 2459 exceeds 1500",
+          "severity": "error",
+          "value": 2458.72,
+          "threshold": 1500,
+          "metadata": {
+            "difficulty": 28.26,
+            "effort": 69482.89,
+            "vocabulary": 93,
+            "length": 376,
+            "end_line": 396
+          }
+        },
+        {
+          "rule": "information.volume",
+          "file": "_lexical/verbosity.py",
+          "line": 70,
+          "symbol": "verbosity_kernel",
+          "message": "Volume 2305 exceeds 1500",
+          "severity": "error",
+          "value": 2304.95,
+          "threshold": 1500,
+          "metadata": {
+            "difficulty": 30.85,
+            "effort": 71116.18,
+            "vocabulary": 104,
+            "length": 344,
+            "end_line": 171
+          }
+        },
+        {
+          "rule": "information.volume",
+          "file": "rules/sprawl.py",
+          "line": 25,
+          "symbol": "run_sprawl",
+          "message": "Volume 1850 exceeds 1500",
+          "severity": "error",
+          "value": 1850.42,
+          "threshold": 1500,
+          "metadata": {
+            "difficulty": 18.68,
+            "effort": 34570.49,
+            "vocabulary": 74,
+            "length": 298,
+            "end_line": 131
+          }
+        }
+      ],
+      "waived_violations": [],
+      "summary": {
+        "functions_checked": 164,
+        "violation_count": 4,
+        "waived_count": 0
+      },
+      "errors": []
+    },
+    "information.difficulty": {
+      "status": "fail",
+      "violations": [
+        {
+          "rule": "information.difficulty",
+          "file": "_lexical/hammers.py",
+          "line": 114,
+          "symbol": "hammers_kernel",
+          "message": "Difficulty 33.3 exceeds 30",
+          "severity": "error",
+          "value": 33.33,
+          "threshold": 30,
+          "metadata": {
+            "volume": 2932.68,
+            "effort": 97734.65,
+            "vocabulary": 113,
+            "length": 430,
+            "end_line": 237
+          }
+        },
+        {
+          "rule": "information.difficulty",
+          "file": "_lexical/verbosity.py",
+          "line": 70,
+          "symbol": "verbosity_kernel",
+          "message": "Difficulty 30.9 exceeds 30",
+          "severity": "error",
+          "value": 30.85,
+          "threshold": 30,
+          "metadata": {
+            "volume": 2304.95,
+            "effort": 71116.18,
+            "vocabulary": 104,
+            "length": 344,
+            "end_line": 171
+          }
+        },
+        {
+          "rule": "information.difficulty",
+          "file": "_lexical/stutter.py",
+          "line": 351,
+          "symbol": "_get_name",
+          "message": "Difficulty 34.2 exceeds 30",
+          "severity": "error",
+          "value": 34.25,
+          "threshold": 30,
+          "metadata": {
+            "volume": 1257.93,
+            "effort": 43083.96,
+            "vocabulary": 39,
+            "length": 238,
+            "end_line": 412
+          }
+        }
+      ],
+      "waived_violations": [],
+      "summary": {
+        "functions_checked": 164,
+        "violation_count": 3,
+        "waived_count": 0
+      },
+      "errors": []
+    },
+    "information.magic_literals": {
+      "status": "pass",
+      "violations": [],
+      "waived_violations": [],
+      "summary": {
+        "functions_analyzed": 173,
+        "files_searched": 47,
+        "violations": 0,
+        "threshold": 3
+      },
+      "errors": []
+    },
+    "information.section_comments": {
+      "status": "pass",
+      "violations": [],
+      "waived_violations": [],
+      "summary": {
+        "functions_analyzed": 93,
+        "files_searched": 10,
+        "violations": 0,
+        "threshold": 2
+      },
+      "errors": []
+    },
+    "lexical.stutter": {
+      "status": "fail",
+      "violations": [
+        {
+          "rule": "lexical.stutter",
+          "file": "_lexical/sprawl.py",
+          "line": 179,
+          "symbol": "cluster_patterns",
+          "message": "identifier `cluster_patterns` stutters with enclosing function `_cluster_patterns_by_alphabet` \u2014 shared tokens ['cluster', 'patterns']",
+          "severity": "warning",
+          "value": 2,
+          "threshold": 2,
+          "metadata": {
+            "scope_name": "_cluster_patterns_by_alphabet",
+            "scope_level": "function",
+            "overlap": [
+              "cluster",
+              "patterns"
+            ],
+            "tokens": [
+              "cluster",
+              "patterns"
+            ],
+            "is_entity_name": false,
+            "language": "python"
+          }
+        },
+        {
+          "rule": "lexical.stutter",
+          "file": "_lexical/sprawl.py",
+          "line": 180,
+          "symbol": "cluster_patterns",
+          "message": "identifier `cluster_patterns` stutters with enclosing function `_cluster_patterns_by_alphabet` \u2014 shared tokens ['cluster', 'patterns']",
+          "severity": "warning",
+          "value": 2,
+          "threshold": 2,
+          "metadata": {
+            "scope_name": "_cluster_patterns_by_alphabet",
+            "scope_level": "function",
+            "overlap": [
+              "cluster",
+              "patterns"
+            ],
+            "tokens": [
+              "cluster",
+              "patterns"
+            ],
+            "is_entity_name": false,
+            "language": "python"
+          }
+        },
+        {
+          "rule": "lexical.stutter",
+          "file": "_lexical/sprawl.py",
+          "line": 184,
+          "symbol": "cluster_patterns",
+          "message": "identifier `cluster_patterns` stutters with enclosing function `_cluster_patterns_by_alphabet` \u2014 shared tokens ['cluster', 'patterns']",
+          "severity": "warning",
+          "value": 2,
+          "threshold": 2,
+          "metadata": {
+            "scope_name": "_cluster_patterns_by_alphabet",
+            "scope_level": "function",
+            "overlap": [
+              "cluster",
+              "patterns"
+            ],
+            "tokens": [
+              "cluster",
+              "patterns"
+            ],
+            "is_entity_name": false,
+            "language": "python"
+          }
+        },
+        {
+          "rule": "lexical.stutter",
+          "file": "_lexical/sprawl.py",
+          "line": 266,
+          "symbol": "items_at_scope",
+          "message": "identifier `items_at_scope` stutters with enclosing function `_affix_at_scope` \u2014 shared tokens ['at', 'scope']",
+          "severity": "warning",
+          "value": 2,
+          "threshold": 2,
+          "metadata": {
+            "scope_name": "_affix_at_scope",
+            "scope_level": "function",
+            "overlap": [
+              "at",
+              "scope"
+            ],
+            "tokens": [
+              "at",
+              "items",
+              "scope"
+            ],
+            "is_entity_name": false,
+            "language": "python"
+          }
+        },
+        {
+          "rule": "lexical.stutter",
+          "file": "_lexical/sprawl.py",
+          "line": 271,
+          "symbol": "items_at_scope",
+          "message": "identifier `items_at_scope` stutters with enclosing function `_affix_at_scope` \u2014 shared tokens ['at', 'scope']",
+          "severity": "warning",
+          "value": 2,
+          "threshold": 2,
+          "metadata": {
+            "scope_name": "_affix_at_scope",
+            "scope_level": "function",
+            "overlap": [
+              "at",
+              "scope"
+            ],
+            "tokens": [
+              "at",
+              "items",
+              "scope"
+            ],
+            "is_entity_name": false,
+            "language": "python"
+          }
+        },
+        {
+          "rule": "lexical.stutter",
+          "file": "config.py",
+          "line": 239,
+          "symbol": "RuleConfig",
+          "message": "identifier `RuleConfig` stutters with enclosing function `_merge_rule_config` \u2014 shared tokens ['config', 'rule']",
+          "severity": "warning",
+          "value": 2,
+          "threshold": 2,
+          "metadata": {
+            "scope_name": "_merge_rule_config",
+            "scope_level": "function",
+            "overlap": [
+              "config",
+              "rule"
+            ],
+            "tokens": [
+              "config",
+              "rule"
+            ],
+            "is_entity_name": false,
+            "language": "python"
+          }
+        },
+        {
+          "rule": "lexical.stutter",
+          "file": "config.py",
+          "line": 253,
+          "symbol": "DEFAULT_RULE_CONFIGS",
+          "message": "identifier `DEFAULT_RULE_CONFIGS` stutters with enclosing function `_build_rule_configs` \u2014 shared tokens ['configs', 'rule']",
+          "severity": "warning",
+          "value": 2,
+          "threshold": 2,
+          "metadata": {
+            "scope_name": "_build_rule_configs",
+            "scope_level": "function",
+            "overlap": [
+              "configs",
+              "rule"
+            ],
+            "tokens": [
+              "configs",
+              "default",
+              "rule"
+            ],
+            "is_entity_name": false,
+            "language": "python"
+          }
+        },
+        {
+          "rule": "lexical.stutter",
+          "file": "config.py",
+          "line": 257,
+          "symbol": "DEFAULT_RULE_CONFIGS",
+          "message": "identifier `DEFAULT_RULE_CONFIGS` stutters with enclosing function `_build_rule_configs` \u2014 shared tokens ['configs', 'rule']",
+          "severity": "warning",
+          "value": 2,
+          "threshold": 2,
+          "metadata": {
+            "scope_name": "_build_rule_configs",
+            "scope_level": "function",
+            "overlap": [
+              "configs",
+              "rule"
+            ],
+            "tokens": [
+              "configs",
+              "default",
+              "rule"
+            ],
+            "is_entity_name": false,
+            "language": "python"
+          }
+        },
+        {
+          "rule": "lexical.stutter",
+          "file": "models.py",
+          "line": 49,
+          "symbol": "RuleConfig",
+          "message": "identifier `RuleConfig` stutters with enclosing function `rule_config` \u2014 shared tokens ['config', 'rule']",
+          "severity": "warning",
+          "value": 2,
+          "threshold": 2,
+          "metadata": {
+            "scope_name": "rule_config",
+            "scope_level": "function",
+            "overlap": [
+              "config",
+              "rule"
+            ],
+            "tokens": [
+              "config",
+              "rule"
+            ],
+            "is_entity_name": false,
+            "language": "python"
+          }
+        }
+      ],
+      "waived_violations": [
+        {
+          "rule": "lexical.stutter",
+          "file": "_compat.py",
+          "line": 286,
+          "symbol": "legacy_table",
+          "message": "identifier `legacy_table` stutters with enclosing function `_apply_one_legacy_table` \u2014 shared tokens ['legacy', 'table']",
+          "severity": "warning",
+          "value": 2,
+          "threshold": 2,
+          "metadata": {
+            "scope_name": "_apply_one_legacy_table",
+            "scope_level": "function",
+            "overlap": [
+              "legacy",
+              "table"
+            ],
+            "tokens": [
+              "legacy",
+              "table"
+            ],
+            "is_entity_name": false,
+            "language": "python",
+            "waiver": {
+              "id": "stutter-compat-legacy",
+              "reason": "legacy_table inside _apply_one_legacy_table: the function applies one entry from the legacy table, so legacy_table is the precise name for what it holds.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "lexical.stutter",
+          "file": "_compat.py",
+          "line": 287,
+          "symbol": "legacy_table",
+          "message": "identifier `legacy_table` stutters with enclosing function `_apply_one_legacy_table` \u2014 shared tokens ['legacy', 'table']",
+          "severity": "warning",
+          "value": 2,
+          "threshold": 2,
+          "metadata": {
+            "scope_name": "_apply_one_legacy_table",
+            "scope_level": "function",
+            "overlap": [
+              "legacy",
+              "table"
+            ],
+            "tokens": [
+              "legacy",
+              "table"
+            ],
+            "is_entity_name": false,
+            "language": "python",
+            "waiver": {
+              "id": "stutter-compat-legacy",
+              "reason": "legacy_table inside _apply_one_legacy_table: the function applies one entry from the legacy table, so legacy_table is the precise name for what it holds.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "lexical.stutter",
+          "file": "engine.py",
+          "line": 22,
+          "symbol": "filter_rule",
+          "message": "identifier `filter_rule` stutters with enclosing function `_resolve_rule_filter` \u2014 shared tokens ['filter', 'rule']",
+          "severity": "warning",
+          "value": 2,
+          "threshold": 2,
+          "metadata": {
+            "scope_name": "_resolve_rule_filter",
+            "scope_level": "function",
+            "overlap": [
+              "filter",
+              "rule"
+            ],
+            "tokens": [
+              "filter",
+              "rule"
+            ],
+            "is_entity_name": false,
+            "language": "python",
+            "waiver": {
+              "id": "stutter-engine-filters",
+              "reason": "filter_rule inside _resolve_rule_filter and filter_category inside _resolve_category_filter: the local variable names the thing being resolved, which is exactly what the enclosing function is doing. Renaming would reduce clarity.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "lexical.stutter",
+          "file": "engine.py",
+          "line": 30,
+          "symbol": "filter_rule",
+          "message": "identifier `filter_rule` stutters with enclosing function `_resolve_rule_filter` \u2014 shared tokens ['filter', 'rule']",
+          "severity": "warning",
+          "value": 2,
+          "threshold": 2,
+          "metadata": {
+            "scope_name": "_resolve_rule_filter",
+            "scope_level": "function",
+            "overlap": [
+              "filter",
+              "rule"
+            ],
+            "tokens": [
+              "filter",
+              "rule"
+            ],
+            "is_entity_name": false,
+            "language": "python",
+            "waiver": {
+              "id": "stutter-engine-filters",
+              "reason": "filter_rule inside _resolve_rule_filter and filter_category inside _resolve_category_filter: the local variable names the thing being resolved, which is exactly what the enclosing function is doing. Renaming would reduce clarity.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "lexical.stutter",
+          "file": "engine.py",
+          "line": 42,
+          "symbol": "RULES_BY_CATEGORY",
+          "message": "identifier `RULES_BY_CATEGORY` stutters with enclosing function `_rules_for_category` \u2014 shared tokens ['category', 'rules']",
+          "severity": "warning",
+          "value": 2,
+          "threshold": 2,
+          "metadata": {
+            "scope_name": "_rules_for_category",
+            "scope_level": "function",
+            "overlap": [
+              "category",
+              "rules"
+            ],
+            "tokens": [
+              "by",
+              "category",
+              "rules"
+            ],
+            "is_entity_name": false,
+            "language": "python",
+            "waiver": {
+              "id": "stutter-engine-filters",
+              "reason": "filter_rule inside _resolve_rule_filter and filter_category inside _resolve_category_filter: the local variable names the thing being resolved, which is exactly what the enclosing function is doing. Renaming would reduce clarity.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "lexical.stutter",
+          "file": "engine.py",
+          "line": 60,
+          "symbol": "filter_category",
+          "message": "identifier `filter_category` stutters with enclosing function `_resolve_category_filter` \u2014 shared tokens ['category', 'filter']",
+          "severity": "warning",
+          "value": 2,
+          "threshold": 2,
+          "metadata": {
+            "scope_name": "_resolve_category_filter",
+            "scope_level": "function",
+            "overlap": [
+              "category",
+              "filter"
+            ],
+            "tokens": [
+              "category",
+              "filter"
+            ],
+            "is_entity_name": false,
+            "language": "python",
+            "waiver": {
+              "id": "stutter-engine-filters",
+              "reason": "filter_rule inside _resolve_rule_filter and filter_category inside _resolve_category_filter: the local variable names the thing being resolved, which is exactly what the enclosing function is doing. Renaming would reduce clarity.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "lexical.stutter",
+          "file": "engine.py",
+          "line": 66,
+          "symbol": "filter_category",
+          "message": "identifier `filter_category` stutters with enclosing function `_resolve_category_filter` \u2014 shared tokens ['category', 'filter']",
+          "severity": "warning",
+          "value": 2,
+          "threshold": 2,
+          "metadata": {
+            "scope_name": "_resolve_category_filter",
+            "scope_level": "function",
+            "overlap": [
+              "category",
+              "filter"
+            ],
+            "tokens": [
+              "category",
+              "filter"
+            ],
+            "is_entity_name": false,
+            "language": "python",
+            "waiver": {
+              "id": "stutter-engine-filters",
+              "reason": "filter_rule inside _resolve_rule_filter and filter_category inside _resolve_category_filter: the local variable names the thing being resolved, which is exactly what the enclosing function is doing. Renaming would reduce clarity.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "lexical.stutter",
+          "file": "preflight.py",
+          "line": 58,
+          "symbol": "required_binaries",
+          "message": "identifier `required_binaries` stutters with enclosing function `check_required_binaries` \u2014 shared tokens ['binaries', 'required']",
+          "severity": "warning",
+          "value": 2,
+          "threshold": 2,
+          "metadata": {
+            "scope_name": "check_required_binaries",
+            "scope_level": "function",
+            "overlap": [
+              "binaries",
+              "required"
+            ],
+            "tokens": [
+              "binaries",
+              "required"
+            ],
+            "is_entity_name": false,
+            "language": "python",
+            "waiver": {
+              "id": "stutter-preflight",
+              "reason": "required_binaries inside check_required_binaries: the function checks required binaries, so the local variable holding the list of required binaries is named precisely.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "lexical.stutter",
+          "file": "rules/any_type_density.py",
+          "line": 30,
+          "symbol": "run_any_type_density",
+          "message": "name `run_any_type_density` stutters with enclosing module `any_type_density` \u2014 shared tokens ['any', 'density', 'type']",
+          "severity": "warning",
+          "value": 3,
+          "threshold": 2,
+          "metadata": {
+            "scope_name": "any_type_density",
+            "scope_level": "module",
+            "overlap": [
+              "any",
+              "density",
+              "type"
+            ],
+            "tokens": [
+              "any",
+              "density",
+              "run",
+              "type"
+            ],
+            "is_entity_name": true,
+            "language": "python",
+            "waiver": {
+              "id": "stutter-rule-wrappers",
+              "reason": "Rule wrapper functions are named run_X and call X_kernel; the kernel variable name repeating the function name is the most precise choice available. This is a structural idiom of the rule registry pattern, not naming drift.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "lexical.stutter",
+          "file": "rules/any_type_density.py",
+          "line": 38,
+          "symbol": "any_type_density_kernel",
+          "message": "identifier `any_type_density_kernel` stutters with enclosing function `run_any_type_density` \u2014 shared tokens ['any', 'density', 'type']",
+          "severity": "warning",
+          "value": 3,
+          "threshold": 2,
+          "metadata": {
+            "scope_name": "run_any_type_density",
+            "scope_level": "function",
+            "overlap": [
+              "any",
+              "density",
+              "type"
+            ],
+            "tokens": [
+              "any",
+              "density",
+              "kernel",
+              "type"
+            ],
+            "is_entity_name": false,
+            "language": "python",
+            "waiver": {
+              "id": "stutter-rule-wrappers",
+              "reason": "Rule wrapper functions are named run_X and call X_kernel; the kernel variable name repeating the function name is the most precise choice available. This is a structural idiom of the rule registry pattern, not naming drift.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "lexical.stutter",
+          "file": "rules/clone_density.py",
+          "line": 32,
+          "symbol": "run_clone_density",
+          "message": "name `run_clone_density` stutters with enclosing module `clone_density` \u2014 shared tokens ['clone', 'density']",
+          "severity": "warning",
+          "value": 2,
+          "threshold": 2,
+          "metadata": {
+            "scope_name": "clone_density",
+            "scope_level": "module",
+            "overlap": [
+              "clone",
+              "density"
+            ],
+            "tokens": [
+              "clone",
+              "density",
+              "run"
+            ],
+            "is_entity_name": true,
+            "language": "python",
+            "waiver": {
+              "id": "stutter-rule-wrappers",
+              "reason": "Rule wrapper functions are named run_X and call X_kernel; the kernel variable name repeating the function name is the most precise choice available. This is a structural idiom of the rule registry pattern, not naming drift.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "lexical.stutter",
+          "file": "rules/clone_density.py",
+          "line": 42,
+          "symbol": "clone_density_kernel",
+          "message": "identifier `clone_density_kernel` stutters with enclosing function `run_clone_density` \u2014 shared tokens ['clone', 'density']",
+          "severity": "warning",
+          "value": 2,
+          "threshold": 2,
+          "metadata": {
+            "scope_name": "run_clone_density",
+            "scope_level": "function",
+            "overlap": [
+              "clone",
+              "density"
+            ],
+            "tokens": [
+              "clone",
+              "density",
+              "kernel"
+            ],
+            "is_entity_name": false,
+            "language": "python",
+            "waiver": {
+              "id": "stutter-rule-wrappers",
+              "reason": "Rule wrapper functions are named run_X and call X_kernel; the kernel variable name repeating the function name is the most precise choice available. This is a structural idiom of the rule registry pattern, not naming drift.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "lexical.stutter",
+          "file": "rules/god_module.py",
+          "line": 22,
+          "symbol": "run_god_module",
+          "message": "name `run_god_module` stutters with enclosing module `god_module` \u2014 shared tokens ['god', 'module']",
+          "severity": "warning",
+          "value": 2,
+          "threshold": 2,
+          "metadata": {
+            "scope_name": "god_module",
+            "scope_level": "module",
+            "overlap": [
+              "god",
+              "module"
+            ],
+            "tokens": [
+              "god",
+              "module",
+              "run"
+            ],
+            "is_entity_name": true,
+            "language": "python",
+            "waiver": {
+              "id": "stutter-rule-wrappers",
+              "reason": "Rule wrapper functions are named run_X and call X_kernel; the kernel variable name repeating the function name is the most precise choice available. This is a structural idiom of the rule registry pattern, not naming drift.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "lexical.stutter",
+          "file": "rules/god_module.py",
+          "line": 29,
+          "symbol": "god_module_kernel",
+          "message": "identifier `god_module_kernel` stutters with enclosing function `run_god_module` \u2014 shared tokens ['god', 'module']",
+          "severity": "warning",
+          "value": 2,
+          "threshold": 2,
+          "metadata": {
+            "scope_name": "run_god_module",
+            "scope_level": "function",
+            "overlap": [
+              "god",
+              "module"
+            ],
+            "tokens": [
+              "god",
+              "kernel",
+              "module"
+            ],
+            "is_entity_name": false,
+            "language": "python",
+            "waiver": {
+              "id": "stutter-rule-wrappers",
+              "reason": "Rule wrapper functions are named run_X and call X_kernel; the kernel variable name repeating the function name is the most precise choice available. This is a structural idiom of the rule registry pattern, not naming drift.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "lexical.stutter",
+          "file": "rules/local_imports.py",
+          "line": 23,
+          "symbol": "run_local_imports",
+          "message": "name `run_local_imports` stutters with enclosing module `local_imports` \u2014 shared tokens ['imports', 'local']",
+          "severity": "warning",
+          "value": 2,
+          "threshold": 2,
+          "metadata": {
+            "scope_name": "local_imports",
+            "scope_level": "module",
+            "overlap": [
+              "imports",
+              "local"
+            ],
+            "tokens": [
+              "imports",
+              "local",
+              "run"
+            ],
+            "is_entity_name": true,
+            "language": "python",
+            "waiver": {
+              "id": "stutter-rule-wrappers",
+              "reason": "Rule wrapper functions are named run_X and call X_kernel; the kernel variable name repeating the function name is the most precise choice available. This is a structural idiom of the rule registry pattern, not naming drift.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "lexical.stutter",
+          "file": "rules/local_imports.py",
+          "line": 31,
+          "symbol": "local_imports_kernel",
+          "message": "identifier `local_imports_kernel` stutters with enclosing function `run_local_imports` \u2014 shared tokens ['imports', 'local']",
+          "severity": "warning",
+          "value": 2,
+          "threshold": 2,
+          "metadata": {
+            "scope_name": "run_local_imports",
+            "scope_level": "function",
+            "overlap": [
+              "imports",
+              "local"
+            ],
+            "tokens": [
+              "imports",
+              "kernel",
+              "local"
+            ],
+            "is_entity_name": false,
+            "language": "python",
+            "waiver": {
+              "id": "stutter-rule-wrappers",
+              "reason": "Rule wrapper functions are named run_X and call X_kernel; the kernel variable name repeating the function name is the most precise choice available. This is a structural idiom of the rule registry pattern, not naming drift.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "lexical.stutter",
+          "file": "rules/local_imports.py",
+          "line": 39,
+          "symbol": "local_imports",
+          "message": "identifier `local_imports` stutters with enclosing function `run_local_imports` \u2014 shared tokens ['imports', 'local']",
+          "severity": "warning",
+          "value": 2,
+          "threshold": 2,
+          "metadata": {
+            "scope_name": "run_local_imports",
+            "scope_level": "function",
+            "overlap": [
+              "imports",
+              "local"
+            ],
+            "tokens": [
+              "imports",
+              "local"
+            ],
+            "is_entity_name": false,
+            "language": "python",
+            "waiver": {
+              "id": "stutter-rule-wrappers",
+              "reason": "Rule wrapper functions are named run_X and call X_kernel; the kernel variable name repeating the function name is the most precise choice available. This is a structural idiom of the rule registry pattern, not naming drift.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "lexical.stutter",
+          "file": "rules/local_imports.py",
+          "line": 72,
+          "symbol": "local_imports",
+          "message": "identifier `local_imports` stutters with enclosing function `run_local_imports` \u2014 shared tokens ['imports', 'local']",
+          "severity": "warning",
+          "value": 2,
+          "threshold": 2,
+          "metadata": {
+            "scope_name": "run_local_imports",
+            "scope_level": "function",
+            "overlap": [
+              "imports",
+              "local"
+            ],
+            "tokens": [
+              "imports",
+              "local"
+            ],
+            "is_entity_name": false,
+            "language": "python",
+            "waiver": {
+              "id": "stutter-rule-wrappers",
+              "reason": "Rule wrapper functions are named run_X and call X_kernel; the kernel variable name repeating the function name is the most precise choice available. This is a structural idiom of the rule registry pattern, not naming drift.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "lexical.stutter",
+          "file": "rules/magic_literals.py",
+          "line": 37,
+          "symbol": "magic_literals_kernel",
+          "message": "identifier `magic_literals_kernel` stutters with enclosing module `magic_literals` \u2014 shared tokens ['literals', 'magic']",
+          "severity": "warning",
+          "value": 2,
+          "threshold": 2,
+          "metadata": {
+            "scope_name": "magic_literals",
+            "scope_level": "module",
+            "overlap": [
+              "literals",
+              "magic"
+            ],
+            "tokens": [
+              "kernel",
+              "literals",
+              "magic"
+            ],
+            "is_entity_name": false,
+            "language": "python",
+            "waiver": {
+              "id": "stutter-rule-wrappers",
+              "reason": "Rule wrapper functions are named run_X and call X_kernel; the kernel variable name repeating the function name is the most precise choice available. This is a structural idiom of the rule registry pattern, not naming drift.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "lexical.stutter",
+          "file": "rules/out_parameters.py",
+          "line": 31,
+          "symbol": "run_out_parameters",
+          "message": "name `run_out_parameters` stutters with enclosing module `out_parameters` \u2014 shared tokens ['out', 'parameters']",
+          "severity": "warning",
+          "value": 2,
+          "threshold": 2,
+          "metadata": {
+            "scope_name": "out_parameters",
+            "scope_level": "module",
+            "overlap": [
+              "out",
+              "parameters"
+            ],
+            "tokens": [
+              "out",
+              "parameters",
+              "run"
+            ],
+            "is_entity_name": true,
+            "language": "python",
+            "waiver": {
+              "id": "stutter-rule-wrappers",
+              "reason": "Rule wrapper functions are named run_X and call X_kernel; the kernel variable name repeating the function name is the most precise choice available. This is a structural idiom of the rule registry pattern, not naming drift.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "lexical.stutter",
+          "file": "rules/out_parameters.py",
+          "line": 41,
+          "symbol": "out_parameters_kernel",
+          "message": "identifier `out_parameters_kernel` stutters with enclosing function `run_out_parameters` \u2014 shared tokens ['out', 'parameters']",
+          "severity": "warning",
+          "value": 2,
+          "threshold": 2,
+          "metadata": {
+            "scope_name": "run_out_parameters",
+            "scope_level": "function",
+            "overlap": [
+              "out",
+              "parameters"
+            ],
+            "tokens": [
+              "kernel",
+              "out",
+              "parameters"
+            ],
+            "is_entity_name": false,
+            "language": "python",
+            "waiver": {
+              "id": "stutter-rule-wrappers",
+              "reason": "Rule wrapper functions are named run_X and call X_kernel; the kernel variable name repeating the function name is the most precise choice available. This is a structural idiom of the rule registry pattern, not naming drift.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "lexical.stutter",
+          "file": "rules/section_comments.py",
+          "line": 32,
+          "symbol": "section_comment_kernel",
+          "message": "identifier `section_comment_kernel` stutters with enclosing function `run_section_comment_density` \u2014 shared tokens ['comment', 'section']",
+          "severity": "warning",
+          "value": 2,
+          "threshold": 2,
+          "metadata": {
+            "scope_name": "run_section_comment_density",
+            "scope_level": "function",
+            "overlap": [
+              "comment",
+              "section"
+            ],
+            "tokens": [
+              "comment",
+              "kernel",
+              "section"
+            ],
+            "is_entity_name": false,
+            "language": "python",
+            "waiver": {
+              "id": "stutter-rule-wrappers",
+              "reason": "Rule wrapper functions are named run_X and call X_kernel; the kernel variable name repeating the function name is the most precise choice available. This is a structural idiom of the rule registry pattern, not naming drift.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "lexical.stutter",
+          "file": "rules/sibling_calls.py",
+          "line": 37,
+          "symbol": "sibling_call_redundancy_kernel",
+          "message": "identifier `sibling_call_redundancy_kernel` stutters with enclosing function `run_sibling_call_redundancy` \u2014 shared tokens ['call', 'redundancy', 'sibling']",
+          "severity": "warning",
+          "value": 3,
+          "threshold": 2,
+          "metadata": {
+            "scope_name": "run_sibling_call_redundancy",
+            "scope_level": "function",
+            "overlap": [
+              "call",
+              "redundancy",
+              "sibling"
+            ],
+            "tokens": [
+              "call",
+              "kernel",
+              "redundancy",
+              "sibling"
+            ],
+            "is_entity_name": false,
+            "language": "python",
+            "waiver": {
+              "id": "stutter-rule-wrappers",
+              "reason": "Rule wrapper functions are named run_X and call X_kernel; the kernel variable name repeating the function name is the most precise choice available. This is a structural idiom of the rule registry pattern, not naming drift.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "lexical.stutter",
+          "file": "rules/stringly_typed.py",
+          "line": 30,
+          "symbol": "run_stringly_typed",
+          "message": "name `run_stringly_typed` stutters with enclosing module `stringly_typed` \u2014 shared tokens ['stringly', 'typed']",
+          "severity": "warning",
+          "value": 2,
+          "threshold": 2,
+          "metadata": {
+            "scope_name": "stringly_typed",
+            "scope_level": "module",
+            "overlap": [
+              "stringly",
+              "typed"
+            ],
+            "tokens": [
+              "run",
+              "stringly",
+              "typed"
+            ],
+            "is_entity_name": true,
+            "language": "python",
+            "waiver": {
+              "id": "stutter-rule-wrappers",
+              "reason": "Rule wrapper functions are named run_X and call X_kernel; the kernel variable name repeating the function name is the most precise choice available. This is a structural idiom of the rule registry pattern, not naming drift.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "lexical.stutter",
+          "file": "rules/stringly_typed.py",
+          "line": 40,
+          "symbol": "stringly_typed_kernel",
+          "message": "identifier `stringly_typed_kernel` stutters with enclosing function `run_stringly_typed` \u2014 shared tokens ['stringly', 'typed']",
+          "severity": "warning",
+          "value": 2,
+          "threshold": 2,
+          "metadata": {
+            "scope_name": "run_stringly_typed",
+            "scope_level": "function",
+            "overlap": [
+              "stringly",
+              "typed"
+            ],
+            "tokens": [
+              "kernel",
+              "stringly",
+              "typed"
+            ],
+            "is_entity_name": false,
+            "language": "python",
+            "waiver": {
+              "id": "stutter-rule-wrappers",
+              "reason": "Rule wrapper functions are named run_X and call X_kernel; the kernel variable name repeating the function name is the most precise choice available. This is a structural idiom of the rule registry pattern, not naming drift.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        }
+      ],
+      "summary": {
+        "files_searched": 47,
+        "violation_count": 9,
+        "levels_checked": [
+          "class",
+          "function",
+          "module",
+          "package"
+        ],
+        "waived_count": 25
+      },
+      "errors": []
+    },
+    "lexical.verbosity": {
+      "status": "pass",
+      "violations": [],
+      "waived_violations": [
+        {
+          "rule": "lexical.verbosity",
+          "file": "_compat.py",
+          "line": 265,
+          "symbol": "_is_leaf_legacy_table",
+          "message": "function name `_is_leaf_legacy_table` has 4 tokens (> 3); consider extracting a namespace or class",
+          "severity": "warning",
+          "value": 4,
+          "threshold": 3,
+          "metadata": {
+            "kind": "function",
+            "tokens": [
+              "is",
+              "leaf",
+              "legacy",
+              "table"
+            ],
+            "language": "python",
+            "waiver": {
+              "id": "verbosity-pending-imposters-refactor",
+              "reason": "Volume of multi-token function names in this codebase is itself a slop signal \u2014 the names accurately describe what the functions do, but the prevalence indicates missing namespaces. Tracked under lexical.imposters and lexical.sprawl findings; the count is expected to decrease mechanically as those refactors land. Threshold stays at the honest default; this waiver silences the dogfood, not the measurement.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "lexical.verbosity",
+          "file": "_compat.py",
+          "line": 276,
+          "symbol": "_apply_one_legacy_table",
+          "message": "function name `_apply_one_legacy_table` has 4 tokens (> 3); consider extracting a namespace or class",
+          "severity": "warning",
+          "value": 4,
+          "threshold": 3,
+          "metadata": {
+            "kind": "function",
+            "tokens": [
+              "apply",
+              "one",
+              "legacy",
+              "table"
+            ],
+            "language": "python",
+            "waiver": {
+              "id": "verbosity-pending-imposters-refactor",
+              "reason": "Volume of multi-token function names in this codebase is itself a slop signal \u2014 the names accurately describe what the functions do, but the prevalence indicates missing namespaces. Tracked under lexical.imposters and lexical.sprawl findings; the count is expected to decrease mechanically as those refactors land. Threshold stays at the honest default; this waiver silences the dogfood, not the measurement.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "lexical.verbosity",
+          "file": "_compat.py",
+          "line": 308,
+          "symbol": "_migrate_v110_stutter_subrules",
+          "message": "function name `_migrate_v110_stutter_subrules` has 4 tokens (> 3); consider extracting a namespace or class",
+          "severity": "warning",
+          "value": 4,
+          "threshold": 3,
+          "metadata": {
+            "kind": "function",
+            "tokens": [
+              "migrate",
+              "v",
+              "stutter",
+              "subrules"
+            ],
+            "language": "python",
+            "waiver": {
+              "id": "verbosity-pending-imposters-refactor",
+              "reason": "Volume of multi-token function names in this codebase is itself a slop signal \u2014 the names accurately describe what the functions do, but the prevalence indicates missing namespaces. Tracked under lexical.imposters and lexical.sprawl findings; the count is expected to decrease mechanically as those refactors land. Threshold stays at the honest default; this waiver silences the dogfood, not the measurement.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "lexical.verbosity",
+          "file": "_compat.py",
+          "line": 355,
+          "symbol": "migrate_legacy_rule_tables",
+          "message": "function name `migrate_legacy_rule_tables` has 4 tokens (> 3); consider extracting a namespace or class",
+          "severity": "warning",
+          "value": 4,
+          "threshold": 3,
+          "metadata": {
+            "kind": "function",
+            "tokens": [
+              "migrate",
+              "legacy",
+              "rule",
+              "tables"
+            ],
+            "language": "python",
+            "waiver": {
+              "id": "verbosity-pending-imposters-refactor",
+              "reason": "Volume of multi-token function names in this codebase is itself a slop signal \u2014 the names accurately describe what the functions do, but the prevalence indicates missing namespaces. Tracked under lexical.imposters and lexical.sprawl findings; the count is expected to decrease mechanically as those refactors land. Threshold stays at the honest default; this waiver silences the dogfood, not the measurement.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "lexical.verbosity",
+          "file": "_lexical/_naming.py",
+          "line": 269,
+          "symbol": "_extract_c_or_cpp_name",
+          "message": "function name `_extract_c_or_cpp_name` has 5 tokens (> 3); consider extracting a namespace or class",
+          "severity": "warning",
+          "value": 5,
+          "threshold": 3,
+          "metadata": {
+            "kind": "function",
+            "tokens": [
+              "extract",
+              "c",
+              "or",
+              "cpp",
+              "name"
+            ],
+            "language": "python",
+            "waiver": {
+              "id": "verbosity-pending-imposters-refactor",
+              "reason": "Volume of multi-token function names in this codebase is itself a slop signal \u2014 the names accurately describe what the functions do, but the prevalence indicates missing namespaces. Tracked under lexical.imposters and lexical.sprawl findings; the count is expected to decrease mechanically as those refactors land. Threshold stays at the honest default; this waiver silences the dogfood, not the measurement.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "lexical.verbosity",
+          "file": "_lexical/imposters.py",
+          "line": 343,
+          "symbol": "_recursive_first_param_findings",
+          "message": "function name `_recursive_first_param_findings` has 4 tokens (> 3); consider extracting a namespace or class",
+          "severity": "warning",
+          "value": 4,
+          "threshold": 3,
+          "metadata": {
+            "kind": "function",
+            "tokens": [
+              "recursive",
+              "first",
+              "param",
+              "findings"
+            ],
+            "language": "python",
+            "waiver": {
+              "id": "verbosity-pending-imposters-refactor",
+              "reason": "Volume of multi-token function names in this codebase is itself a slop signal \u2014 the names accurately describe what the functions do, but the prevalence indicates missing namespaces. Tracked under lexical.imposters and lexical.sprawl findings; the count is expected to decrease mechanically as those refactors land. Threshold stays at the honest default; this waiver silences the dogfood, not the measurement.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "lexical.verbosity",
+          "file": "_lexical/sprawl.py",
+          "line": 147,
+          "symbol": "_cluster_patterns_by_alphabet",
+          "message": "function name `_cluster_patterns_by_alphabet` has 4 tokens (> 3); consider extracting a namespace or class",
+          "severity": "warning",
+          "value": 4,
+          "threshold": 3,
+          "metadata": {
+            "kind": "function",
+            "tokens": [
+              "cluster",
+              "patterns",
+              "by",
+              "alphabet"
+            ],
+            "language": "python",
+            "waiver": {
+              "id": "verbosity-pending-imposters-refactor",
+              "reason": "Volume of multi-token function names in this codebase is itself a slop signal \u2014 the names accurately describe what the functions do, but the prevalence indicates missing namespaces. Tracked under lexical.imposters and lexical.sprawl findings; the count is expected to decrease mechanically as those refactors land. Threshold stays at the honest default; this waiver silences the dogfood, not the measurement.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "lexical.verbosity",
+          "file": "rules/any_type_density.py",
+          "line": 30,
+          "symbol": "run_any_type_density",
+          "message": "function name `run_any_type_density` has 4 tokens (> 3); consider extracting a namespace or class",
+          "severity": "warning",
+          "value": 4,
+          "threshold": 3,
+          "metadata": {
+            "kind": "function",
+            "tokens": [
+              "run",
+              "any",
+              "type",
+              "density"
+            ],
+            "language": "python",
+            "waiver": {
+              "id": "verbosity-pending-imposters-refactor",
+              "reason": "Volume of multi-token function names in this codebase is itself a slop signal \u2014 the names accurately describe what the functions do, but the prevalence indicates missing namespaces. Tracked under lexical.imposters and lexical.sprawl findings; the count is expected to decrease mechanically as those refactors land. Threshold stays at the honest default; this waiver silences the dogfood, not the measurement.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "lexical.verbosity",
+          "file": "rules/magic_literals.py",
+          "line": 30,
+          "symbol": "run_magic_literal_density",
+          "message": "function name `run_magic_literal_density` has 4 tokens (> 3); consider extracting a namespace or class",
+          "severity": "warning",
+          "value": 4,
+          "threshold": 3,
+          "metadata": {
+            "kind": "function",
+            "tokens": [
+              "run",
+              "magic",
+              "literal",
+              "density"
+            ],
+            "language": "python",
+            "waiver": {
+              "id": "verbosity-pending-imposters-refactor",
+              "reason": "Volume of multi-token function names in this codebase is itself a slop signal \u2014 the names accurately describe what the functions do, but the prevalence indicates missing namespaces. Tracked under lexical.imposters and lexical.sprawl findings; the count is expected to decrease mechanically as those refactors land. Threshold stays at the honest default; this waiver silences the dogfood, not the measurement.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "lexical.verbosity",
+          "file": "rules/section_comments.py",
+          "line": 25,
+          "symbol": "run_section_comment_density",
+          "message": "function name `run_section_comment_density` has 4 tokens (> 3); consider extracting a namespace or class",
+          "severity": "warning",
+          "value": 4,
+          "threshold": 3,
+          "metadata": {
+            "kind": "function",
+            "tokens": [
+              "run",
+              "section",
+              "comment",
+              "density"
+            ],
+            "language": "python",
+            "waiver": {
+              "id": "verbosity-pending-imposters-refactor",
+              "reason": "Volume of multi-token function names in this codebase is itself a slop signal \u2014 the names accurately describe what the functions do, but the prevalence indicates missing namespaces. Tracked under lexical.imposters and lexical.sprawl findings; the count is expected to decrease mechanically as those refactors land. Threshold stays at the honest default; this waiver silences the dogfood, not the measurement.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        },
+        {
+          "rule": "lexical.verbosity",
+          "file": "rules/sibling_calls.py",
+          "line": 29,
+          "symbol": "run_sibling_call_redundancy",
+          "message": "function name `run_sibling_call_redundancy` has 4 tokens (> 3); consider extracting a namespace or class",
+          "severity": "warning",
+          "value": 4,
+          "threshold": 3,
+          "metadata": {
+            "kind": "function",
+            "tokens": [
+              "run",
+              "sibling",
+              "call",
+              "redundancy"
+            ],
+            "language": "python",
+            "waiver": {
+              "id": "verbosity-pending-imposters-refactor",
+              "reason": "Volume of multi-token function names in this codebase is itself a slop signal \u2014 the names accurately describe what the functions do, but the prevalence indicates missing namespaces. Tracked under lexical.imposters and lexical.sprawl findings; the count is expected to decrease mechanically as those refactors land. Threshold stays at the honest default; this waiver silences the dogfood, not the measurement.",
+              "allow_up_to": null,
+              "expires": null
+            }
+          }
+        }
+      ],
+      "summary": {
+        "items_checked": 184,
+        "files_searched": 47,
+        "violation_count": 0,
+        "waived_count": 11
+      },
+      "errors": []
+    },
+    "lexical.cowards": {
+      "status": "fail",
+      "violations": [
+        {
+          "rule": "lexical.cowards",
+          "file": "_lexical/sprawl.py",
+          "line": 95,
+          "symbol": "_token_edit_distance_1",
+          "message": "function `_token_edit_distance_1` ends in disambiguator `_1` (numeric); the codebase couldn't commit \u2014 either pick one or describe what differs",
+          "severity": "warning",
+          "value": null,
+          "threshold": null,
+          "metadata": {
+            "suffix": "_1",
+            "kind": "numeric",
+            "language": "python"
+          }
+        }
+      ],
+      "waived_violations": [],
+      "summary": {
+        "functions_checked": 173,
+        "files_searched": 44,
+        "violation_count": 1,
+        "waived_count": 0
+      },
+      "errors": []
+    },
+    "lexical.hammers": {
+      "status": "pass",
+      "violations": [],
+      "waived_violations": [],
+      "summary": {
+        "items_checked": 205,
+        "files_searched": 47,
+        "terms_loaded": 34,
+        "violation_count": 0
+      },
+      "errors": []
+    },
+    "lexical.tautology": {
+      "status": "pass",
+      "violations": [],
+      "waived_violations": [],
+      "summary": {
+        "functions_checked": 173,
+        "files_searched": 44,
+        "violation_count": 0
+      },
+      "errors": []
+    },
+    "lexical.sprawl": {
+      "status": "pass",
+      "violations": [],
+      "waived_violations": [],
+      "summary": {
+        "functions_checked": 173,
+        "files_searched": 44,
+        "clusters_detected": 12,
+        "concepts_detected": 0,
+        "inheritance_pairs": 0,
+        "violation_count": 0
+      },
+      "errors": []
+    },
+    "lexical.imposters": {
+      "status": "fail",
+      "violations": [
+        {
+          "rule": "lexical.imposters",
+          "file": "_lexical/_naming.py",
+          "line": 45,
+          "symbol": "name",
+          "message": "7 functions under `_lexical/` share `name` as first parameter; body cohesion 0.08, receiver-call density 0.3. Cluster is real but profile is mixed \u2014 review whether all members belong, or whether helpers should be moved out before deciding on a refactor.",
+          "severity": "warning",
+          "value": null,
+          "threshold": null,
+          "metadata": {
+            "profile": "heterogeneous",
+            "verdict": "strong",
+            "scope": "_lexical",
+            "scope_kind": "package",
+            "body_jaccard_mean": 0.082,
+            "mean_receiver_calls": 0.29,
+            "modal_overlap_mean": 0.405,
+            "members": [
+              {
+                "name": "split_identifier",
+                "file": "_lexical/_naming.py",
+                "line": 45
+              },
+              {
+                "name": "_classify",
+                "file": "_lexical/cowards.py",
+                "line": 101
+              },
+              {
+                "name": "_check_identifier",
+                "file": "_lexical/hammers.py",
+                "line": 245
+              },
+              {
+                "name": "_maybe_skip_self",
+                "file": "_lexical/imposters.py",
+                "line": 284
+              },
+              {
+                "name": "_split_lower",
+                "file": "_lexical/sprawl.py",
+                "line": 40
+              },
+              {
+                "name": "_lowercase_tokens",
+                "file": "_lexical/stutter.py",
+                "line": 128
+              },
+              {
+                "name": "_check_against_scopes",
+                "file": "_lexical/stutter.py",
+                "line": 199
+              }
+            ],
+            "parameter_types": [
+              "str",
+              "str | None"
+            ]
+          }
+        },
+        {
+          "rule": "lexical.imposters",
+          "file": "_compat.py",
+          "line": 199,
+          "symbol": "raw_rules",
+          "message": "5 functions in `_compat.py` share `raw_rules` as first parameter; body cohesion 0.25, receiver-call density 0.4. Cluster is real but profile is mixed \u2014 review whether all members belong, or whether helpers should be moved out before deciding on a refactor.",
+          "severity": "warning",
+          "value": null,
+          "threshold": null,
+          "metadata": {
+            "profile": "heterogeneous",
+            "verdict": "strong",
+            "scope": "_compat.py",
+            "scope_kind": "file",
+            "body_jaccard_mean": 0.251,
+            "mean_receiver_calls": 0.4,
+            "modal_overlap_mean": 0.367,
+            "members": [
+              {
+                "name": "collect_prefix_overrides",
+                "file": "_compat.py",
+                "line": 199
+              },
+              {
+                "name": "_flatten_canonical_tables",
+                "file": "_compat.py",
+                "line": 238
+              },
+              {
+                "name": "_collect_legacy_derivations",
+                "file": "_compat.py",
+                "line": 292
+              },
+              {
+                "name": "_migrate_v110_stutter_subrules",
+                "file": "_compat.py",
+                "line": 308
+              },
+              {
+                "name": "migrate_legacy_rule_tables",
+                "file": "_compat.py",
+                "line": 355
+              }
+            ],
+            "parameter_types": [
+              "dict"
+            ]
+          }
+        },
+        {
+          "rule": "lexical.imposters",
+          "file": "color.py",
+          "line": 39,
+          "symbol": "text",
+          "message": "5 functions in `color.py` share `text` as first parameter; body cohesion 1.00 (clone family) but receiver-call density is 0.0. Members are doing the same thing parametrically \u2014 consider a dispatch table or accept as idiomatic free functions. Do NOT extract as methods on a class.",
+          "severity": "warning",
+          "value": null,
+          "threshold": null,
+          "metadata": {
+            "profile": "strategy_family",
+            "verdict": "strong",
+            "scope": "color.py",
+            "scope_kind": "file",
+            "body_jaccard_mean": 1.0,
+            "mean_receiver_calls": 0.0,
+            "modal_overlap_mean": 0.6,
+            "members": [
+              {
+                "name": "red",
+                "file": "color.py",
+                "line": 39
+              },
+              {
+                "name": "green",
+                "file": "color.py",
+                "line": 43
+              },
+              {
+                "name": "yellow",
+                "file": "color.py",
+                "line": 47
+              },
+              {
+                "name": "bold",
+                "file": "color.py",
+                "line": 51
+              },
+              {
+                "name": "dim",
+                "file": "color.py",
+                "line": 55
+              }
+            ],
+            "parameter_types": [
+              "str"
+            ]
+          }
+        },
+        {
+          "rule": "lexical.imposters",
+          "file": "output.py",
+          "line": 50,
+          "symbol": "result",
+          "message": "5 functions in `output.py` share `result` as first parameter; receiver-call density 4.4 per member, body cohesion 0.12. Members actively treat `result` as a receiver \u2014 extract a class with `result` as ``self``.",
+          "severity": "warning",
+          "value": null,
+          "threshold": null,
+          "metadata": {
+            "profile": "missing_class",
+            "verdict": "strong",
+            "scope": "output.py",
+            "scope_kind": "file",
+            "body_jaccard_mean": 0.118,
+            "mean_receiver_calls": 4.4,
+            "modal_overlap_mean": 0.567,
+            "members": [
+              {
+                "name": "format_human",
+                "file": "output.py",
+                "line": 50
+              },
+              {
+                "name": "_group_by_category",
+                "file": "output.py",
+                "line": 65
+              },
+              {
+                "name": "_format_footer",
+                "file": "output.py",
+                "line": 295
+              },
+              {
+                "name": "format_quiet",
+                "file": "output.py",
+                "line": 324
+              },
+              {
+                "name": "format_json",
+                "file": "output.py",
+                "line": 334
+              }
+            ],
+            "parameter_types": [
+              "LintResult"
+            ]
+          }
+        },
+        {
+          "rule": "lexical.imposters",
+          "file": "output.py",
+          "line": 111,
+          "symbol": "rule_pairs",
+          "message": "5 functions in `output.py` share `rule_pairs` as first parameter; body cohesion 0.18, receiver-call density 0.0. Cluster is real but profile is mixed \u2014 review whether all members belong, or whether helpers should be moved out before deciding on a refactor.",
+          "severity": "warning",
+          "value": null,
+          "threshold": null,
+          "metadata": {
+            "profile": "heterogeneous",
+            "verdict": "strong",
+            "scope": "output.py",
+            "scope_kind": "file",
+            "body_jaccard_mean": 0.179,
+            "mean_receiver_calls": 0.0,
+            "modal_overlap_mean": 0.5,
+            "members": [
+              {
+                "name": "_render_category_findings",
+                "file": "output.py",
+                "line": 111
+              },
+              {
+                "name": "_rules_with_violations",
+                "file": "output.py",
+                "line": 129
+              },
+              {
+                "name": "_rules_with_waivers",
+                "file": "output.py",
+                "line": 140
+              },
+              {
+                "name": "_aggregate_category",
+                "file": "output.py",
+                "line": 168
+              },
+              {
+                "name": "_category_header_extras",
+                "file": "output.py",
+                "line": 280
+              }
+            ],
+            "parameter_types": [
+              "list[tuple[str, RuleResult]]"
+            ]
+          }
+        },
+        {
+          "rule": "lexical.imposters",
+          "file": "config.py",
+          "line": 294,
+          "symbol": "raw",
+          "message": "4 functions in `config.py` share `raw` as first parameter; body cohesion 0.27, receiver-call density 0.8. Cluster is real but profile is mixed \u2014 review whether all members belong, or whether helpers should be moved out before deciding on a refactor.",
+          "severity": "warning",
+          "value": null,
+          "threshold": null,
+          "metadata": {
+            "profile": "heterogeneous",
+            "verdict": "strong",
+            "scope": "config.py",
+            "scope_kind": "file",
+            "body_jaccard_mean": 0.271,
+            "mean_receiver_calls": 0.75,
+            "modal_overlap_mean": 0.458,
+            "members": [
+              {
+                "name": "_build_waiver",
+                "file": "config.py",
+                "line": 294
+              },
+              {
+                "name": "_required_string",
+                "file": "config.py",
+                "line": 333
+              },
+              {
+                "name": "_optional_number",
+                "file": "config.py",
+                "line": 341
+              },
+              {
+                "name": "_optional_iso_date",
+                "file": "config.py",
+                "line": 351
+              }
+            ],
+            "parameter_types": [
+              "Any",
+              "dict[str, Any]"
+            ]
+          }
+        },
+        {
+          "rule": "lexical.imposters",
+          "file": "output.py",
+          "line": 19,
+          "symbol": "rule_name",
+          "message": "4 functions in `output.py` share `rule_name` as first parameter; body cohesion 0.17, receiver-call density 0.2. Cluster is real but profile is mixed \u2014 review whether all members belong, or whether helpers should be moved out before deciding on a refactor.",
+          "severity": "warning",
+          "value": null,
+          "threshold": null,
+          "metadata": {
+            "profile": "heterogeneous",
+            "verdict": "strong",
+            "scope": "output.py",
+            "scope_kind": "file",
+            "body_jaccard_mean": 0.169,
+            "mean_receiver_calls": 0.25,
+            "modal_overlap_mean": 0.583,
+            "members": [
+              {
+                "name": "_category_for",
+                "file": "output.py",
+                "line": 19
+              },
+              {
+                "name": "_short_name_for",
+                "file": "output.py",
+                "line": 31
+              },
+              {
+                "name": "_render_violations",
+                "file": "output.py",
+                "line": 186
+              },
+              {
+                "name": "_render_waived",
+                "file": "output.py",
+                "line": 220
+              }
+            ],
+            "parameter_types": [
+              "str"
+            ]
+          }
+        },
+        {
+          "rule": "lexical.imposters",
+          "file": "cli.py",
+          "line": 155,
+          "symbol": "args",
+          "message": "3 functions in `cli.py` share `args` as first parameter; receiver-call density 2.0 per member, body cohesion 0.05. Members actively treat `args` as a receiver \u2014 extract a class with `args` as ``self``.",
+          "severity": "warning",
+          "value": null,
+          "threshold": null,
+          "metadata": {
+            "profile": "missing_class",
+            "verdict": "strong",
+            "scope": "cli.py",
+            "scope_kind": "file",
+            "body_jaccard_mean": 0.055,
+            "mean_receiver_calls": 2.0,
+            "modal_overlap_mean": 0.556,
+            "members": [
+              {
+                "name": "_load_and_run",
+                "file": "cli.py",
+                "line": 155
+              },
+              {
+                "name": "cmd_lint",
+                "file": "cli.py",
+                "line": 210
+              },
+              {
+                "name": "cmd_check",
+                "file": "cli.py",
+                "line": 214
+              }
+            ],
+            "parameter_types": [
+              "argparse.Namespace"
+            ]
+          }
+        },
+        {
+          "rule": "lexical.imposters",
+          "file": "engine.py",
+          "line": 223,
+          "symbol": "violation",
+          "message": "3 functions in `engine.py` share `violation` as first parameter; receiver-call density 1.7 per member, body cohesion 0.07. Members actively treat `violation` as a receiver \u2014 extract a class with `violation` as ``self``.",
+          "severity": "warning",
+          "value": null,
+          "threshold": null,
+          "metadata": {
+            "profile": "missing_class",
+            "verdict": "strong",
+            "scope": "engine.py",
+            "scope_kind": "file",
+            "body_jaccard_mean": 0.07,
+            "mean_receiver_calls": 1.67,
+            "modal_overlap_mean": 0.5,
+            "members": [
+              {
+                "name": "_matching_waiver",
+                "file": "engine.py",
+                "line": 223
+              },
+              {
+                "name": "_value_allowed",
+                "file": "engine.py",
+                "line": 270
+              },
+              {
+                "name": "_mark_waived",
+                "file": "engine.py",
+                "line": 279
+              }
+            ],
+            "parameter_types": [
+              "Violation"
+            ]
+          }
+        },
+        {
+          "rule": "lexical.imposters",
+          "file": "_compat.py",
+          "line": 172,
+          "symbol": "name",
+          "message": "3 functions across the codebase share `name` as first parameter; body cohesion 0.28, receiver-call density 0.0. Cluster is real but profile is mixed \u2014 review whether all members belong, or whether helpers should be moved out before deciding on a refactor.",
+          "severity": "warning",
+          "value": null,
+          "threshold": null,
+          "metadata": {
+            "profile": "heterogeneous",
+            "verdict": "strong",
+            "scope": "<root>",
+            "scope_kind": "root",
+            "body_jaccard_mean": 0.283,
+            "mean_receiver_calls": 0.0,
+            "modal_overlap_mean": 0.5,
+            "members": [
+              {
+                "name": "canonical_rule_name",
+                "file": "_compat.py",
+                "line": 172
+              },
+              {
+                "name": "canonical_categories",
+                "file": "_compat.py",
+                "line": 184
+              },
+              {
+                "name": "_format_binary_status",
+                "file": "cli.py",
+                "line": 352
+              }
+            ],
+            "parameter_types": [
+              "str"
+            ]
+          }
+        },
+        {
+          "rule": "lexical.imposters",
+          "file": "engine.py",
+          "line": 106,
+          "symbol": "config",
+          "message": "3 functions across the codebase share `config` as first parameter; receiver-call density 2.7 per member, body cohesion 0.14. Members actively treat `config` as a receiver \u2014 extract a class with `config` as ``self``.",
+          "severity": "warning",
+          "value": null,
+          "threshold": null,
+          "metadata": {
+            "profile": "missing_class",
+            "verdict": "strong",
+            "scope": "<root>",
+            "scope_kind": "root",
+            "body_jaccard_mean": 0.143,
+            "mean_receiver_calls": 2.67,
+            "modal_overlap_mean": 0.722,
+            "members": [
+              {
+                "name": "run_lint",
+                "file": "engine.py",
+                "line": 106
+              },
+              {
+                "name": "required_binaries",
+                "file": "preflight.py",
+                "line": 32
+              },
+              {
+                "name": "check_required_binaries",
+                "file": "preflight.py",
+                "line": 52
+              }
+            ],
+            "parameter_types": [
+              "SlopConfig"
+            ]
+          }
+        }
+      ],
+      "waived_violations": [],
+      "summary": {
+        "functions_checked": 173,
+        "files_searched": 44,
+        "clusters_detected": 18,
+        "profile_counts": {
+          "false_positive": 2,
+          "infrastructure": 5,
+          "heterogeneous": 6,
+          "strategy_family": 1,
+          "missing_class": 4
+        },
+        "violation_count": 11,
+        "waived_count": 0
+      },
+      "errors": []
+    },
+    "lexical.slackers": {
+      "status": "fail",
+      "violations": [
+        {
+          "rule": "lexical.slackers",
+          "file": "_compat.py",
+          "line": 199,
+          "symbol": "raw_rules",
+          "message": "5 functions in `_compat.py` share `raw_rules` as first parameter but the names don't align (0% fit any common template). Members: `collect_prefix_overrides`, `_flatten_canonical_tables`, `_collect_legacy_derivations`, `_migrate_v110_stutter_subrules`, `migrate_legacy_rule_tables`. The cluster is real; the names refuse to admit it. Consider a naming template (e.g., `verb_raw_rules` or `raw_rules_attribute`) to make the family relationship visible.",
+          "severity": "warning",
+          "value": 0.0,
+          "threshold": 0.3,
+          "metadata": {
+            "scope": "_compat.py",
+            "scope_kind": "file",
+            "profile_from_imposters": "heterogeneous",
+            "coverage": 0.0,
+            "n_meaningful_patterns": 0,
+            "members": [
+              {
+                "name": "collect_prefix_overrides",
+                "file": "_compat.py",
+                "line": 199
+              },
+              {
+                "name": "_flatten_canonical_tables",
+                "file": "_compat.py",
+                "line": 238
+              },
+              {
+                "name": "_collect_legacy_derivations",
+                "file": "_compat.py",
+                "line": 292
+              },
+              {
+                "name": "_migrate_v110_stutter_subrules",
+                "file": "_compat.py",
+                "line": 308
+              },
+              {
+                "name": "migrate_legacy_rule_tables",
+                "file": "_compat.py",
+                "line": 355
+              }
+            ]
+          }
+        },
+        {
+          "rule": "lexical.slackers",
+          "file": "config.py",
+          "line": 294,
+          "symbol": "raw",
+          "message": "4 functions in `config.py` share `raw` as first parameter but the names don't align (0% fit any common template). Members: `_build_waiver`, `_required_string`, `_optional_number`, `_optional_iso_date`. The cluster is real; the names refuse to admit it. Consider a naming template (e.g., `verb_raw` or `raw_attribute`) to make the family relationship visible.",
+          "severity": "warning",
+          "value": 0.0,
+          "threshold": 0.3,
+          "metadata": {
+            "scope": "config.py",
+            "scope_kind": "file",
+            "profile_from_imposters": "heterogeneous",
+            "coverage": 0.0,
+            "n_meaningful_patterns": 0,
+            "members": [
+              {
+                "name": "_build_waiver",
+                "file": "config.py",
+                "line": 294
+              },
+              {
+                "name": "_required_string",
+                "file": "config.py",
+                "line": 333
+              },
+              {
+                "name": "_optional_number",
+                "file": "config.py",
+                "line": 341
+              },
+              {
+                "name": "_optional_iso_date",
+                "file": "config.py",
+                "line": 351
+              }
+            ]
+          }
+        },
+        {
+          "rule": "lexical.slackers",
+          "file": "engine.py",
+          "line": 223,
+          "symbol": "violation",
+          "message": "3 functions in `engine.py` share `violation` as first parameter but the names don't align (0% fit any common template). Members: `_matching_waiver`, `_value_allowed`, `_mark_waived`. The cluster is real; the names refuse to admit it. Consider a naming template (e.g., `verb_violation` or `violation_attribute`) to make the family relationship visible.",
+          "severity": "warning",
+          "value": 0.0,
+          "threshold": 0.3,
+          "metadata": {
+            "scope": "engine.py",
+            "scope_kind": "file",
+            "profile_from_imposters": "missing_class",
+            "coverage": 0.0,
+            "n_meaningful_patterns": 0,
+            "members": [
+              {
+                "name": "_matching_waiver",
+                "file": "engine.py",
+                "line": 223
+              },
+              {
+                "name": "_value_allowed",
+                "file": "engine.py",
+                "line": 270
+              },
+              {
+                "name": "_mark_waived",
+                "file": "engine.py",
+                "line": 279
+              }
+            ]
+          }
+        },
+        {
+          "rule": "lexical.slackers",
+          "file": "_compat.py",
+          "line": 172,
+          "symbol": "name",
+          "message": "3 functions across the codebase share `name` as first parameter but the names don't align (0% fit any common template). Members: `canonical_rule_name`, `canonical_categories`, `_format_binary_status`. The cluster is real; the names refuse to admit it. Consider a naming template (e.g., `verb_name` or `name_attribute`) to make the family relationship visible.",
+          "severity": "warning",
+          "value": 0.0,
+          "threshold": 0.3,
+          "metadata": {
+            "scope": "<root>",
+            "scope_kind": "root",
+            "profile_from_imposters": "heterogeneous",
+            "coverage": 0.0,
+            "n_meaningful_patterns": 0,
+            "members": [
+              {
+                "name": "canonical_rule_name",
+                "file": "_compat.py",
+                "line": 172
+              },
+              {
+                "name": "canonical_categories",
+                "file": "_compat.py",
+                "line": 184
+              },
+              {
+                "name": "_format_binary_status",
+                "file": "cli.py",
+                "line": 352
+              }
+            ]
+          }
+        },
+        {
+          "rule": "lexical.slackers",
+          "file": "engine.py",
+          "line": 106,
+          "symbol": "config",
+          "message": "3 functions across the codebase share `config` as first parameter but the names don't align (0% fit any common template). Members: `run_lint`, `required_binaries`, `check_required_binaries`. The cluster is real; the names refuse to admit it. Consider a naming template (e.g., `verb_config` or `config_attribute`) to make the family relationship visible.",
+          "severity": "warning",
+          "value": 0.0,
+          "threshold": 0.3,
+          "metadata": {
+            "scope": "<root>",
+            "scope_kind": "root",
+            "profile_from_imposters": "missing_class",
+            "coverage": 0.0,
+            "n_meaningful_patterns": 0,
+            "members": [
+              {
+                "name": "run_lint",
+                "file": "engine.py",
+                "line": 106
+              },
+              {
+                "name": "required_binaries",
+                "file": "preflight.py",
+                "line": 32
+              },
+              {
+                "name": "check_required_binaries",
+                "file": "preflight.py",
+                "line": 52
+              }
+            ]
+          }
+        }
+      ],
+      "waived_violations": [],
+      "summary": {
+        "functions_checked": 173,
+        "files_searched": 44,
+        "clusters_detected": 5,
+        "violation_count": 5,
+        "waived_count": 0
+      },
+      "errors": []
+    },
+    "lexical.confusion": {
+      "status": "pass",
+      "violations": [],
+      "waived_violations": [],
+      "summary": {
+        "files_searched": 44,
+        "functions_checked": 173,
+        "candidate_files": 0,
+        "violation_count": 0
+      },
+      "errors": []
+    }
+  },
+  "summary": {
+    "rules_checked": 28,
+    "rules_skipped": 3,
+    "violation_count": 40,
+    "advisory_count": 38,
+    "waived_count": 52,
+    "result": "fail"
+  }
+}

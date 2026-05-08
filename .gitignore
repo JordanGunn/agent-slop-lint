@@ -2,3 +2,7 @@
 .engram/
 .ml-cache/
 .mainline/local.toml
+
+# Python bytecode (root-level dirs; src/.gitignore covers src/)
+__pycache__/
+*.pyc
