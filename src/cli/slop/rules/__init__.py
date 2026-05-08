@@ -16,6 +16,7 @@ from slop.rules.architecture import run_distance
 from slop.rules.class_metrics import run_coupling, run_inheritance_children, run_inheritance_depth
 from slop.rules.clone_density import run_clone_density
 from slop.rules.complexity import run_cognitive, run_cyclomatic, run_weighted
+from slop.rules.confusion import run_confusion
 from slop.rules.cowards import run_cowards
 from slop.rules.dead_code import run_unreferenced
 from slop.rules.dependencies import run_cycles
@@ -336,6 +337,15 @@ RULE_REGISTRY: list[RuleDefinition] = [
         default_enabled=True,
         threshold_label="< 30% template coverage",
         run=run_slackers,
+    ),
+    RuleDefinition(
+        name="lexical.confusion",
+        category="lexical.confusion",
+        description="File holds multiple distinct strong-receiver clusters (Lanza & Marinescu Extract Class)",
+        default_severity="warning",
+        default_enabled=True,
+        threshold_label="≥ 2 strong receivers in one file",
+        run=run_confusion,
     ),
 ]
 

@@ -203,6 +203,15 @@ DEFAULT_RULE_CONFIGS: dict[str, dict[str, Any]] = {
         "exempt_names": ["self", "cls"],
         "max_coverage": 0.30,
     },
+    "lexical.confusion": {
+        "enabled": True,
+        "severity": "warning",
+        "min_functions": 5,
+        "min_clusters": 2,
+        "min_cluster_size": 3,
+        "min_strong_receivers": 2,
+        "exempt_names": ["self", "cls"],
+    },
 }
 
 
