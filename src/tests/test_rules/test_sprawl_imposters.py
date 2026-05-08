@@ -122,7 +122,7 @@ def test_imposters_detects_strong_cluster(tmp_path: Path):
     (tmp_path / "f.py").write_text(_FPDRIFT_FIXTURE)
     result = run_imposters(tmp_path, _rule_config(), _slop_config())
     assert result.status == "fail"
-    assert result.summary["strong_clusters"] >= 1
+    assert result.summary["profile_counts"].get("missing_class", 0) >= 1
     flagged = {v.symbol for v in result.violations}
     assert "canvas" in flagged
 
@@ -153,7 +153,7 @@ def test_imposters_classifies_node_as_false_positive(tmp_path: Path):
     # No violations because false-positive verdicts don't generate violations
     flagged = {v.symbol for v in result.violations}
     assert "node" not in flagged
-    assert result.summary["false_positive_clusters"] >= 1
+    assert result.summary["profile_counts"].get("false_positive", 0) >= 1
 
 
 def test_imposters_classifies_root_as_weak(tmp_path: Path):
@@ -167,7 +167,7 @@ def test_imposters_classifies_root_as_weak(tmp_path: Path):
     result = run_imposters(tmp_path, _rule_config(), _slop_config())
     flagged = {v.symbol for v in result.violations}
     assert "root" not in flagged  # weak — no violation
-    assert result.summary["weak_clusters"] >= 1
+    assert result.summary["profile_counts"].get("infrastructure", 0) >= 1
 
 
 def test_imposters_min_cluster_threshold(tmp_path: Path):

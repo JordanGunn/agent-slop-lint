@@ -1,33 +1,47 @@
-"""Imposters kernel — first-parameter clustering.
+"""Imposters kernel — first-parameter clustering with multi-signal profile.
 
-When N functions share a first parameter name, that parameter is
-posing as an ordinary dependency while actually performing the
-role of a receiver. The function signature ``def render(canvas,
-...)`` makes ``canvas`` LOOK like any other dependency, but the
-parameter's repeated appearance across N functions reveals a
-hidden receiver-of-method.
+When N functions share a first-parameter name, that parameter is
+posing as an ordinary dependency while actually performing some
+unifying role. Whether that role is "receiver of methods on a
+missing class" or "input to a tabular dispatch family" or
+"shared input to unrelated helpers" depends on what the cluster
+ACTUALLY does — and that's not visible from the parameter name
+alone.
 
-This kernel:
+The kernel:
 
 1. Walks every function definition, extracts the first parameter
    name + type via tree-sitter.
 2. Clusters by first-parameter name.
 3. Walks the namespace tree deepest-first, claiming clusters at
    the narrowest scope where they cohere.
-4. Classifies each cluster as strong / weak / false_positive
-   based on parameter semantics (domain entity vs infrastructure
-   vs third-party type).
+4. **Multi-signal profile** per cluster (v1.2.0 upgrade):
+   - Body-shape Jaccard mean (PoC v2.2): pairwise AST 3-gram
+     similarity. High score → cluster members do the same thing
+     parametrically (clone family).
+   - Mean receiver-call density (PoC v2.6): count of
+     ``first_param.attr`` and ``first_param[k]`` accesses per
+     member. High → members actually treat the parameter as a
+     receiver.
+5. Profile-aware verdict:
+   - ``missing_class`` — receiver-calls high regardless of body
+     similarity. Strong recommend: extract a class.
+   - ``strategy_family`` — body Jaccard high, receiver-calls zero.
+     Members are clones with parametric variation; suppress the
+     class-extraction advisory in favour of "consider tabular
+     dispatch."
+   - ``heterogeneous`` — neither. Cluster is real (shared input)
+     but lacks clear unifying behaviour. Surface for review; no
+     specific refactor.
+   - ``infrastructure`` / ``false_positive`` — preserved from
+     v1.1.0 verdict classifier (root/path/node etc.).
 
-Phase 3 of the v1.2 plan replaces this single-signal classifier
-with multi-signal scoring (body-shape Jaccard + receiver-call
-density + modal-token overlap). For now the kernel preserves the
-v1.1.0 verdict shape so the rule wrapper layers on top.
-
-PoC reference: ``scripts/research/composition_poc/poc3_first_parameter_drift.py``
-and ``scripts/research/composition_poc_v2/poc6_multi_criteria_rank.py``.
+PoC references: ``scripts/research/composition_poc/poc3_*.py``,
+``scripts/research/composition_poc_v2/poc{2,6}_*.py``.
 """
 from __future__ import annotations
 
+from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -35,6 +49,7 @@ from slop._lexical._naming import (
     FunctionContext,
     enumerate_functions,
     scope_label,
+    split_identifier,
 )
 
 
@@ -52,6 +67,13 @@ class FirstParameterCluster:
     advisory: str
     scope: str
     scope_kind: str                       # "file" | "package" | "root"
+    # Multi-signal profile (v1.2.0)
+    body_jaccard_mean: float = 0.0        # cluster body-shape cohesion in [0, 1]
+    mean_receiver_calls: float = 0.0      # avg `first_param.attr` count per member
+    modal_overlap_mean: float = 0.0       # avg member-name overlap with cluster modal tokens
+    profile_label: str = "unknown"        # "missing_class" | "strategy_family"
+                                          # | "heterogeneous" | "infrastructure"
+                                          # | "false_positive"
 
 
 @dataclass
@@ -60,6 +82,149 @@ class ImpostersResult:
     files_searched: int = 0
     functions_analyzed: int = 0
     errors: list[str] = field(default_factory=list)
+
+
+# ---------------------------------------------------------------------------
+# Multi-signal helpers (PoC v2.2 + v2.6)
+# ---------------------------------------------------------------------------
+
+
+_LEAF_OR_NOISE = frozenset({
+    "identifier", "integer", "float", "string", "string_content",
+    "true", "false", "none", "comment",
+    ":", ",", "(", ")", "[", "]", "{", "}", ".",
+    "=", "+", "-", "*", "/", "%", "<", ">", "==", "!=",
+    "string_start", "string_end",
+})
+
+
+def _signature_ngrams(node, n: int = 3) -> set[tuple[str, ...]]:
+    """AST node-type 3-grams over a function body (PoC v2.2)."""
+    seq: list[str] = []
+
+    def walk(nn):
+        if nn.type not in _LEAF_OR_NOISE:
+            seq.append(nn.type)
+        for child in nn.children:
+            walk(child)
+    walk(node)
+    if len(seq) < n:
+        return {tuple(seq)} if seq else set()
+    return {tuple(seq[i:i + n]) for i in range(len(seq) - n + 1)}
+
+
+def _receiver_call_count(body, content: bytes, param_name: str) -> int:
+    """Count ``param.attr`` and ``param[k]`` references in body
+    (PoC v2.6). Proxies "is this parameter being treated as a
+    receiver of methods?"."""
+    count = 0
+
+    def walk(node):
+        nonlocal count
+        if node.type == "attribute":
+            obj = node.child_by_field_name("object")
+            if obj is not None and obj.type == "identifier":
+                text = content[obj.start_byte:obj.end_byte].decode(
+                    "utf-8", errors="replace",
+                )
+                if text == param_name:
+                    count += 1
+        if node.type == "subscript":
+            value = node.child_by_field_name("value")
+            if value is not None and value.type == "identifier":
+                text = content[value.start_byte:value.end_byte].decode(
+                    "utf-8", errors="replace",
+                )
+                if text == param_name:
+                    count += 1
+        for child in node.children:
+            walk(child)
+    walk(body)
+    return count
+
+
+def _jaccard(a: set, b: set) -> float:
+    if not a and not b:
+        return 1.0
+    if not a or not b:
+        return 0.0
+    return len(a & b) / len(a | b)
+
+
+def _profile_cluster(
+    cluster: FirstParameterCluster,
+    bodies: dict[tuple[str, str], tuple],
+) -> None:
+    """Compute body-shape Jaccard mean, mean receiver-call density,
+    and modal-token overlap for a cluster. Mutates the cluster in
+    place with the per-cluster signal values + a profile_label."""
+    members_with_body = [
+        (name, file, line) for name, file, line in cluster.members
+        if (file, name) in bodies
+    ]
+    if len(members_with_body) < 2:
+        # Not enough data for cohesion; leave defaults
+        return
+
+    sigs: list[tuple[set[tuple[str, ...]], int]] = []
+    name_tokens: list[str] = []
+    for name, file, _line in members_with_body:
+        body_node, content = bodies[(file, name)]
+        sigs.append((
+            _signature_ngrams(body_node),
+            _receiver_call_count(body_node, content, cluster.parameter_name),
+        ))
+        name_tokens.extend(t.lower() for t in split_identifier(name))
+
+    # Body-shape Jaccard mean across all member pairs
+    pair_scores: list[float] = []
+    for i in range(len(sigs)):
+        for j in range(i + 1, len(sigs)):
+            pair_scores.append(_jaccard(sigs[i][0], sigs[j][0]))
+    cluster.body_jaccard_mean = (
+        sum(pair_scores) / len(pair_scores) if pair_scores else 0.0
+    )
+
+    # Receiver-call density mean
+    cluster.mean_receiver_calls = (
+        sum(rc for _, rc in sigs) / len(sigs) if sigs else 0.0
+    )
+
+    # Modal-token overlap mean
+    modal = {t for t, _ in Counter(name_tokens).most_common(3)}
+    if modal:
+        per_member_overlap = []
+        for name, _f, _l in members_with_body:
+            my_tokens = {t.lower() for t in split_identifier(name)}
+            if not my_tokens:
+                continue
+            per_member_overlap.append(len(my_tokens & modal) / len(my_tokens))
+        if per_member_overlap:
+            cluster.modal_overlap_mean = (
+                sum(per_member_overlap) / len(per_member_overlap)
+            )
+
+    # Profile label: combine the signals into a single advisory class.
+    # Verdict (v1.1.0 classifier) takes precedence for non-strong
+    # cases; multi-signal only refines the strong case.
+    if cluster.verdict == "false_positive":
+        cluster.profile_label = "false_positive"
+    elif cluster.verdict == "weak":
+        cluster.profile_label = "infrastructure"
+    elif cluster.body_jaccard_mean >= 0.7 and cluster.mean_receiver_calls < 0.5:
+        # Members do the same thing N ways without using the param as
+        # a receiver — strategy/dispatch family, NOT a missing class.
+        cluster.profile_label = "strategy_family"
+    elif cluster.mean_receiver_calls >= 1.0:
+        # Members actively use the param as a receiver — genuine
+        # missing class.
+        cluster.profile_label = "missing_class"
+    else:
+        # Cluster is real (shared input) but profile is mixed: low
+        # body cohesion, low receiver-call use. Could be helpers
+        # over a config dict, or a cluster of unrelated functions
+        # that happen to share an input name.
+        cluster.profile_label = "heterogeneous"
 
 
 # ---------------------------------------------------------------------------
@@ -271,6 +436,7 @@ def imposters_kernel(
     Cross-package noise fails the coherence test and drops out.
     """
     entries: list[_FuncEntry] = []
+    bodies: dict[tuple[str, str], tuple] = {}
     files_seen: set[str] = set()
     total = 0
     for ctx in enumerate_functions(
@@ -285,8 +451,15 @@ def imposters_kernel(
             name=ctx.name, file=ctx.file, line=ctx.line,
             parts=parts, param_name=pname, param_type=ptype,
         ))
+        if ctx.body_node is not None:
+            bodies[(ctx.file, ctx.name)] = (ctx.body_node, ctx.content)
 
     clusters = _recursive_first_param_findings(entries, min_cluster, exempt_names)
+
+    # Multi-signal profile per cluster — body-shape Jaccard,
+    # receiver-call density, modal-token overlap.
+    for cluster in clusters:
+        _profile_cluster(cluster, bodies)
 
     return ImpostersResult(
         clusters=clusters,
