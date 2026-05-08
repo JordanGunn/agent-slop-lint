@@ -32,7 +32,7 @@ from slop.rules.section_comments import run_section_comment_density
 from slop.rules.sibling_calls import run_sibling_call_redundancy
 from slop.rules.sprawl import run_sprawl
 from slop.rules.stringly_typed import run_stringly_typed
-from slop.rules.stutter import run_stutter
+from slop.rules.stutter import run_stutter  # unified in v1.2.0
 from slop.rules.tautology import run_tautology
 from slop.rules.verbosity import run_verbosity
 

@@ -1,9 +1,10 @@
-"""Tests for lexical.stutter.* rules.
+"""Tests for the unified ``lexical.stutter`` rule (v1.2.0).
 
-The 1.1.0 split replaced the unified ``lexical.stutter`` rule with
-three scope-targeted rules. The legacy ``run_stutter`` still works
-(it runs all three modes at once) and is exercised here for backward
-compatibility.
+The v1.1.0 split into ``lexical.stutter.{namespaces, callers,
+identifiers}`` was unified back into one hierarchy-aware rule with
+per-level toggle parameters. The new rule additionally catches
+entity-name stutters (e.g., a method name stuttering with its
+class name) — a case the split rules missed.
 """
 
 from __future__ import annotations
@@ -11,12 +12,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from slop.models import RuleConfig, SlopConfig
-from slop.rules.stutter import (
-    run_stutter,
-    run_stutter_callers,
-    run_stutter_identifiers,
-    run_stutter_namespaces,
-)
+from slop.rules.stutter import run_stutter
 
 
 def _rc(**params) -> RuleConfig:
@@ -26,20 +22,24 @@ def _rc(**params) -> RuleConfig:
 
 
 # ---------------------------------------------------------------------------
-# Legacy unified rule — kept working for back-compat
+# Module-level stutter: identifier inside function body repeats module name
 # ---------------------------------------------------------------------------
 
 
 def test_stutter_module_overlap(tmp_path: Path):
-    pkg = tmp_path / "lidar_utils.py"
-    pkg.write_text(
+    (tmp_path / "lidar_utils.py").write_text(
         "def load():\n    lidar_utils_config = {}\n    return lidar_utils_config\n"
     )
     result = run_stutter(tmp_path, _rc(), SlopConfig(root=str(tmp_path)))
     assert result.status == "fail"
-    v = result.violations[0]
-    assert "lidar_utils_config" in v.symbol
-    assert "module" in v.message
+    module_hits = [v for v in result.violations
+                   if v.metadata.get("scope_level") == "module"]
+    assert module_hits, "expected at least one module-level stutter"
+
+
+# ---------------------------------------------------------------------------
+# Function-level stutter: identifier inside body repeats function name
+# ---------------------------------------------------------------------------
 
 
 def test_stutter_function_overlap(tmp_path: Path):
@@ -50,9 +50,56 @@ def test_stutter_function_overlap(tmp_path: Path):
     )
     result = run_stutter(tmp_path, _rc(), SlopConfig(root=str(tmp_path)))
     assert result.status == "fail"
-    v = result.violations[0]
-    assert "pdf_document_bytes" in v.symbol
-    assert "function" in v.message
+    function_hits = [v for v in result.violations
+                     if v.metadata.get("scope_level") == "function"]
+    assert function_hits
+
+
+# ---------------------------------------------------------------------------
+# Class-level stutter: identifier inside method body repeats class name
+# ---------------------------------------------------------------------------
+
+
+def test_stutter_class_overlap(tmp_path: Path):
+    (tmp_path / "a.py").write_text(
+        "class UserService:\n"
+        "    def get(self):\n"
+        "        user_service_helper = self.helper\n"
+        "        return user_service_helper\n"
+    )
+    result = run_stutter(tmp_path, _rc(), SlopConfig(root=str(tmp_path)))
+    assert result.status == "fail"
+    class_hits = [v for v in result.violations
+                  if v.metadata.get("scope_level") == "class"]
+    assert class_hits
+
+
+# ---------------------------------------------------------------------------
+# Entity-name stutter (NEW in v1.2.0): the entity's own name stutters
+# with its enclosing scope.
+# ---------------------------------------------------------------------------
+
+
+def test_stutter_method_name_stutters_with_class(tmp_path: Path):
+    """Method NAME (not body identifiers) stuttering with class name —
+    the case the v1.1.0 split rules missed."""
+    (tmp_path / "a.py").write_text(
+        "class UserService:\n"
+        "    def get_user_service_id(self):\n"
+        "        return 1\n"
+    )
+    result = run_stutter(tmp_path, _rc(), SlopConfig(root=str(tmp_path)))
+    assert result.status == "fail"
+    name_hits = [v for v in result.violations
+                 if v.metadata.get("is_entity_name") is True]
+    assert name_hits, "expected method-name stutter against class"
+    assert name_hits[0].symbol == "get_user_service_id"
+    assert name_hits[0].metadata.get("scope_level") == "class"
+
+
+# ---------------------------------------------------------------------------
+# Negative case: no stutter
+# ---------------------------------------------------------------------------
 
 
 def test_stutter_no_overlap_pass(tmp_path: Path):
@@ -66,90 +113,38 @@ def test_stutter_no_overlap_pass(tmp_path: Path):
 
 
 # ---------------------------------------------------------------------------
-# lexical.stutter.namespaces — module-scope only
+# Per-level toggle parameters
 # ---------------------------------------------------------------------------
 
 
-def test_stutter_namespaces_flags_module_overlap(tmp_path: Path):
-    pkg = tmp_path / "lidar_utils.py"
-    pkg.write_text(
-        "def load():\n    lidar_utils_config = {}\n    return lidar_utils_config\n"
-    )
-    result = run_stutter_namespaces(tmp_path, _rc(), SlopConfig(root=str(tmp_path)))
-    assert result.status == "fail"
-    assert any(v.metadata.get("scope_type") == "module" for v in result.violations)
-
-
-def test_stutter_namespaces_ignores_function_overlap(tmp_path: Path):
-    """Function-scope stutter is *not* a namespace stutter."""
+def test_stutter_disable_function_level(tmp_path: Path):
+    """check_functions=false suppresses function-scope stutters."""
     (tmp_path / "a.py").write_text(
         "def process_pdf_document(data):\n"
         "    pdf_document_bytes = data.read()\n"
         "    return pdf_document_bytes\n"
     )
-    result = run_stutter_namespaces(tmp_path, _rc(), SlopConfig(root=str(tmp_path)))
-    assert result.status == "pass"
-
-
-# ---------------------------------------------------------------------------
-# lexical.stutter.callers — class-scope only
-# ---------------------------------------------------------------------------
-
-
-def test_stutter_callers_flags_class_overlap(tmp_path: Path):
-    (tmp_path / "a.py").write_text(
-        "class UserService:\n"
-        "    def get_user_service_id(self):\n"
-        "        return 1\n"
+    result = run_stutter(
+        tmp_path, _rc(check_functions=False),
+        SlopConfig(root=str(tmp_path)),
     )
-    result = run_stutter_callers(tmp_path, _rc(), SlopConfig(root=str(tmp_path)))
-    # Class-scope stutter only fires on identifiers *within* a method
-    # body, not the method name itself. Add a body that stutters with
-    # the class name:
-    (tmp_path / "a.py").write_text(
-        "class UserService:\n"
-        "    def get(self):\n"
-        "        user_service_helper = self.helper\n"
-        "        return user_service_helper\n"
-    )
-    result = run_stutter_callers(tmp_path, _rc(), SlopConfig(root=str(tmp_path)))
-    assert result.status == "fail"
-    assert any(v.metadata.get("scope_type") == "class" for v in result.violations)
+    function_hits = [v for v in result.violations
+                     if v.metadata.get("scope_level") == "function"]
+    assert not function_hits
 
 
-def test_stutter_callers_ignores_module_overlap(tmp_path: Path):
-    pkg = tmp_path / "lidar_utils.py"
-    pkg.write_text(
+def test_stutter_disable_module_level(tmp_path: Path):
+    """check_modules=false suppresses module-scope stutters."""
+    (tmp_path / "lidar_utils.py").write_text(
         "def load():\n    lidar_utils_config = {}\n    return lidar_utils_config\n"
     )
-    result = run_stutter_callers(tmp_path, _rc(), SlopConfig(root=str(tmp_path)))
-    assert result.status == "pass"
-
-
-# ---------------------------------------------------------------------------
-# lexical.stutter.identifiers — function-scope only
-# ---------------------------------------------------------------------------
-
-
-def test_stutter_identifiers_flags_function_overlap(tmp_path: Path):
-    (tmp_path / "a.py").write_text(
-        "def process_pdf_document(data):\n"
-        "    pdf_document_bytes = data.read()\n"
-        "    return pdf_document_bytes\n"
+    result = run_stutter(
+        tmp_path, _rc(check_modules=False),
+        SlopConfig(root=str(tmp_path)),
     )
-    result = run_stutter_identifiers(tmp_path, _rc(), SlopConfig(root=str(tmp_path)))
-    assert result.status == "fail"
-    assert any(v.metadata.get("scope_type") == "function" for v in result.violations)
-
-
-def test_stutter_identifiers_ignores_module_overlap(tmp_path: Path):
-    """Module-scope stutter is *not* an identifier stutter."""
-    pkg = tmp_path / "lidar_utils.py"
-    pkg.write_text(
-        "def load():\n    lidar_utils_config = {}\n    return lidar_utils_config\n"
-    )
-    result = run_stutter_identifiers(tmp_path, _rc(), SlopConfig(root=str(tmp_path)))
-    assert result.status == "pass"
+    module_hits = [v for v in result.violations
+                   if v.metadata.get("scope_level") == "module"]
+    assert not module_hits
 
 
 # ---------------------------------------------------------------------------
