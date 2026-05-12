@@ -31,19 +31,23 @@ class Structure:
         self._parses = tuple(parses)
         self._filters = tuple(filters)
 
-        # Indexes built once at construction.
+        # Per-callable indexes keyed by (path, qualname) — a bare qualname
+        # like ``a.f`` collides across same-file-stem corpora (a.py + a.js
+        # both yield ``a.f``); pairing it with the absolute path scopes
+        # the lookup to its source file.
         self._language_by_path: dict[str, str] = {}
-        self._callables_by_qualname: dict[str, Callable] = {}
-        self._node_by_qualname: dict[str, Any] = {}
-        self._content_by_qualname: dict[str, bytes] = {}
+        self._callables_by_key: dict[tuple[str, str], Callable] = {}
+        self._node_by_key: dict[tuple[str, str], Any] = {}
+        self._content_by_key: dict[tuple[str, str], bytes] = {}
 
         for p in parses:
             self._language_by_path[str(p.path)] = p.language
             for c in p.callables:
-                self._callables_by_qualname[c.qualname] = c
+                key = (str(c.path), c.qualname)
+                self._callables_by_key[key] = c
                 if c.qualname in p.callable_nodes:
-                    self._node_by_qualname[c.qualname] = p.callable_nodes[c.qualname]
-                    self._content_by_qualname[c.qualname] = p.content
+                    self._node_by_key[key] = p.callable_nodes[c.qualname]
+                    self._content_by_key[key] = p.content
 
     # ---- iteration ---------------------------------------------------
 
@@ -99,10 +103,11 @@ class Structure:
         the actual function body. Languages whose grammar doesn't
         declare ``decision_nodes`` return CCX=1 (the base path).
         """
-        node = self._node_by_qualname.get(c.qualname)
+        key = (str(c.path), c.qualname)
+        node = self._node_by_key.get(key)
         if node is None:
             return 1
-        content = self._content_by_qualname.get(c.qualname)
+        content = self._content_by_key.get(key)
         if content is None:
             return 1
         language_id = self._language_by_path.get(str(c.path))
@@ -148,10 +153,11 @@ class Structure:
         ``compensating_decisions()``, ``boolean_op_node()``, and
         ``boolean_op_operators()``.
         """
-        node = self._node_by_qualname.get(c.qualname)
+        key = (str(c.path), c.qualname)
+        node = self._node_by_key.get(key)
         if node is None:
             return 0
-        content = self._content_by_qualname.get(c.qualname)
+        content = self._content_by_key.get(key)
         if content is None:
             return 0
         language_id = self._language_by_path.get(str(c.path))

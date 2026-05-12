@@ -53,25 +53,26 @@ class Lexicon:
         self._parses = tuple(parses)
         self._filters = tuple(filters)
 
-        # Per-callable indexes: qualname -> Callable / AST node / content.
+        # Per-callable indexes keyed by (path, qualname) — a bare qualname
+        # like ``a.f`` collides across same-file-stem corpora; pairing it
+        # with the absolute path scopes the lookup to its source file.
         # Records stay pure-data; AST state lives in the view per the
-        # views-own-compute principle. ``language`` is denormalised:
-        # records dropped the field; the view holds the canonical
-        # path → language index.
+        # views-own-compute principle.
         self._language_by_path: dict[str, str] = {}
-        self._callable_by_qualname: dict[str, Callable] = {}
-        self._node_by_qualname: dict[str, Any] = {}
+        self._callable_by_key: dict[tuple[str, str], Callable] = {}
+        self._node_by_key: dict[tuple[str, str], Any] = {}
         self._content_by_path: dict[str, bytes] = {}
-        self._parts_by_qualname: dict[str, tuple[str, ...]] = {}
+        self._parts_by_key: dict[tuple[str, str], tuple[str, ...]] = {}
 
         for p in parses:
             self._language_by_path[str(p.path)] = p.language
             self._content_by_path[str(p.path)] = p.content
             for c in p.callables:
-                self._callable_by_qualname[c.qualname] = c
+                key = (str(c.path), c.qualname)
+                self._callable_by_key[key] = c
                 if c.qualname in p.callable_nodes:
-                    self._node_by_qualname[c.qualname] = p.callable_nodes[c.qualname]
-                self._parts_by_qualname[c.qualname] = c.path.parts
+                    self._node_by_key[key] = p.callable_nodes[c.qualname]
+                self._parts_by_key[key] = c.path.parts
 
     # ---- statistical queries (stubbed; land with their first consumer) -----
 
@@ -134,7 +135,7 @@ class Lexicon:
 
         if root is None:
             # Best-effort: derive from common prefix.
-            paths = [c.path for c in self._callable_by_qualname.values()]
+            paths = [c.path for c in self._callable_by_key.values()]
             if paths:
                 try:
                     root = Path(_common_prefix(paths))
@@ -147,7 +148,7 @@ class Lexicon:
         # entries: list of (name, file_rel, line, parts, param_name, param_type)
         from slop.tree.records import CallableKind  # local import to avoid cycle
         entries: list[tuple[str, str, int, tuple[str, ...], str | None, str | None]] = []
-        for c in self._callable_by_qualname.values():
+        for c in self._callable_by_key.values():
             if not all(f(c) for f in self._filters):
                 continue
             # Lambdas are excluded from first-parameter clustering. Their
@@ -253,14 +254,14 @@ class Lexicon:
             # Find the callable matching (file, simple_name). The qualname
             # ends with simple_name; multiple callables may share the
             # simple name across files — disambiguate by file match.
-            for qn, c in self._callable_by_qualname.items():
-                if qn.split(".")[-1] != name:
+            for k, c in self._callable_by_key.items():
+                if k[1].split(".")[-1] != name:
                     continue
                 # Match by relative-file suffix (members carry the relative
                 # path from the codebase root; callable.path is absolute).
                 if not str(c.path).endswith(file):
                     continue
-                node = self._node_by_qualname.get(qn)
+                node = self._node_by_key.get(k)
                 if node is None:
                     continue
                 body = node.child_by_field_name("body")

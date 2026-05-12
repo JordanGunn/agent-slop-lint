@@ -228,7 +228,7 @@ def run_imposters_v2(
     for c in clusters:
         profile_counts[c.profile_label] = profile_counts.get(c.profile_label, 0) + 1
 
-    functions_checked = sum(1 for _ in lexicon._callable_by_qualname)  # noqa: SLF001
+    functions_checked = sum(1 for _ in lexicon._callable_by_key)  # noqa: SLF001
 
     return RuleResult(
         rule="lexical.imposters",

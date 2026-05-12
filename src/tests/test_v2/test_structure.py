@@ -275,6 +275,48 @@ class TestCognitiveMultiLanguage:
         assert _cog_by_name(tmp_path)["f"] == 4
 
 
+class TestCallableKeyCollisionResistance:
+    """Regression: per-callable view indexes must key on (path, qualname),
+    not bare qualname. Same-file-stem files (a.py + a.js, both producing
+    qualname ``a.f``) used to clobber each other in the lookups, returning
+    wrong CCX/CogC values for whichever callable was scanned first.
+    """
+
+    def test_same_stem_files_keep_distinct_metrics(self, tmp_path: Path):
+        # a.py: nested ifs (CCX=5, CogC=10)
+        (tmp_path / "a.py").write_text(
+            "def f(a, b, c, d):\n"
+            "    if a:\n"
+            "        if b:\n"
+            "            if c:\n"
+            "                if d:\n"
+            "                    return 1\n"
+            "    return 0\n"
+        )
+        # a.js: shallow if+&&+loop (CCX=4, CogC=4)
+        (tmp_path / "a.js").write_text(
+            "function f(a, b, xs) {\n"
+            "  if (a && b) {\n"
+            "    for (const x of xs) { console.log(x); }\n"
+            "  }\n"
+            "}\n"
+        )
+        cb = Tree(tmp_path)
+        cb.scan()
+        s = cb.structure
+        # Two callables share qualname "a.f" — distinguish by suffix.
+        by_path = {}
+        for c in s.callables():
+            by_path[c.path.suffix] = c
+        assert ".py" in by_path and ".js" in by_path
+        # Python file gets its own metrics; not clobbered by JS file.
+        assert s.cyclomatic(by_path[".py"]) == 5
+        assert s.cognitive(by_path[".py"]) == 10
+        # JS file gets its own metrics; not clobbered by Python file.
+        assert s.cyclomatic(by_path[".js"]) == 4
+        assert s.cognitive(by_path[".js"]) == 4
+
+
 class TestCognitiveSequenceCollapsing:
     """The signature CogC difference vs cyclomatic: same-operator chains
     collapse to a single +1, while mixed chains count each operator change.
