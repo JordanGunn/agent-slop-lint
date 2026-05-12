@@ -15,7 +15,6 @@ from enum import StrEnum
 
 
 class Callable(StrEnum):
-    # Function definitions
     FUNCTION_DEFINITION = "function_definition"
     ASYNC_FUNCTION_DEFINITION = "async_function_definition"
     FUNCTION_DECLARATION = "function_declaration"
@@ -23,13 +22,11 @@ class Callable(StrEnum):
     FUNCTION_ITEM = "function_item"
     GENERATOR_FUNCTION_DECLARATION = "generator_function_declaration"
     LOCAL_FUNCTION_STATEMENT = "local_function_statement"
-    # Method definitions
     METHOD = "method"
     METHOD_DECLARATION = "method_declaration"
     METHOD_DEFINITION = "method_definition"
     SINGLETON_METHOD = "singleton_method"
     CONSTRUCTOR_DECLARATION = "constructor_declaration"
-    # Anonymous / closure callables
     LAMBDA = "lambda"
     LAMBDA_EXPRESSION = "lambda_expression"
     ARROW_FUNCTION = "arrow_function"
@@ -39,3 +36,39 @@ class Callable(StrEnum):
     DO_BLOCK = "do_block"
     DO_CLAUSE = "do_clause"
     BLOCK = "block"
+
+    @classmethod
+    def functions(cls) -> frozenset[str]:
+        return frozenset({
+            cls.FUNCTION_DEFINITION,
+            cls.ASYNC_FUNCTION_DEFINITION,
+            cls.FUNCTION_DECLARATION,
+            cls.FUNCTION_EXPRESSION,
+            cls.FUNCTION_ITEM,
+            cls.GENERATOR_FUNCTION_DECLARATION,
+            cls.LOCAL_FUNCTION_STATEMENT,
+        })
+
+    @classmethod
+    def methods(cls) -> frozenset[str]:
+        return frozenset({
+            cls.METHOD,
+            cls.METHOD_DECLARATION,
+            cls.METHOD_DEFINITION,
+            cls.SINGLETON_METHOD,
+            cls.CONSTRUCTOR_DECLARATION,
+        })
+
+    @classmethod
+    def anonymous(cls) -> frozenset[str]:
+        return frozenset({
+            cls.LAMBDA,
+            cls.LAMBDA_EXPRESSION,
+            cls.ARROW_FUNCTION,
+            cls.ARROW_FUNCTION_EXPRESSION,
+            cls.CLOSURE_EXPRESSION,
+            cls.FUNC_LITERAL,
+            cls.DO_BLOCK,
+            cls.DO_CLAUSE,
+            cls.BLOCK,
+        })

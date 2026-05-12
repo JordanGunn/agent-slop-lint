@@ -125,6 +125,56 @@ class Structure:
         )
         return count + 1
 
+    def cognitive(self, c: Callable) -> int:
+        """Cognitive Complexity for one callable (Campbell 2018).
+
+        Differs from cyclomatic in three ways:
+
+          1. **Nesting penalty.** Each decision point inside a nesting
+             container adds ``1 + depth`` (instead of just 1). Deeply
+             nested branches cost more than flat ones.
+          2. **Compensating decisions.** Syntactic children of a
+             nesting container that are logically peers (``elif_clause``
+             of ``if_statement``, ``switch_case`` of ``switch_statement``)
+             add ``1 + max(0, depth - 1)`` — they don't double-charge
+             for the parent's nesting bump.
+          3. **Sequence collapsing on boolean operators.** A short-
+             circuit operator counts +1 only when it isn't continuing a
+             same-operator chain (``a && b && c`` contributes 1, not 2;
+             ``a && b || c`` contributes 2).
+
+        Per-language node sets come from the ``Language`` class via
+        ``decision_nodes()``, ``nesting_nodes()``,
+        ``compensating_decisions()``, ``boolean_op_node()``, and
+        ``boolean_op_operators()``.
+        """
+        node = self._node_by_qualname.get(c.qualname)
+        if node is None:
+            return 0
+        content = self._content_by_qualname.get(c.qualname)
+        if content is None:
+            return 0
+        language_id = self._language_by_path.get(str(c.path))
+        if language_id is None:
+            return 0
+        lang = LANGUAGE_BY_ID.get(language_id)
+        if lang is None:
+            return 0
+        decision_nodes = lang.decision_nodes()
+        if not decision_nodes:
+            return 0
+        walk_from = _resolve_body(node, lang.definition_unwrap_types())
+        return _cognitive_walk(
+            walk_from,
+            decision_nodes,
+            lang.nesting_nodes(),
+            lang.compensating_decisions(),
+            lang.boolean_op_node(),
+            lang.boolean_op_operators(),
+            lang.callable(),
+            content,
+        )
+
     # ---- slicing -----------------------------------------------------
 
     def under(self, *, path: str | None = None) -> Structure:
@@ -224,13 +274,92 @@ def _bool_op_matches(
          older grammars).
     All three are handled.
     """
+    op_text = _bool_op_text(node, content)
+    return op_text in operators if op_text else False
+
+
+def _bool_op_text(node: Any, content: bytes) -> str:
+    """Extract the operator text from a boolean/binary operator node.
+
+    Tree-sitter grammars expose the operator in four shapes:
+      1. As an ``operator`` field on the binary node (JS/TS/Go/Java/C#/C/C++).
+      2. As a named child node of type ``operator`` (Julia, Ruby).
+      3. As a child whose type name IS the operator keyword (Python:
+         ``and`` / ``or`` / ``not``).
+      4. As an unnamed punctuation token between operands.
+
+    Returns the operator text or ``""`` if no operator child can be found.
+    """
     op_node = node.child_by_field_name("operator")
     if op_node is not None:
-        op_text = content[op_node.start_byte:op_node.end_byte].decode("utf-8", errors="replace")
-        return op_text in operators
+        return content[op_node.start_byte:op_node.end_byte].decode("utf-8", errors="replace")
     for child in node.children:
-        if not child.is_named or child.type == "operator":
-            op_text = content[child.start_byte:child.end_byte].decode("utf-8", errors="replace")
-            if op_text in operators:
-                return True
-    return False
+        if child.type == "operator":
+            return content[child.start_byte:child.end_byte].decode("utf-8", errors="replace")
+        if child.type in ("and", "or", "not"):
+            return child.type
+        if not child.is_named:
+            text = content[child.start_byte:child.end_byte].decode("utf-8", errors="replace")
+            if text in ("&&", "||", "??", "and", "or"):
+                return text
+    return ""
+
+
+def _cognitive_walk(
+    root: Any,
+    decision_nodes: frozenset[str],
+    nesting_nodes: frozenset[str],
+    compensating: frozenset[str],
+    bool_op_node: str | None,
+    bool_op_operators: frozenset[str] | None,
+    nested_callables: frozenset[str],
+    content: bytes,
+) -> int:
+    """Walk ``root`` accumulating Cognitive Complexity (Campbell 2018).
+
+    Iterative stack walk where each entry carries the current nesting
+    depth. Each decision node contributes ``1 + depth``; compensating
+    decisions contribute ``1 + max(0, depth - 1)``. Short-circuit
+    operators count +1 unless they're continuing a same-operator chain
+    with their syntactic parent (tree-sitter ``node.parent``).
+    """
+    cog = 0
+    stack: list[tuple[Any, int]] = [(root, 0)]
+    while stack:
+        node, depth = stack.pop()
+        ctype = node.type
+
+        # Skip nested callables; each gets its own metric.
+        if ctype in nested_callables and node is not root:
+            continue
+
+        # Decision contribution.
+        if ctype in decision_nodes:
+            if ctype in compensating:
+                cog += 1 + max(0, depth - 1)
+            else:
+                cog += 1 + depth
+
+        # Boolean operator with sequence collapsing.
+        if bool_op_node is not None and ctype == bool_op_node:
+            op_text = _bool_op_text(node, content)
+            counts = (bool_op_operators is None) or (op_text in bool_op_operators)
+            if counts:
+                parent = node.parent
+                in_continuing_sequence = False
+                if parent is not None and parent.type == bool_op_node:
+                    parent_op = _bool_op_text(parent, content)
+                    parent_counts = (
+                        bool_op_operators is None or parent_op in bool_op_operators
+                    )
+                    if parent_counts and parent_op == op_text:
+                        in_continuing_sequence = True
+                if not in_continuing_sequence:
+                    cog += 1
+
+        # Children inherit incremented depth if this node is a nester.
+        new_depth = depth + 1 if ctype in nesting_nodes else depth
+        for child in reversed(node.children):
+            stack.append((child, new_depth))
+
+    return cog

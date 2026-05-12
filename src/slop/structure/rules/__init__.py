@@ -19,7 +19,7 @@ from .any_type_density import run_any_type_density
 from .architecture import run_distance
 from .class_metrics import run_coupling, run_inheritance_children, run_inheritance_depth
 from .clone_density import run_clone_density
-from .complexity import run_cognitive, run_cyclomatic_v2, run_weighted
+from .complexity import run_cognitive_v2, run_cyclomatic_v2, run_weighted
 from .dependencies import run_cycles
 from .god_module import run_god_module
 from .halstead import run_difficulty, run_volume
@@ -49,7 +49,7 @@ STRUCTURAL_RULES: list[RuleDefinition] = [
         default_severity="error",
         default_enabled=True,
         threshold_label="CogC > 15",
-        run=legacy_v2_shim(run_cognitive),
+        run=run_cognitive_v2,
     ),
     RuleDefinition(
         name="structural.complexity.npath",

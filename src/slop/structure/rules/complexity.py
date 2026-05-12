@@ -154,6 +154,58 @@ def run_cognitive(root: Path, rule_config: RuleConfig, slop_config: SlopConfig) 
     )
 
 
+def run_cognitive_v2(
+    structure: Structure,
+    rule_config: RuleConfig,
+    slop_config: SlopConfig,
+) -> RuleResult:
+    """v2 cognitive — pure threshold-application over the view's compute.
+
+    No AST walking, no tree-sitter import, no per-language branching.
+    All language-specific nesting-aware decision-counting lives inside
+    ``Structure.cognitive`` (Campbell 2018).
+    """
+    threshold = rule_config.params.get("cognitive_threshold", 15)
+    severity = rule_config.severity
+    root = Path(slop_config.root).expanduser().resolve()
+
+    findings: list[tuple[int, Slop]] = []
+    functions_checked = 0
+    for c in structure.callables():
+        cog = structure.cognitive(c)
+        functions_checked += 1
+        if cog > threshold:
+            try:
+                rel = str(c.path.relative_to(root))
+            except ValueError:
+                rel = str(c.path)
+            findings.append((cog, Slop(
+                rule="structural.complexity.cognitive",
+                file=rel,
+                line=c.line,
+                symbol=c.qualname.split(".")[-1],
+                message=f"CogC {cog} exceeds {threshold}",
+                severity=severity,
+                value=cog,
+                threshold=threshold,
+                metadata={"end_line": c.end_line, "qualname": c.qualname},
+            )))
+
+    findings.sort(key=lambda t: -t[0])
+    violations = [s for _, s in findings]
+
+    return RuleResult(
+        rule="structural.complexity.cognitive",
+        status="fail" if violations else "pass",
+        violations=violations,
+        summary={
+            "functions_checked": functions_checked,
+            "violation_count": len(violations),
+        },
+        errors=[],
+    )
+
+
 def run_weighted(root: Path, rule_config: RuleConfig, slop_config: SlopConfig) -> RuleResult:
     """Check Weighted Methods per Class (WMC) against threshold."""
     threshold = rule_config.params.get("threshold", 40)

@@ -103,6 +103,224 @@ def _ccx_by_name(root: Path) -> dict[str, int]:
     return {c.qualname.split(".")[-1]: s.cyclomatic(c) for c in s.callables()}
 
 
+def _cog_by_name(root: Path) -> dict[str, int]:
+    """Build a {function name → CogC} map for every callable in a corpus."""
+    cb = Tree(root)
+    cb.scan()
+    s = cb.structure
+    return {c.qualname.split(".")[-1]: s.cognitive(c) for c in s.callables()}
+
+
+class TestCognitive:
+    """Hand-computed Cognitive Complexity values against canonical Python
+    fixtures. Cognitive (Campbell 2018) differs from cyclomatic by adding
+    a nesting penalty: each decision inside a nesting container costs
+    ``1 + depth``.
+    """
+
+    def test_linear_is_zero(self, complexity_corpus: Path):
+        s = _structure(complexity_corpus)
+        for c in s.callables():
+            if c.qualname.endswith("linear"):
+                # No decisions → CogC = 0
+                assert s.cognitive(c) == 0
+                return
+        raise AssertionError("linear not found")
+
+    def test_single_if_is_one(self, complexity_corpus: Path):
+        s = _structure(complexity_corpus)
+        for c in s.callables():
+            if c.qualname.endswith("single_if"):
+                # One if at depth 0: cog = 1 + 0 = 1
+                assert s.cognitive(c) == 1
+                return
+        raise AssertionError("single_if not found")
+
+    def test_if_in_loop_is_three(self, complexity_corpus: Path):
+        s = _structure(complexity_corpus)
+        for c in s.callables():
+            if c.qualname.endswith("if_in_loop"):
+                # for at depth 0 (+1+0=1), if at depth 1 (+1+1=2). Total: 3.
+                assert s.cognitive(c) == 3
+                return
+        raise AssertionError("if_in_loop not found")
+
+    def test_nested_four_ifs_is_ten(self, complexity_corpus: Path):
+        s = _structure(complexity_corpus)
+        for c in s.callables():
+            if c.qualname.endswith("nested"):
+                # 4 ifs at depths 0,1,2,3 → 1 + 2 + 3 + 4 = 10
+                assert s.cognitive(c) == 10
+                return
+        raise AssertionError("nested not found")
+
+
+class TestCognitiveMultiLanguage:
+    """Hand-computed CogC across languages.
+
+    Fixture: ``if (a && b) loop`` →
+      if at depth 0:         +1+0 = 1
+      && (short-circuit):    +1
+      loop at depth 1:       +1+1 = 2
+      total:                  4
+    """
+
+    def test_javascript(self, tmp_path: Path):
+        (tmp_path / "a.js").write_text(
+            "function f(a, b, xs) {\n"
+            "  if (a && b) {\n"
+            "    for (const x of xs) { console.log(x); }\n"
+            "  }\n"
+            "}\n"
+        )
+        assert _cog_by_name(tmp_path)["f"] == 4
+
+    def test_typescript(self, tmp_path: Path):
+        (tmp_path / "a.ts").write_text(
+            "function f(a: boolean, b: boolean, xs: number[]) {\n"
+            "  if (a && b) {\n"
+            "    for (const x of xs) { console.log(x); }\n"
+            "  }\n"
+            "}\n"
+        )
+        assert _cog_by_name(tmp_path)["f"] == 4
+
+    def test_go(self, tmp_path: Path):
+        (tmp_path / "a.go").write_text(
+            "package p\n"
+            "func F(a, b bool, xs []int) {\n"
+            "  if a && b {\n"
+            "    for _, x := range xs { _ = x }\n"
+            "  }\n"
+            "}\n"
+        )
+        assert _cog_by_name(tmp_path)["F"] == 4
+
+    def test_rust(self, tmp_path: Path):
+        (tmp_path / "a.rs").write_text(
+            "fn f(a: bool, b: bool, xs: Vec<i32>) {\n"
+            "    if a && b {\n"
+            "        for x in xs { let _ = x; }\n"
+            "    }\n"
+            "}\n"
+        )
+        assert _cog_by_name(tmp_path)["f"] == 4
+
+    def test_java(self, tmp_path: Path):
+        (tmp_path / "A.java").write_text(
+            "class A {\n"
+            "  void m(boolean a, boolean b, int[] xs) {\n"
+            "    if (a && b) {\n"
+            "      for (int x : xs) { System.out.println(x); }\n"
+            "    }\n"
+            "  }\n"
+            "}\n"
+        )
+        assert _cog_by_name(tmp_path)["m"] == 4
+
+    def test_csharp(self, tmp_path: Path):
+        (tmp_path / "A.cs").write_text(
+            "class A {\n"
+            "  void M(bool a, bool b, int[] xs) {\n"
+            "    if (a && b) {\n"
+            "      foreach (var x in xs) { System.Console.WriteLine(x); }\n"
+            "    }\n"
+            "  }\n"
+            "}\n"
+        )
+        assert _cog_by_name(tmp_path)["M"] == 4
+
+    def test_c(self, tmp_path: Path):
+        (tmp_path / "a.c").write_text(
+            "void f(int a, int b, int n) {\n"
+            "  if (a && b) {\n"
+            "    for (int i = 0; i < n; i++) { (void)i; }\n"
+            "  }\n"
+            "}\n"
+        )
+        assert _cog_by_name(tmp_path)["f"] == 4
+
+    def test_cpp(self, tmp_path: Path):
+        (tmp_path / "a.cpp").write_text(
+            "void f(bool a, bool b, int n) {\n"
+            "  if (a && b) {\n"
+            "    for (int i = 0; i < n; i++) { (void)i; }\n"
+            "  }\n"
+            "}\n"
+        )
+        assert _cog_by_name(tmp_path)["f"] == 4
+
+    def test_ruby(self, tmp_path: Path):
+        (tmp_path / "a.rb").write_text(
+            "def f(a, b, xs)\n"
+            "  if a && b\n"
+            "    xs.each { |x| puts x }\n"
+            "  end\n"
+            "end\n"
+        )
+        # Ruby's tree-sitter emits decisions the v2 walker counts to match
+        # legacy ccx_kernel (verified via parity script). CogC=4.
+        assert _cog_by_name(tmp_path)["f"] == 4
+
+    def test_julia(self, tmp_path: Path):
+        (tmp_path / "a.jl").write_text(
+            "function f(a, b, xs)\n"
+            "    if a && b\n"
+            "        for x in xs\n"
+            "            x\n"
+            "        end\n"
+            "    end\n"
+            "end\n"
+        )
+        assert _cog_by_name(tmp_path)["f"] == 4
+
+
+class TestCognitiveSequenceCollapsing:
+    """The signature CogC difference vs cyclomatic: same-operator chains
+    collapse to a single +1, while mixed chains count each operator change.
+    """
+
+    def test_python_and_chain_is_one(self, tmp_path: Path):
+        # `a and b and c` is a single &&-chain. CogC: if(+1) + chain(+1) = 2.
+        (tmp_path / "a.py").write_text(
+            "def f(a, b, c):\n"
+            "    if a and b and c:\n"
+            "        return 1\n"
+            "    return 0\n"
+        )
+        assert _cog_by_name(tmp_path)["f"] == 2
+
+    def test_python_mixed_chain_is_two(self, tmp_path: Path):
+        # `a and b or c` is a mixed chain. CogC: if(+1) + and(+1) + or(+1) = 3.
+        (tmp_path / "a.py").write_text(
+            "def f(a, b, c):\n"
+            "    if a and b or c:\n"
+            "        return 1\n"
+            "    return 0\n"
+        )
+        assert _cog_by_name(tmp_path)["f"] == 3
+
+    def test_javascript_chain_collapses(self, tmp_path: Path):
+        (tmp_path / "a.js").write_text(
+            "function f(a, b, c) {\n"
+            "  if (a && b && c) { return 1; }\n"
+            "  return 0;\n"
+            "}\n"
+        )
+        # if(+1) + && chain(+1) = 2
+        assert _cog_by_name(tmp_path)["f"] == 2
+
+    def test_javascript_mixed_chain(self, tmp_path: Path):
+        (tmp_path / "a.js").write_text(
+            "function f(a, b, c) {\n"
+            "  if (a && b || c) { return 1; }\n"
+            "  return 0;\n"
+            "}\n"
+        )
+        # if(+1) + &&(+1) + ||(+1) = 3
+        assert _cog_by_name(tmp_path)["f"] == 3
+
+
 class TestCyclomaticMultiLanguage:
     """Hand-computed CCX values per language — surfaces grammar regressions
     in ``Language.decision_nodes`` / ``boolean_op_node`` /
