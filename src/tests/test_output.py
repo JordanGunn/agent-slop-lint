@@ -4,20 +4,22 @@ from __future__ import annotations
 
 import json
 
-from slop.color import set_color
-from slop.models import LintResult, RuleResult, Violation
-from slop.output import _plural, format_human, format_json, format_quiet
+from slop.cli.color import set_color
+from slop.linter.result import Result
+from slop.linter.types import RuleResult
+from slop.linter.slop import Slop
+from slop.linter.format import _plural, format_human, format_quiet, to_dict
 
 # Disable color for predictable test output
 set_color(False)
 
 
 def _make_result(
-    violations: list[Violation] | None = None,
+    violations: list[Slop] | None = None,
     rule_name: str = "structural.complexity.cyclomatic",
     status: str = "fail",
     **kwargs,
-) -> LintResult:
+) -> Result:
     """Build a minimal LintResult for testing."""
     vs = violations or []
     rr = RuleResult(
@@ -26,22 +28,22 @@ def _make_result(
         violations=vs,
         summary={"functions_checked": 10, "violation_count": len(vs)},
     )
-    return LintResult(
+    return Result(
         version="0.1.0",
         root="/test",
         languages=["python"],
         display_root="./test",
         rule_results={rule_name: rr},
         rules_checked=1,
-        violation_count=len([v for v in vs if v.severity == "error"]),
+        slop_count=len([v for v in vs if v.severity == "error"]),
         advisory_count=len([v for v in vs if v.severity != "error"]),
-        result="fail" if vs else "pass",
+        verdict="fail" if vs else "pass",
         **kwargs,
     )
 
 
-def _violation(rule: str = "structural.complexity.cyclomatic", file: str = "a.py", line: int = 1, symbol: str = "f", value: int = 15) -> Violation:
-    return Violation(rule=rule, file=file, line=line, symbol=symbol, message=f"CCX {value} exceeds 10", severity="error", value=value, threshold=10)
+def _violation(rule: str = "structural.complexity.cyclomatic", file: str = "a.py", line: int = 1, symbol: str = "f", value: int = 15) -> Slop:
+    return Slop(rule=rule, file=file, line=line, symbol=symbol, message=f"CCX {value} exceeds 10", severity="error", value=value, threshold=10)
 
 
 # ---------------------------------------------------------------------------
@@ -84,10 +86,10 @@ def test_human_groups_by_subrule():
     ]
     rr_cyc = RuleResult(rule="structural.complexity.cyclomatic", status="fail", violations=[vs[0]], summary={"functions_checked": 10, "violation_count": 1})
     rr_cog = RuleResult(rule="structural.complexity.cognitive", status="fail", violations=[vs[1]], summary={"functions_checked": 10, "violation_count": 1})
-    result = LintResult(
+    result = Result(
         version="0.1.0", root="/test", languages=["python"], display_root="./test",
         rule_results={"structural.complexity.cyclomatic": rr_cyc, "structural.complexity.cognitive": rr_cog},
-        rules_checked=2, violation_count=2, result="fail",
+        rules_checked=2, slop_count=2, verdict="fail",
     )
     output = format_human(result)
     # Should have sub-rule headers
@@ -110,10 +112,10 @@ def test_human_clean_shows_checkmark():
 
 def test_human_skipped_shows_info():
     rr = RuleResult(rule="orphans", status="skip")
-    result = LintResult(
+    result = Result(
         version="0.1.0", root="/test", languages=[], display_root="./test",
         rule_results={"orphans": rr},
-        rules_checked=0, rules_skipped=1, result="pass",
+        rules_checked=0, rules_skipped=1, verdict="pass",
     )
     output = format_human(result)
     assert "skipped" in output
@@ -128,10 +130,10 @@ def test_human_zero_files_analyzed_shows_warning_not_clean():
         violations=[],
         summary={"functions_checked": 0, "violation_count": 0},
     )
-    result = LintResult(
+    result = Result(
         version="0.1.0", root="/test", languages=["python"], display_root="./test",
         rule_results={"structural.complexity.cyclomatic": rr},
-        rules_checked=1, result="pass",
+        rules_checked=1, verdict="pass",
     )
     output = format_human(result)
     assert "no files matched" in output
@@ -147,10 +149,10 @@ def test_human_surfaces_rule_errors():
         summary={"functions_checked": 0, "violation_count": 0},
         errors=["fd not found. Install from https://github.com/sharkdp/fd"],
     )
-    result = LintResult(
+    result = Result(
         version="0.1.0", root="/test", languages=["python"], display_root="./test",
         rule_results={"structural.complexity.cyclomatic": rr},
-        rules_checked=1, result="error",
+        rules_checked=1, verdict="error",
     )
     output = format_human(result)
     assert "fd not found" in output
@@ -165,10 +167,10 @@ def test_human_error_status_does_not_render_as_clean():
         violations=[],
         errors=["boom"],
     )
-    result = LintResult(
+    result = Result(
         version="0.1.0", root="/test", languages=[], display_root="./test",
         rule_results={"structural.complexity.cyclomatic": rr},
-        rules_checked=1, result="error",
+        rules_checked=1, verdict="error",
     )
     output = format_human(result)
     assert "\u2713 clean" not in output
@@ -190,7 +192,7 @@ def test_human_renders_waived_findings_without_failure():
         waived_violations=[waived],
         summary={"functions_checked": 1, "violation_count": 0, "waived_count": 1},
     )
-    result = LintResult(
+    result = Result(
         version="0.1.0",
         root="/test",
         languages=["python"],
@@ -198,7 +200,7 @@ def test_human_renders_waived_findings_without_failure():
         rule_results={"npath": rr},
         rules_checked=1,
         waived_count=1,
-        result="pass",
+        verdict="pass",
     )
     output = format_human(result)
     assert "waived by parser-npath" in output
@@ -240,8 +242,8 @@ def test_quiet_includes_waived_count():
 
 def test_json_is_valid():
     result = _make_result([_violation()])
-    output = format_json(result)
-    data = json.loads(output)
+    output = to_dict(result)
+    data = output
     assert "version" in data
     assert "rules" in data
     assert "summary" in data
@@ -249,7 +251,7 @@ def test_json_is_valid():
 
 def test_json_has_expected_keys():
     result = _make_result([_violation()])
-    data = json.loads(format_json(result))
+    data = to_dict(result)
     assert data["summary"]["violation_count"] == 1
     assert data["summary"]["result"] == "fail"
     rule_data = data["rules"]["structural.complexity.cyclomatic"]
@@ -270,16 +272,16 @@ def test_json_includes_waived_findings():
         waived_violations=[waived],
         summary={"functions_checked": 1, "waived_count": 1},
     )
-    result = LintResult(
+    result = Result(
         version="0.1.0",
         root="/test",
         languages=["python"],
         rule_results={"npath": rr},
         rules_checked=1,
         waived_count=1,
-        result="pass",
+        verdict="pass",
     )
-    data = json.loads(format_json(result))
+    data = to_dict(result)
     assert data["summary"]["waived_count"] == 1
     waiver = data["rules"]["npath"]["waived_violations"][0]["metadata"]["waiver"]
     assert waiver["id"] == "parser-npath"

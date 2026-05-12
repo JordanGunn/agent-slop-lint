@@ -5,8 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 
 from slop._structural.stringly_typed import stringly_typed_kernel
-from slop.models import RuleConfig, SlopConfig
-from slop.rules.stringly_typed import run_stringly_typed
+from slop.config.models import RuleConfig, SlopConfig
+from slop.structure.rules.stringly_typed import run_stringly_typed
 
 # ---------------------------------------------------------------------------
 # Helpers

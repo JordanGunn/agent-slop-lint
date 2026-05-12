@@ -7,9 +7,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop.models import RuleConfig, SlopConfig
-from slop.rules.imposters import run_imposters
-from slop.rules.sprawl import run_sprawl
+from slop.config.models import RuleConfig, SlopConfig
+from slop.lexicon.rules.imposters import run_imposters
+from slop.lexicon.rules.sprawl import run_sprawl
 
 
 def _slop_config() -> SlopConfig:

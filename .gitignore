@@ -6,3 +6,9 @@
 # Python bytecode (root-level dirs; src/.gitignore covers src/)
 __pycache__/
 *.pyc
+
+# agents
+.codex/
+.cursor/
+.windsurf/
+.copilot/

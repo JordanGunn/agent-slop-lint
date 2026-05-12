@@ -5,8 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 
 from slop._structural.sibling_calls import sibling_call_redundancy_kernel
-from slop.models import RuleConfig, SlopConfig
-from slop.rules.sibling_calls import run_sibling_call_redundancy
+from slop.config.models import RuleConfig, SlopConfig
+from slop.structure.rules.sibling_calls import run_sibling_call_redundancy
 
 # ---------------------------------------------------------------------------
 # Helpers

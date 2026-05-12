@@ -11,8 +11,8 @@ from __future__ import annotations
 from pathlib import Path
 
 from slop._structural.robert import robert_kernel
-from slop.models import RuleConfig, SlopConfig
-from slop.rules.architecture import run_distance
+from slop.config.models import RuleConfig, SlopConfig
+from slop.structure.rules.architecture import run_distance
 
 
 # ---------------------------------------------------------------------------

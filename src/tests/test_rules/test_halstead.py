@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop.models import RuleConfig, SlopConfig
-from slop.rules.halstead import run_difficulty, run_volume
+from slop.config.models import RuleConfig, SlopConfig
+from slop.structure.rules.halstead import run_difficulty, run_volume
 
 _TRIVIAL = "def add(a, b):\n    return a + b\n"
 

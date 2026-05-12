@@ -10,8 +10,8 @@ from slop._structural.clone_density import (
     _fingerprint,
     _collect_leaf_types,
 )
-from slop.models import RuleConfig, SlopConfig
-from slop.rules.clone_density import run_clone_density
+from slop.config.models import RuleConfig, SlopConfig
+from slop.structure.rules.clone_density import run_clone_density
 
 
 # ---------------------------------------------------------------------------

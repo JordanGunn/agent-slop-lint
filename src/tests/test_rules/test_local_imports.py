@@ -7,8 +7,8 @@ from pathlib import Path
 import pytest
 
 from slop._structural.local_imports import local_imports_kernel
-from slop.models import RuleConfig, SlopConfig
-from slop.rules.local_imports import run_local_imports
+from slop.config.models import RuleConfig, SlopConfig
+from slop.structure.rules.local_imports import run_local_imports
 
 
 # ---------------------------------------------------------------------------

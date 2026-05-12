@@ -33,25 +33,25 @@ dependencies = [
 dev = ["pytest>=7.0", "ruff>=0.1.0"]
 
 [project.scripts]
-slop = "slop.cli:main"
+slop = "slop.app:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["cli/slop"]
+packages = ["slop"]
 
 [tool.hatch.build.targets.sdist]
-include = ["cli/slop", "tests", "pyproject.toml", "README.md", "LICENSE"]
+include = ["slop", "tests", "pyproject.toml", "README.md", "LICENSE"]
 
 [tool.ruff]
 line-length = 100
 target-version = "py310"
 extend-exclude = [
-    "cli/slop/_fs",
-    "cli/slop/_text",
-    "cli/slop/_ast",
-    "cli/slop/_compose",
-    "cli/slop/_structural",
-    "cli/slop/_lexical",
-    "cli/slop/_util",
+    "slop/_fs",
+    "slop/_text",
+    "slop/_ast",
+    "slop/_compose",
+    "slop/_structural",
+    "slop/_lexical",
+    "slop/_util",
 ]
 
 [tool.ruff.lint]
@@ -59,7 +59,7 @@ select = ["E", "F", "I", "W"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["cli"]
+pythonpath = ["."]
 
 [dependency-groups]
 dev = [

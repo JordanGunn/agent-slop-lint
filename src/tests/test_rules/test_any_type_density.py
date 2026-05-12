@@ -5,8 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 
 from slop._structural.any_type_density import any_type_density_kernel
-from slop.models import RuleConfig, SlopConfig
-from slop.rules.any_type_density import run_any_type_density
+from slop.config.models import RuleConfig, SlopConfig
+from slop.structure.rules.any_type_density import run_any_type_density
 
 # ---------------------------------------------------------------------------
 # Helpers

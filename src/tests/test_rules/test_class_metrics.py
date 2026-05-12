@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop.models import RuleConfig, SlopConfig
-from slop.rules.class_metrics import run_coupling, run_inheritance_children, run_inheritance_depth
+from slop.config.models import RuleConfig, SlopConfig
+from slop.structure.rules.class_metrics import run_coupling, run_inheritance_children, run_inheritance_depth
 
 
 def _default_config() -> SlopConfig:

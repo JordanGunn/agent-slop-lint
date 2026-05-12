@@ -11,8 +11,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop.models import RuleConfig, SlopConfig
-from slop.rules.stutter import run_stutter
+from slop.config.models import RuleConfig, SlopConfig
+from slop.lexicon.rules.stutter import run_stutter
 
 
 def _rc(**params) -> RuleConfig:

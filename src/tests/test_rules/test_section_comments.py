@@ -5,8 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 
 from slop._structural.section_comments import section_comment_kernel
-from slop.models import RuleConfig, SlopConfig
-from slop.rules.section_comments import run_section_comment_density
+from slop.config.models import RuleConfig, SlopConfig
+from slop.structure.rules.section_comments import run_section_comment_density
 
 # ---------------------------------------------------------------------------
 # Helpers

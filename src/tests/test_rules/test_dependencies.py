@@ -5,8 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 
 from slop._structural.deps import deps_kernel
-from slop.models import RuleConfig, SlopConfig
-from slop.rules.dependencies import run_cycles
+from slop.config.models import RuleConfig, SlopConfig
+from slop.structure.rules.dependencies import run_cycles
 
 
 def test_deps_clean_when_no_cycles(tmp_path: Path):

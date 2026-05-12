@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop.models import RuleConfig, SlopConfig
-from slop.rules.npath import run_npath
+from slop.config.models import RuleConfig, SlopConfig
+from slop.structure.rules.npath import run_npath
 
 _LINEAR = "def f(x):\n    y = x + 1\n    return y\n"  # NPath=1
 

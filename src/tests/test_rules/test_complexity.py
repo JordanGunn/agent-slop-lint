@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop.models import RuleConfig, SlopConfig
-from slop.rules.complexity import run_cognitive, run_cyclomatic
+from slop.config.models import RuleConfig, SlopConfig
+from slop.structure.rules.complexity import run_cognitive, run_cyclomatic
 
 # Python source with known complexity values
 _SIMPLE = "def add(a, b):\n    return a + b\n"  # ccx=1, cog=0

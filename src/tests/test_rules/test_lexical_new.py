@@ -9,13 +9,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop.models import RuleConfig, SlopConfig
+from slop.config.models import RuleConfig, SlopConfig
 
 
-from slop.rules.verbosity import run_verbosity
-from slop.rules.cowards import run_cowards
-from slop.rules.tautology import run_tautology
-from slop.rules.hammers import run_hammers
+from slop.lexicon.rules.verbosity import run_verbosity
+from slop.lexicon.rules.cowards import run_cowards
+from slop.lexicon.rules.tautology import run_tautology
+from slop.lexicon.rules.hammers import run_hammers
 
 
 def _slop() -> SlopConfig:

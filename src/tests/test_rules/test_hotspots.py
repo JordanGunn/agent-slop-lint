@@ -6,8 +6,8 @@ import os
 import subprocess
 from pathlib import Path
 
-from slop.models import RuleConfig, SlopConfig
-from slop.rules.hotspots import run_churn_weighted
+from slop.config.models import RuleConfig, SlopConfig
+from slop.linter.rules.hotspots import run_churn_weighted
 
 
 def _git(repo: Path, *args: str, env: dict[str, str] | None = None) -> None:

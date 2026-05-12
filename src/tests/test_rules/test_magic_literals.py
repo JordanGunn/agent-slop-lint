@@ -5,8 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 
 from slop._structural.magic_literals import magic_literals_kernel, _is_trivial
-from slop.models import RuleConfig, SlopConfig
-from slop.rules.magic_literals import run_magic_literal_density
+from slop.config.models import RuleConfig, SlopConfig
+from slop.structure.rules.magic_literals import run_magic_literal_density
 
 # ---------------------------------------------------------------------------
 # Helpers

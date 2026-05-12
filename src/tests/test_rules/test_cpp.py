@@ -12,25 +12,25 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop.models import RuleConfig, SlopConfig
-from slop.rules.any_type_density import run_any_type_density
-from slop.rules.class_metrics import (
+from slop.config.models import RuleConfig, SlopConfig
+from slop.structure.rules.any_type_density import run_any_type_density
+from slop.structure.rules.class_metrics import (
     run_coupling, run_inheritance_children, run_inheritance_depth,
 )
-from slop.rules.clone_density import run_clone_density
-from slop.rules.complexity import run_cognitive, run_cyclomatic, run_weighted
-from slop.rules.dependencies import run_cycles
-from slop.rules.god_module import run_god_module
-from slop.rules.halstead import run_difficulty, run_volume
-from slop.rules.local_imports import run_local_imports
-from slop.rules.magic_literals import run_magic_literal_density
-from slop.rules.npath import run_npath
-from slop.rules.out_parameters import run_out_parameters
-from slop.rules.section_comments import run_section_comment_density
-from slop.rules.sibling_calls import run_sibling_call_redundancy
-from slop.rules.stringly_typed import run_stringly_typed
-from slop.rules.stutter import run_stutter
-from slop.rules.verbosity import run_verbosity
+from slop.structure.rules.clone_density import run_clone_density
+from slop.structure.rules.complexity import run_cognitive, run_cyclomatic, run_weighted
+from slop.structure.rules.dependencies import run_cycles
+from slop.structure.rules.god_module import run_god_module
+from slop.structure.rules.halstead import run_difficulty, run_volume
+from slop.structure.rules.local_imports import run_local_imports
+from slop.structure.rules.magic_literals import run_magic_literal_density
+from slop.structure.rules.npath import run_npath
+from slop.structure.rules.out_parameters import run_out_parameters
+from slop.structure.rules.section_comments import run_section_comment_density
+from slop.structure.rules.sibling_calls import run_sibling_call_redundancy
+from slop.structure.rules.stringly_typed import run_stringly_typed
+from slop.lexicon.rules.stutter import run_stutter
+from slop.lexicon.rules.verbosity import run_verbosity
 
 
 def _slop_config() -> SlopConfig:

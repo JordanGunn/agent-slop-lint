@@ -5,8 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 
 from slop._structural.out_parameters import out_parameters_kernel
-from slop.models import RuleConfig, SlopConfig
-from slop.rules.out_parameters import run_out_parameters
+from slop.config.models import RuleConfig, SlopConfig
+from slop.structure.rules.out_parameters import run_out_parameters
 
 # ---------------------------------------------------------------------------
 # Helpers

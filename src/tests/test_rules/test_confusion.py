@@ -6,8 +6,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop.models import RuleConfig, SlopConfig
-from slop.rules.confusion import run_confusion
+from slop.config.models import RuleConfig, SlopConfig
+from slop.lexicon.rules.confusion import run_confusion
 
 
 def _slop() -> SlopConfig:

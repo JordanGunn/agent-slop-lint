@@ -2,7 +2,7 @@
 
 Each test writes a small `.jl` fixture and runs the rule with
 ``languages=['julia']``. Goal: confirm Julia files parse, the kernel
-walks them, and the rule wrapper produces a Violation in the expected
+walks them, and the rule wrapper produces a Slop in the expected
 shape. Threshold-tuning correctness is exercised by the per-rule tests
 on Python; here we only check the language plumbing.
 """
@@ -11,11 +11,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop.models import RuleConfig, SlopConfig
-from slop.rules.complexity import run_cyclomatic
-from slop.rules.dependencies import run_cycles
-from slop.rules.halstead import run_volume
-from slop.rules.npath import run_npath
+from slop.config.models import RuleConfig, SlopConfig
+from slop.structure.rules.complexity import run_cyclomatic
+from slop.structure.rules.dependencies import run_cycles
+from slop.structure.rules.halstead import run_volume
+from slop.structure.rules.npath import run_npath
 
 
 _BRANCHY_JL = """\

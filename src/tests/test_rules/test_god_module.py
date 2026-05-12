@@ -5,8 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 
 from slop._structural.god_module import god_module_kernel
-from slop.models import RuleConfig, SlopConfig
-from slop.rules.god_module import run_god_module
+from slop.config.models import RuleConfig, SlopConfig
+from slop.structure.rules.god_module import run_god_module
 
 
 def _rc(threshold: int = 20) -> RuleConfig:
