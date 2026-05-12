@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import ClassVar
 
-from ..ast import Callable, Catch, Conditional, Identifier, Loop, Operator, Scope, Switch
+from ..ast import Callable, Catch, Conditional, Identifier, Literal, Loop, Operator, Scope, Switch
 from ..multipurpose import MultiPurpose
 
 
@@ -74,3 +74,7 @@ class JavaScript(MultiPurpose):
     @classmethod
     def boolean_op_operators(cls) -> frozenset[str] | None:
         return frozenset({"&&", "||", "??"})
+
+    @classmethod
+    def numeric_literal_nodes(cls) -> frozenset[str]:
+        return frozenset({Literal.NUMBER})

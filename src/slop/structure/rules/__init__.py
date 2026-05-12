@@ -24,10 +24,9 @@ from .dependencies import run_cycles
 from .god_module import run_god_module_v2
 from .halstead import run_difficulty, run_volume
 from .local_imports import run_local_imports
-from .magic_literals import run_magic_literal_density
+from .magic_literals import run_magic_literals_v2
 from .npath import run_npath
 from .out_parameters import run_out_parameters
-from .section_comments import run_section_comment_density
 from .sibling_calls import run_sibling_call_redundancy
 from .stringly_typed import run_stringly_typed
 
@@ -218,21 +217,12 @@ STRUCTURAL_RULES: list[RuleDefinition] = [
         run=legacy_v2_shim(run_difficulty),
     ),
     RuleDefinition(
-        name="information.magic_literals",
-        category="information.magic_literals",
+        name="structural.magic_literals",
+        category="structural.magic_literals",
         description="Distinct non-trivial numeric literals per function (magic numbers)",
         default_severity="warning",
         default_enabled=True,
         threshold_label="> 3",
-        run=legacy_v2_shim(run_magic_literal_density),
-    ),
-    RuleDefinition(
-        name="information.section_comments",
-        category="information.section_comments",
-        description="Section-divider comments inside function bodies (function overload signal)",
-        default_severity="warning",
-        default_enabled=True,
-        threshold_label="> 2",
-        run=legacy_v2_shim(run_section_comment_density),
+        run=run_magic_literals_v2,
     ),
 ]

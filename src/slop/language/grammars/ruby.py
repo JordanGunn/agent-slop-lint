@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import Any, ClassVar
 
 from ..ast import Callable as Node
-from ..ast import Catch, Conditional, Identifier, Loop, Operator, Scope, Switch
+from ..ast import Catch, Conditional, Identifier, Literal, Loop, Operator, Scope, Switch
 from ..multipurpose import MultiPurpose
 
 
@@ -61,6 +61,13 @@ class Ruby(MultiPurpose):
     @classmethod
     def boolean_op_operators(cls) -> frozenset[str] | None:
         return frozenset({"&&", "||", "and", "or"})
+
+    @classmethod
+    def numeric_literal_nodes(cls) -> frozenset[str]:
+        return frozenset({
+            Literal.INTEGER, Literal.FLOAT,
+            Literal.COMPLEX, Literal.RATIONAL,
+        })
 
     @classmethod
     def extract_name(cls, node: Any, content: bytes) -> str:

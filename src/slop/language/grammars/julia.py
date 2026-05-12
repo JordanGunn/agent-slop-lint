@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import Any, ClassVar
 
 from ..ast import Callable as Node
-from ..ast import Catch, Conditional, Identifier, Loop, Operator, Wrapper
+from ..ast import Catch, Conditional, Identifier, Literal, Loop, Operator, Wrapper
 from ..procedural import Procedural
 
 
@@ -50,6 +50,10 @@ class Julia(Procedural):
     @classmethod
     def boolean_op_operators(cls) -> frozenset[str] | None:
         return frozenset({"&&", "||"})
+
+    @classmethod
+    def numeric_literal_nodes(cls) -> frozenset[str]:
+        return frozenset({Literal.INTEGER_LITERAL, Literal.FLOAT_LITERAL})
 
     @classmethod
     def extract_name(cls, node: Any, content: bytes) -> str:

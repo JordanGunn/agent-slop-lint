@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import Any, ClassVar
 
 from ..ast import Callable as Node
-from ..ast import Catch, Conditional, Identifier, Loop, Operator, Scope, Switch, Wrapper
+from ..ast import Catch, Conditional, Identifier, Literal, Loop, Operator, Scope, Switch, Wrapper
 from ..multipurpose import MultiPurpose
 
 
@@ -73,6 +73,10 @@ class Cpp(MultiPurpose):
     @classmethod
     def definition_unwrap_types(cls) -> frozenset[str]:
         return frozenset({Wrapper.TEMPLATE_DECLARATION})
+
+    @classmethod
+    def numeric_literal_nodes(cls) -> frozenset[str]:
+        return frozenset({Literal.NUMBER_LITERAL})
 
     @classmethod
     def extract_name(cls, node: Any, content: bytes) -> str:

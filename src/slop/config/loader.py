@@ -145,15 +145,10 @@ DEFAULT_RULE_CONFIGS: dict[str, dict[str, Any]] = {
         "severity": "error",
         "threshold": 30,
     },
-    "information.magic_literals": {
+    "structural.magic_literals": {
         "enabled": True,
         "severity": "warning",
         "threshold": 3,
-    },
-    "information.section_comments": {
-        "enabled": True,
-        "severity": "warning",
-        "threshold": 2,
     },
     "lexical.stutter": {
         "enabled": True,
@@ -694,14 +689,9 @@ enabled = true
 threshold = {profile_cfg["difficulty_threshold"]}        # fail if any function D exceeds this
 severity = "error"
 
-[rules.information.magic_literals]
+[rules.structural.magic_literals]
 enabled = true
 threshold = 3       # flag functions with > 3 distinct non-trivial numeric literals
-severity = "warning"
-
-[rules.information.section_comments]
-enabled = true
-threshold = 2       # flag functions with more than this many section-divider comments
 severity = "warning"
 
 [rules.lexical.stutter]

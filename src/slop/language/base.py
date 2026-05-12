@@ -167,6 +167,19 @@ class Language(ABC):
         return frozenset()
 
     @classmethod
+    def numeric_literal_nodes(cls) -> frozenset[str]:
+        """Tree-sitter node types for numeric literal values.
+
+        Per-language: Python's ``integer`` / ``float``, Go's
+        ``int_literal`` / ``float_literal``, Java's
+        ``decimal_integer_literal`` family, etc. Consumed by the
+        ``structural.magic_literals`` rule to find embedded numeric
+        constants inside function bodies. Default empty — grammars
+        that don't override contribute 0 magic-literal findings.
+        """
+        return frozenset()
+
+    @classmethod
     def extract_parameters(cls, node: Any, content: bytes) -> tuple[Parameter, ...]:
         """Extract parameters from a callable definition node.
 

@@ -20,10 +20,8 @@ from slop.structure.rules.dependencies import run_cycles
 from slop.structure.rules.god_module import run_god_module
 from slop.structure.rules.halstead import run_difficulty, run_volume
 from slop.structure.rules.local_imports import run_local_imports
-from slop.structure.rules.magic_literals import run_magic_literal_density
 from slop.structure.rules.npath import run_npath
 from slop.structure.rules.out_parameters import run_out_parameters
-from slop.structure.rules.section_comments import run_section_comment_density
 from slop.structure.rules.sibling_calls import run_sibling_call_redundancy
 from slop.structure.rules.stringly_typed import run_stringly_typed
 from slop.lexicon.rules.stutter import run_stutter
@@ -269,37 +267,6 @@ def test_c_clone_density_detects_duplicates(tmp_path: Path):
     result = run_clone_density(tmp_path, _rule_config(threshold=0.10), _slop_config())
     # Status pass or fail acceptable; kernel must analyse the functions.
     assert result.summary.get("functions_analyzed", 0) >= 4
-
-
-def test_c_magic_literals_flags_bare_numbers(tmp_path: Path):
-    (tmp_path / "mag.c").write_text(
-        "int discount(int days) {\n"
-        "    if (days > 30) return 100 * days / 365;\n"
-        "    if (days > 7) return 50;\n"
-        "    return 7;\n"
-        "}\n"
-    )
-    result = run_magic_literal_density(tmp_path, _rule_config(threshold=2),
-                                       _slop_config())
-    assert result.status == "fail"
-    assert any(v.symbol == "discount" for v in result.violations)
-
-
-def test_c_section_comments_detect_dividers(tmp_path: Path):
-    (tmp_path / "sect.c").write_text(
-        "int process(int *xs, int n) {\n"
-        "    /* === setup === */\n"
-        "    int total = 0;\n"
-        "    /* === main loop === */\n"
-        "    for (int i = 0; i < n; i++) total += xs[i];\n"
-        "    /* === cleanup === */\n"
-        "    return total;\n"
-        "}\n"
-    )
-    result = run_section_comment_density(tmp_path, _rule_config(threshold=2),
-                                         _slop_config())
-    assert result.status == "fail"
-    assert any(v.symbol == "process" for v in result.violations)
 
 
 # ---------------------------------------------------------------------------

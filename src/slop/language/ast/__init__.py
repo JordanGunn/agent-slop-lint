@@ -33,6 +33,7 @@ from .callable import Callable
 from .catch import Catch
 from .conditional import Conditional
 from .identifier import Identifier
+from .literal import Literal
 from .loop import Loop
 from .operator import Operator
 from .scope import Scope
@@ -44,6 +45,7 @@ __all__ = [
     "Catch",
     "Conditional",
     "Identifier",
+    "Literal",
     "Loop",
     "Operator",
     "Scope",

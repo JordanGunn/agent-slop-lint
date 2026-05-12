@@ -11,7 +11,7 @@ from typing import Any, ClassVar
 # Local alias so the ast.Callable enum doesn't shadow typing.Callable
 # in this module — Callable members are only used inside method bodies.
 from ..ast import Callable as Node
-from ..ast import Conditional, Identifier, Loop, Operator, Switch, Wrapper
+from ..ast import Conditional, Identifier, Literal, Loop, Operator, Switch, Wrapper
 from ..procedural import Procedural
 
 
@@ -51,6 +51,10 @@ class C(Procedural):
     @classmethod
     def boolean_op_operators(cls) -> frozenset[str] | None:
         return frozenset({"&&", "||"})
+
+    @classmethod
+    def numeric_literal_nodes(cls) -> frozenset[str]:
+        return frozenset({Literal.NUMBER_LITERAL})
 
     @classmethod
     def extract_name(cls, node: Any, content: bytes) -> str:

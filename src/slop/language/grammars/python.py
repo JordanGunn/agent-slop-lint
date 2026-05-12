@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import ClassVar
 
-from ..ast import Callable, Catch, Conditional, Loop, Operator, Scope, Switch
+from ..ast import Callable, Catch, Conditional, Literal, Loop, Operator, Scope, Switch
 from ..multipurpose import MultiPurpose
 
 
@@ -60,3 +60,7 @@ class Python(MultiPurpose):
 
     # boolean_op_operators defaults to None — Python's dedicated
     # boolean_operator node always counts (and/or).
+
+    @classmethod
+    def numeric_literal_nodes(cls) -> frozenset[str]:
+        return frozenset({Literal.INTEGER, Literal.FLOAT})

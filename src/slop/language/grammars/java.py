@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import ClassVar
 
-from ..ast import Callable, Catch, Conditional, Loop, Operator, Scope, Switch
+from ..ast import Callable, Catch, Conditional, Literal, Loop, Operator, Scope, Switch
 from ..objectoriented import ObjectOriented
 
 
@@ -55,3 +55,12 @@ class Java(ObjectOriented):
     @classmethod
     def boolean_op_operators(cls) -> frozenset[str] | None:
         return frozenset({"&&", "||"})
+
+    @classmethod
+    def numeric_literal_nodes(cls) -> frozenset[str]:
+        return frozenset({
+            Literal.DECIMAL_INTEGER_LITERAL,
+            Literal.DECIMAL_FLOATING_POINT_LITERAL,
+            Literal.HEX_INTEGER_LITERAL,
+            Literal.OCTAL_INTEGER_LITERAL,
+        })

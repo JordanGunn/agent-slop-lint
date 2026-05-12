@@ -40,6 +40,10 @@ LEGACY_RULE_NAMES: dict[str, str] = {
     "class.inheritance.children": "structural.class.inheritance.children",
     "halstead.volume": "information.volume",
     "halstead.difficulty": "information.difficulty",
+    # v2.0 relocation: magic_literals moved from information.* to
+    # structural.* — it's a structural readability/parameterization
+    # signal, not a Halstead-derived information measure.
+    "information.magic_literals": "structural.magic_literals",
     # v1.1.0 names that didn't ship; collapsed in v1.2.0
     "composition.affix_polymorphism": "lexical.sprawl",
     "composition.first_parameter_drift": "lexical.imposters",
@@ -75,6 +79,11 @@ REMOVED_RULES: dict[str, str] = {
     "lexical.identifier_singletons": (
         "removed in v1.2.0 — overlapped weakly with structural concerns; "
         "weaker than other v1.2.0 rules in the same space."
+    ),
+    "information.section_comments": (
+        "removed in v2.0 — section-divider comments inside function bodies "
+        "are a style smell that agents readily clean up; doesn't drive "
+        "non-trivial review action."
     ),
 }
 
