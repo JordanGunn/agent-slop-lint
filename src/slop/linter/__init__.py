@@ -21,27 +21,19 @@ the dispatcher / rule loop into this lightweight import surface.
 """
 from __future__ import annotations
 
-from slop.lexicon.rules import LEXICAL_RULES
-from slop.linter.rules import CROSS_CUTTING_RULES
-from slop.structure.rules import STRUCTURAL_RULES
-
 from .result import Result
 from .slop import Slop
 from .types import RuleDefinition
 
-RULE_REGISTRY: list[RuleDefinition] = [
-    *STRUCTURAL_RULES,
-    *LEXICAL_RULES,
-    *CROSS_CUTTING_RULES,
-]
-
-RULES_BY_NAME: dict[str, RuleDefinition] = {r.name: r for r in RULE_REGISTRY}
-
-RULES_BY_CATEGORY: dict[str, list[RuleDefinition]] = {}
-for _rule in RULE_REGISTRY:
-    RULES_BY_CATEGORY.setdefault(_rule.category, []).append(_rule)
-
-CATEGORIES: list[str] = sorted(RULES_BY_CATEGORY.keys())
+# The aggregated registries (RULE_REGISTRY / RULES_BY_NAME /
+# RULES_BY_CATEGORY / CATEGORIES + the three per-substrate registries
+# they're composed from) are lazy-loaded via module-level __getattr__.
+# Eager loading would create a cycle: each rules-package __init__ pulls
+# ``legacy_v2_shim`` from ``slop.linter._shim``, which forces evaluation
+# of THIS file; if THIS file eagerly imported the rules packages, the
+# packages would still be mid-init when ``STRUCTURAL_RULES`` etc. were
+# referenced. Lazy access defers the rules import until first use, by
+# which point every rules package has settled.
 
 __all__ = [
     "CATEGORIES",
@@ -54,3 +46,38 @@ __all__ = [
     "STRUCTURAL_RULES",
     "Slop",
 ]
+
+
+_LAZY_NAMES = frozenset({
+    "STRUCTURAL_RULES", "LEXICAL_RULES", "CROSS_CUTTING_RULES",
+    "RULE_REGISTRY", "RULES_BY_NAME", "RULES_BY_CATEGORY", "CATEGORIES",
+})
+
+
+def __getattr__(name: str):
+    if name not in _LAZY_NAMES:
+        raise AttributeError(name)
+    import sys
+
+    from slop.lexicon.rules import LEXICAL_RULES
+    from slop.linter.rules import CROSS_CUTTING_RULES
+    from slop.structure.rules import STRUCTURAL_RULES
+
+    rule_registry: list[RuleDefinition] = [
+        *STRUCTURAL_RULES, *LEXICAL_RULES, *CROSS_CUTTING_RULES,
+    ]
+    rules_by_name: dict[str, RuleDefinition] = {r.name: r for r in rule_registry}
+    rules_by_category: dict[str, list[RuleDefinition]] = {}
+    for rule in rule_registry:
+        rules_by_category.setdefault(rule.category, []).append(rule)
+    categories: list[str] = sorted(rules_by_category.keys())
+
+    mod = sys.modules[__name__]
+    mod.STRUCTURAL_RULES = STRUCTURAL_RULES
+    mod.LEXICAL_RULES = LEXICAL_RULES
+    mod.CROSS_CUTTING_RULES = CROSS_CUTTING_RULES
+    mod.RULE_REGISTRY = rule_registry
+    mod.RULES_BY_NAME = rules_by_name
+    mod.RULES_BY_CATEGORY = rules_by_category
+    mod.CATEGORIES = categories
+    return getattr(mod, name)

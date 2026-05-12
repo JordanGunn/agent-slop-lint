@@ -21,7 +21,7 @@ from .class_metrics import run_coupling, run_inheritance_children, run_inheritan
 from .clone_density import run_clone_density
 from .complexity import run_cognitive_v2, run_cyclomatic_v2, run_weighted
 from .dependencies import run_cycles
-from .god_module import run_god_module
+from .god_module import run_god_module_v2
 from .halstead import run_difficulty, run_volume
 from .local_imports import run_local_imports
 from .magic_literals import run_magic_literal_density
@@ -195,7 +195,7 @@ STRUCTURAL_RULES: list[RuleDefinition] = [
         default_severity="warning",
         default_enabled=True,
         threshold_label="> 20",
-        run=legacy_v2_shim(run_god_module),
+        run=run_god_module_v2,
     ),
 
     # --- information.* (Halstead-derived information density + readability signals) ---
