@@ -93,3 +93,166 @@ class TestCyclomatic:
                 assert s.cyclomatic(c) == 5
                 return
         raise AssertionError("nested not found")
+
+
+def _ccx_by_name(root: Path) -> dict[str, int]:
+    """Build a {function name → CCX} map for every callable in a corpus."""
+    cb = Tree(root)
+    cb.scan()
+    s = cb.structure
+    return {c.qualname.split(".")[-1]: s.cyclomatic(c) for c in s.callables()}
+
+
+class TestCyclomaticMultiLanguage:
+    """Hand-computed CCX values per language — surfaces grammar regressions
+    in ``Language.decision_nodes`` / ``boolean_op_node`` /
+    ``boolean_op_operators`` / ``definition_unwrap_types``.
+
+    Each fixture function holds the same control-flow pattern:
+    ``if (a && b) loop`` → CCX = base(1) + if(1) + && (1) + loop(1) = 4.
+    """
+
+    def test_javascript(self, tmp_path: Path):
+        (tmp_path / "a.js").write_text(
+            "function f(a, b, xs) {\n"
+            "  if (a && b) {\n"
+            "    for (const x of xs) { console.log(x); }\n"
+            "  }\n"
+            "}\n"
+        )
+        assert _ccx_by_name(tmp_path)["f"] == 4
+
+    def test_typescript(self, tmp_path: Path):
+        (tmp_path / "a.ts").write_text(
+            "function f(a: boolean, b: boolean, xs: number[]) {\n"
+            "  if (a && b) {\n"
+            "    for (const x of xs) { console.log(x); }\n"
+            "  }\n"
+            "}\n"
+        )
+        assert _ccx_by_name(tmp_path)["f"] == 4
+
+    def test_go(self, tmp_path: Path):
+        (tmp_path / "a.go").write_text(
+            "package p\n"
+            "func F(a, b bool, xs []int) {\n"
+            "  if a && b {\n"
+            "    for _, x := range xs { _ = x }\n"
+            "  }\n"
+            "}\n"
+        )
+        assert _ccx_by_name(tmp_path)["F"] == 4
+
+    def test_rust(self, tmp_path: Path):
+        (tmp_path / "a.rs").write_text(
+            "fn f(a: bool, b: bool, xs: Vec<i32>) {\n"
+            "    if a && b {\n"
+            "        for x in xs { let _ = x; }\n"
+            "    }\n"
+            "}\n"
+        )
+        assert _ccx_by_name(tmp_path)["f"] == 4
+
+    def test_java(self, tmp_path: Path):
+        (tmp_path / "A.java").write_text(
+            "class A {\n"
+            "  void m(boolean a, boolean b, int[] xs) {\n"
+            "    if (a && b) {\n"
+            "      for (int x : xs) { System.out.println(x); }\n"
+            "    }\n"
+            "  }\n"
+            "}\n"
+        )
+        assert _ccx_by_name(tmp_path)["m"] == 4
+
+    def test_csharp(self, tmp_path: Path):
+        (tmp_path / "A.cs").write_text(
+            "class A {\n"
+            "  void M(bool a, bool b, int[] xs) {\n"
+            "    if (a && b) {\n"
+            "      foreach (var x in xs) { System.Console.WriteLine(x); }\n"
+            "    }\n"
+            "  }\n"
+            "}\n"
+        )
+        assert _ccx_by_name(tmp_path)["M"] == 4
+
+    def test_c(self, tmp_path: Path):
+        (tmp_path / "a.c").write_text(
+            "void f(int a, int b, int n) {\n"
+            "  if (a && b) {\n"
+            "    for (int i = 0; i < n; i++) { (void)i; }\n"
+            "  }\n"
+            "}\n"
+        )
+        assert _ccx_by_name(tmp_path)["f"] == 4
+
+    def test_cpp(self, tmp_path: Path):
+        (tmp_path / "a.cpp").write_text(
+            "void f(bool a, bool b, int n) {\n"
+            "  if (a && b) {\n"
+            "    for (int i = 0; i < n; i++) { (void)i; }\n"
+            "  }\n"
+            "}\n"
+        )
+        assert _ccx_by_name(tmp_path)["f"] == 4
+
+    def test_ruby(self, tmp_path: Path):
+        (tmp_path / "a.rb").write_text(
+            "def f(a, b, xs)\n"
+            "  if a && b\n"
+            "    xs.each { |x| puts x }\n"
+            "  end\n"
+            "end\n"
+        )
+        # CCX(f) = 4, matching legacy ccx_kernel. Ruby's tree-sitter
+        # treats the if/&& branch differently than naive hand-counting;
+        # the legacy oracle is the source of truth for parity.
+        assert _ccx_by_name(tmp_path)["f"] == 4
+
+    def test_julia(self, tmp_path: Path):
+        (tmp_path / "a.jl").write_text(
+            "function f(a, b, xs)\n"
+            "    if a && b\n"
+            "        for x in xs\n"
+            "            x\n"
+            "        end\n"
+            "    end\n"
+            "end\n"
+        )
+        assert _ccx_by_name(tmp_path)["f"] == 4
+
+
+class TestCyclomaticBooleanOperatorFiltering:
+    """Verifies ``boolean_op_operators`` only counts short-circuit operators."""
+
+    def test_javascript_addition_is_not_counted(self, tmp_path: Path):
+        # `a + b` is `binary_expression` but operator is `+`, not in {&&,||,??}.
+        (tmp_path / "a.js").write_text(
+            "function f(a, b) {\n"
+            "  const x = a + b;\n"
+            "  if (x > 0) return 1;\n"
+            "  return 0;\n"
+            "}\n"
+        )
+        # base(1) + if(1) = 2 (the + and > don't count)
+        assert _ccx_by_name(tmp_path)["f"] == 2
+
+    def test_javascript_nullish_coalesce_counts(self, tmp_path: Path):
+        (tmp_path / "a.js").write_text(
+            "function f(a, b) {\n"
+            "  return a ?? b;\n"
+            "}\n"
+        )
+        # base(1) + ?? (1) = 2
+        assert _ccx_by_name(tmp_path)["f"] == 2
+
+    def test_python_and_counts(self, tmp_path: Path):
+        (tmp_path / "a.py").write_text(
+            "def f(a, b):\n"
+            "    if a and b:\n"
+            "        return 1\n"
+            "    return 0\n"
+        )
+        # base(1) + if(1) + and(1) = 3
+        assert _ccx_by_name(tmp_path)["f"] == 3

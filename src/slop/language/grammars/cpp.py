@@ -32,6 +32,45 @@ class Cpp(MultiPurpose):
         return frozenset({"function_definition"})
 
     @classmethod
+    def decision_nodes(cls) -> frozenset[str]:
+        return frozenset({
+            "if_statement",
+            "for_statement", "for_range_loop",  # range-based for
+            "while_statement", "do_statement",
+            "case_statement",           # case X: / default:
+            "conditional_expression",   # ternary
+            "catch_clause",
+        })
+
+    @classmethod
+    def nesting_nodes(cls) -> frozenset[str]:
+        return frozenset({
+            "if_statement",
+            "for_statement", "for_range_loop",
+            "while_statement", "do_statement",
+            "switch_statement",
+            "conditional_expression",
+            "try_statement",            # container for catch_clause
+            "catch_clause",
+        })
+
+    @classmethod
+    def compensating_decisions(cls) -> frozenset[str]:
+        return frozenset({"case_statement"})
+
+    @classmethod
+    def boolean_op_node(cls) -> str | None:
+        return "binary_expression"
+
+    @classmethod
+    def boolean_op_operators(cls) -> frozenset[str] | None:
+        return frozenset({"&&", "||"})
+
+    @classmethod
+    def definition_unwrap_types(cls) -> frozenset[str]:
+        return frozenset({"template_declaration"})
+
+    @classmethod
     def extract_name(cls, node: Any, content: bytes) -> str:
         """Walk the C++ declarator chain to find the function name.
 

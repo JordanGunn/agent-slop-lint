@@ -53,8 +53,19 @@ DEFAULT_GRAMMARS: dict[str, type[Language]] = {
 }
 
 
+# Reverse lookup: language id (the string stored on ParseResult.language
+# and exposed via Structure.language_for) → grammar class. Used by view
+# methods that need the grammar's control-flow vocabulary without
+# threading the class through every record.
+LANGUAGE_BY_ID: dict[str, type[Language]] = {
+    cls.id: cls
+    for cls in (C, Cpp, CSharp, Go, Java, JavaScript, Julia, Python, Ruby, Rust, TypeScript)
+}
+
+
 __all__ = [
     "C", "Cpp", "CSharp", "Go", "Java", "JavaScript",
     "Julia", "Python", "Ruby", "Rust", "TypeScript",
     "DEFAULT_GRAMMARS",
+    "LANGUAGE_BY_ID",
 ]

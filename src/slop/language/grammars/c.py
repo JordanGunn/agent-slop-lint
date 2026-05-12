@@ -19,6 +19,36 @@ class C(Procedural):
         return frozenset({"function_definition"})
 
     @classmethod
+    def decision_nodes(cls) -> frozenset[str]:
+        return frozenset({
+            "if_statement",
+            "for_statement", "while_statement", "do_statement",
+            "case_statement",           # both `case X:` and `default:`
+            "conditional_expression",   # ternary `?:`
+        })
+
+    @classmethod
+    def nesting_nodes(cls) -> frozenset[str]:
+        return frozenset({
+            "if_statement",
+            "for_statement", "while_statement", "do_statement",
+            "switch_statement",         # container for case_statement
+            "conditional_expression",
+        })
+
+    @classmethod
+    def compensating_decisions(cls) -> frozenset[str]:
+        return frozenset({"case_statement"})
+
+    @classmethod
+    def boolean_op_node(cls) -> str | None:
+        return "binary_expression"
+
+    @classmethod
+    def boolean_op_operators(cls) -> frozenset[str] | None:
+        return frozenset({"&&", "||"})
+
+    @classmethod
     def extract_name(cls, node: Any, content: bytes) -> str:
         """Walk the C declarator chain to the identifier."""
         if node.type != "function_definition":

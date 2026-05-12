@@ -23,6 +23,44 @@ class Ruby(MultiPurpose):
         return frozenset({"class", "module"})
 
     @classmethod
+    def decision_nodes(cls) -> frozenset[str]:
+        return frozenset({
+            "if", "elsif",
+            "unless_modifier", "if_modifier",
+            "while_modifier", "until_modifier",
+            "rescue_modifier",
+            "while", "until", "for",
+            "when",
+            "rescue",
+            "conditional",              # ternary x ? a : b
+        })
+
+    @classmethod
+    def nesting_nodes(cls) -> frozenset[str]:
+        return frozenset({
+            "if", "unless_modifier",
+            "while", "until", "for",
+            "case", "begin",
+            "conditional",
+            "do_block", "block",
+        })
+
+    @classmethod
+    def compensating_decisions(cls) -> frozenset[str]:
+        return frozenset({
+            "elsif",                    # syntactically inside if
+            "when",                     # syntactically inside case
+        })
+
+    @classmethod
+    def boolean_op_node(cls) -> str | None:
+        return "binary"
+
+    @classmethod
+    def boolean_op_operators(cls) -> frozenset[str] | None:
+        return frozenset({"&&", "||", "and", "or"})
+
+    @classmethod
     def extract_name(cls, node: Any, content: bytes) -> str:
         """Walk method / singleton_method children, skipping def/self/."""
         if node.type not in ("method", "singleton_method"):

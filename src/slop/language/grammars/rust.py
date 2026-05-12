@@ -26,3 +26,31 @@ class Rust(MultiPurpose):
     @classmethod
     def identifiers(cls) -> frozenset[str]:
         return frozenset({"identifier", "field_identifier", "type_identifier"})
+
+    @classmethod
+    def decision_nodes(cls) -> frozenset[str]:
+        return frozenset({
+            "if_expression",
+            "while_expression", "for_expression",
+            "match_arm",
+        })
+
+    @classmethod
+    def nesting_nodes(cls) -> frozenset[str]:
+        return frozenset({
+            "if_expression",
+            "while_expression", "for_expression",
+            "match_expression",         # container for match_arm
+        })
+
+    @classmethod
+    def compensating_decisions(cls) -> frozenset[str]:
+        return frozenset({"match_arm"})
+
+    @classmethod
+    def boolean_op_node(cls) -> str | None:
+        return "binary_expression"
+
+    @classmethod
+    def boolean_op_operators(cls) -> frozenset[str] | None:
+        return frozenset({"&&", "||"})

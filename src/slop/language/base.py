@@ -89,6 +89,83 @@ class Language(ABC):
             "utf-8", errors="replace",
         )
 
+    # ---- Control-flow vocabulary ------------------------------------
+    # Tree-sitter node-type metadata consumed by the Structure view's
+    # complexity computations (cyclomatic / cognitive / npath). Each
+    # method returns a per-language set; defaults are empty / None so
+    # a grammar that doesn't declare them contributes 0 to any metric
+    # rather than crashing.
+
+    @classmethod
+    def decision_nodes(cls) -> frozenset[str]:
+        """Tree-sitter node types that contribute +1 to McCabe Cyclomatic Complexity.
+
+        One entry per decision point — ``if_statement``,
+        ``for_statement``, switch arms, exception clauses, ternaries.
+        Each language's grammar names these differently
+        (``case_clause`` vs ``switch_case`` vs ``switch_label``);
+        concrete grammars override with their actual node types.
+        """
+        return frozenset()
+
+    @classmethod
+    def nesting_nodes(cls) -> frozenset[str]:
+        """Tree-sitter node types that increment Cognitive Complexity nesting depth.
+
+        Mostly overlaps with ``decision_nodes`` but typically points
+        at the *container* shape (``switch_statement`` rather than
+        ``switch_case``, ``match_expression`` rather than
+        ``match_arm``). Default: ``cls.decision_nodes()``.
+        """
+        return cls.decision_nodes()
+
+    @classmethod
+    def boolean_op_node(cls) -> str | None:
+        """Tree-sitter node type that hosts short-circuit boolean operators.
+
+        Python uses a dedicated ``boolean_operator`` node; most C-family
+        grammars fold ``&&``/``||`` into a generic ``binary_expression``
+        and rely on operator-text filtering (see
+        ``boolean_op_operators``). Return ``None`` for grammars without
+        short-circuit ops.
+        """
+        return None
+
+    @classmethod
+    def boolean_op_operators(cls) -> frozenset[str] | None:
+        """Operator texts to count when ``boolean_op_node`` is a shared node type.
+
+        ``None`` means "every instance of ``boolean_op_node`` counts"
+        (Python — the node is dedicated). A frozenset filters by the
+        operator text child (JS/TS/Go/Java/C/C++/C#: ``{"&&", "||"}``
+        plus ``"??"`` for JS/TS).
+        """
+        return None
+
+    @classmethod
+    def compensating_decisions(cls) -> frozenset[str]:
+        """Decision nodes that are syntactic children of a nesting container.
+
+        Examples: Python's ``elif_clause`` lives inside ``if_statement``
+        but is logically at the same level; ``switch_case`` inside
+        ``switch_statement``; Rust's ``match_arm`` inside
+        ``match_expression``. Cognitive Complexity uses depth-1 for
+        these to compensate for the syntactic nesting that doesn't add
+        logical depth.
+        """
+        return frozenset()
+
+    @classmethod
+    def definition_unwrap_types(cls) -> frozenset[str]:
+        """Wrapper node types that the walker descends through to reach a definition.
+
+        The canonical example is C++ ``template_declaration``, which
+        wraps the actual ``function_definition`` / ``class_specifier``.
+        Default: empty — no unwrapping needed (Python, JS, Go, Rust,
+        Java, C#, Julia, C, Ruby).
+        """
+        return frozenset()
+
     @classmethod
     def extract_parameters(cls, node: Any, content: bytes) -> tuple[Parameter, ...]:
         """Extract parameters from a callable definition node.
