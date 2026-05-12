@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import ClassVar
 
-from ..ast import Node
+from ..ast import Callable, Conditional, Identifier, Loop, Operator, Scope, Switch
 from ..multipurpose import MultiPurpose
 
 
@@ -18,39 +18,41 @@ class Rust(MultiPurpose):
 
     @classmethod
     def callable(cls) -> frozenset[str]:
-        return frozenset({Node.FUNCTION_ITEM})
+        return frozenset({Callable.FUNCTION_ITEM})
 
     @classmethod
     def classes(cls) -> frozenset[str]:
-        return frozenset({Node.STRUCT_ITEM, Node.TRAIT_ITEM, Node.IMPL_ITEM})
+        return frozenset({Scope.STRUCT_ITEM, Scope.TRAIT_ITEM, Scope.IMPL_ITEM})
 
     @classmethod
     def identifiers(cls) -> frozenset[str]:
-        return frozenset({Node.IDENTIFIER, Node.FIELD_IDENTIFIER, Node.TYPE_IDENTIFIER})
+        return frozenset({
+            Identifier.IDENTIFIER, Identifier.FIELD_IDENTIFIER, Identifier.TYPE_IDENTIFIER,
+        })
 
     @classmethod
     def decision_nodes(cls) -> frozenset[str]:
         return frozenset({
-            Node.IF_EXPRESSION,
-            Node.WHILE_EXPRESSION, Node.FOR_EXPRESSION,
-            Node.MATCH_ARM,
+            Conditional.IF_EXPRESSION,
+            Loop.WHILE_EXPRESSION, Loop.FOR_EXPRESSION,
+            Switch.MATCH_ARM,
         })
 
     @classmethod
     def nesting_nodes(cls) -> frozenset[str]:
         return frozenset({
-            Node.IF_EXPRESSION,
-            Node.WHILE_EXPRESSION, Node.FOR_EXPRESSION,
-            Node.MATCH_EXPRESSION,          # container for match_arm
+            Conditional.IF_EXPRESSION,
+            Loop.WHILE_EXPRESSION, Loop.FOR_EXPRESSION,
+            Switch.MATCH_EXPRESSION,                # container for match_arm
         })
 
     @classmethod
     def compensating_decisions(cls) -> frozenset[str]:
-        return frozenset({Node.MATCH_ARM})
+        return frozenset({Switch.MATCH_ARM})
 
     @classmethod
     def boolean_op_node(cls) -> str | None:
-        return Node.BINARY_EXPRESSION
+        return Operator.BINARY_EXPRESSION
 
     @classmethod
     def boolean_op_operators(cls) -> frozenset[str] | None:

@@ -8,7 +8,8 @@ from __future__ import annotations
 
 from typing import Any, ClassVar
 
-from ..ast import Node
+from ..ast import Callable as Node
+from ..ast import Catch, Conditional, Identifier, Loop, Operator, Scope, Switch, Wrapper
 from ..multipurpose import MultiPurpose
 
 
@@ -21,11 +22,13 @@ class Cpp(MultiPurpose):
 
     @classmethod
     def classes(cls) -> frozenset[str]:
-        return frozenset({Node.CLASS_SPECIFIER, Node.STRUCT_SPECIFIER})
+        return frozenset({Scope.CLASS_SPECIFIER, Scope.STRUCT_SPECIFIER})
 
     @classmethod
     def identifiers(cls) -> frozenset[str]:
-        return frozenset({Node.IDENTIFIER, Node.FIELD_IDENTIFIER, Node.TYPE_IDENTIFIER})
+        return frozenset({
+            Identifier.IDENTIFIER, Identifier.FIELD_IDENTIFIER, Identifier.TYPE_IDENTIFIER,
+        })
 
     @classmethod
     def methods(cls) -> frozenset[str]:
@@ -35,33 +38,33 @@ class Cpp(MultiPurpose):
     @classmethod
     def decision_nodes(cls) -> frozenset[str]:
         return frozenset({
-            Node.IF_STATEMENT,
-            Node.FOR_STATEMENT, Node.FOR_RANGE_LOOP,  # range-based for
-            Node.WHILE_STATEMENT, Node.DO_STATEMENT,
-            Node.CASE_STATEMENT,            # case X: / default:
-            Node.CONDITIONAL_EXPRESSION,    # ternary
-            Node.CATCH_CLAUSE,
+            Conditional.IF_STATEMENT,
+            Loop.FOR_STATEMENT, Loop.FOR_RANGE_LOOP,  # range-based for
+            Loop.WHILE_STATEMENT, Loop.DO_STATEMENT,
+            Switch.CASE_STATEMENT,                    # case X: / default:
+            Conditional.CONDITIONAL_EXPRESSION,       # ternary
+            Catch.CATCH_CLAUSE,
         })
 
     @classmethod
     def nesting_nodes(cls) -> frozenset[str]:
         return frozenset({
-            Node.IF_STATEMENT,
-            Node.FOR_STATEMENT, Node.FOR_RANGE_LOOP,
-            Node.WHILE_STATEMENT, Node.DO_STATEMENT,
-            Node.SWITCH_STATEMENT,
-            Node.CONDITIONAL_EXPRESSION,
-            Node.TRY_STATEMENT,             # container for catch_clause
-            Node.CATCH_CLAUSE,
+            Conditional.IF_STATEMENT,
+            Loop.FOR_STATEMENT, Loop.FOR_RANGE_LOOP,
+            Loop.WHILE_STATEMENT, Loop.DO_STATEMENT,
+            Switch.SWITCH_STATEMENT,
+            Conditional.CONDITIONAL_EXPRESSION,
+            Catch.TRY_STATEMENT,                      # container for catch_clause
+            Catch.CATCH_CLAUSE,
         })
 
     @classmethod
     def compensating_decisions(cls) -> frozenset[str]:
-        return frozenset({Node.CASE_STATEMENT})
+        return frozenset({Switch.CASE_STATEMENT})
 
     @classmethod
     def boolean_op_node(cls) -> str | None:
-        return Node.BINARY_EXPRESSION
+        return Operator.BINARY_EXPRESSION
 
     @classmethod
     def boolean_op_operators(cls) -> frozenset[str] | None:
@@ -69,7 +72,7 @@ class Cpp(MultiPurpose):
 
     @classmethod
     def definition_unwrap_types(cls) -> frozenset[str]:
-        return frozenset({Node.TEMPLATE_DECLARATION})
+        return frozenset({Wrapper.TEMPLATE_DECLARATION})
 
     @classmethod
     def extract_name(cls, node: Any, content: bytes) -> str:
@@ -88,39 +91,39 @@ class Cpp(MultiPurpose):
         for _ in range(8):
             if declarator is None:
                 return "<anonymous>"
-            if declarator.type == Node.FUNCTION_DECLARATOR:
+            if declarator.type == Wrapper.FUNCTION_DECLARATOR:
                 inner = declarator.child_by_field_name("declarator")
                 if inner is None:
                     return "<anonymous>"
-                if inner.type in (Node.IDENTIFIER, Node.FIELD_IDENTIFIER):
+                if inner.type in (Identifier.IDENTIFIER, Identifier.FIELD_IDENTIFIER):
                     return content[inner.start_byte:inner.end_byte].decode(
                         "utf-8", errors="replace",
                     )
-                if inner.type == Node.QUALIFIED_IDENTIFIER:
+                if inner.type == Identifier.QUALIFIED_IDENTIFIER:
                     for c in reversed(inner.children):
-                        if c.type == Node.IDENTIFIER:
+                        if c.type == Identifier.IDENTIFIER:
                             return content[c.start_byte:c.end_byte].decode(
                                 "utf-8", errors="replace",
                             )
                     return "<anonymous>"
-                if inner.type == Node.OPERATOR_NAME:
+                if inner.type == Identifier.OPERATOR_NAME:
                     for c in inner.children:
-                        if c.type != Node.OPERATOR:
+                        if c.type != Identifier.OPERATOR:
                             return content[c.start_byte:c.end_byte].decode(
                                 "utf-8", errors="replace",
                             ).strip()
                     return "<anonymous>"
-                if inner.type == Node.DESTRUCTOR_NAME:
+                if inner.type == Identifier.DESTRUCTOR_NAME:
                     for c in inner.children:
-                        if c.type == Node.IDENTIFIER:
+                        if c.type == Identifier.IDENTIFIER:
                             return "~" + content[c.start_byte:c.end_byte].decode(
                                 "utf-8", errors="replace",
                             )
                     return "<anonymous>"
                 return "<anonymous>"
             if declarator.type in (
-                Node.POINTER_DECLARATOR, Node.REFERENCE_DECLARATOR,
-                Node.PARENTHESIZED_DECLARATOR,
+                Wrapper.POINTER_DECLARATOR, Wrapper.REFERENCE_DECLARATOR,
+                Wrapper.PARENTHESIZED_DECLARATOR,
             ):
                 declarator = declarator.child_by_field_name("declarator")
                 continue

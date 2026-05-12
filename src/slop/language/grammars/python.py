@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import ClassVar
 
-from ..ast import Node
+from ..ast import Callable, Catch, Conditional, Loop, Operator, Scope, Switch
 from ..multipurpose import MultiPurpose
 
 
@@ -13,50 +13,50 @@ class Python(MultiPurpose):
     @classmethod
     def callable(cls) -> frozenset[str]:
         return frozenset({
-            Node.FUNCTION_DEFINITION,
-            Node.ASYNC_FUNCTION_DEFINITION,
-            Node.LAMBDA,
+            Callable.FUNCTION_DEFINITION,
+            Callable.ASYNC_FUNCTION_DEFINITION,
+            Callable.LAMBDA,
         })
 
     @classmethod
     def classes(cls) -> frozenset[str]:
-        return frozenset({Node.CLASS_DEFINITION})
+        return frozenset({Scope.CLASS_DEFINITION})
 
     @classmethod
     def methods(cls) -> frozenset[str]:
         # Lambdas can't be methods in Python (no `def` inside class via lambda).
-        return frozenset({Node.FUNCTION_DEFINITION, Node.ASYNC_FUNCTION_DEFINITION})
+        return frozenset({Callable.FUNCTION_DEFINITION, Callable.ASYNC_FUNCTION_DEFINITION})
 
     @classmethod
     def decision_nodes(cls) -> frozenset[str]:
         return frozenset({
-            Node.IF_STATEMENT, Node.ELIF_CLAUSE,
-            Node.FOR_STATEMENT, Node.WHILE_STATEMENT,
-            Node.EXCEPT_CLAUSE,
-            Node.CONDITIONAL_EXPRESSION,    # x if cond else y
-            Node.CASE_CLAUSE,               # match/case (PEP 634)
+            Conditional.IF_STATEMENT, Conditional.ELIF_CLAUSE,
+            Loop.FOR_STATEMENT, Loop.WHILE_STATEMENT,
+            Catch.EXCEPT_CLAUSE,
+            Conditional.CONDITIONAL_EXPRESSION,    # x if cond else y
+            Switch.CASE_CLAUSE,                    # match/case (PEP 634)
         })
 
     @classmethod
     def nesting_nodes(cls) -> frozenset[str]:
         return frozenset({
-            Node.IF_STATEMENT,
-            Node.FOR_STATEMENT, Node.WHILE_STATEMENT,
-            Node.EXCEPT_CLAUSE,
-            Node.CONDITIONAL_EXPRESSION,
-            Node.MATCH_STATEMENT,           # container for case_clause
+            Conditional.IF_STATEMENT,
+            Loop.FOR_STATEMENT, Loop.WHILE_STATEMENT,
+            Catch.EXCEPT_CLAUSE,
+            Conditional.CONDITIONAL_EXPRESSION,
+            Switch.MATCH_STATEMENT,                # container for case_clause
         })
 
     @classmethod
     def compensating_decisions(cls) -> frozenset[str]:
         return frozenset({
-            Node.ELIF_CLAUSE,               # syntactically inside if_statement
-            Node.CASE_CLAUSE,               # syntactically inside match_statement
+            Conditional.ELIF_CLAUSE,               # syntactically inside if_statement
+            Switch.CASE_CLAUSE,                    # syntactically inside match_statement
         })
 
     @classmethod
     def boolean_op_node(cls) -> str | None:
-        return Node.BOOLEAN_OPERATOR
+        return Operator.BOOLEAN_OPERATOR
 
     # boolean_op_operators defaults to None — Python's dedicated
     # boolean_operator node always counts (and/or).

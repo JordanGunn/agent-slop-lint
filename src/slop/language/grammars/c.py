@@ -8,7 +8,10 @@ from __future__ import annotations
 
 from typing import Any, ClassVar
 
-from ..ast import Node
+# Local alias so the ast.Callable enum doesn't shadow typing.Callable
+# in this module — Callable members are only used inside method bodies.
+from ..ast import Callable as Node
+from ..ast import Conditional, Identifier, Loop, Operator, Switch, Wrapper
 from ..procedural import Procedural
 
 
@@ -22,28 +25,28 @@ class C(Procedural):
     @classmethod
     def decision_nodes(cls) -> frozenset[str]:
         return frozenset({
-            Node.IF_STATEMENT,
-            Node.FOR_STATEMENT, Node.WHILE_STATEMENT, Node.DO_STATEMENT,
-            Node.CASE_STATEMENT,            # both `case X:` and `default:`
-            Node.CONDITIONAL_EXPRESSION,    # ternary `?:`
+            Conditional.IF_STATEMENT,
+            Loop.FOR_STATEMENT, Loop.WHILE_STATEMENT, Loop.DO_STATEMENT,
+            Switch.CASE_STATEMENT,                  # both `case X:` and `default:`
+            Conditional.CONDITIONAL_EXPRESSION,     # ternary `?:`
         })
 
     @classmethod
     def nesting_nodes(cls) -> frozenset[str]:
         return frozenset({
-            Node.IF_STATEMENT,
-            Node.FOR_STATEMENT, Node.WHILE_STATEMENT, Node.DO_STATEMENT,
-            Node.SWITCH_STATEMENT,          # container for case_statement
-            Node.CONDITIONAL_EXPRESSION,
+            Conditional.IF_STATEMENT,
+            Loop.FOR_STATEMENT, Loop.WHILE_STATEMENT, Loop.DO_STATEMENT,
+            Switch.SWITCH_STATEMENT,                # container for case_statement
+            Conditional.CONDITIONAL_EXPRESSION,
         })
 
     @classmethod
     def compensating_decisions(cls) -> frozenset[str]:
-        return frozenset({Node.CASE_STATEMENT})
+        return frozenset({Switch.CASE_STATEMENT})
 
     @classmethod
     def boolean_op_node(cls) -> str | None:
-        return Node.BINARY_EXPRESSION
+        return Operator.BINARY_EXPRESSION
 
     @classmethod
     def boolean_op_operators(cls) -> frozenset[str] | None:
@@ -58,14 +61,16 @@ class C(Procedural):
         for _ in range(6):
             if declarator is None:
                 return "<anonymous>"
-            if declarator.type == Node.FUNCTION_DECLARATOR:
+            if declarator.type == Wrapper.FUNCTION_DECLARATOR:
                 inner = declarator.child_by_field_name("declarator")
-                if inner is not None and inner.type == Node.IDENTIFIER:
+                if inner is not None and inner.type == Identifier.IDENTIFIER:
                     return content[inner.start_byte:inner.end_byte].decode(
                         "utf-8", errors="replace",
                     )
                 return "<anonymous>"
-            if declarator.type in (Node.POINTER_DECLARATOR, Node.PARENTHESIZED_DECLARATOR):
+            if declarator.type in (
+                Wrapper.POINTER_DECLARATOR, Wrapper.PARENTHESIZED_DECLARATOR,
+            ):
                 declarator = declarator.child_by_field_name("declarator")
                 continue
             break

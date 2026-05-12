@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import ClassVar
 
-from ..ast import Node
+from ..ast import Callable, Catch, Conditional, Loop, Operator, Scope, Switch
 from ..objectoriented import ObjectOriented
 
 
@@ -13,45 +13,45 @@ class CSharp(ObjectOriented):
     @classmethod
     def callable(cls) -> frozenset[str]:
         return frozenset({
-            Node.METHOD_DECLARATION, Node.CONSTRUCTOR_DECLARATION,
-            Node.LOCAL_FUNCTION_STATEMENT,
+            Callable.METHOD_DECLARATION, Callable.CONSTRUCTOR_DECLARATION,
+            Callable.LOCAL_FUNCTION_STATEMENT,
         })
 
     @classmethod
     def classes(cls) -> frozenset[str]:
         return frozenset({
-            Node.CLASS_DECLARATION, Node.INTERFACE_DECLARATION, Node.STRUCT_DECLARATION,
+            Scope.CLASS_DECLARATION, Scope.INTERFACE_DECLARATION, Scope.STRUCT_DECLARATION,
         })
 
     @classmethod
     def decision_nodes(cls) -> frozenset[str]:
         return frozenset({
-            Node.IF_STATEMENT,
-            Node.FOR_STATEMENT, Node.FOREACH_STATEMENT,
-            Node.WHILE_STATEMENT, Node.DO_STATEMENT,
-            Node.SWITCH_SECTION,
-            Node.CATCH_CLAUSE,
-            Node.CONDITIONAL_EXPRESSION,
+            Conditional.IF_STATEMENT,
+            Loop.FOR_STATEMENT, Loop.FOREACH_STATEMENT,
+            Loop.WHILE_STATEMENT, Loop.DO_STATEMENT,
+            Switch.SWITCH_SECTION,
+            Catch.CATCH_CLAUSE,
+            Conditional.CONDITIONAL_EXPRESSION,
         })
 
     @classmethod
     def nesting_nodes(cls) -> frozenset[str]:
         return frozenset({
-            Node.IF_STATEMENT,
-            Node.FOR_STATEMENT, Node.FOREACH_STATEMENT,
-            Node.WHILE_STATEMENT, Node.DO_STATEMENT,
-            Node.SWITCH_STATEMENT,
-            Node.CATCH_CLAUSE,
-            Node.CONDITIONAL_EXPRESSION,
+            Conditional.IF_STATEMENT,
+            Loop.FOR_STATEMENT, Loop.FOREACH_STATEMENT,
+            Loop.WHILE_STATEMENT, Loop.DO_STATEMENT,
+            Switch.SWITCH_STATEMENT,
+            Catch.CATCH_CLAUSE,
+            Conditional.CONDITIONAL_EXPRESSION,
         })
 
     @classmethod
     def compensating_decisions(cls) -> frozenset[str]:
-        return frozenset({Node.SWITCH_SECTION})
+        return frozenset({Switch.SWITCH_SECTION})
 
     @classmethod
     def boolean_op_node(cls) -> str | None:
-        return Node.BINARY_EXPRESSION
+        return Operator.BINARY_EXPRESSION
 
     @classmethod
     def boolean_op_operators(cls) -> frozenset[str] | None:

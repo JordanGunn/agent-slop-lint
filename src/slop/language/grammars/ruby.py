@@ -8,7 +8,8 @@ from __future__ import annotations
 
 from typing import Any, ClassVar
 
-from ..ast import Node
+from ..ast import Callable as Node
+from ..ast import Catch, Conditional, Identifier, Loop, Operator, Scope, Switch
 from ..multipurpose import MultiPurpose
 
 
@@ -21,41 +22,41 @@ class Ruby(MultiPurpose):
 
     @classmethod
     def classes(cls) -> frozenset[str]:
-        return frozenset({Node.CLASS, Node.MODULE})
+        return frozenset({Scope.CLASS, Scope.MODULE})
 
     @classmethod
     def decision_nodes(cls) -> frozenset[str]:
         return frozenset({
-            Node.IF, Node.ELSIF,
-            Node.UNLESS_MODIFIER, Node.IF_MODIFIER,
-            Node.WHILE_MODIFIER, Node.UNTIL_MODIFIER,
-            Node.RESCUE_MODIFIER,
-            Node.WHILE, Node.UNTIL, Node.FOR,
-            Node.WHEN,
-            Node.RESCUE,
-            Node.CONDITIONAL,               # ternary x ? a : b
+            Conditional.IF, Conditional.ELSIF,
+            Conditional.UNLESS_MODIFIER, Conditional.IF_MODIFIER,
+            Loop.WHILE_MODIFIER, Loop.UNTIL_MODIFIER,
+            Catch.RESCUE_MODIFIER,
+            Loop.WHILE, Loop.UNTIL, Loop.FOR,
+            Switch.WHEN,
+            Catch.RESCUE,
+            Conditional.CONDITIONAL,                # ternary x ? a : b
         })
 
     @classmethod
     def nesting_nodes(cls) -> frozenset[str]:
         return frozenset({
-            Node.IF, Node.UNLESS_MODIFIER,
-            Node.WHILE, Node.UNTIL, Node.FOR,
-            Node.CASE, Node.BEGIN,
-            Node.CONDITIONAL,
+            Conditional.IF, Conditional.UNLESS_MODIFIER,
+            Loop.WHILE, Loop.UNTIL, Loop.FOR,
+            Switch.CASE, Catch.BEGIN,
+            Conditional.CONDITIONAL,
             Node.DO_BLOCK, Node.BLOCK,
         })
 
     @classmethod
     def compensating_decisions(cls) -> frozenset[str]:
         return frozenset({
-            Node.ELSIF,                     # syntactically inside if
-            Node.WHEN,                      # syntactically inside case
+            Conditional.ELSIF,                      # syntactically inside if
+            Switch.WHEN,                            # syntactically inside case
         })
 
     @classmethod
     def boolean_op_node(cls) -> str | None:
-        return Node.BINARY
+        return Operator.BINARY
 
     @classmethod
     def boolean_op_operators(cls) -> frozenset[str] | None:
@@ -82,7 +83,7 @@ class Ruby(MultiPurpose):
             if ctype == "." and saw_self and not saw_dot:
                 saw_dot = True
                 continue
-            if ctype in (Node.IDENTIFIER, Node.OPERATOR):
+            if ctype in (Identifier.IDENTIFIER, Identifier.OPERATOR):
                 return content[child.start_byte:child.end_byte].decode(
                     "utf-8", errors="replace",
                 ).strip()

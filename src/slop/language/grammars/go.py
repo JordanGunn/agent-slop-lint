@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import ClassVar
 
-from ..ast import Node
+from ..ast import Callable, Conditional, Identifier, Loop, Operator, Scope, Switch
 from ..multipurpose import MultiPurpose
 
 
@@ -18,51 +18,55 @@ class Go(MultiPurpose):
     @classmethod
     def callable(cls) -> frozenset[str]:
         return frozenset({
-            Node.FUNCTION_DECLARATION, Node.METHOD_DECLARATION, Node.FUNC_LITERAL,
+            Callable.FUNCTION_DECLARATION, Callable.METHOD_DECLARATION, Callable.FUNC_LITERAL,
         })
 
     @classmethod
     def classes(cls) -> frozenset[str]:
         # Go doesn't have classes; struct + interface are the closest.
-        return frozenset({Node.TYPE_DECLARATION})
+        return frozenset({Scope.TYPE_DECLARATION})
 
     @classmethod
     def identifiers(cls) -> frozenset[str]:
-        return frozenset({Node.IDENTIFIER, Node.FIELD_IDENTIFIER, Node.TYPE_IDENTIFIER})
+        return frozenset({
+            Identifier.IDENTIFIER, Identifier.FIELD_IDENTIFIER, Identifier.TYPE_IDENTIFIER,
+        })
 
     @classmethod
     def functions(cls) -> frozenset[str]:
-        return frozenset({Node.FUNCTION_DECLARATION, Node.FUNC_LITERAL})
+        return frozenset({Callable.FUNCTION_DECLARATION, Callable.FUNC_LITERAL})
 
     @classmethod
     def methods(cls) -> frozenset[str]:
-        return frozenset({Node.METHOD_DECLARATION})
+        return frozenset({Callable.METHOD_DECLARATION})
 
     @classmethod
     def decision_nodes(cls) -> frozenset[str]:
         return frozenset({
-            Node.IF_STATEMENT,
-            Node.FOR_STATEMENT,
-            Node.EXPRESSION_CASE, Node.TYPE_CASE, Node.COMMUNICATION_CASE,
+            Conditional.IF_STATEMENT,
+            Loop.FOR_STATEMENT,
+            Switch.EXPRESSION_CASE, Switch.TYPE_CASE, Switch.COMMUNICATION_CASE,
         })
 
     @classmethod
     def nesting_nodes(cls) -> frozenset[str]:
         return frozenset({
-            Node.IF_STATEMENT,
-            Node.FOR_STATEMENT,
-            Node.EXPRESSION_SWITCH_STATEMENT,
-            Node.TYPE_SWITCH_STATEMENT,
-            Node.SELECT_STATEMENT,
+            Conditional.IF_STATEMENT,
+            Loop.FOR_STATEMENT,
+            Switch.EXPRESSION_SWITCH_STATEMENT,
+            Switch.TYPE_SWITCH_STATEMENT,
+            Switch.SELECT_STATEMENT,
         })
 
     @classmethod
     def compensating_decisions(cls) -> frozenset[str]:
-        return frozenset({Node.EXPRESSION_CASE, Node.TYPE_CASE, Node.COMMUNICATION_CASE})
+        return frozenset({
+            Switch.EXPRESSION_CASE, Switch.TYPE_CASE, Switch.COMMUNICATION_CASE,
+        })
 
     @classmethod
     def boolean_op_node(cls) -> str | None:
-        return Node.BINARY_EXPRESSION
+        return Operator.BINARY_EXPRESSION
 
     @classmethod
     def boolean_op_operators(cls) -> frozenset[str] | None:

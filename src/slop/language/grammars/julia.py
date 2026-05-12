@@ -8,7 +8,8 @@ from __future__ import annotations
 
 from typing import Any, ClassVar
 
-from ..ast import Node
+from ..ast import Callable as Node
+from ..ast import Catch, Conditional, Identifier, Loop, Operator, Wrapper
 from ..procedural import Procedural
 
 
@@ -22,29 +23,29 @@ class Julia(Procedural):
     @classmethod
     def decision_nodes(cls) -> frozenset[str]:
         return frozenset({
-            Node.IF_STATEMENT, Node.ELSEIF_CLAUSE,
-            Node.FOR_STATEMENT, Node.WHILE_STATEMENT,
-            Node.CATCH_CLAUSE,
-            Node.TERNARY_EXPRESSION,
+            Conditional.IF_STATEMENT, Conditional.ELSEIF_CLAUSE,
+            Loop.FOR_STATEMENT, Loop.WHILE_STATEMENT,
+            Catch.CATCH_CLAUSE,
+            Conditional.TERNARY_EXPRESSION,
         })
 
     @classmethod
     def nesting_nodes(cls) -> frozenset[str]:
         return frozenset({
-            Node.IF_STATEMENT,
-            Node.FOR_STATEMENT, Node.WHILE_STATEMENT,
-            Node.TRY_STATEMENT,             # container for catch/finally clauses
-            Node.CATCH_CLAUSE,
-            Node.TERNARY_EXPRESSION,
+            Conditional.IF_STATEMENT,
+            Loop.FOR_STATEMENT, Loop.WHILE_STATEMENT,
+            Catch.TRY_STATEMENT,                    # container for catch/finally clauses
+            Catch.CATCH_CLAUSE,
+            Conditional.TERNARY_EXPRESSION,
         })
 
     @classmethod
     def compensating_decisions(cls) -> frozenset[str]:
-        return frozenset({Node.ELSEIF_CLAUSE})
+        return frozenset({Conditional.ELSEIF_CLAUSE})
 
     @classmethod
     def boolean_op_node(cls) -> str | None:
-        return Node.BINARY_EXPRESSION
+        return Operator.BINARY_EXPRESSION
 
     @classmethod
     def boolean_op_operators(cls) -> frozenset[str] | None:
@@ -65,21 +66,21 @@ class Julia(Procedural):
             return super().extract_name(node, content)
         # Find signature child (positional, no field name).
         signature = next(
-            (c for c in node.children if c.type == Node.SIGNATURE),
+            (c for c in node.children if c.type == Wrapper.SIGNATURE),
             None,
         )
         if signature is None:
             return "<anonymous>"
         # Find call_expression inside signature.
         call_expr = next(
-            (c for c in signature.children if c.type == Node.CALL_EXPRESSION),
+            (c for c in signature.children if c.type == Wrapper.CALL_EXPRESSION),
             None,
         )
         if call_expr is None:
             return "<anonymous>"
         # First identifier child of call_expression is the function name.
         ident = next(
-            (c for c in call_expr.children if c.type == Node.IDENTIFIER),
+            (c for c in call_expr.children if c.type == Identifier.IDENTIFIER),
             None,
         )
         if ident is None:
