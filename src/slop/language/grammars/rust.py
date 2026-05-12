@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from typing import ClassVar
 
+from ..ast import Node
 from ..multipurpose import MultiPurpose
 
 
@@ -17,39 +18,39 @@ class Rust(MultiPurpose):
 
     @classmethod
     def callable(cls) -> frozenset[str]:
-        return frozenset({"function_item"})
+        return frozenset({Node.FUNCTION_ITEM})
 
     @classmethod
     def classes(cls) -> frozenset[str]:
-        return frozenset({"struct_item", "trait_item", "impl_item"})
+        return frozenset({Node.STRUCT_ITEM, Node.TRAIT_ITEM, Node.IMPL_ITEM})
 
     @classmethod
     def identifiers(cls) -> frozenset[str]:
-        return frozenset({"identifier", "field_identifier", "type_identifier"})
+        return frozenset({Node.IDENTIFIER, Node.FIELD_IDENTIFIER, Node.TYPE_IDENTIFIER})
 
     @classmethod
     def decision_nodes(cls) -> frozenset[str]:
         return frozenset({
-            "if_expression",
-            "while_expression", "for_expression",
-            "match_arm",
+            Node.IF_EXPRESSION,
+            Node.WHILE_EXPRESSION, Node.FOR_EXPRESSION,
+            Node.MATCH_ARM,
         })
 
     @classmethod
     def nesting_nodes(cls) -> frozenset[str]:
         return frozenset({
-            "if_expression",
-            "while_expression", "for_expression",
-            "match_expression",         # container for match_arm
+            Node.IF_EXPRESSION,
+            Node.WHILE_EXPRESSION, Node.FOR_EXPRESSION,
+            Node.MATCH_EXPRESSION,          # container for match_arm
         })
 
     @classmethod
     def compensating_decisions(cls) -> frozenset[str]:
-        return frozenset({"match_arm"})
+        return frozenset({Node.MATCH_ARM})
 
     @classmethod
     def boolean_op_node(cls) -> str | None:
-        return "binary_expression"
+        return Node.BINARY_EXPRESSION
 
     @classmethod
     def boolean_op_operators(cls) -> frozenset[str] | None:

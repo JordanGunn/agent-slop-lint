@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from typing import ClassVar
 
+from ..ast import Node
 from ..multipurpose import MultiPurpose
 
 
@@ -15,59 +16,59 @@ class TypeScript(MultiPurpose):
     @classmethod
     def callable(cls) -> frozenset[str]:
         return frozenset({
-            "function_declaration", "function_expression",
-            "arrow_function", "method_definition",
-            "generator_function_declaration",
+            Node.FUNCTION_DECLARATION, Node.FUNCTION_EXPRESSION,
+            Node.ARROW_FUNCTION, Node.METHOD_DEFINITION,
+            Node.GENERATOR_FUNCTION_DECLARATION,
         })
 
     @classmethod
     def classes(cls) -> frozenset[str]:
-        return frozenset({"class_declaration", "interface_declaration"})
+        return frozenset({Node.CLASS_DECLARATION, Node.INTERFACE_DECLARATION})
 
     @classmethod
     def identifiers(cls) -> frozenset[str]:
-        return frozenset({"identifier", "property_identifier", "type_identifier"})
+        return frozenset({Node.IDENTIFIER, Node.PROPERTY_IDENTIFIER, Node.TYPE_IDENTIFIER})
 
     @classmethod
     def functions(cls) -> frozenset[str]:
         return frozenset({
-            "function_declaration", "function_expression",
-            "arrow_function", "generator_function_declaration",
+            Node.FUNCTION_DECLARATION, Node.FUNCTION_EXPRESSION,
+            Node.ARROW_FUNCTION, Node.GENERATOR_FUNCTION_DECLARATION,
         })
 
     @classmethod
     def methods(cls) -> frozenset[str]:
-        return frozenset({"method_definition"})
+        return frozenset({Node.METHOD_DEFINITION})
 
     @classmethod
     def decision_nodes(cls) -> frozenset[str]:
         return frozenset({
-            "if_statement",
-            "for_statement", "for_in_statement", "for_of_statement",
-            "while_statement", "do_statement",
-            "switch_case",
-            "catch_clause",
-            "ternary_expression",
+            Node.IF_STATEMENT,
+            Node.FOR_STATEMENT, Node.FOR_IN_STATEMENT, Node.FOR_OF_STATEMENT,
+            Node.WHILE_STATEMENT, Node.DO_STATEMENT,
+            Node.SWITCH_CASE,
+            Node.CATCH_CLAUSE,
+            Node.TERNARY_EXPRESSION,
         })
 
     @classmethod
     def nesting_nodes(cls) -> frozenset[str]:
         return frozenset({
-            "if_statement",
-            "for_statement", "for_in_statement", "for_of_statement",
-            "while_statement", "do_statement",
-            "switch_statement",
-            "catch_clause",
-            "ternary_expression",
+            Node.IF_STATEMENT,
+            Node.FOR_STATEMENT, Node.FOR_IN_STATEMENT, Node.FOR_OF_STATEMENT,
+            Node.WHILE_STATEMENT, Node.DO_STATEMENT,
+            Node.SWITCH_STATEMENT,
+            Node.CATCH_CLAUSE,
+            Node.TERNARY_EXPRESSION,
         })
 
     @classmethod
     def compensating_decisions(cls) -> frozenset[str]:
-        return frozenset({"switch_case"})
+        return frozenset({Node.SWITCH_CASE})
 
     @classmethod
     def boolean_op_node(cls) -> str | None:
-        return "binary_expression"
+        return Node.BINARY_EXPRESSION
 
     @classmethod
     def boolean_op_operators(cls) -> frozenset[str] | None:

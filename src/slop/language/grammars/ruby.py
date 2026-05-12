@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from typing import Any, ClassVar
 
+from ..ast import Node
 from ..multipurpose import MultiPurpose
 
 
@@ -16,45 +17,45 @@ class Ruby(MultiPurpose):
 
     @classmethod
     def callable(cls) -> frozenset[str]:
-        return frozenset({"method", "singleton_method"})
+        return frozenset({Node.METHOD, Node.SINGLETON_METHOD})
 
     @classmethod
     def classes(cls) -> frozenset[str]:
-        return frozenset({"class", "module"})
+        return frozenset({Node.CLASS, Node.MODULE})
 
     @classmethod
     def decision_nodes(cls) -> frozenset[str]:
         return frozenset({
-            "if", "elsif",
-            "unless_modifier", "if_modifier",
-            "while_modifier", "until_modifier",
-            "rescue_modifier",
-            "while", "until", "for",
-            "when",
-            "rescue",
-            "conditional",              # ternary x ? a : b
+            Node.IF, Node.ELSIF,
+            Node.UNLESS_MODIFIER, Node.IF_MODIFIER,
+            Node.WHILE_MODIFIER, Node.UNTIL_MODIFIER,
+            Node.RESCUE_MODIFIER,
+            Node.WHILE, Node.UNTIL, Node.FOR,
+            Node.WHEN,
+            Node.RESCUE,
+            Node.CONDITIONAL,               # ternary x ? a : b
         })
 
     @classmethod
     def nesting_nodes(cls) -> frozenset[str]:
         return frozenset({
-            "if", "unless_modifier",
-            "while", "until", "for",
-            "case", "begin",
-            "conditional",
-            "do_block", "block",
+            Node.IF, Node.UNLESS_MODIFIER,
+            Node.WHILE, Node.UNTIL, Node.FOR,
+            Node.CASE, Node.BEGIN,
+            Node.CONDITIONAL,
+            Node.DO_BLOCK, Node.BLOCK,
         })
 
     @classmethod
     def compensating_decisions(cls) -> frozenset[str]:
         return frozenset({
-            "elsif",                    # syntactically inside if
-            "when",                     # syntactically inside case
+            Node.ELSIF,                     # syntactically inside if
+            Node.WHEN,                      # syntactically inside case
         })
 
     @classmethod
     def boolean_op_node(cls) -> str | None:
-        return "binary"
+        return Node.BINARY
 
     @classmethod
     def boolean_op_operators(cls) -> frozenset[str] | None:
@@ -63,7 +64,7 @@ class Ruby(MultiPurpose):
     @classmethod
     def extract_name(cls, node: Any, content: bytes) -> str:
         """Walk method / singleton_method children, skipping def/self/."""
-        if node.type not in ("method", "singleton_method"):
+        if node.type not in (Node.METHOD, Node.SINGLETON_METHOD):
             return super().extract_name(node, content)
         saw_def = False
         saw_self = False
@@ -81,7 +82,7 @@ class Ruby(MultiPurpose):
             if ctype == "." and saw_self and not saw_dot:
                 saw_dot = True
                 continue
-            if ctype in ("identifier", "operator"):
+            if ctype in (Node.IDENTIFIER, Node.OPERATOR):
                 return content[child.start_byte:child.end_byte].decode(
                     "utf-8", errors="replace",
                 ).strip()

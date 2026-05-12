@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from typing import Any, ClassVar
 
+from ..ast import Node
 from ..multipurpose import MultiPurpose
 
 
@@ -16,51 +17,51 @@ class Cpp(MultiPurpose):
 
     @classmethod
     def callable(cls) -> frozenset[str]:
-        return frozenset({"function_definition", "lambda_expression"})
+        return frozenset({Node.FUNCTION_DEFINITION, Node.LAMBDA_EXPRESSION})
 
     @classmethod
     def classes(cls) -> frozenset[str]:
-        return frozenset({"class_specifier", "struct_specifier"})
+        return frozenset({Node.CLASS_SPECIFIER, Node.STRUCT_SPECIFIER})
 
     @classmethod
     def identifiers(cls) -> frozenset[str]:
-        return frozenset({"identifier", "field_identifier", "type_identifier"})
+        return frozenset({Node.IDENTIFIER, Node.FIELD_IDENTIFIER, Node.TYPE_IDENTIFIER})
 
     @classmethod
     def methods(cls) -> frozenset[str]:
         # Lambdas aren't methods.
-        return frozenset({"function_definition"})
+        return frozenset({Node.FUNCTION_DEFINITION})
 
     @classmethod
     def decision_nodes(cls) -> frozenset[str]:
         return frozenset({
-            "if_statement",
-            "for_statement", "for_range_loop",  # range-based for
-            "while_statement", "do_statement",
-            "case_statement",           # case X: / default:
-            "conditional_expression",   # ternary
-            "catch_clause",
+            Node.IF_STATEMENT,
+            Node.FOR_STATEMENT, Node.FOR_RANGE_LOOP,  # range-based for
+            Node.WHILE_STATEMENT, Node.DO_STATEMENT,
+            Node.CASE_STATEMENT,            # case X: / default:
+            Node.CONDITIONAL_EXPRESSION,    # ternary
+            Node.CATCH_CLAUSE,
         })
 
     @classmethod
     def nesting_nodes(cls) -> frozenset[str]:
         return frozenset({
-            "if_statement",
-            "for_statement", "for_range_loop",
-            "while_statement", "do_statement",
-            "switch_statement",
-            "conditional_expression",
-            "try_statement",            # container for catch_clause
-            "catch_clause",
+            Node.IF_STATEMENT,
+            Node.FOR_STATEMENT, Node.FOR_RANGE_LOOP,
+            Node.WHILE_STATEMENT, Node.DO_STATEMENT,
+            Node.SWITCH_STATEMENT,
+            Node.CONDITIONAL_EXPRESSION,
+            Node.TRY_STATEMENT,             # container for catch_clause
+            Node.CATCH_CLAUSE,
         })
 
     @classmethod
     def compensating_decisions(cls) -> frozenset[str]:
-        return frozenset({"case_statement"})
+        return frozenset({Node.CASE_STATEMENT})
 
     @classmethod
     def boolean_op_node(cls) -> str | None:
-        return "binary_expression"
+        return Node.BINARY_EXPRESSION
 
     @classmethod
     def boolean_op_operators(cls) -> frozenset[str] | None:
@@ -68,7 +69,7 @@ class Cpp(MultiPurpose):
 
     @classmethod
     def definition_unwrap_types(cls) -> frozenset[str]:
-        return frozenset({"template_declaration"})
+        return frozenset({Node.TEMPLATE_DECLARATION})
 
     @classmethod
     def extract_name(cls, node: Any, content: bytes) -> str:
@@ -78,48 +79,48 @@ class Cpp(MultiPurpose):
         methods, out-of-line methods (qualified_identifier), operator
         overloads, destructors.
         """
-        if node.type == "lambda_expression":
+        if node.type == Node.LAMBDA_EXPRESSION:
             return "<lambda>"
-        if node.type != "function_definition":
+        if node.type != Node.FUNCTION_DEFINITION:
             # Fall back to default for non-function nodes (class_specifier etc.).
             return super().extract_name(node, content)
         declarator = node.child_by_field_name("declarator")
         for _ in range(8):
             if declarator is None:
                 return "<anonymous>"
-            if declarator.type == "function_declarator":
+            if declarator.type == Node.FUNCTION_DECLARATOR:
                 inner = declarator.child_by_field_name("declarator")
                 if inner is None:
                     return "<anonymous>"
-                if inner.type in ("identifier", "field_identifier"):
+                if inner.type in (Node.IDENTIFIER, Node.FIELD_IDENTIFIER):
                     return content[inner.start_byte:inner.end_byte].decode(
                         "utf-8", errors="replace",
                     )
-                if inner.type == "qualified_identifier":
+                if inner.type == Node.QUALIFIED_IDENTIFIER:
                     for c in reversed(inner.children):
-                        if c.type == "identifier":
+                        if c.type == Node.IDENTIFIER:
                             return content[c.start_byte:c.end_byte].decode(
                                 "utf-8", errors="replace",
                             )
                     return "<anonymous>"
-                if inner.type == "operator_name":
+                if inner.type == Node.OPERATOR_NAME:
                     for c in inner.children:
-                        if c.type != "operator":
+                        if c.type != Node.OPERATOR:
                             return content[c.start_byte:c.end_byte].decode(
                                 "utf-8", errors="replace",
                             ).strip()
                     return "<anonymous>"
-                if inner.type == "destructor_name":
+                if inner.type == Node.DESTRUCTOR_NAME:
                     for c in inner.children:
-                        if c.type == "identifier":
+                        if c.type == Node.IDENTIFIER:
                             return "~" + content[c.start_byte:c.end_byte].decode(
                                 "utf-8", errors="replace",
                             )
                     return "<anonymous>"
                 return "<anonymous>"
             if declarator.type in (
-                "pointer_declarator", "reference_declarator",
-                "parenthesized_declarator",
+                Node.POINTER_DECLARATOR, Node.REFERENCE_DECLARATOR,
+                Node.PARENTHESIZED_DECLARATOR,
             ):
                 declarator = declarator.child_by_field_name("declarator")
                 continue

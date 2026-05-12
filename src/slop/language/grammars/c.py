@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from typing import Any, ClassVar
 
+from ..ast import Node
 from ..procedural import Procedural
 
 
@@ -16,33 +17,33 @@ class C(Procedural):
 
     @classmethod
     def callable(cls) -> frozenset[str]:
-        return frozenset({"function_definition"})
+        return frozenset({Node.FUNCTION_DEFINITION})
 
     @classmethod
     def decision_nodes(cls) -> frozenset[str]:
         return frozenset({
-            "if_statement",
-            "for_statement", "while_statement", "do_statement",
-            "case_statement",           # both `case X:` and `default:`
-            "conditional_expression",   # ternary `?:`
+            Node.IF_STATEMENT,
+            Node.FOR_STATEMENT, Node.WHILE_STATEMENT, Node.DO_STATEMENT,
+            Node.CASE_STATEMENT,            # both `case X:` and `default:`
+            Node.CONDITIONAL_EXPRESSION,    # ternary `?:`
         })
 
     @classmethod
     def nesting_nodes(cls) -> frozenset[str]:
         return frozenset({
-            "if_statement",
-            "for_statement", "while_statement", "do_statement",
-            "switch_statement",         # container for case_statement
-            "conditional_expression",
+            Node.IF_STATEMENT,
+            Node.FOR_STATEMENT, Node.WHILE_STATEMENT, Node.DO_STATEMENT,
+            Node.SWITCH_STATEMENT,          # container for case_statement
+            Node.CONDITIONAL_EXPRESSION,
         })
 
     @classmethod
     def compensating_decisions(cls) -> frozenset[str]:
-        return frozenset({"case_statement"})
+        return frozenset({Node.CASE_STATEMENT})
 
     @classmethod
     def boolean_op_node(cls) -> str | None:
-        return "binary_expression"
+        return Node.BINARY_EXPRESSION
 
     @classmethod
     def boolean_op_operators(cls) -> frozenset[str] | None:
@@ -51,20 +52,20 @@ class C(Procedural):
     @classmethod
     def extract_name(cls, node: Any, content: bytes) -> str:
         """Walk the C declarator chain to the identifier."""
-        if node.type != "function_definition":
+        if node.type != Node.FUNCTION_DEFINITION:
             return super().extract_name(node, content)
         declarator = node.child_by_field_name("declarator")
         for _ in range(6):
             if declarator is None:
                 return "<anonymous>"
-            if declarator.type == "function_declarator":
+            if declarator.type == Node.FUNCTION_DECLARATOR:
                 inner = declarator.child_by_field_name("declarator")
-                if inner is not None and inner.type == "identifier":
+                if inner is not None and inner.type == Node.IDENTIFIER:
                     return content[inner.start_byte:inner.end_byte].decode(
                         "utf-8", errors="replace",
                     )
                 return "<anonymous>"
-            if declarator.type in ("pointer_declarator", "parenthesized_declarator"):
+            if declarator.type in (Node.POINTER_DECLARATOR, Node.PARENTHESIZED_DECLARATOR):
                 declarator = declarator.child_by_field_name("declarator")
                 continue
             break

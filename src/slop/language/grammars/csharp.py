@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from typing import ClassVar
 
+from ..ast import Node
 from ..objectoriented import ObjectOriented
 
 
@@ -12,43 +13,45 @@ class CSharp(ObjectOriented):
     @classmethod
     def callable(cls) -> frozenset[str]:
         return frozenset({
-            "method_declaration", "constructor_declaration",
-            "local_function_statement",
+            Node.METHOD_DECLARATION, Node.CONSTRUCTOR_DECLARATION,
+            Node.LOCAL_FUNCTION_STATEMENT,
         })
 
     @classmethod
     def classes(cls) -> frozenset[str]:
-        return frozenset({"class_declaration", "interface_declaration", "struct_declaration"})
+        return frozenset({
+            Node.CLASS_DECLARATION, Node.INTERFACE_DECLARATION, Node.STRUCT_DECLARATION,
+        })
 
     @classmethod
     def decision_nodes(cls) -> frozenset[str]:
         return frozenset({
-            "if_statement",
-            "for_statement", "foreach_statement",
-            "while_statement", "do_statement",
-            "switch_section",
-            "catch_clause",
-            "conditional_expression",
+            Node.IF_STATEMENT,
+            Node.FOR_STATEMENT, Node.FOREACH_STATEMENT,
+            Node.WHILE_STATEMENT, Node.DO_STATEMENT,
+            Node.SWITCH_SECTION,
+            Node.CATCH_CLAUSE,
+            Node.CONDITIONAL_EXPRESSION,
         })
 
     @classmethod
     def nesting_nodes(cls) -> frozenset[str]:
         return frozenset({
-            "if_statement",
-            "for_statement", "foreach_statement",
-            "while_statement", "do_statement",
-            "switch_statement",
-            "catch_clause",
-            "conditional_expression",
+            Node.IF_STATEMENT,
+            Node.FOR_STATEMENT, Node.FOREACH_STATEMENT,
+            Node.WHILE_STATEMENT, Node.DO_STATEMENT,
+            Node.SWITCH_STATEMENT,
+            Node.CATCH_CLAUSE,
+            Node.CONDITIONAL_EXPRESSION,
         })
 
     @classmethod
     def compensating_decisions(cls) -> frozenset[str]:
-        return frozenset({"switch_section"})
+        return frozenset({Node.SWITCH_SECTION})
 
     @classmethod
     def boolean_op_node(cls) -> str | None:
-        return "binary_expression"
+        return Node.BINARY_EXPRESSION
 
     @classmethod
     def boolean_op_operators(cls) -> frozenset[str] | None:
