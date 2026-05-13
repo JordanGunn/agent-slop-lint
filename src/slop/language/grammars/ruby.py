@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import Any, ClassVar
 
 from ..ast import Callable as Node
-from ..ast import Catch, Conditional, Identifier, Literal, Loop, Operator, Scope, Switch
+from ..ast import Block, Catch, Conditional, Identifier, Literal, Loop, Operator, Scope, Switch
 from ..multipurpose import MultiPurpose
 
 
@@ -61,6 +61,61 @@ class Ruby(MultiPurpose):
     @classmethod
     def boolean_op_operators(cls) -> frozenset[str] | None:
         return frozenset({"&&", "||", "and", "or"})
+
+    @classmethod
+    def if_nodes(cls) -> frozenset[str]:
+        return frozenset({Conditional.IF})
+
+    @classmethod
+    def elif_nodes(cls) -> frozenset[str]:
+        return frozenset({Conditional.ELSIF})
+
+    @classmethod
+    def else_nodes(cls) -> frozenset[str]:
+        return frozenset({Conditional.ELSE})
+
+    @classmethod
+    def loop_nodes(cls) -> frozenset[str]:
+        return frozenset({Loop.WHILE, Loop.UNTIL, Loop.FOR})
+
+    @classmethod
+    def switch_nodes(cls) -> frozenset[str]:
+        return frozenset({Switch.CASE})
+
+    @classmethod
+    def case_nodes(cls) -> frozenset[str]:
+        return frozenset({Switch.WHEN})
+
+    @classmethod
+    def try_nodes(cls) -> frozenset[str]:
+        return frozenset({Catch.BEGIN})
+
+    @classmethod
+    def catch_nodes(cls) -> frozenset[str]:
+        return frozenset({Catch.RESCUE})
+
+    @classmethod
+    def body_field(cls) -> str:
+        # Flat-body language: method bodies are positional inside
+        # body_statement, not behind a 'body' field.
+        return ""
+
+    @classmethod
+    def block_types(cls) -> frozenset[str]:
+        return frozenset({Block.BODY_STATEMENT})
+
+    @classmethod
+    def body_skip_types(cls) -> frozenset[str]:
+        return frozenset({
+            "def", "end", "do", "then",
+            "identifier", "operator",
+            "method_parameters", "block_parameters", "lambda_parameters",
+            "self", ".",
+            "class", "module", "constant", "superclass",
+            "if", "elsif", "else", "case", "when",
+            "while", "until", "for", "in",
+            "begin", "rescue", "ensure", "exceptions", "exception_variable",
+        })
 
     @classmethod
     def numeric_literal_nodes(cls) -> frozenset[str]:

@@ -47,7 +47,7 @@ DEFAULT_RULE_CONFIGS: dict[str, dict[str, Any]] = {
         "severity": "error",
         "cyclomatic_threshold": 10,
         "cognitive_threshold": 15,
-        "npath_threshold": 400,
+        "combinatorial_threshold": 400,
     },
     "structural.class.complexity": {
         "enabled": True,
@@ -474,7 +474,7 @@ PROFILES: dict[str, dict[str, str | int | bool | list[str]]] = {
         "weighted_threshold": 40,
         "volume_threshold": 1500,
         "difficulty_threshold": 30,
-        "npath_threshold": 400,
+        "combinatorial_threshold": 400,
         "hotspots_since": "14 days ago",
         "hotspots_min_commits": 2,
         "hotspots_fail_on_quadrant": ["hotspot"],
@@ -491,7 +491,7 @@ PROFILES: dict[str, dict[str, str | int | bool | list[str]]] = {
         "weighted_threshold": 80,
         "volume_threshold": 3000,
         "difficulty_threshold": 50,
-        "npath_threshold": 1000,
+        "combinatorial_threshold": 1000,
         "hotspots_since": "90 days ago",
         "hotspots_min_commits": 3,
         "hotspots_fail_on_quadrant": ["hotspot"],
@@ -508,7 +508,7 @@ PROFILES: dict[str, dict[str, str | int | bool | list[str]]] = {
         "weighted_threshold": 30,
         "volume_threshold": 500,
         "difficulty_threshold": 20,
-        "npath_threshold": 100,
+        "combinatorial_threshold": 100,
         "hotspots_since": "7 days ago",
         "hotspots_min_commits": 1,
         "hotspots_fail_on_quadrant": ["hotspot", "churning_simple"],
@@ -553,7 +553,7 @@ root = "."
 # [[waivers]]
 # id = "parser-npath"
 # path = "src/parser/**"
-# rule = "structural.complexity.npath"
+# rule = "structural.complexity.combinatorial"
 # allow_up_to = 1200
 # reason = "Parser branch shape mirrors grammar alternatives."
 # expires = "2026-09-01"
@@ -562,7 +562,7 @@ root = "."
 enabled = true
 cyclomatic_threshold = {profile_cfg["cyclomatic_threshold"]}       # fail if any function CCX > this
 cognitive_threshold = {profile_cfg["cognitive_threshold"]}        # fail if any function CogC > this
-npath_threshold = {profile_cfg["npath_threshold"]}         # fail if any function NPath > this
+combinatorial_threshold = {profile_cfg["combinatorial_threshold"]}   # fail if any function NPath > this (Nejmeh 1988)
 severity = "error"
 
 [rules.structural.class.complexity]

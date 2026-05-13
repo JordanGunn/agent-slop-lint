@@ -24,12 +24,12 @@ from .class_metrics import (
     run_weighted_v2,
 )
 from .clone_density import run_clone_density
+from .combinatorial import run_combinatorial
 from .complexity import run_cognitive_v2, run_cyclomatic_v2
 from .dependencies import run_cycles
 from .god_module import run_god_module_v2
 from .halstead import run_density_v2, run_volume_v2
 from .magic_literals import run_magic_literals_v2
-from .npath import run_npath
 from .out_parameters import run_out_parameters
 from .sibling_calls import run_sibling_call_redundancy
 from .stringly_typed import run_stringly_typed
@@ -55,13 +55,13 @@ STRUCTURAL_RULES: list[RuleDefinition] = [
         run=run_cognitive_v2,
     ),
     RuleDefinition(
-        name="structural.complexity.npath",
+        name="structural.complexity.combinatorial",
         category="structural.complexity",
-        description="Per-function acyclic execution path count (Nejmeh 1988)",
+        description="Per-function acyclic execution path count — NPath (Nejmeh 1988)",
         default_severity="error",
         default_enabled=True,
         threshold_label="NPath > 400",
-        run=legacy_v2_shim(run_npath),
+        run=run_combinatorial,
     ),
 
     # --- structural.class (class-level CK metrics + WMC) ---

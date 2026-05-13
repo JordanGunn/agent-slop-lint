@@ -166,6 +166,132 @@ class Language(ABC):
         """
         return frozenset()
 
+    # ---- Structural control-flow vocabulary (NPath) -----------------
+    # Per-language node-type sets consumed by ``Structure.combinatorial``
+    # (Nejmeh 1988 NPath). Where the cyclomatic vocabulary
+    # (``decision_nodes``, ``nesting_nodes``) only needs to identify
+    # decision points, NPath's recurrence depends on the SHAPE of each
+    # branching construct (if vs loop vs switch vs try) so the walker
+    # can apply the right rule: additive for alternatives, sum-over-
+    # cases for switches, multiplicative across sequential statements.
+    #
+    # All defaults are empty / sentinel so a grammar without overrides
+    # produces NPath = 1 (the base path) rather than crashing.
+
+    @classmethod
+    def if_nodes(cls) -> frozenset[str]:
+        """Tree-sitter node types for ``if`` conditionals (the wrapper)."""
+        return frozenset()
+
+    @classmethod
+    def elif_nodes(cls) -> frozenset[str]:
+        """Tree-sitter node types for an ``elif`` / ``elseif`` clause.
+
+        Empty when the language has no dedicated elif node and uses
+        C-style nested ``else { if … }`` chains (JS, TS, Go, Rust,
+        Java, C#, C, C++).
+        """
+        return frozenset()
+
+    @classmethod
+    def else_nodes(cls) -> frozenset[str]:
+        """Tree-sitter node types for an ``else`` clause wrapper.
+
+        Empty in grammars without an else-wrapper node (C# — see
+        ``bare_else_keyword``).
+        """
+        return frozenset()
+
+    @classmethod
+    def loop_nodes(cls) -> frozenset[str]:
+        """Tree-sitter node types for loop constructs (for / while / do)."""
+        return frozenset()
+
+    @classmethod
+    def switch_nodes(cls) -> frozenset[str]:
+        """Tree-sitter node types for switch / match container constructs.
+
+        May include multiple variants in one grammar (Java's classic
+        ``switch_statement`` plus modern ``switch_expression``).
+        """
+        return frozenset()
+
+    @classmethod
+    def case_nodes(cls) -> frozenset[str]:
+        """Tree-sitter node types for individual switch / match case children.
+
+        May include multiple variants where one grammar emits
+        different case shapes for different switch forms (Java:
+        ``switch_label`` for ``switch_statement``, ``switch_rule``
+        for ``switch_expression``).
+        """
+        return frozenset()
+
+    @classmethod
+    def try_nodes(cls) -> frozenset[str]:
+        """Tree-sitter node types for exception-protected blocks (try / begin)."""
+        return frozenset()
+
+    @classmethod
+    def catch_nodes(cls) -> frozenset[str]:
+        """Tree-sitter node types for exception-handler clauses (catch / except / rescue)."""
+        return frozenset()
+
+    @classmethod
+    def body_field(cls) -> str:
+        """Tree-sitter field name that holds a callable / branch body.
+
+        Most grammars use ``"body"``; Python's if-branches use
+        ``"consequence"`` separately handled by the walker. Empty
+        string signals a flat-body language (Julia, Ruby): statements
+        are direct children of the parent rather than wrapped in a
+        block, and ``body_skip_types`` enumerates the structural
+        keywords to skip when walking children.
+        """
+        return "body"
+
+    @classmethod
+    def block_types(cls) -> frozenset[str]:
+        """Tree-sitter node types that wrap a sequence of statements.
+
+        ``block`` (Python / Go / Rust / Java / C#), ``statement_block``
+        (JS / TS), ``compound_statement`` (C / C++), ``body_statement``
+        (Ruby). Empty for flat-body grammars (Julia).
+        """
+        return frozenset()
+
+    @classmethod
+    def switch_body_types(cls) -> frozenset[str]:
+        """Wrapper nodes nested between a switch and its case children.
+
+        Java: ``switch_block`` / ``switch_block_statement_group``.
+        C#: ``switch_body``. C / C++: ``compound_statement``. The
+        NPath walker recurses through these to find case nodes.
+        """
+        return frozenset()
+
+    @classmethod
+    def body_skip_types(cls) -> frozenset[str]:
+        """Child node types to skip when walking a flat-body construct.
+
+        Only meaningful when ``body_field`` is empty — flat-body
+        grammars (Julia, Ruby) emit structural keywords (``def``,
+        ``end``, ``if``, ``else``, …) as direct children of the
+        function / branch node and the walker filters them out.
+        """
+        return frozenset()
+
+    @classmethod
+    def bare_else_keyword(cls) -> str | None:
+        """Bare ``else`` keyword token in grammars without an else-wrapper node.
+
+        C# emits ``else`` as a literal keyword child of the
+        ``if_statement`` followed by the else body (block or nested
+        if). The NPath walker special-cases this when
+        ``else_nodes`` is empty.
+        """
+        return None
+
     @classmethod
     def numeric_literal_nodes(cls) -> frozenset[str]:
         """Tree-sitter node types for numeric literal values.

@@ -20,7 +20,7 @@ from __future__ import annotations
 import dataclasses
 from typing import Any, ClassVar
 
-from ..ast import Callable, Conditional, Identifier, Literal, Loop, Operator, Scope, Switch
+from ..ast import Block, Callable, Conditional, Identifier, Literal, Loop, Operator, Scope, Switch
 from ..multipurpose import MultiPurpose
 
 
@@ -83,6 +83,30 @@ class Go(MultiPurpose):
     @classmethod
     def boolean_op_operators(cls) -> frozenset[str] | None:
         return frozenset({"&&", "||"})
+
+    @classmethod
+    def if_nodes(cls) -> frozenset[str]:
+        return frozenset({Conditional.IF_STATEMENT})
+
+    @classmethod
+    def else_nodes(cls) -> frozenset[str]:
+        return frozenset({Conditional.ELSE_CLAUSE})
+
+    @classmethod
+    def loop_nodes(cls) -> frozenset[str]:
+        return frozenset({Loop.FOR_STATEMENT})
+
+    @classmethod
+    def switch_nodes(cls) -> frozenset[str]:
+        return frozenset({Switch.EXPRESSION_SWITCH_STATEMENT})
+
+    @classmethod
+    def case_nodes(cls) -> frozenset[str]:
+        return frozenset({Switch.EXPRESSION_CASE})
+
+    @classmethod
+    def block_types(cls) -> frozenset[str]:
+        return frozenset({Block.BLOCK})
 
     @classmethod
     def numeric_literal_nodes(cls) -> frozenset[str]:

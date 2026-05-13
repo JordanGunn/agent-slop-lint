@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import Any, ClassVar
 
 from ..ast import Callable as Node
-from ..ast import Catch, Conditional, Identifier, Literal, Loop, Operator, Scope, Switch, Wrapper
+from ..ast import Block, Catch, Conditional, Identifier, Literal, Loop, Operator, Scope, Switch, Wrapper
 from ..multipurpose import MultiPurpose
 
 
@@ -73,6 +73,45 @@ class Cpp(MultiPurpose):
     @classmethod
     def definition_unwrap_types(cls) -> frozenset[str]:
         return frozenset({Wrapper.TEMPLATE_DECLARATION})
+
+    @classmethod
+    def if_nodes(cls) -> frozenset[str]:
+        return frozenset({Conditional.IF_STATEMENT})
+
+    @classmethod
+    def else_nodes(cls) -> frozenset[str]:
+        return frozenset({Conditional.ELSE_CLAUSE})
+
+    @classmethod
+    def loop_nodes(cls) -> frozenset[str]:
+        return frozenset({
+            Loop.FOR_STATEMENT, Loop.FOR_RANGE_LOOP,
+            Loop.WHILE_STATEMENT, Loop.DO_STATEMENT,
+        })
+
+    @classmethod
+    def switch_nodes(cls) -> frozenset[str]:
+        return frozenset({Switch.SWITCH_STATEMENT})
+
+    @classmethod
+    def case_nodes(cls) -> frozenset[str]:
+        return frozenset({Switch.CASE_STATEMENT})
+
+    @classmethod
+    def try_nodes(cls) -> frozenset[str]:
+        return frozenset({Catch.TRY_STATEMENT})
+
+    @classmethod
+    def catch_nodes(cls) -> frozenset[str]:
+        return frozenset({Catch.CATCH_CLAUSE})
+
+    @classmethod
+    def block_types(cls) -> frozenset[str]:
+        return frozenset({Block.COMPOUND_STATEMENT})
+
+    @classmethod
+    def switch_body_types(cls) -> frozenset[str]:
+        return frozenset({Block.COMPOUND_STATEMENT})
 
     @classmethod
     def numeric_literal_nodes(cls) -> frozenset[str]:

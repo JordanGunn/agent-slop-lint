@@ -11,7 +11,7 @@ from typing import Any, ClassVar
 # Local alias so the ast.Callable enum doesn't shadow typing.Callable
 # in this module — Callable members are only used inside method bodies.
 from ..ast import Callable as Node
-from ..ast import Conditional, Identifier, Literal, Loop, Operator, Switch, Wrapper
+from ..ast import Block, Conditional, Identifier, Literal, Loop, Operator, Switch, Wrapper
 from ..procedural import Procedural
 
 
@@ -51,6 +51,38 @@ class C(Procedural):
     @classmethod
     def boolean_op_operators(cls) -> frozenset[str] | None:
         return frozenset({"&&", "||"})
+
+    @classmethod
+    def if_nodes(cls) -> frozenset[str]:
+        return frozenset({Conditional.IF_STATEMENT})
+
+    @classmethod
+    def else_nodes(cls) -> frozenset[str]:
+        return frozenset({Conditional.ELSE_CLAUSE})
+
+    @classmethod
+    def loop_nodes(cls) -> frozenset[str]:
+        return frozenset({
+            Loop.FOR_STATEMENT, Loop.WHILE_STATEMENT, Loop.DO_STATEMENT,
+        })
+
+    @classmethod
+    def switch_nodes(cls) -> frozenset[str]:
+        return frozenset({Switch.SWITCH_STATEMENT})
+
+    @classmethod
+    def case_nodes(cls) -> frozenset[str]:
+        # Both `case X:` and `default:` emit as case_statement.
+        return frozenset({Switch.CASE_STATEMENT})
+
+    @classmethod
+    def block_types(cls) -> frozenset[str]:
+        return frozenset({Block.COMPOUND_STATEMENT})
+
+    @classmethod
+    def switch_body_types(cls) -> frozenset[str]:
+        # C wraps cases inside the switch's compound_statement.
+        return frozenset({Block.COMPOUND_STATEMENT})
 
     @classmethod
     def numeric_literal_nodes(cls) -> frozenset[str]:

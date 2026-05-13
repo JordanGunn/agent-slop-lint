@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Any, ClassVar
 
-from ..ast import Callable, Catch, Conditional, Identifier, Literal, Loop, Operator, Scope, Switch
+from ..ast import Block, Callable, Catch, Conditional, Identifier, Literal, Loop, Operator, Scope, Switch
 from ..multipurpose import MultiPurpose
 
 
@@ -75,6 +75,45 @@ class TypeScript(MultiPurpose):
     @classmethod
     def boolean_op_operators(cls) -> frozenset[str] | None:
         return frozenset({"&&", "||", "??"})
+
+    @classmethod
+    def if_nodes(cls) -> frozenset[str]:
+        return frozenset({Conditional.IF_STATEMENT})
+
+    @classmethod
+    def else_nodes(cls) -> frozenset[str]:
+        return frozenset({Conditional.ELSE_CLAUSE})
+
+    @classmethod
+    def loop_nodes(cls) -> frozenset[str]:
+        return frozenset({
+            Loop.FOR_STATEMENT, Loop.FOR_IN_STATEMENT, Loop.FOR_OF_STATEMENT,
+            Loop.WHILE_STATEMENT, Loop.DO_STATEMENT,
+        })
+
+    @classmethod
+    def switch_nodes(cls) -> frozenset[str]:
+        return frozenset({Switch.SWITCH_STATEMENT})
+
+    @classmethod
+    def case_nodes(cls) -> frozenset[str]:
+        return frozenset({Switch.SWITCH_CASE})
+
+    @classmethod
+    def try_nodes(cls) -> frozenset[str]:
+        return frozenset({Catch.TRY_STATEMENT})
+
+    @classmethod
+    def catch_nodes(cls) -> frozenset[str]:
+        return frozenset({Catch.CATCH_CLAUSE})
+
+    @classmethod
+    def block_types(cls) -> frozenset[str]:
+        return frozenset({Block.STATEMENT_BLOCK})
+
+    @classmethod
+    def switch_body_types(cls) -> frozenset[str]:
+        return frozenset({Block.SWITCH_BODY})
 
     @classmethod
     def numeric_literal_nodes(cls) -> frozenset[str]:

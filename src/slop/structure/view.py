@@ -13,6 +13,7 @@ instances over the same underlying parse data.
 """
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any, Callable as TypingCallable, Iterable, Sequence
 
 from slop.language.grammars import LANGUAGE_BY_ID
@@ -134,6 +135,48 @@ class Structure:
             content,
         )
         return count + 1
+
+    def combinatorial(self, c: Callable) -> int:
+        """NPath — acyclic execution path count for one callable (Nejmeh 1988).
+
+        Counts the number of independent execution paths through the
+        callable body. Unlike McCabe's CCX (additive: decisions + 1),
+        NPath is multiplicative — sequential branching structures
+        multiply path counts, capturing the combinatorial explosion
+        that CCX flattens.
+
+        Recurrence (Nejmeh 1988, CACM):
+          - sequence:        product of statement NPs
+          - if/elif/else:    sum of branch NPs (+1 for implicit
+                             fall-through if no terminal else)
+          - while / for:     NP(body) + 1
+          - switch/match:    sum of case NPs (>= 1)
+          - try / catch:     NP(try-body) + sum NP(catch-bodies)
+          - nested callable: 1 (each has its own metric)
+
+        Per-language node types come from the ``Language`` class via
+        ``if_nodes()`` / ``elif_nodes()`` / ``else_nodes()`` /
+        ``loop_nodes()`` / ``switch_nodes()`` / ``case_nodes()`` /
+        ``try_nodes()`` / ``catch_nodes()`` / ``block_types()`` /
+        ``switch_body_types()`` / ``body_skip_types()`` /
+        ``body_field()`` / ``bare_else_keyword()``. C++
+        ``template_declaration`` wrappers are descended through via
+        ``definition_unwrap_types()``. Grammars without a structural
+        vocabulary return NP = 1 (the base path).
+        """
+        key = (str(c.path), c.qualname)
+        node = self._node_by_key.get(key)
+        if node is None:
+            return 1
+        language_id = self._language_by_path.get(str(c.path))
+        if language_id is None:
+            return 1
+        lang = LANGUAGE_BY_ID.get(language_id)
+        if lang is None:
+            return 1
+        vocab = _NPathVocab.for_language(lang)
+        node = _unwrap_definition(node, vocab.definition_unwrap_types)
+        return max(1, _npath_walk(node, vocab))
 
     def cognitive(self, c: Callable) -> int:
         """Cognitive Complexity for one callable (Campbell 2018).
@@ -445,6 +488,257 @@ def _bool_op_text(node: Any, content: bytes) -> str:
             if text in ("&&", "||", "??", "and", "or"):
                 return text
     return ""
+
+
+@dataclass(frozen=True)
+class _NPathVocab:
+    """Per-language vocabulary bundle for the combinatorial walker.
+
+    Pulled together from the ``Language`` class once per
+    ``Structure.combinatorial`` call to avoid threading 13 separate
+    arguments through the recursive helpers below.
+    """
+    if_nodes: frozenset[str]
+    elif_nodes: frozenset[str]
+    else_nodes: frozenset[str]
+    loop_nodes: frozenset[str]
+    switch_nodes: frozenset[str]
+    case_nodes: frozenset[str]
+    try_nodes: frozenset[str]
+    catch_nodes: frozenset[str]
+    body_field: str
+    block_types: frozenset[str]
+    switch_body_types: frozenset[str]
+    body_skip_types: frozenset[str]
+    bare_else_keyword: str | None
+    nested_callables: frozenset[str]
+    definition_unwrap_types: frozenset[str]
+
+    @classmethod
+    def for_language(cls, lang: Any) -> _NPathVocab:
+        return cls(
+            if_nodes=lang.if_nodes(),
+            elif_nodes=lang.elif_nodes(),
+            else_nodes=lang.else_nodes(),
+            loop_nodes=lang.loop_nodes(),
+            switch_nodes=lang.switch_nodes(),
+            case_nodes=lang.case_nodes(),
+            try_nodes=lang.try_nodes(),
+            catch_nodes=lang.catch_nodes(),
+            body_field=lang.body_field(),
+            block_types=lang.block_types(),
+            switch_body_types=lang.switch_body_types(),
+            body_skip_types=lang.body_skip_types(),
+            bare_else_keyword=lang.bare_else_keyword(),
+            nested_callables=lang.callable(),
+            definition_unwrap_types=lang.definition_unwrap_types(),
+        )
+
+
+def _unwrap_definition(node: Any, unwrap: frozenset[str]) -> Any:
+    """Descend through wrapper nodes (e.g. C++ ``template_declaration``)
+    to the actual definition. Fixed-depth guard against malformed ASTs.
+    """
+    current = node
+    for _ in range(4):
+        if current.type not in unwrap:
+            break
+        next_node = None
+        for child in current.children:
+            if child.type != current.type and child.type not in ("(", ")", "<", ">", ","):
+                next_node = child
+                break
+        if next_node is None:
+            break
+        current = next_node
+    return current
+
+
+def _npath_walk(callable_node: Any, vocab: _NPathVocab) -> int:
+    """Compute NPath of a callable definition's body.
+
+    For grammars with a body field (most), descends into the field
+    and walks it as a sequence of statements. For flat-body grammars
+    (Julia, Ruby), walks the callable's direct children filtering by
+    ``body_skip_types``.
+    """
+    if vocab.body_field:
+        body = callable_node.child_by_field_name(vocab.body_field)
+        if body is None:
+            return 1
+        return _npath_of_block(body, vocab)
+    return _npath_of_flat_body(callable_node, vocab)
+
+
+def _npath_of_block(node: Any, vocab: _NPathVocab) -> int:
+    """NP of a sequence of statements.
+
+    If ``node`` is itself a block wrapper, multiplies its children's
+    NPs; otherwise treats ``node`` as a single statement.
+    """
+    if node is None:
+        return 1
+    if node.type in vocab.block_types:
+        result = 1
+        for child in node.children:
+            result *= _npath_of_node(child, vocab)
+        return result
+    return _npath_of_node(node, vocab)
+
+
+def _npath_of_flat_body(node: Any, vocab: _NPathVocab) -> int:
+    """NP of a flat-body construct (Julia, Ruby).
+
+    Walks direct children, skipping structural-keyword node types
+    enumerated in ``body_skip_types``, and multiplies non-trivial NPs.
+    """
+    result = 1
+    for child in node.children:
+        if child.type in vocab.body_skip_types:
+            continue
+        cn = _npath_of_node(child, vocab)
+        if cn > 1:
+            result *= cn
+    return result
+
+
+def _npath_of_node(node: Any, vocab: _NPathVocab) -> int:
+    """Dispatch NP contribution of a single AST node by its structural role."""
+    ntype = node.type
+
+    if ntype in vocab.if_nodes or ntype in vocab.elif_nodes:
+        return _npath_of_if(node, vocab)
+
+    if ntype in vocab.loop_nodes:
+        if vocab.body_field:
+            body = node.child_by_field_name(vocab.body_field)
+            return _npath_of_block(body, vocab) + 1
+        return _npath_of_flat_body(node, vocab) + 1
+
+    if ntype in vocab.switch_nodes:
+        return _npath_of_switch(node, vocab)
+
+    if ntype in vocab.try_nodes:
+        return _npath_of_try(node, vocab)
+
+    # Nested callable: each has its own metric — do not descend.
+    if ntype in vocab.nested_callables:
+        return 1
+
+    # Generic compound: walk through, multiplying non-trivial children.
+    result = 1
+    for child in node.children:
+        cn = _npath_of_node(child, vocab)
+        if cn > 1:
+            result *= cn
+    return result
+
+
+def _npath_of_switch(node: Any, vocab: _NPathVocab) -> int:
+    """NP of a switch/match — sum of case NPs (>= 1).
+
+    Some grammars (Java ``switch_block`` / C# ``switch_body`` / C/C++
+    ``compound_statement``) wrap cases inside an intermediate block;
+    ``switch_body_types`` tells the walker to recurse through them.
+    """
+    def iter_cases(parent: Any) -> Iterable[Any]:
+        for child in parent.children:
+            if child.type in vocab.case_nodes:
+                yield child
+            elif child.type in vocab.switch_body_types:
+                yield from iter_cases(child)
+
+    total = 0
+    for case_child in iter_cases(node):
+        case_np = 1
+        for cc in case_child.children:
+            if cc.type in vocab.block_types:
+                case_np = _npath_of_block(cc, vocab)
+        total += case_np
+    return max(total, 1)
+
+
+def _npath_of_try(node: Any, vocab: _NPathVocab) -> int:
+    """NP of a try/catch — try-body NP + sum of catch-body NPs."""
+    try_body_np = 1
+    handler_sum = 0
+    for child in node.children:
+        if child.type in vocab.block_types:
+            try_body_np = _npath_of_block(child, vocab)
+        elif child.type in vocab.catch_nodes:
+            if vocab.body_field:
+                catch_body = child.child_by_field_name(vocab.body_field)
+                handler_sum += _npath_of_block(catch_body, vocab) if catch_body is not None else 1
+            else:
+                handler_sum += _npath_of_flat_body(child, vocab)
+    if handler_sum == 0:
+        return try_body_np
+    return try_body_np + handler_sum
+
+
+def _npath_of_if(node: Any, vocab: _NPathVocab) -> int:
+    """NP of an if/elif/else chain — sum of branch NPs.
+
+    Adds +1 for an implicit fall-through path when no terminal
+    ``else`` is present. Handles three else shapes:
+      - else-clause wrapper (Python, Ruby, Java, C, C++, Go, ...)
+      - bare ``else`` keyword followed by a block (C#)
+      - C-style ``else { if … }`` nested chains
+    """
+    then_np = 1
+    consequence = node.child_by_field_name("consequence")
+    if consequence is not None and consequence.type in vocab.block_types:
+        then_np = _npath_of_block(consequence, vocab)
+    else:
+        for child in node.children:
+            if child.type in vocab.block_types:
+                then_np = _npath_of_block(child, vocab)
+                break
+
+    alt_nps: list[int] = []
+    has_terminal = False
+
+    for child in node.children:
+        if child.type in vocab.elif_nodes:
+            elif_body_np = 1
+            for ec in child.children:
+                if ec.type in vocab.block_types:
+                    elif_body_np = _npath_of_block(ec, vocab)
+            alt_nps.append(elif_body_np)
+        elif child.type in vocab.else_nodes:
+            has_terminal = True
+            else_added = False
+            for ec in child.children:
+                if ec.type in vocab.block_types:
+                    alt_nps.append(_npath_of_block(ec, vocab))
+                    else_added = True
+                elif ec.type in vocab.if_nodes:
+                    # C-style else-if chain
+                    alt_nps.append(_npath_of_if(ec, vocab))
+                    else_added = True
+            if not else_added and not vocab.body_field:
+                # Flat-body langs (Julia): else_clause has no block
+                # wrapper; treat as +1 path. Nested control flow
+                # inside the else is not deeply analysed (documented
+                # limitation, inherited from the legacy kernel).
+                alt_nps.append(1)
+
+    # Bare-keyword else (C#): "else" keyword child followed by a block
+    # or nested if_statement as the next sibling.
+    if vocab.bare_else_keyword and not has_terminal:
+        children = list(node.children)
+        for i, child in enumerate(children):
+            if child.type == vocab.bare_else_keyword and i + 1 < len(children):
+                nxt = children[i + 1]
+                has_terminal = True
+                if nxt.type in vocab.block_types:
+                    alt_nps.append(_npath_of_block(nxt, vocab))
+                elif nxt.type in vocab.if_nodes:
+                    alt_nps.append(_npath_of_if(nxt, vocab))
+
+    if not has_terminal:
+        return then_np + sum(alt_nps) + 1
+    return then_np + sum(alt_nps)
 
 
 def _cognitive_walk(

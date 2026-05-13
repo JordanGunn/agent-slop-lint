@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Any, ClassVar
 
-from ..ast import Callable, Catch, Conditional, Literal, Loop, Operator, Scope, Switch
+from ..ast import Block, Callable, Catch, Conditional, Literal, Loop, Operator, Scope, Switch
 from ..multipurpose import MultiPurpose
 
 
@@ -60,6 +60,42 @@ class Python(MultiPurpose):
 
     # boolean_op_operators defaults to None — Python's dedicated
     # boolean_operator node always counts (and/or).
+
+    @classmethod
+    def if_nodes(cls) -> frozenset[str]:
+        return frozenset({Conditional.IF_STATEMENT})
+
+    @classmethod
+    def elif_nodes(cls) -> frozenset[str]:
+        return frozenset({Conditional.ELIF_CLAUSE})
+
+    @classmethod
+    def else_nodes(cls) -> frozenset[str]:
+        return frozenset({Conditional.ELSE_CLAUSE})
+
+    @classmethod
+    def loop_nodes(cls) -> frozenset[str]:
+        return frozenset({Loop.FOR_STATEMENT, Loop.WHILE_STATEMENT})
+
+    @classmethod
+    def switch_nodes(cls) -> frozenset[str]:
+        return frozenset({Switch.MATCH_STATEMENT})
+
+    @classmethod
+    def case_nodes(cls) -> frozenset[str]:
+        return frozenset({Switch.CASE_CLAUSE})
+
+    @classmethod
+    def try_nodes(cls) -> frozenset[str]:
+        return frozenset({Catch.TRY_STATEMENT})
+
+    @classmethod
+    def catch_nodes(cls) -> frozenset[str]:
+        return frozenset({Catch.EXCEPT_CLAUSE})
+
+    @classmethod
+    def block_types(cls) -> frozenset[str]:
+        return frozenset({Block.BLOCK})
 
     @classmethod
     def numeric_literal_nodes(cls) -> frozenset[str]:

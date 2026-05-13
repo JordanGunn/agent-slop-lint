@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Any, ClassVar
 
-from ..ast import Callable, Catch, Conditional, Literal, Loop, Operator, Scope, Switch
+from ..ast import Block, Callable, Catch, Conditional, Literal, Loop, Operator, Scope, Switch
 from ..objectoriented import ObjectOriented
 
 
@@ -56,6 +56,48 @@ class CSharp(ObjectOriented):
     @classmethod
     def boolean_op_operators(cls) -> frozenset[str] | None:
         return frozenset({"&&", "||"})
+
+    @classmethod
+    def if_nodes(cls) -> frozenset[str]:
+        return frozenset({Conditional.IF_STATEMENT})
+
+    # else_nodes intentionally empty — C# emits `else` as a bare
+    # keyword child of if_statement; see bare_else_keyword.
+
+    @classmethod
+    def loop_nodes(cls) -> frozenset[str]:
+        return frozenset({
+            Loop.FOR_STATEMENT, Loop.FOREACH_STATEMENT,
+            Loop.WHILE_STATEMENT, Loop.DO_STATEMENT,
+        })
+
+    @classmethod
+    def switch_nodes(cls) -> frozenset[str]:
+        return frozenset({Switch.SWITCH_STATEMENT})
+
+    @classmethod
+    def case_nodes(cls) -> frozenset[str]:
+        return frozenset({Switch.SWITCH_SECTION})
+
+    @classmethod
+    def try_nodes(cls) -> frozenset[str]:
+        return frozenset({Catch.TRY_STATEMENT})
+
+    @classmethod
+    def catch_nodes(cls) -> frozenset[str]:
+        return frozenset({Catch.CATCH_CLAUSE})
+
+    @classmethod
+    def block_types(cls) -> frozenset[str]:
+        return frozenset({Block.BLOCK})
+
+    @classmethod
+    def switch_body_types(cls) -> frozenset[str]:
+        return frozenset({Block.SWITCH_BODY})
+
+    @classmethod
+    def bare_else_keyword(cls) -> str | None:
+        return "else"
 
     @classmethod
     def numeric_literal_nodes(cls) -> frozenset[str]:

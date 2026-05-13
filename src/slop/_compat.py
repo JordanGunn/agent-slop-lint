@@ -30,7 +30,11 @@ LEGACY_RULE_NAMES: dict[str, str] = {
     "complexity.cyclomatic": "structural.complexity.cyclomatic",
     "complexity.cognitive": "structural.complexity.cognitive",
     "complexity.weighted": "structural.class.complexity",
-    "npath": "structural.complexity.npath",
+    "npath": "structural.complexity.combinatorial",
+    # v2.1 rename: structural.complexity.npath → .combinatorial
+    # (the metric is still Nejmeh's NPath; "combinatorial" names what
+    # distinguishes it from cyclomatic — multiplicative path counting).
+    "structural.complexity.npath": "structural.complexity.combinatorial",
     "hotspots": "structural.hotspots",
     "packages": "structural.packages",
     "deps": "structural.deps",
@@ -112,7 +116,7 @@ LEGACY_CATEGORIES: dict[str, tuple[str, ...]] = {
     "complexity": ("structural.complexity", "structural.class.complexity"),
     "halstead": ("structural.difficulty.volume", "structural.difficulty.density"),
     "information": ("structural.difficulty.volume", "structural.difficulty.density"),
-    "npath": ("structural.complexity.npath",),
+    "npath": ("structural.complexity.combinatorial",),
     "hotspots": ("structural.hotspots",),
     "packages": ("structural.packages",),
     "deps": ("structural.deps",),
@@ -145,7 +149,7 @@ LEGACY_TABLE_MIGRATIONS: list[tuple[str, str, dict[str, str]]] = [
     ("npath", "structural.complexity", {
         "enabled": "enabled",
         "severity": "severity",
-        "npath_threshold": "npath_threshold",
+        "npath_threshold": "combinatorial_threshold",
     }),
     ("halstead", "structural.difficulty.volume", {
         "enabled": "enabled",

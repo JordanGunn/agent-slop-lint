@@ -1,13 +1,16 @@
 """``slop.language.ast`` — tree-sitter node-type registries.
 
-Nine semantic StrEnums, one per module:
+Ten semantic StrEnums, one per module:
 
   - ``Identifier``    — name-like nodes (identifier, field_identifier,
                         qualified_identifier, operator, destructor_name, …)
   - ``Callable``      — function/method/lambda/closure definitions
   - ``Scope``         — class/struct/module/trait/interface scopes
   - ``Wrapper``       — templates, signatures, declarator chains
-  - ``Conditional``   — if/elif/unless + ternary
+  - ``Block``         — statement-sequence wrappers (block,
+                        statement_block, compound_statement,
+                        body_statement, switch_block, switch_body)
+  - ``Conditional``   — if/elif/else + ternary
   - ``Loop``          — for/while/do/until variants
   - ``Switch``        — switch/match/select multi-way branching
   - ``Catch``         — try/catch/rescue/except (named Catch to avoid
@@ -29,6 +32,7 @@ those belong in these enums.
 """
 from __future__ import annotations
 
+from .block import Block
 from .callable import Callable
 from .catch import Catch
 from .conditional import Conditional
@@ -41,6 +45,7 @@ from .switch import Switch
 from .wrapper import Wrapper
 
 __all__ = [
+    "Block",
     "Callable",
     "Catch",
     "Conditional",

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Any, ClassVar
 
-from ..ast import Callable, Catch, Conditional, Literal, Loop, Operator, Scope, Switch
+from ..ast import Block, Callable, Catch, Conditional, Literal, Loop, Operator, Scope, Switch
 from ..objectoriented import ObjectOriented
 
 
@@ -55,6 +55,50 @@ class Java(ObjectOriented):
     @classmethod
     def boolean_op_operators(cls) -> frozenset[str] | None:
         return frozenset({"&&", "||"})
+
+    @classmethod
+    def if_nodes(cls) -> frozenset[str]:
+        return frozenset({Conditional.IF_STATEMENT})
+
+    @classmethod
+    def else_nodes(cls) -> frozenset[str]:
+        return frozenset({Conditional.ELSE_CLAUSE})
+
+    @classmethod
+    def loop_nodes(cls) -> frozenset[str]:
+        return frozenset({
+            Loop.FOR_STATEMENT, Loop.ENHANCED_FOR_STATEMENT,
+            Loop.WHILE_STATEMENT, Loop.DO_STATEMENT,
+        })
+
+    @classmethod
+    def switch_nodes(cls) -> frozenset[str]:
+        # Both classic switch_statement and Java 14+ switch_expression.
+        # The legacy ccx_kernel under-counted switch_expression because
+        # it tracked switch_node as a single string; this set fixes that.
+        return frozenset({Switch.SWITCH_STATEMENT, Switch.SWITCH_EXPRESSION})
+
+    @classmethod
+    def case_nodes(cls) -> frozenset[str]:
+        # switch_label appears inside switch_statement; switch_rule
+        # appears inside switch_expression (arrow syntax).
+        return frozenset({Switch.SWITCH_LABEL, Switch.SWITCH_RULE})
+
+    @classmethod
+    def try_nodes(cls) -> frozenset[str]:
+        return frozenset({Catch.TRY_STATEMENT})
+
+    @classmethod
+    def catch_nodes(cls) -> frozenset[str]:
+        return frozenset({Catch.CATCH_CLAUSE})
+
+    @classmethod
+    def block_types(cls) -> frozenset[str]:
+        return frozenset({Block.BLOCK})
+
+    @classmethod
+    def switch_body_types(cls) -> frozenset[str]:
+        return frozenset({Block.SWITCH_BLOCK, Block.SWITCH_BLOCK_STATEMENT_GROUP})
 
     @classmethod
     def numeric_literal_nodes(cls) -> frozenset[str]:

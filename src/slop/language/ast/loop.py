@@ -23,5 +23,6 @@ class Loop(StrEnum):
     WHILE = "while"
     WHILE_MODIFIER = "while_modifier"
     DO_STATEMENT = "do_statement"
+    LOOP_EXPRESSION = "loop_expression"
     UNTIL = "until"
     UNTIL_MODIFIER = "until_modifier"

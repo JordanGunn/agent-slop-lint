@@ -16,9 +16,10 @@ from slop.structure.rules.any_type_density import run_any_type_density
 from slop.structure.rules.clone_density import run_clone_density
 from slop.structure.rules.complexity import run_cognitive, run_cyclomatic
 from slop.structure.rules.dependencies import run_cycles
+from slop.structure.rules.combinatorial import run_combinatorial
 from slop.structure.rules.god_module import run_god_module
-from slop.structure.rules.npath import run_npath
 from slop.structure.rules.out_parameters import run_out_parameters
+from slop.tree.tree import Tree
 from slop.structure.rules.sibling_calls import run_sibling_call_redundancy
 from slop.structure.rules.stringly_typed import run_stringly_typed
 from slop.lexicon.rules.stutter import run_stutter
@@ -173,7 +174,8 @@ def test_ruby_npath_multiplies_sequential_postfix_ifs(tmp_path: Path):
         "  0\n"
         "end\n"
     )
-    result = run_npath(tmp_path, _rule_config(npath_threshold=4), _slop_config())
+    tree = Tree(tmp_path); tree.scan()
+    result = run_combinatorial(tree.structure, _rule_config(combinatorial_threshold=4), SlopConfig(root=str(tmp_path), languages=["ruby"]))
     assert result.status == "fail"
 
 
@@ -188,7 +190,8 @@ def test_ruby_npath_counts_when_clauses(tmp_path: Path):
         "  end\n"
         "end\n"
     )
-    result = run_npath(tmp_path, _rule_config(npath_threshold=2), _slop_config())
+    tree = Tree(tmp_path); tree.scan()
+    result = run_combinatorial(tree.structure, _rule_config(combinatorial_threshold=2), SlopConfig(root=str(tmp_path), languages=["ruby"]))
     assert result.status == "fail"
 
 
@@ -202,7 +205,8 @@ def test_ruby_npath_counts_rescue_clauses(tmp_path: Path):
         "  end\n"
         "end\n"
     )
-    result = run_npath(tmp_path, _rule_config(npath_threshold=99), _slop_config())
+    tree = Tree(tmp_path); tree.scan()
+    result = run_combinatorial(tree.structure, _rule_config(combinatorial_threshold=99), SlopConfig(root=str(tmp_path), languages=["ruby"]))
     # Just verify it runs and produces a number; threshold high so pass.
     assert result.status == "pass"
 

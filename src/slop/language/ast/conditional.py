@@ -20,6 +20,8 @@ class Conditional(StrEnum):
     ELIF_CLAUSE = "elif_clause"
     ELSEIF_CLAUSE = "elseif_clause"
     ELSIF = "elsif"
+    ELSE_CLAUSE = "else_clause"
+    ELSE = "else"
     IF_MODIFIER = "if_modifier"
     UNLESS_MODIFIER = "unless_modifier"
     CONDITIONAL_EXPRESSION = "conditional_expression"

@@ -12,9 +12,10 @@ from __future__ import annotations
 from pathlib import Path
 
 from slop.config.models import RuleConfig, SlopConfig
+from slop.structure.rules.combinatorial import run_combinatorial
 from slop.structure.rules.complexity import run_cyclomatic
 from slop.structure.rules.dependencies import run_cycles
-from slop.structure.rules.npath import run_npath
+from slop.tree.tree import Tree
 
 
 _BRANCHY_JL = """\
@@ -57,10 +58,11 @@ def test_julia_cyclomatic_flags_branchy_function(tmp_path: Path):
     assert any(v.symbol == "branchy" for v in result.violations)
 
 
-def test_julia_npath_runs_without_error(tmp_path: Path):
+def test_julia_combinatorial_runs_without_error(tmp_path: Path):
     (tmp_path / "branchy.jl").write_text(_BRANCHY_JL)
-    cfg = _rule_config(npath_threshold=200)
-    result = run_npath(tmp_path, cfg, _slop_config())
+    cfg = _rule_config(combinatorial_threshold=200)
+    tree = Tree(tmp_path); tree.scan()
+    result = run_combinatorial(tree.structure, cfg, SlopConfig(root=str(tmp_path), languages=["julia"]))
     # NPath under-counts nested branches in flat-body langs (documented
     # limitation in docs/JULIA.md). We only check it runs and analyses
     # the function.

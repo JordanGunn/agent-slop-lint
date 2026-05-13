@@ -16,7 +16,7 @@ from __future__ import annotations
 import dataclasses
 from typing import Any, ClassVar
 
-from ..ast import Callable, Conditional, Identifier, Literal, Loop, Operator, Scope, Switch
+from ..ast import Block, Callable, Conditional, Identifier, Literal, Loop, Operator, Scope, Switch
 from ..multipurpose import MultiPurpose
 
 
@@ -64,6 +64,32 @@ class Rust(MultiPurpose):
     @classmethod
     def boolean_op_operators(cls) -> frozenset[str] | None:
         return frozenset({"&&", "||"})
+
+    @classmethod
+    def if_nodes(cls) -> frozenset[str]:
+        return frozenset({Conditional.IF_EXPRESSION})
+
+    @classmethod
+    def else_nodes(cls) -> frozenset[str]:
+        return frozenset({Conditional.ELSE_CLAUSE})
+
+    @classmethod
+    def loop_nodes(cls) -> frozenset[str]:
+        return frozenset({
+            Loop.FOR_EXPRESSION, Loop.WHILE_EXPRESSION, Loop.LOOP_EXPRESSION,
+        })
+
+    @classmethod
+    def switch_nodes(cls) -> frozenset[str]:
+        return frozenset({Switch.MATCH_EXPRESSION})
+
+    @classmethod
+    def case_nodes(cls) -> frozenset[str]:
+        return frozenset({Switch.MATCH_ARM})
+
+    @classmethod
+    def block_types(cls) -> frozenset[str]:
+        return frozenset({Block.BLOCK})
 
     @classmethod
     def numeric_literal_nodes(cls) -> frozenset[str]:

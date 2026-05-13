@@ -17,7 +17,7 @@ root = "."
 # [[waivers]]
 # id = "parser-npath"
 # path = "src/parser/**"
-# rule = "structural.complexity.npath"
+# rule = "structural.complexity.combinatorial"
 # allow_up_to = 1200
 # reason = "Parser branch shape mirrors grammar alternatives."
 # expires = "2026-09-01"
@@ -26,7 +26,7 @@ root = "."
 enabled = true
 cyclomatic_threshold = 10       # fail if any function CCX exceeds this
 cognitive_threshold = 15        # fail if any function CogC exceeds this
-npath_threshold = 400         # fail if any function NPath exceeds this
+combinatorial_threshold = 400 # fail if any function NPath exceeds this (Nejmeh 1988)
 severity = "error"
 
 [rules.structural.class.complexity]

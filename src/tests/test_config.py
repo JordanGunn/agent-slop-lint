@@ -33,7 +33,7 @@ def test_default_complexity_enabled_with_standard_thresholds(tmp_path: Path):
     assert rc.severity == "error"
     assert rc.params["cyclomatic_threshold"] == 10
     assert rc.params["cognitive_threshold"] == 15
-    assert rc.params["npath_threshold"] == 400
+    assert rc.params["combinatorial_threshold"] == 400
 
 
 def test_default_hotspots_since_14_days(tmp_path: Path):
@@ -114,7 +114,7 @@ def test_loads_top_level_waivers(tmp_path: Path):
 [[waivers]]
 id = "parser-npath"
 path = "src/parser/**"
-rule = "structural.complexity.npath"
+rule = "structural.complexity.combinatorial"
 allow_up_to = 1200
 reason = "Parser branch shape mirrors grammar alternatives."
 expires = "2099-01-01"
@@ -125,7 +125,7 @@ expires = "2099-01-01"
     waiver = config.waivers[0]
     assert waiver.id == "parser-npath"
     assert waiver.path == "src/parser/**"
-    assert waiver.rule == "structural.complexity.npath"
+    assert waiver.rule == "structural.complexity.combinatorial"  # canonical name (post-v2.1 rename)
     assert waiver.allow_up_to == 1200
     assert waiver.reason.startswith("Parser branch")
     assert waiver.expires == "2099-01-01"
@@ -137,7 +137,7 @@ def test_waiver_requires_reason(tmp_path: Path):
 [[waivers]]
 id = "missing-reason"
 path = "src/parser/**"
-rule = "structural.complexity.npath"
+rule = "structural.complexity.combinatorial"
 """
     )
     with pytest.raises(ValueError, match="reason"):
@@ -150,13 +150,13 @@ def test_waiver_rejects_duplicate_ids(tmp_path: Path):
 [[waivers]]
 id = "same"
 path = "a.py"
-rule = "structural.complexity.npath"
+rule = "structural.complexity.combinatorial"
 reason = "one"
 
 [[waivers]]
 id = "same"
 path = "b.py"
-rule = "structural.complexity.npath"
+rule = "structural.complexity.combinatorial"
 reason = "two"
 """
     )
