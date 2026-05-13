@@ -18,7 +18,6 @@ from slop.structure.rules.clone_density import run_clone_density
 from slop.structure.rules.complexity import run_cognitive, run_cyclomatic
 from slop.structure.rules.dependencies import run_cycles
 from slop.structure.rules.god_module import run_god_module
-from slop.structure.rules.local_imports import run_local_imports
 from slop.structure.rules.npath import run_npath
 from slop.structure.rules.out_parameters import run_out_parameters
 from slop.structure.rules.sibling_calls import run_sibling_call_redundancy
@@ -339,22 +338,3 @@ def test_c_sibling_calls_detect_shared_callees(tmp_path: Path):
                                          _slop_config())
     # Two sibling functions sharing 3 callees → flagged
     assert result.status == "fail"
-
-
-# ---------------------------------------------------------------------------
-# Local imports
-# ---------------------------------------------------------------------------
-
-
-def test_c_local_include_inside_function_flagged(tmp_path: Path):
-    """``#include`` inside a function body — rare but flagged."""
-    (tmp_path / "li.c").write_text(
-        "int outer(int x) {\n"
-        "#include \"helper.h\"\n"
-        "    return x + 1;\n"
-        "}\n"
-    )
-    result = run_local_imports(tmp_path, _rule_config(), _slop_config())
-    # We only require the kernel to run without error on C; the rule's
-    # severity-warning posture means we don't gate hard on detection.
-    assert isinstance(result.summary, dict)

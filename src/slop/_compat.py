@@ -94,6 +94,12 @@ REMOVED_RULES: dict[str, str] = {
         "are a style smell that agents readily clean up; doesn't drive "
         "non-trivial review action."
     ),
+    "structural.local_imports": (
+        "removed in v2.0 — function-scoped imports are a Python-specific "
+        "style smell that ruff (PLC0415) already catches per-statement. "
+        "The slop aggregate-count version didn't surface deeper structural "
+        "debt; doesn't drive non-trivial review action."
+    ),
 }
 
 

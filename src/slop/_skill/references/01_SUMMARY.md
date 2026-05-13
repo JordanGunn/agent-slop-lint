@@ -35,7 +35,6 @@ default except `structural.orphans`.
 | `structural.hotspots` | Files that are complex AND frequently changed (14d window) |
 | `structural.packages` | Packages with poor design (D' > 0.7, Zone of Pain) |
 | `structural.deps` | Circular dependencies between modules |
-| `structural.local_imports` | Function-scoped import statements |
 | `structural.redundancy` | Sibling functions sharing non-trivial callees |
 | `structural.types.sentinels` | Str parameters with sentinel names (status, mode, etc.) |
 | `structural.types.hidden_mutators` | In-place mutation of collection parameters |

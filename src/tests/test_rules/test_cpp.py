@@ -21,7 +21,6 @@ from slop.structure.rules.clone_density import run_clone_density
 from slop.structure.rules.complexity import run_cognitive, run_cyclomatic, run_weighted
 from slop.structure.rules.dependencies import run_cycles
 from slop.structure.rules.god_module import run_god_module
-from slop.structure.rules.local_imports import run_local_imports
 from slop.structure.rules.npath import run_npath
 from slop.structure.rules.out_parameters import run_out_parameters
 from slop.structure.rules.sibling_calls import run_sibling_call_redundancy
@@ -454,12 +453,3 @@ def test_cpp_sibling_calls_detect_shared_callees(tmp_path: Path):
 # ---------------------------------------------------------------------------
 
 
-def test_cpp_local_include_inside_function(tmp_path: Path):
-    (tmp_path / "li.cpp").write_text(
-        "int outer(int x) {\n"
-        "#include \"helper.hpp\"\n"
-        "    return x + 1;\n"
-        "}\n"
-    )
-    result = run_local_imports(tmp_path, _rule_config(), _slop_config())
-    assert isinstance(result.summary, dict)

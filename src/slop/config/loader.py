@@ -88,11 +88,6 @@ DEFAULT_RULE_CONFIGS: dict[str, dict[str, Any]] = {
         "severity": "error",
         "fail_on_cycles": True,
     },
-    "structural.local_imports": {
-        "enabled": True,
-        "severity": "warning",
-        "threshold": 0,
-    },
     "structural.redundancy": {
         "enabled": True,
         "severity": "warning",
@@ -608,33 +603,6 @@ severity = "{profile_cfg["packages_severity"]}"
 enabled = true
 fail_on_cycles = true
 severity = "error"
-
-[rules.structural.local_imports]
-enabled = true
-# threshold = 0     # allow up to N local imports per file before flagging
-severity = "warning"
-# ── Python: local imports are a genuine idiom in three common situations ──────
-# 1. Optional / heavy dependencies deferred until the feature is actually used:
-#    [[waivers]]
-#    id = "local-imports-optional-dep"
-#    path = "src/your_package/**"
-#    rule = "structural.local_imports"
-#    reason = "Heavy optional dependency deferred to avoid import-time cost when wheels are absent."
-#
-# 2. CLI subcommand handlers deferring imports for startup speed:
-#    [[waivers]]
-#    id = "local-imports-cli-startup"
-#    path = "src/your_package/cli.py"
-#    rule = "structural.local_imports"
-#    reason = "CLI handlers defer imports so users pay the cost only for the subcommand invoked."
-#
-# 3. Test functions that import inside the body for monkeypatching:
-#    [[waivers]]
-#    id = "local-imports-test-monkeypatch"
-#    path = "tests/**"
-#    rule = "structural.local_imports"
-#    reason = "Import inside body required so the test can monkeypatch before code under test runs."
-# ─────────────────────────────────────────────────────────────────────────────
 
 [rules.structural.redundancy]
 enabled = true
