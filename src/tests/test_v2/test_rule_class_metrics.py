@@ -210,3 +210,65 @@ class TestMultiLanguage:
         result = run_inheritance_depth_v2(_structure(tmp_path), _rc(0), _sc(tmp_path))
         d = next(v for v in result.violations if v.symbol == "D")
         assert d.value == 3
+
+
+class TestRubyOpenClassAggregation:
+    """Ruby allows ``class Foo`` to be re-opened across multiple files.
+    CK metrics aggregate across openings (legacy
+    ``_aggregate_ruby_open_classes`` policy: sum WMC, max CBO/DIT/NOC).
+    """
+
+    def test_wmc_sums_across_openings(self, tmp_path: Path):
+        (tmp_path / "a.rb").write_text(
+            "class Animal\n"
+            "  def speak\n"            # ccx 1
+            "    raise NotImplementedError\n"
+            "  end\n"
+            "  def legs(custom)\n"     # ccx 2 (one if)
+            "    if custom\n"
+            "      4\n"
+            "    else\n"
+            "      0\n"
+            "    end\n"
+            "  end\n"
+            "end\n"
+        )
+        (tmp_path / "b.rb").write_text(
+            "class Animal\n"
+            "  def lifespan(young)\n"  # ccx 2 (one if)
+            "    if young\n"
+            "      10\n"
+            "    else\n"
+            "      20\n"
+            "    end\n"
+            "  end\n"
+            "end\n"
+        )
+        # Aggregated WMC = 1 + 2 + 2 = 5. Threshold 4 → fail.
+        result = run_weighted_v2(_structure(tmp_path), _rc(4), _sc(tmp_path))
+        flagged = [v for v in result.violations if v.symbol == "Animal"]
+        # ONE entry, not two — aggregation merged them.
+        assert len(flagged) == 1
+        assert flagged[0].value >= 5
+
+    def test_no_aggregation_for_non_ruby(self, tmp_path: Path):
+        # Same simple name across two Python files should NOT aggregate;
+        # they're conceptually separate classes that happen to share a
+        # name. Python doesn't have open-class semantics.
+        (tmp_path / "a.py").write_text(
+            "class Animal:\n"
+            "    def m(self):\n"
+            "        if True: return 1\n"
+            "        return 0\n"
+        )
+        (tmp_path / "b.py").write_text(
+            "class Animal:\n"
+            "    def n(self):\n"
+            "        if True: return 1\n"
+            "        return 0\n"
+        )
+        # If aggregated: WMC = 2 + 2 = 4 → fail at threshold 3.
+        # If NOT aggregated: WMC = 2 each → pass at threshold 3.
+        result = run_weighted_v2(_structure(tmp_path), _rc(3), _sc(tmp_path))
+        flagged = [v for v in result.violations if v.symbol == "Animal"]
+        assert len(flagged) == 0  # both pass independently
