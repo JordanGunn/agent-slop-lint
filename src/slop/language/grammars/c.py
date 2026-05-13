@@ -57,6 +57,36 @@ class C(Procedural):
         return frozenset({Literal.NUMBER_LITERAL})
 
     @classmethod
+    def operator_nodes(cls) -> frozenset[str]:
+        return frozenset({
+            "if", "else", "while", "do", "for",
+            "switch", "case", "default",
+            "break", "continue", "return", "goto",
+            "sizeof", "typedef",
+            "struct", "union", "enum",
+            "const", "volatile", "static", "extern", "inline",
+            "register", "auto", "restrict", "_Alignof", "_Atomic",
+            "=", "+", "-", "*", "/", "%",
+            "==", "!=", "<", ">", "<=", ">=",
+            "&&", "||", "!",
+            "~", "&", "|", "^", "<<", ">>",
+            "+=", "-=", "*=", "/=", "%=",
+            "&=", "|=", "^=", "<<=", ">>=",
+            "++", "--",
+            "?", ":", ",", ".", "->",
+        })
+
+    @classmethod
+    def operand_nodes(cls) -> frozenset[str]:
+        return frozenset({
+            "identifier", "field_identifier", "type_identifier",
+            "number_literal",
+            "string_literal", "char_literal",
+            "concatenated_string",
+            "true", "false", "null",
+        })
+
+    @classmethod
     def extract_name(cls, node: Any, content: bytes) -> str:
         """Walk the C declarator chain to the identifier."""
         if node.type != Node.FUNCTION_DEFINITION:

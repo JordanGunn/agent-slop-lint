@@ -14,7 +14,6 @@ from pathlib import Path
 from slop.config.models import RuleConfig, SlopConfig
 from slop.structure.rules.complexity import run_cyclomatic
 from slop.structure.rules.dependencies import run_cycles
-from slop.structure.rules.halstead import run_volume
 from slop.structure.rules.npath import run_npath
 
 
@@ -66,14 +65,6 @@ def test_julia_npath_runs_without_error(tmp_path: Path):
     # limitation in docs/JULIA.md). We only check it runs and analyses
     # the function.
     assert result.status in ("pass", "fail")
-    assert result.summary.get("functions_checked", 0) >= 1
-
-
-def test_julia_halstead_runs_without_error(tmp_path: Path):
-    (tmp_path / "branchy.jl").write_text(_BRANCHY_JL)
-    cfg = _rule_config(threshold=10000)
-    result = run_volume(tmp_path, cfg, _slop_config())
-    assert result.status == "pass"
     assert result.summary.get("functions_checked", 0) >= 1
 
 

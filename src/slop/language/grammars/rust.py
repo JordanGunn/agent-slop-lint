@@ -61,3 +61,27 @@ class Rust(MultiPurpose):
     @classmethod
     def numeric_literal_nodes(cls) -> frozenset[str]:
         return frozenset({Literal.INTEGER_LITERAL, Literal.FLOAT_LITERAL})
+
+    @classmethod
+    def operator_nodes(cls) -> frozenset[str]:
+        return frozenset({
+            "fn", "if", "else", "for", "while", "loop", "match",
+            "return", "break", "continue", "let", "mut", "ref",
+            "struct", "enum", "impl", "trait", "type", "use", "mod",
+            "pub", "self", "super", "crate", "as", "where",
+            "async", "await", "unsafe", "move",
+            "=", "+", "-", "*", "/", "%",
+            "==", "!=", "<", ">", "<=", ">=",
+            "&&", "||", "!", "&", "|", "^", "<<", ">>",
+            "+=", "-=", "*=", "/=", "%=",
+            "=>", "::", "..", "..=", "?",
+        })
+
+    @classmethod
+    def operand_nodes(cls) -> frozenset[str]:
+        return frozenset({
+            "identifier", "field_identifier", "type_identifier",
+            "integer_literal", "float_literal", "string_literal",
+            "raw_string_literal", "char_literal", "boolean_literal",
+            "true", "false",
+        })

@@ -38,8 +38,17 @@ LEGACY_RULE_NAMES: dict[str, str] = {
     "class.coupling": "structural.class.coupling",
     "class.inheritance.depth": "structural.class.inheritance.depth",
     "class.inheritance.children": "structural.class.inheritance.children",
-    "halstead.volume": "information.volume",
-    "halstead.difficulty": "information.difficulty",
+    # v2.0 relocation: Halstead V and D moved from information.* to
+    # structural.difficulty.* — the McCabe/Campbell/Nejmeh control-flow
+    # complexity family is methodologically distinct from Halstead's
+    # vocabulary/symbol-density family. The information.* category is
+    # retired in v2.0. Halstead D was also relabeled "density" to
+    # describe what the metric measures (operand-reuse density) rather
+    # than the anthropomorphic "difficulty".
+    "halstead.volume": "structural.difficulty.volume",
+    "halstead.difficulty": "structural.difficulty.density",
+    "information.volume": "structural.difficulty.volume",
+    "information.difficulty": "structural.difficulty.density",
     # v2.0 relocation: magic_literals moved from information.* to
     # structural.* — it's a structural readability/parameterization
     # signal, not a Halstead-derived information measure.
@@ -95,7 +104,8 @@ REMOVED_RULES: dict[str, str] = {
 # both ``structural.complexity`` and the WMC rule under ``structural.class``).
 LEGACY_CATEGORIES: dict[str, tuple[str, ...]] = {
     "complexity": ("structural.complexity", "structural.class.complexity"),
-    "halstead": ("information.volume", "information.difficulty"),
+    "halstead": ("structural.difficulty.volume", "structural.difficulty.density"),
+    "information": ("structural.difficulty.volume", "structural.difficulty.density"),
     "npath": ("structural.complexity.npath",),
     "hotspots": ("structural.hotspots",),
     "packages": ("structural.packages",),
@@ -131,12 +141,12 @@ LEGACY_TABLE_MIGRATIONS: list[tuple[str, str, dict[str, str]]] = [
         "severity": "severity",
         "npath_threshold": "npath_threshold",
     }),
-    ("halstead", "information.volume", {
+    ("halstead", "structural.difficulty.volume", {
         "enabled": "enabled",
         "severity": "severity",
         "volume_threshold": "threshold",
     }),
-    ("halstead", "information.difficulty", {
+    ("halstead", "structural.difficulty.density", {
         "enabled": "enabled",
         "severity": "severity",
         "difficulty_threshold": "threshold",

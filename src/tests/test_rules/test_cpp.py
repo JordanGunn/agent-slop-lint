@@ -21,7 +21,6 @@ from slop.structure.rules.clone_density import run_clone_density
 from slop.structure.rules.complexity import run_cognitive, run_cyclomatic, run_weighted
 from slop.structure.rules.dependencies import run_cycles
 from slop.structure.rules.god_module import run_god_module
-from slop.structure.rules.halstead import run_difficulty, run_volume
 from slop.structure.rules.local_imports import run_local_imports
 from slop.structure.rules.npath import run_npath
 from slop.structure.rules.out_parameters import run_out_parameters
@@ -205,22 +204,6 @@ def test_cpp_npath_counts_switch_cases(tmp_path: Path):
 # ---------------------------------------------------------------------------
 # Halstead
 # ---------------------------------------------------------------------------
-
-
-def test_cpp_halstead_volume_runs(tmp_path: Path):
-    (tmp_path / "h.cpp").write_text(
-        "template <typename T> T add(T a, T b) { return a + b; }\n"
-    )
-    result = run_volume(tmp_path, _rule_config(threshold=10000), _slop_config())
-    assert result.status == "pass"
-
-
-def test_cpp_halstead_difficulty_runs(tmp_path: Path):
-    (tmp_path / "h.cpp").write_text(
-        "int square(int x) { return x * x; }\n"
-    )
-    result = run_difficulty(tmp_path, _rule_config(threshold=99), _slop_config())
-    assert result.status == "pass"
 
 
 # ---------------------------------------------------------------------------

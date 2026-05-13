@@ -70,6 +70,46 @@ class Ruby(MultiPurpose):
         })
 
     @classmethod
+    def operator_nodes(cls) -> frozenset[str]:
+        return frozenset({
+            # Keywords
+            "def", "end", "class", "module",
+            "if", "elsif", "else", "unless",
+            "while", "until", "for", "in",
+            "case", "when", "then", "do",
+            "return", "yield", "break", "next", "redo", "retry",
+            "begin", "rescue", "ensure", "raise",
+            "require", "require_relative", "load",
+            "include", "extend", "prepend",
+            "public", "private", "protected",
+            "attr_reader", "attr_writer", "attr_accessor",
+            "lambda", "proc", "super",
+            "self", "nil", "true", "false",
+            "not", "and", "or",
+            "=", "+", "-", "*", "/", "%", "**",
+            "==", "===", "!=", "<", ">", "<=", ">=", "<=>",
+            "&&", "||", "!",
+            "&", "|", "^", "~", "<<", ">>",
+            "+=", "-=", "*=", "/=", "%=", "**=",
+            "&&=", "||=",
+            "..", "...",
+            "=>", "->",
+            "?", ":", ",", ".", "::",
+        })
+
+    @classmethod
+    def operand_nodes(cls) -> frozenset[str]:
+        return frozenset({
+            "identifier",
+            "instance_variable", "class_variable", "global_variable",
+            "constant",
+            "integer", "float", "complex", "rational",
+            "string", "string_content",
+            "symbol", "simple_symbol", "hash_key_symbol",
+            "true", "false", "nil",
+        })
+
+    @classmethod
     def extract_name(cls, node: Any, content: bytes) -> str:
         """Walk method / singleton_method children, skipping def/self/."""
         if node.type not in (Node.METHOD, Node.SINGLETON_METHOD):

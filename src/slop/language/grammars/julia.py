@@ -56,6 +56,36 @@ class Julia(Procedural):
         return frozenset({Literal.INTEGER_LITERAL, Literal.FLOAT_LITERAL})
 
     @classmethod
+    def operator_nodes(cls) -> frozenset[str]:
+        return frozenset({
+            # Keywords
+            "function", "return", "if", "else", "elseif", "end",
+            "for", "while", "break", "continue", "in",
+            "try", "catch", "finally", "throw",
+            "do", "begin", "let", "global", "local",
+            "module", "using", "import", "export",
+            "struct", "mutable", "abstract", "primitive", "type",
+            "const",
+            # Operator-symbol tokens (tree-sitter-julia commonly wraps
+            # these as named ``operator`` children; the literal-text
+            # match still finds bare-token nodes that some operator
+            # syntactic positions expose).
+            "=", "+", "-", "*", "/", "%", "^", "//", ".",
+            "==", "!=", "<", ">", "<=", ">=", "===", "!==",
+            "&&", "||", "!", "&", "|", "<<", ">>",
+            "+=", "-=", "*=", "/=",
+            "->", "::", ":", "?", "@", "...",
+        })
+
+    @classmethod
+    def operand_nodes(cls) -> frozenset[str]:
+        return frozenset({
+            "identifier", "integer_literal", "float_literal",
+            "string_literal", "character_literal",
+            "true", "false", "nothing", "missing",
+        })
+
+    @classmethod
     def extract_name(cls, node: Any, content: bytes) -> str:
         """Walk Julia's ``signature → call_expression → identifier`` chain.
 

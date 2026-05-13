@@ -22,7 +22,7 @@ from .clone_density import run_clone_density
 from .complexity import run_cognitive_v2, run_cyclomatic_v2, run_weighted
 from .dependencies import run_cycles
 from .god_module import run_god_module_v2
-from .halstead import run_difficulty, run_volume
+from .halstead import run_density_v2, run_volume_v2
 from .local_imports import run_local_imports
 from .magic_literals import run_magic_literals_v2
 from .npath import run_npath
@@ -197,24 +197,24 @@ STRUCTURAL_RULES: list[RuleDefinition] = [
         run=run_god_module_v2,
     ),
 
-    # --- information.* (Halstead-derived information density + readability signals) ---
+    # --- structural.difficulty.* (Halstead vocabulary/density family) ---
     RuleDefinition(
-        name="information.volume",
-        category="information.volume",
-        description="Per-function information volume (Halstead 1977)",
+        name="structural.difficulty.volume",
+        category="structural.difficulty",
+        description="Per-function Halstead Volume — V = N · log₂(η) (Halstead 1977)",
         default_severity="error",
         default_enabled=True,
         threshold_label="V > 1500",
-        run=legacy_v2_shim(run_volume),
+        run=run_volume_v2,
     ),
     RuleDefinition(
-        name="information.difficulty",
-        category="information.difficulty",
-        description="Per-function symbol difficulty (Halstead 1977)",
+        name="structural.difficulty.density",
+        category="structural.difficulty",
+        description="Per-function Halstead D — (η₁/2)·(N₂/η₂); operand-reuse density (Halstead 1977)",
         default_severity="error",
         default_enabled=True,
         threshold_label="D > 30",
-        run=legacy_v2_shim(run_difficulty),
+        run=run_density_v2,
     ),
     RuleDefinition(
         name="structural.magic_literals",

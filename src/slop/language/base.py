@@ -180,6 +180,37 @@ class Language(ABC):
         return frozenset()
 
     @classmethod
+    def operator_nodes(cls) -> frozenset[str]:
+        """Tree-sitter LEAF node types classified as Halstead operators.
+
+        Includes language keywords (``if``, ``for``, ``return``,
+        ``def``, ``throw``, ``new``, …) and operator-symbol tokens
+        (``=``, ``+``, ``==``, ``&&``, ``<-``, …). Tree-sitter
+        commonly assigns these tokens a ``node.type`` equal to their
+        source text, which is what this set matches against.
+
+        Consumed by Halstead vocabulary computations
+        (``structural.difficulty.volume`` and ``.density``). Default
+        empty — grammars without an override contribute 0 to the
+        operator count.
+        """
+        return frozenset()
+
+    @classmethod
+    def operand_nodes(cls) -> frozenset[str]:
+        """Tree-sitter LEAF node types classified as Halstead operands.
+
+        Identifier-like leaves (``identifier``, ``property_identifier``,
+        ``field_identifier``) and literal-like leaves (``integer``,
+        ``float``, ``string``, ``true``, ``false``, ``null``).
+
+        Consumed by Halstead vocabulary computations. Default empty
+        — grammars without an override contribute 0 to the operand
+        count.
+        """
+        return frozenset()
+
+    @classmethod
     def extract_parameters(cls, node: Any, content: bytes) -> tuple[Parameter, ...]:
         """Extract parameters from a callable definition node.
 

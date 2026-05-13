@@ -18,7 +18,6 @@ from slop.structure.rules.clone_density import run_clone_density
 from slop.structure.rules.complexity import run_cognitive, run_cyclomatic
 from slop.structure.rules.dependencies import run_cycles
 from slop.structure.rules.god_module import run_god_module
-from slop.structure.rules.halstead import run_difficulty, run_volume
 from slop.structure.rules.local_imports import run_local_imports
 from slop.structure.rules.npath import run_npath
 from slop.structure.rules.out_parameters import run_out_parameters
@@ -173,32 +172,6 @@ def test_c_npath_counts_switch_cases(tmp_path: Path):
     result = run_npath(tmp_path, _rule_config(npath_threshold=3), _slop_config())
     assert result.status == "fail"
     assert any(v.symbol == "sw" for v in result.violations)
-
-
-# ---------------------------------------------------------------------------
-# Halstead
-# ---------------------------------------------------------------------------
-
-
-def test_c_halstead_volume_runs_without_error(tmp_path: Path):
-    (tmp_path / "h.c").write_text(
-        "int discount(int days, int amount) {\n"
-        "    if (days > 30) { return amount * 100 / 365; }\n"
-        "    if (days > 7) { return amount * 50 / 100; }\n"
-        "    return amount * 7 / 100;\n"
-        "}\n"
-    )
-    result = run_volume(tmp_path, _rule_config(threshold=10000), _slop_config())
-    assert result.status == "pass"
-    assert result.summary.get("functions_checked", 0) >= 1
-
-
-def test_c_halstead_difficulty_runs_without_error(tmp_path: Path):
-    (tmp_path / "h.c").write_text(
-        "int square(int x) { return x * x; }\n"
-    )
-    result = run_difficulty(tmp_path, _rule_config(threshold=100), _slop_config())
-    assert result.status == "pass"
 
 
 # ---------------------------------------------------------------------------

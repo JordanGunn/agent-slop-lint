@@ -79,6 +79,51 @@ class Cpp(MultiPurpose):
         return frozenset({Literal.NUMBER_LITERAL})
 
     @classmethod
+    def operator_nodes(cls) -> frozenset[str]:
+        return frozenset({
+            # C keywords (carry over)
+            "if", "else", "while", "do", "for",
+            "switch", "case", "default",
+            "break", "continue", "return", "goto",
+            "sizeof", "typedef",
+            "struct", "union", "enum",
+            "const", "volatile", "static", "extern", "inline",
+            "register", "auto", "restrict",
+            # C++ keywords
+            "class", "namespace", "template", "typename",
+            "public", "private", "protected", "virtual",
+            "override", "final", "explicit", "friend",
+            "new", "delete", "this", "operator",
+            "try", "catch", "throw", "noexcept",
+            "using", "nullptr",
+            "constexpr", "consteval", "constinit",
+            "decltype", "static_cast", "dynamic_cast",
+            "reinterpret_cast", "const_cast",
+            "co_await", "co_yield", "co_return",
+            "=", "+", "-", "*", "/", "%",
+            "==", "!=", "<", ">", "<=", ">=", "<=>",
+            "&&", "||", "!",
+            "~", "&", "|", "^", "<<", ">>",
+            "+=", "-=", "*=", "/=", "%=",
+            "&=", "|=", "^=", "<<=", ">>=",
+            "++", "--",
+            "?", ":", ",", ".", "->", "::",
+            "->*", ".*",
+        })
+
+    @classmethod
+    def operand_nodes(cls) -> frozenset[str]:
+        return frozenset({
+            "identifier", "field_identifier", "type_identifier",
+            "namespace_identifier", "template_type",
+            "number_literal",
+            "string_literal", "char_literal", "raw_string_literal",
+            "concatenated_string", "user_defined_literal",
+            "true", "false", "null", "nullptr",
+            "this",
+        })
+
+    @classmethod
     def extract_name(cls, node: Any, content: bytes) -> str:
         """Walk the C++ declarator chain to find the function name.
 

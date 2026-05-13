@@ -64,3 +64,33 @@ class Java(ObjectOriented):
             Literal.HEX_INTEGER_LITERAL,
             Literal.OCTAL_INTEGER_LITERAL,
         })
+
+    @classmethod
+    def operator_nodes(cls) -> frozenset[str]:
+        return frozenset({
+            "if", "else", "for", "while", "do", "return",
+            "class", "interface", "enum", "extends", "implements",
+            "import", "package", "try", "catch", "finally",
+            "throw", "throws", "new", "instanceof", "switch",
+            "case", "default", "break", "continue",
+            "public", "private", "protected", "static", "final",
+            "abstract", "synchronized", "volatile",
+            "void", "super", "this",
+            "=", "+", "-", "*", "/", "%",
+            "==", "!=", "<", ">", "<=", ">=",
+            "&&", "||", "!", "~", "&", "|", "^", "<<", ">>", ">>>",
+            "+=", "-=", "*=", "/=", "%=",
+            "++", "--", "?", "->",
+        })
+
+    @classmethod
+    def operand_nodes(cls) -> frozenset[str]:
+        return frozenset({
+            "identifier", "type_identifier", "field_identifier",
+            "decimal_integer_literal", "hex_integer_literal",
+            "octal_integer_literal", "binary_integer_literal",
+            "decimal_floating_point_literal",
+            "string_literal", "string_fragment",
+            "character_literal",
+            "true", "false", "null",
+        })

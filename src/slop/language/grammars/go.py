@@ -78,3 +78,27 @@ class Go(MultiPurpose):
             Literal.INT_LITERAL, Literal.FLOAT_LITERAL,
             Literal.IMAGINARY_LITERAL, Literal.RUNE_LITERAL,
         })
+
+    @classmethod
+    def operator_nodes(cls) -> frozenset[str]:
+        return frozenset({
+            "func", "if", "else", "for", "switch", "case", "default",
+            "return", "break", "continue", "go", "defer", "select",
+            "range", "type", "struct", "interface", "map", "chan",
+            "import", "package", "var", "const",
+            "=", ":=", "+", "-", "*", "/", "%",
+            "==", "!=", "<", ">", "<=", ">=",
+            "&&", "||", "!", "&", "|", "^", "<<", ">>",
+            "+=", "-=", "*=", "/=", "%=",
+            "++", "--", "<-", "...",
+        })
+
+    @classmethod
+    def operand_nodes(cls) -> frozenset[str]:
+        return frozenset({
+            "identifier", "field_identifier", "type_identifier",
+            "package_identifier",
+            "int_literal", "float_literal", "imaginary_literal",
+            "rune_literal", "raw_string_literal", "interpreted_string_literal",
+            "true", "false", "nil", "iota",
+        })

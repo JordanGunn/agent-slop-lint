@@ -64,3 +64,26 @@ class Python(MultiPurpose):
     @classmethod
     def numeric_literal_nodes(cls) -> frozenset[str]:
         return frozenset({Literal.INTEGER, Literal.FLOAT})
+
+    @classmethod
+    def operator_nodes(cls) -> frozenset[str]:
+        return frozenset({
+            # Keywords
+            "def", "if", "else", "elif", "for", "while", "return",
+            "class", "import", "from", "try", "except", "finally",
+            "raise", "with", "as", "yield", "lambda", "del", "assert",
+            "break", "continue", "pass", "and", "or", "not", "in", "is",
+            # Operator symbols
+            "=", "+", "-", "*", "/", "**", "//", "%",
+            "==", "!=", "<", ">", "<=", ">=",
+            "|", "&", "^", "~", "<<", ">>",
+            "+=", "-=", "*=", "/=", "//=", "%=", "**=",
+            "->", "@",
+        })
+
+    @classmethod
+    def operand_nodes(cls) -> frozenset[str]:
+        return frozenset({
+            "identifier", "integer", "float", "string",
+            "true", "false", "none", "type",
+        })

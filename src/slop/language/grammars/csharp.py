@@ -60,3 +60,32 @@ class CSharp(ObjectOriented):
     @classmethod
     def numeric_literal_nodes(cls) -> frozenset[str]:
         return frozenset({Literal.INTEGER_LITERAL, Literal.REAL_LITERAL})
+
+    @classmethod
+    def operator_nodes(cls) -> frozenset[str]:
+        return frozenset({
+            "if", "else", "for", "foreach", "while", "do", "return",
+            "class", "struct", "interface", "enum",
+            "using", "namespace", "try", "catch", "finally",
+            "throw", "new", "is", "as", "switch", "in",
+            "case", "default", "break", "continue",
+            "public", "private", "protected", "internal", "static",
+            "readonly", "abstract", "virtual", "override", "sealed",
+            "async", "await", "void", "this", "base", "var",
+            "=", "+", "-", "*", "/", "%",
+            "==", "!=", "<", ">", "<=", ">=",
+            "&&", "||", "!", "~", "&", "|", "^", "<<", ">>",
+            "+=", "-=", "*=", "/=", "%=",
+            "++", "--", "?", "=>", "??",
+        })
+
+    @classmethod
+    def operand_nodes(cls) -> frozenset[str]:
+        return frozenset({
+            "identifier", "type_identifier",
+            "integer_literal", "real_literal",
+            "string_literal", "verbatim_string_literal",
+            "interpolated_string_expression",
+            "character_literal",
+            "true", "false", "null",
+        })

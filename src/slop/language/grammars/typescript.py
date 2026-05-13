@@ -79,3 +79,29 @@ class TypeScript(MultiPurpose):
     @classmethod
     def numeric_literal_nodes(cls) -> frozenset[str]:
         return frozenset({Literal.NUMBER})
+
+    @classmethod
+    def operator_nodes(cls) -> frozenset[str]:
+        return frozenset({
+            "function", "if", "else", "for", "while", "do", "return",
+            "class", "import", "from", "try", "catch", "finally",
+            "throw", "new", "delete", "typeof", "instanceof", "void",
+            "switch", "case", "default", "break", "continue",
+            "var", "let", "const", "yield", "await", "async",
+            "interface", "type", "enum", "as",
+            "=", "+", "-", "*", "/", "%", "**",
+            "==", "!=", "===", "!==", "<", ">", "<=", ">=",
+            "&&", "||", "??", "!", "~", "&", "|", "^", "<<", ">>", ">>>",
+            "+=", "-=", "*=", "/=", "%=", "**=",
+            "++", "--", "=>", "...", "?",
+        })
+
+    @classmethod
+    def operand_nodes(cls) -> frozenset[str]:
+        return frozenset({
+            "identifier", "property_identifier", "shorthand_property_identifier",
+            "type_identifier",
+            "number", "string", "string_fragment",
+            "template_string", "regex",
+            "true", "false", "null", "undefined",
+        })

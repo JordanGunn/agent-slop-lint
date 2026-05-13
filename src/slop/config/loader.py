@@ -134,13 +134,12 @@ DEFAULT_RULE_CONFIGS: dict[str, dict[str, Any]] = {
         "severity": "warning",
         "min_confidence": "high",
     },
-    "information.volume": {
+    "structural.difficulty.volume": {
         "enabled": True,
         "severity": "error",
         "threshold": 1500,
-        "token_weight_alpha": 0.0,
     },
-    "information.difficulty": {
+    "structural.difficulty.density": {
         "enabled": True,
         "severity": "error",
         "threshold": 30,
@@ -678,15 +677,14 @@ enabled = {orphans_enabled}
 min_confidence = "high"
 severity = "warning"
 
-[rules.information.volume]
+[rules.structural.difficulty.volume]
 enabled = true
-threshold = {profile_cfg["volume_threshold"]}         # fail if any function V exceeds this
-# token_weight_alpha = 0.0   # > 0 tightens threshold for terse-identifier functions
+threshold = {profile_cfg["volume_threshold"]}         # fail if any function Halstead V exceeds this
 severity = "error"
 
-[rules.information.difficulty]
+[rules.structural.difficulty.density]
 enabled = true
-threshold = {profile_cfg["difficulty_threshold"]}        # fail if any function D exceeds this
+threshold = {profile_cfg["difficulty_threshold"]}        # fail if any function Halstead D (operand-reuse density) exceeds this
 severity = "error"
 
 [rules.structural.magic_literals]

@@ -292,7 +292,9 @@ def test_prefix_severity_propagates(tmp_path: Path):
     config = load_config(root=str(tmp_path))
     assert config.rule_config("structural.complexity").severity == "warning"
     assert config.rule_config("structural.hotspots").severity == "warning"
-    assert config.rule_config("information.volume").severity == "error"
+    assert config.rule_config("structural.difficulty.volume").severity == "warning"
+    # A rule in a different top-level namespace keeps its own default.
+    assert config.rule_config("lexical.stutter").severity == "warning"
 
 
 def test_nested_prefix_more_specific_wins(tmp_path: Path):
@@ -383,8 +385,8 @@ def test_generate_default_config_is_valid_toml(tmp_path: Path):
     assert "[rules.structural.orphans]" in content
     assert "[rules.structural.packages]" in content
     assert "[rules.structural.deps]" in content
-    assert "[rules.information.volume]" in content
-    assert "[rules.information.difficulty]" in content
+    assert "[rules.structural.difficulty.volume]" in content
+    assert "[rules.structural.difficulty.density]" in content
     config_file = tmp_path / ".slop.toml"
     config_file.write_text(content)
     config = load_config(root=str(tmp_path))
