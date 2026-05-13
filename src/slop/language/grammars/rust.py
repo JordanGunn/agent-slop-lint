@@ -4,10 +4,17 @@ Inheritance-shaped queries (which Rust lacks) raise
 ``NotImplementedError`` if a rule reaches for them. The criterion for
 ``ObjectOriented`` membership is named scopes containing methods with
 implicit receivers, not the full OOP suite.
+
+Post-scan adjustment: Rust's methods live inside ``impl Type { fn m() {} }``
+blocks rather than inside the struct/enum/trait body. The generic walker
+parents inner ``function_item`` callables under the impl_item scope (or
+sometimes under the file). ``post_scan_adjust`` rewrites them to be
+parented under the impl's target type, so CK metrics find struct methods.
 """
 from __future__ import annotations
 
-from typing import ClassVar
+import dataclasses
+from typing import Any, ClassVar
 
 from ..ast import Callable, Conditional, Identifier, Literal, Loop, Operator, Scope, Switch
 from ..multipurpose import MultiPurpose
@@ -61,6 +68,92 @@ class Rust(MultiPurpose):
     @classmethod
     def numeric_literal_nodes(cls) -> frozenset[str]:
         return frozenset({Literal.INTEGER_LITERAL, Literal.FLOAT_LITERAL})
+
+    @classmethod
+    def post_scan_adjust(cls, parse_result: Any) -> Any:
+        """Rewrite Rust function_item callables inside impl blocks to parent under the target struct/enum/trait.
+
+        Tree-sitter Python wraps the same underlying node in fresh
+        Python objects per access (``id(n)`` isn't stable across
+        traversals), so we identify impl_item nodes by their byte
+        span ``(start_byte, end_byte)`` instead.
+        """
+        file_stem = parse_result.path.stem
+        impl_target_by_span: dict[tuple[int, int], str] = {}
+
+        def walk_impls(n: Any) -> None:
+            if n.type == "impl_item":
+                type_node = n.child_by_field_name("type")
+                if type_node is not None:
+                    target = _rust_target_type_name(type_node, parse_result.content)
+                    if target is not None:
+                        impl_target_by_span[(n.start_byte, n.end_byte)] = target
+            for child in n.children:
+                walk_impls(child)
+
+        # Walk the AST from root. Pull root via any captured scope or
+        # callable node's parent chain (.parent is stable here because
+        # we're only using it to climb to the source_file root).
+        root: Any = None
+        for cn in list(parse_result.scope_nodes.values()) + list(parse_result.callable_nodes.values()):
+            cur = cn
+            while cur.parent is not None:
+                cur = cur.parent
+            root = cur
+            break
+        if root is None:
+            return parse_result
+        walk_impls(root)
+
+        if not impl_target_by_span:
+            return parse_result
+
+        new_callables: list[Any] = []
+        for c in parse_result.callables:
+            node = parse_result.callable_nodes.get(c.qualname)
+            if node is None:
+                new_callables.append(c)
+                continue
+            target = _enclosing_impl_target(node, impl_target_by_span)
+            if target is None:
+                new_callables.append(c)
+                continue
+            new_parent = f"{file_stem}.{target}"
+            simple = c.qualname.split(".")[-1]
+            new_qualname = f"{new_parent}.{simple}"
+            new_c = dataclasses.replace(
+                c, parent=new_parent, qualname=new_qualname,
+            )
+            new_callables.append(new_c)
+            if c.qualname in parse_result.callable_nodes:
+                parse_result.callable_nodes[new_qualname] = parse_result.callable_nodes.pop(c.qualname)
+
+        return dataclasses.replace(parse_result, callables=tuple(new_callables))
+
+
+def _rust_target_type_name(type_node: Any, content: bytes) -> str | None:
+    """Extract the type name from a Rust impl_item's ``type`` field."""
+    if type_node.type == "type_identifier":
+        return content[type_node.start_byte:type_node.end_byte].decode("utf-8", errors="replace")
+    if type_node.type == "generic_type":
+        for child in type_node.children:
+            if child.type == "type_identifier":
+                return content[child.start_byte:child.end_byte].decode("utf-8", errors="replace")
+    return None
+
+
+def _enclosing_impl_target(
+    node: Any, impl_target_by_span: dict[tuple[int, int], str],
+) -> str | None:
+    """Walk up from ``node`` looking for an enclosing impl_item span we have a target for."""
+    cur = node.parent
+    while cur is not None:
+        if cur.type == "impl_item":
+            target = impl_target_by_span.get((cur.start_byte, cur.end_byte))
+            if target is not None:
+                return target
+        cur = cur.parent
+    return None
 
     @classmethod
     def operator_nodes(cls) -> frozenset[str]:

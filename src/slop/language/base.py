@@ -219,9 +219,9 @@ class Language(ABC):
         ``interfaces`` for implements; C#'s ``base_list`` child;
         TypeScript's ``class_heritage`` with ``extends_clause`` and
         ``implements_clause``; C++'s ``base_class_clause`` direct
-        child; Ruby's positional identifier after ``<``; Go and Rust
-        use struct + receiver / impl-based pseudo-inheritance handled
-        separately (default empty list for those).
+        child; Ruby's positional identifier after ``<``; Go uses
+        struct embedding (handled in ``post_scan_adjust``); Rust uses
+        impl-based pseudo-inheritance (also handled there).
 
         Consumed by CK class metrics (WMC sums method CCX,
         CBO references inheritance, DIT walks parent chain, NOC
@@ -231,6 +231,31 @@ class Language(ABC):
         """
         del node, content  # default no-op; concrete grammars override
         return []
+
+    @classmethod
+    def post_scan_adjust(cls, parse_result: Any) -> Any:
+        """Post-scan hook for language-specific record rewriting.
+
+        Called once per file by ``Tree._scan_file`` after the generic
+        walker has emitted scopes, callables, and occurrences. The
+        default returns the parse_result unchanged.
+
+        Override on grammars where the canonical structure-emitting
+        walk needs language-specific fix-up:
+
+          - Go: ``method_declaration`` callables should be parented to
+            their receiver type (struct), not to the file/module
+            scope. The override rewrites the relevant Callable
+            records to set the correct parent.
+
+          - Rust: ``function_item`` callables nested inside an
+            ``impl_item`` should be parented to the impl's target
+            type. The override walks impl_items and rewrites the
+            nested callables' parents.
+
+        Other grammars don't need post-scan adjustment.
+        """
+        return parse_result
 
     @classmethod
     def extract_parameters(cls, node: Any, content: bytes) -> tuple[Parameter, ...]:

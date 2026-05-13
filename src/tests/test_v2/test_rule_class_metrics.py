@@ -212,6 +212,84 @@ class TestMultiLanguage:
         assert d.value == 3
 
 
+class TestGoReceiverLinking:
+    """Go's ``func (s S) M() {}`` methods should be parented to S
+    (their receiver struct), not to the file scope.
+    """
+
+    def test_struct_with_three_methods_wmc(self, tmp_path: Path):
+        (tmp_path / "a.go").write_text(
+            "package p\n"
+            "type Animal struct { name string }\n"
+            "func (a Animal) Speak() { if a.name == \"\" { return } }\n"   # ccx 2
+            "func (a Animal) Walk() { for i := 0; i < 4; i++ { _ = i } }\n"  # ccx 2
+            "func (a *Animal) Run() { if a == nil { return } }\n"            # ccx 2
+        )
+        result = run_weighted_v2(_structure(tmp_path), _rc(0), _sc(tmp_path))
+        animal = next(v for v in result.violations if v.symbol == "Animal")
+        assert animal.value == 6  # 2 + 2 + 2
+
+    def test_pointer_receiver_strips_pointer(self, tmp_path: Path):
+        (tmp_path / "a.go").write_text(
+            "package p\n"
+            "type S struct {}\n"
+            "func (s *S) M() {}\n"  # pointer receiver
+        )
+        # The method should attach to S, not *S.
+        cb = Tree(tmp_path); cb.scan()
+        methods = [c for c in cb.structure.callables() if c.qualname.endswith(".M")]
+        assert len(methods) == 1
+        assert methods[0].parent == "a.S"
+
+
+class TestRustImplLinking:
+    """Rust's ``impl S { fn m() {} }`` methods should be parented to S,
+    not to the impl_item scope (which the generic walker emits as anonymous).
+    """
+
+    def test_struct_impl_methods_wmc(self, tmp_path: Path):
+        (tmp_path / "a.rs").write_text(
+            "struct Animal { name: String }\n"
+            "impl Animal {\n"
+            "    fn speak(&self) {\n"
+            "        if self.name.is_empty() { return; }\n"      # ccx 2
+            "    }\n"
+            "    fn walk(&self) {\n"
+            "        for i in 0..4 { let _ = i; }\n"              # ccx 2
+            "    }\n"
+            "    fn run(&self) {\n"
+            "        if true { return; }\n"                       # ccx 2
+            "    }\n"
+            "}\n"
+        )
+        result = run_weighted_v2(_structure(tmp_path), _rc(0), _sc(tmp_path))
+        animal = next(v for v in result.violations if v.symbol == "Animal")
+        assert animal.value == 6
+
+    def test_methods_correctly_parented(self, tmp_path: Path):
+        (tmp_path / "a.rs").write_text(
+            "struct S {}\n"
+            "impl S { fn m(&self) {} }\n"
+        )
+        cb = Tree(tmp_path); cb.scan()
+        methods = [c for c in cb.structure.callables() if c.qualname.endswith(".m")]
+        assert len(methods) == 1
+        assert methods[0].parent == "a.S"
+
+    def test_trait_impl_methods_parent_to_target(self, tmp_path: Path):
+        # `impl Trait for S { fn m() {} }` — m should parent to S (the target).
+        (tmp_path / "a.rs").write_text(
+            "trait Speakable { fn speak(&self); }\n"
+            "struct Dog {}\n"
+            "impl Speakable for Dog {\n"
+            "    fn speak(&self) { return; }\n"
+            "}\n"
+        )
+        cb = Tree(tmp_path); cb.scan()
+        speak = next(c for c in cb.structure.callables() if c.qualname.endswith(".speak"))
+        assert speak.parent == "a.Dog"
+
+
 class TestRubyOpenClassAggregation:
     """Ruby allows ``class Foo`` to be re-opened across multiple files.
     CK metrics aggregate across openings (legacy

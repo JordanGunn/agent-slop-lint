@@ -158,7 +158,7 @@ class Tree:
             scope_nodes=scope_nodes,
         )
 
-        return ParseResult(
+        parse_result = ParseResult(
             path=path,
             language=grammar.id,
             scopes=tuple(scopes),
@@ -168,6 +168,10 @@ class Tree:
             scope_nodes=scope_nodes,
             content=content,
         )
+        # Language-specific post-scan adjustment (Go method-receiver
+        # parenting, Rust impl-block parenting). Default returns
+        # parse_result unchanged.
+        return grammar.post_scan_adjust(parse_result)
 
     def _walk(
         self,
