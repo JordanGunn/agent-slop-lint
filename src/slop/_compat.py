@@ -36,7 +36,12 @@ LEGACY_RULE_NAMES: dict[str, str] = {
     # distinguishes it from cyclomatic — multiplicative path counting).
     "structural.complexity.npath": "structural.complexity.combinatorial",
     "hotspots": "structural.hotspots",
-    "packages": "structural.packages",
+    # The v2 split: the old single name resolved to rigidity by default
+    # (the original built-in fail_on_zone was ["pain"], which is the
+    # rigidity rule's territory). Users targeting Uselessness should
+    # update their config or rule reference explicitly.
+    "packages": "structural.packages.rigidity",
+    "structural.packages": "structural.packages.rigidity",
     "deps": "structural.deps",
     "orphans": "structural.orphans",
     "class.coupling": "structural.class.coupling",
@@ -118,7 +123,7 @@ LEGACY_CATEGORIES: dict[str, tuple[str, ...]] = {
     "information": ("structural.difficulty.volume", "structural.difficulty.density"),
     "npath": ("structural.complexity.combinatorial",),
     "hotspots": ("structural.hotspots",),
-    "packages": ("structural.packages",),
+    "packages": ("structural.packages.rigidity", "structural.packages.uselessness"),
     "deps": ("structural.deps",),
     "orphans": ("structural.orphans",),
     "class": (
@@ -166,10 +171,17 @@ LEGACY_TABLE_MIGRATIONS: list[tuple[str, str, dict[str, str]]] = [
         "since": "since", "min_commits": "min_commits",
         "fail_on_quadrant": "fail_on_quadrant",
     }),
-    ("packages", "structural.packages", {
+    # v2 split — fan one legacy `[rules.packages]` table out to both new
+    # rules. ``max_distance`` becomes each rule's ``threshold``. The
+    # ``fail_on_zone`` setting is dropped silently: zone selection is
+    # now expressed by enabling/disabling the rule that owns the zone.
+    ("packages", "structural.packages.rigidity", {
         "enabled": "enabled", "severity": "severity",
-        "languages": "languages", "max_distance": "max_distance",
-        "fail_on_zone": "fail_on_zone",
+        "languages": "languages", "max_distance": "threshold",
+    }),
+    ("packages", "structural.packages.uselessness", {
+        "enabled": "enabled", "severity": "severity",
+        "languages": "languages", "max_distance": "threshold",
     }),
     ("deps", "structural.deps", {
         "enabled": "enabled", "severity": "severity",
@@ -381,6 +393,53 @@ def _migrate_v110_stutter_subrules(
     return derived, deprecations
 
 
+def _migrate_v21_packages_split(
+    raw_rules: dict,
+) -> tuple[dict, list[str]]:
+    """Fan out v2.0 ``[rules.structural.packages]`` to the v2.1 split rules.
+
+    The v2.0 single rule had ``max_distance`` (D' threshold) and
+    ``fail_on_zone`` (which zone to fail on). The v2.1 split gives each
+    zone its own rule with its own ``threshold``; the ``fail_on_zone``
+    parameter is dropped because the rule itself names the zone.
+
+    Only the ``max_distance`` value carries through to each split rule's
+    ``threshold``; ``severity``, ``languages``, and ``enabled`` follow.
+    """
+    structural = raw_rules.get("structural")
+    if not isinstance(structural, dict):
+        return {}, []
+    legacy = structural.get("packages")
+    if not isinstance(legacy, dict) or not _is_leaf_legacy_table(legacy):
+        return {}, []
+
+    shared: dict = {}
+    for src_key, dst_key in (
+        ("enabled", "enabled"),
+        ("severity", "severity"),
+        ("languages", "languages"),
+        ("max_distance", "threshold"),
+    ):
+        if src_key in legacy:
+            shared[dst_key] = legacy[src_key]
+
+    if not shared:
+        return {}, []
+
+    return (
+        {
+            "structural.packages.rigidity": dict(shared),
+            "structural.packages.uselessness": dict(shared),
+        },
+        [
+            "  [rules.structural.packages] -> "
+            "[rules.structural.packages.rigidity] + "
+            "[rules.structural.packages.uselessness] "
+            "(fail_on_zone replaced by per-rule enable)"
+        ],
+    )
+
+
 def migrate_legacy_rule_tables(
     raw_rules: dict, canonical_keys: set[str],
 ) -> tuple[dict, list[str]]:
@@ -399,6 +458,11 @@ def migrate_legacy_rule_tables(
     stutter_derived, stutter_deprecations = _migrate_v110_stutter_subrules(raw_rules)
     derived.update(stutter_derived)
     deprecations.extend(stutter_deprecations)
+    packages_derived, packages_deprecations = _migrate_v21_packages_split(raw_rules)
+    for key, value in packages_derived.items():
+        target = derived.setdefault(key, {})
+        target.update(value)
+    deprecations.extend(packages_deprecations)
     canonical = _flatten_canonical_tables(raw_rules, canonical_keys)
 
     merged: dict = dict(derived)

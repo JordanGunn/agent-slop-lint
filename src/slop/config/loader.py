@@ -76,12 +76,17 @@ DEFAULT_RULE_CONFIGS: dict[str, dict[str, Any]] = {
         "min_commits": 2,
         "fail_on_quadrant": ["hotspot"],
     },
-    "structural.packages": {
+    "structural.packages.rigidity": {
         "enabled": True,
         "severity": "warning",
         "languages": [],
-        "max_distance": 0.7,
-        "fail_on_zone": ["pain"],
+        "threshold": 0.7,
+    },
+    "structural.packages.uselessness": {
+        "enabled": True,
+        "severity": "warning",
+        "languages": [],
+        "threshold": 0.7,
     },
     "structural.deps": {
         "enabled": True,
@@ -592,11 +597,15 @@ min_commits = {profile_cfg["hotspots_min_commits"]}
 fail_on_quadrant = [{quadrant_list}]
 severity = "error"
 
-[rules.structural.packages]
+[rules.structural.packages.rigidity]
 enabled = true
 # languages = ["python"]        # optional: restrict to a subset of slop's supported languages
-max_distance = {profile_cfg["max_distance"]}
-fail_on_zone = ["pain"]
+threshold = {profile_cfg["max_distance"]}    # flag pain-zone packages whose D' exceeds this
+severity = "{profile_cfg["packages_severity"]}"
+
+[rules.structural.packages.uselessness]
+enabled = true
+threshold = {profile_cfg["max_distance"]}    # flag uselessness-zone packages whose D' exceeds this
 severity = "{profile_cfg["packages_severity"]}"
 
 [rules.structural.deps]

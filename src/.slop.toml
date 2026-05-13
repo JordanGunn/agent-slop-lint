@@ -56,11 +56,15 @@ min_commits = 2
 fail_on_quadrant = ["hotspot"]
 severity = "error"
 
-[rules.structural.packages]
+[rules.structural.packages.rigidity]
 enabled = true
 # languages = ["python"]        # optional: restrict to a subset of slop's supported languages
-max_distance = 0.7
-fail_on_zone = ["pain"]
+threshold = 0.7    # flag pain-zone packages whose D' exceeds this
+severity = "warning"
+
+[rules.structural.packages.uselessness]
+enabled = true
+threshold = 0.7    # flag uselessness-zone packages whose D' exceeds this
 severity = "warning"
 
 [rules.structural.deps]

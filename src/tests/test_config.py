@@ -52,12 +52,41 @@ def test_default_orphans_disabled(tmp_path: Path):
     assert rc.severity == "warning"
 
 
-def test_default_packages_severity_warning(tmp_path: Path):
+def test_default_rigidity_severity_warning(tmp_path: Path):
     config = load_config(root=str(tmp_path))
-    rc = config.rule_config("structural.packages")
+    rc = config.rule_config("structural.packages.rigidity")
     assert rc.severity == "warning"
-    assert rc.params["max_distance"] == 0.7
-    assert rc.params["fail_on_zone"] == ["pain"]
+    assert rc.params["threshold"] == 0.7
+
+
+def test_default_uselessness_severity_warning(tmp_path: Path):
+    config = load_config(root=str(tmp_path))
+    rc = config.rule_config("structural.packages.uselessness")
+    assert rc.severity == "warning"
+    assert rc.params["threshold"] == 0.7
+
+
+def test_legacy_v20_packages_table_fans_out_to_split_rules(tmp_path: Path):
+    """v2.0 [rules.structural.packages] migrates to both v2.1 split rules.
+
+    max_distance → each rule's threshold; severity, languages, enabled
+    propagate to both; fail_on_zone is silently dropped (zone selection
+    is now expressed by enabling/disabling the rule that owns the zone).
+    """
+    (tmp_path / ".slop.toml").write_text(
+        '[rules.structural.packages]\n'
+        'enabled = true\n'
+        'max_distance = 0.6\n'
+        'fail_on_zone = ["pain"]\n'
+        'severity = "error"\n'
+    )
+    config = load_config(root=str(tmp_path))
+    rigidity = config.rule_config("structural.packages.rigidity")
+    useless = config.rule_config("structural.packages.uselessness")
+    assert rigidity.severity == "error"
+    assert rigidity.params["threshold"] == 0.6
+    assert useless.severity == "error"
+    assert useless.params["threshold"] == 0.6
 
 
 def test_default_deps_fail_on_cycles(tmp_path: Path):
@@ -383,7 +412,8 @@ def test_generate_default_config_is_valid_toml(tmp_path: Path):
     assert "[rules.structural.class.complexity]" in content
     assert "[rules.structural.hotspots]" in content
     assert "[rules.structural.orphans]" in content
-    assert "[rules.structural.packages]" in content
+    assert "[rules.structural.packages.rigidity]" in content
+    assert "[rules.structural.packages.uselessness]" in content
     assert "[rules.structural.deps]" in content
     assert "[rules.structural.difficulty.volume]" in content
     assert "[rules.structural.difficulty.density]" in content

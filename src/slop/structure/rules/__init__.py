@@ -16,7 +16,7 @@ from slop.linter._shim import legacy_v2_shim
 from slop.linter.types import RuleDefinition
 
 from .any_type_density import run_any_type_density
-from .architecture import run_distance
+from .architecture import run_rigidity, run_uselessness
 from .class_metrics import (
     run_coupling_v2,
     run_inheritance_children_v2,
@@ -102,15 +102,24 @@ STRUCTURAL_RULES: list[RuleDefinition] = [
         run=run_inheritance_children_v2,
     ),
 
-    # --- structural.packages (Martin Distance) ---
+    # --- structural.packages.* (Martin 1994 — D' split by failure mode) ---
     RuleDefinition(
-        name="structural.packages",
+        name="structural.packages.rigidity",
         category="structural.packages",
-        description="Package design distance (Martin 1994)",
+        description="Zone of Pain — stable + concrete packages (Martin 1994)",
         default_severity="warning",
         default_enabled=True,
-        threshold_label="D' > 0.7",
-        run=legacy_v2_shim(run_distance),
+        threshold_label="pain & D' > 0.7",
+        run=legacy_v2_shim(run_rigidity),
+    ),
+    RuleDefinition(
+        name="structural.packages.uselessness",
+        category="structural.packages",
+        description="Zone of Uselessness — unstable + abstract packages (Martin 1994)",
+        default_severity="warning",
+        default_enabled=True,
+        threshold_label="uselessness & D' > 0.7",
+        run=legacy_v2_shim(run_uselessness),
     ),
 
     # --- structural.deps (cycle detection) ---

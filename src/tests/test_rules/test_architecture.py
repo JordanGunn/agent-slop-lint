@@ -12,7 +12,7 @@ from pathlib import Path
 
 from slop._structural.robert import robert_kernel
 from slop.config.models import RuleConfig, SlopConfig
-from slop.structure.rules.architecture import run_distance
+from slop.structure.rules.architecture import run_rigidity, run_uselessness
 
 
 # ---------------------------------------------------------------------------
@@ -20,23 +20,116 @@ from slop.structure.rules.architecture import run_distance
 # ---------------------------------------------------------------------------
 
 
-def test_packages_pass_when_clean(tmp_path: Path):
+def _rc(threshold: float = 0.7, languages=("python",)) -> RuleConfig:
+    return RuleConfig(
+        enabled=True, severity="warning",
+        params={"threshold": threshold, "languages": list(languages)},
+    )
+
+
+def test_rigidity_passes_when_clean(tmp_path: Path):
     (tmp_path / "main.py").write_text("def main():\n    pass\n")
-    rc = RuleConfig(enabled=True, severity="warning", params={
-        "max_distance": 0.7, "fail_on_zone": ["pain"], "languages": ["python"],
-    })
-    result = run_distance(tmp_path, rc, SlopConfig(root=str(tmp_path)))
+    result = run_rigidity(tmp_path, _rc(), SlopConfig(root=str(tmp_path)))
     assert result.status in ("pass", "skip")
 
 
-def test_packages_skip_when_no_supported_languages(tmp_path: Path):
-    # Kotlin is not in robert's supported set; should skip cleanly.
+def test_uselessness_passes_when_clean(tmp_path: Path):
+    (tmp_path / "main.py").write_text("def main():\n    pass\n")
+    result = run_uselessness(tmp_path, _rc(), SlopConfig(root=str(tmp_path)))
+    assert result.status in ("pass", "skip")
+
+
+def test_rigidity_skips_when_no_supported_languages(tmp_path: Path):
     (tmp_path / "Main.kt").write_text("fun main() {}\n")
-    rc = RuleConfig(enabled=True, severity="warning", params={
-        "max_distance": 0.7, "fail_on_zone": ["pain"], "languages": ["kotlin"],
-    })
-    result = run_distance(tmp_path, rc, SlopConfig(root=str(tmp_path), languages=["kotlin"]))
+    result = run_rigidity(
+        tmp_path, _rc(languages=("kotlin",)),
+        SlopConfig(root=str(tmp_path), languages=["kotlin"]),
+    )
     assert result.status == "skip"
+
+
+def test_uselessness_skips_when_no_supported_languages(tmp_path: Path):
+    (tmp_path / "Main.kt").write_text("fun main() {}\n")
+    result = run_uselessness(
+        tmp_path, _rc(languages=("kotlin",)),
+        SlopConfig(root=str(tmp_path), languages=["kotlin"]),
+    )
+    assert result.status == "skip"
+
+
+# ---------------------------------------------------------------------------
+# Zone isolation — each rule fires only for its own zone, even when both
+# zones are present.
+# ---------------------------------------------------------------------------
+
+
+def _stub_pkg(name: str, *, zone: str, distance: float):
+    """Build a PackageMetrics with the fields the rule layer reads."""
+    from slop._structural.robert import PackageMetrics
+    return PackageMetrics(
+        package=name, path=name, language="python", files=1,
+        ca=0, ce=0, instability=0.0, na=0, nc=0, abstractness=0.0,
+        distance=distance, zone=zone, interpretation="",
+    )
+
+
+def _patch_kernel(monkeypatch, packages):
+    """Replace robert_kernel with a stub that returns ``packages`` once."""
+    from slop._structural import robert as robert_module
+    from slop._structural.robert import RobertResult
+    from slop.structure.rules import architecture as arch_module
+
+    def fake(root, *, language, excludes=None):
+        return RobertResult(
+            packages=list(packages),
+            language=language,
+            packages_analyzed=len(packages),
+            files_searched=len(packages),
+            zone_counts={},
+            guidance=[],
+        )
+
+    monkeypatch.setattr(robert_module, "robert_kernel", fake)
+    monkeypatch.setattr(arch_module, "robert_kernel", fake)
+
+
+def test_rigidity_fires_only_on_pain_zone(tmp_path, monkeypatch):
+    _patch_kernel(monkeypatch, [
+        _stub_pkg("a.pain", zone="pain", distance=0.9),
+        _stub_pkg("b.useless", zone="uselessness", distance=0.9),
+        _stub_pkg("c.clean", zone="ok", distance=0.1),
+    ])
+    result = run_rigidity(tmp_path, _rc(), SlopConfig(root=str(tmp_path)))
+    assert result.status == "fail"
+    assert len(result.violations) == 1
+    assert result.violations[0].file == "a.pain"
+    assert result.violations[0].metadata["zone"] == "pain"
+
+
+def test_uselessness_fires_only_on_uselessness_zone(tmp_path, monkeypatch):
+    _patch_kernel(monkeypatch, [
+        _stub_pkg("a.pain", zone="pain", distance=0.9),
+        _stub_pkg("b.useless", zone="uselessness", distance=0.9),
+        _stub_pkg("c.clean", zone="ok", distance=0.1),
+    ])
+    result = run_uselessness(tmp_path, _rc(), SlopConfig(root=str(tmp_path)))
+    assert result.status == "fail"
+    assert len(result.violations) == 1
+    assert result.violations[0].file == "b.useless"
+    assert result.violations[0].metadata["zone"] == "uselessness"
+
+
+def test_rigidity_respects_threshold_within_pain_zone(tmp_path, monkeypatch):
+    # A pain-zone package with D' below threshold doesn't fire.
+    _patch_kernel(monkeypatch, [
+        _stub_pkg("borderline.pain", zone="pain", distance=0.5),
+        _stub_pkg("deep.pain", zone="pain", distance=0.9),
+    ])
+    result = run_rigidity(
+        tmp_path, _rc(threshold=0.8), SlopConfig(root=str(tmp_path)),
+    )
+    assert result.status == "fail"
+    assert {v.file for v in result.violations} == {"deep.pain"}
 
 
 # ---------------------------------------------------------------------------
