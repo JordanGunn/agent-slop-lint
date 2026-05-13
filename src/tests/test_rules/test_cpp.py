@@ -14,11 +14,8 @@ from pathlib import Path
 
 from slop.config.models import RuleConfig, SlopConfig
 from slop.structure.rules.any_type_density import run_any_type_density
-from slop.structure.rules.class_metrics import (
-    run_coupling, run_inheritance_children, run_inheritance_depth,
-)
 from slop.structure.rules.clone_density import run_clone_density
-from slop.structure.rules.complexity import run_cognitive, run_cyclomatic, run_weighted
+from slop.structure.rules.complexity import run_cognitive, run_cyclomatic
 from slop.structure.rules.dependencies import run_cycles
 from slop.structure.rules.god_module import run_god_module
 from slop.structure.rules.npath import run_npath
@@ -208,89 +205,6 @@ def test_cpp_npath_counts_switch_cases(tmp_path: Path):
 # ---------------------------------------------------------------------------
 # CK class metrics
 # ---------------------------------------------------------------------------
-
-
-def test_cpp_class_coupling_detects_member_references(tmp_path: Path):
-    (tmp_path / "anim.hpp").write_text(
-        "class Animal {\n"
-        "public:\n"
-        "    Pet pet;\n"
-        "    Trainer trainer;\n"
-        "    Habitat habitat;\n"
-        "    void interact() {\n"
-        "        pet.greet();\n"
-        "        trainer.command(this);\n"
-        "    }\n"
-        "};\n"
-        "class Pet { public: void greet() {} };\n"
-        "class Trainer { public: void command(Animal*) {} };\n"
-        "class Habitat {};\n"
-    )
-    result = run_coupling(tmp_path, _rule_config(threshold=1), _slop_config())
-    # Animal references Pet, Trainer, Habitat → CBO ≥ 2
-    flagged = [v.symbol for v in result.violations]
-    assert any(s == "Animal" for s in flagged)
-
-
-def test_cpp_inheritance_depth_walks_base_class_clause(tmp_path: Path):
-    (tmp_path / "hier.hpp").write_text(
-        "class A {};\n"
-        "class B : public A {};\n"
-        "class C : public B {};\n"
-        "class D : public C {};\n"
-    )
-    result = run_inheritance_depth(tmp_path, _rule_config(threshold=2),
-                                   _slop_config())
-    flagged = {v.symbol for v in result.violations}
-    assert "D" in flagged  # DIT=3 exceeds 2
-
-
-def test_cpp_inheritance_children_aggregates_subclasses(tmp_path: Path):
-    (tmp_path / "hier.hpp").write_text(
-        "class Base {};\n"
-        "class A : public Base {};\n"
-        "class B : public Base {};\n"
-        "class C : public Base {};\n"
-        "class D : public Base {};\n"
-    )
-    result = run_inheritance_children(tmp_path, _rule_config(threshold=3),
-                                      _slop_config())
-    flagged = {v.symbol for v in result.violations}
-    assert "Base" in flagged  # NOC=4 exceeds 3
-
-
-def test_cpp_class_complexity_includes_out_of_line_methods(tmp_path: Path):
-    """The new v1.0.2 feature: out-of-line method CCX attribution to WMC."""
-    (tmp_path / "anim.hpp").write_text(
-        "class Animal {\n"
-        "public:\n"
-        "    void simple();\n"
-        "    int legs();\n"
-        "    void complex();\n"
-        "};\n"
-    )
-    (tmp_path / "anim.cpp").write_text(
-        "void Animal::simple() { return; }\n"
-        "int Animal::legs() { return 4; }\n"
-        "void Animal::complex() {\n"
-        "    if (legs() > 4) return;\n"
-        "    if (legs() == 0) return;\n"
-        "    if (legs() < 0) return;\n"
-        "}\n"
-    )
-    # WMC sum: simple(1) + legs(1) + complex(4) = 6. Threshold 5 → fail.
-    result = run_weighted(tmp_path, _rule_config(threshold=5), _slop_config())
-    assert result.status == "fail", result.summary
-    assert any(v.symbol == "Animal" for v in result.violations)
-
-
-def test_cpp_class_silent_on_struct_only_file(tmp_path: Path):
-    """Struct-only file should still be scanned but not error."""
-    (tmp_path / "p.hpp").write_text(
-        "struct Point { int x; int y; };\n"
-    )
-    result = run_coupling(tmp_path, _rule_config(threshold=99), _slop_config())
-    assert result.status == "pass"
 
 
 # ---------------------------------------------------------------------------

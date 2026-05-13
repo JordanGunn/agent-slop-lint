@@ -5,7 +5,7 @@ and ``arrow_function`` (free) from ``method_definition`` (class-bound).
 """
 from __future__ import annotations
 
-from typing import ClassVar
+from typing import Any, ClassVar
 
 from ..ast import Callable, Catch, Conditional, Identifier, Literal, Loop, Operator, Scope, Switch
 from ..multipurpose import MultiPurpose
@@ -102,3 +102,14 @@ class JavaScript(MultiPurpose):
             "template_string", "regex",
             "true", "false", "null", "undefined",
         })
+
+    @classmethod
+    def extract_superclasses(cls, node: Any, content: bytes) -> list[str]:
+        """JS: ``class Foo extends Bar`` — class_heritage with bare identifier."""
+        out: list[str] = []
+        for child in node.children:
+            if child.type == "class_heritage":
+                for c in child.children:
+                    if c.type == "identifier":
+                        out.append(content[c.start_byte:c.end_byte].decode("utf-8", errors="replace"))
+        return out

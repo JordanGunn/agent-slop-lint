@@ -1,7 +1,7 @@
 """Python grammar — class-and-function-emitting, multi-paradigm."""
 from __future__ import annotations
 
-from typing import ClassVar
+from typing import Any, ClassVar
 
 from ..ast import Callable, Catch, Conditional, Literal, Loop, Operator, Scope, Switch
 from ..multipurpose import MultiPurpose
@@ -87,3 +87,18 @@ class Python(MultiPurpose):
             "identifier", "integer", "float", "string",
             "true", "false", "none", "type",
         })
+
+    @classmethod
+    def extract_superclasses(cls, node: Any, content: bytes) -> list[str]:
+        """Python: ``class Foo(Bar, Mixin):`` — superclasses field."""
+        sc_node = node.child_by_field_name("superclasses")
+        if sc_node is None:
+            return []
+        out: list[str] = []
+        for child in sc_node.children:
+            if child.type == "identifier":
+                out.append(content[child.start_byte:child.end_byte].decode("utf-8", errors="replace"))
+            elif child.type == "attribute":
+                text = content[child.start_byte:child.end_byte].decode("utf-8", errors="replace")
+                out.append(text.split(".")[-1])
+        return out

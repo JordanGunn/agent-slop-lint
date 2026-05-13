@@ -39,6 +39,8 @@ class Structure:
         self._callables_by_key: dict[tuple[str, str], Callable] = {}
         self._node_by_key: dict[tuple[str, str], Any] = {}
         self._content_by_key: dict[tuple[str, str], bytes] = {}
+        # Class scope → AST node (for CK metrics + future scope-aware rules).
+        self._scope_node_by_key: dict[tuple[str, str], Any] = {}
 
         for p in parses:
             self._language_by_path[str(p.path)] = p.language
@@ -48,6 +50,9 @@ class Structure:
                 if c.qualname in p.callable_nodes:
                     self._node_by_key[key] = p.callable_nodes[c.qualname]
                     self._content_by_key[key] = p.content
+            for s in p.scopes:
+                if s.qualname in p.scope_nodes:
+                    self._scope_node_by_key[(str(s.path), s.qualname)] = p.scope_nodes[s.qualname]
 
     # ---- iteration ---------------------------------------------------
 
@@ -180,6 +185,137 @@ class Structure:
             lang.callable(),
             content,
         )
+
+    # ---- class-level (CK) compute methods ----------------------------
+
+    _CLASS_KINDS: frozenset = frozenset({
+        ScopeKind.CLASS, ScopeKind.INTERFACE, ScopeKind.STRUCT,
+        ScopeKind.TRAIT, ScopeKind.IMPL,
+    })
+
+    def classes(self) -> Iterable[Scope]:
+        """Iterate scopes whose kind is class-like (CLASS/INTERFACE/STRUCT/TRAIT/IMPL)."""
+        for s in self.scopes():
+            if s.kind in self._CLASS_KINDS:
+                yield s
+
+    def methods_of(self, class_scope: Scope) -> Iterable[Callable]:
+        """Iterate methods (callables) declared directly inside ``class_scope``."""
+        for c in self.callables():
+            if c.parent == class_scope.qualname and c.kind == CallableKind.METHOD:
+                yield c
+
+    def superclasses_of(self, class_scope: Scope) -> list[str]:
+        """Extract parent-class names declared on ``class_scope``.
+
+        Delegates to ``Language.extract_superclasses`` for the class's
+        grammar. Returns an empty list for grammars without inheritance
+        (Go, Rust, C, Julia) or class nodes without parents.
+        """
+        language_id = self._language_by_path.get(str(class_scope.path))
+        if language_id is None:
+            return []
+        lang = LANGUAGE_BY_ID.get(language_id)
+        if lang is None:
+            return []
+        key = (str(class_scope.path), class_scope.qualname)
+        node = self._scope_node_by_key.get(key)
+        if node is None:
+            return []
+        for p in self._parses:
+            if str(p.path) == str(class_scope.path):
+                return lang.extract_superclasses(node, p.content)
+        return []
+
+    def weighted_methods(self, class_scope: Scope) -> int:
+        """WMC — sum of cyclomatic complexity over the class's methods (CK 1994)."""
+        total = 0
+        for m in self.methods_of(class_scope):
+            total += self.cyclomatic(m)
+        return total
+
+    def coupling(self, class_scope: Scope, known_classes: frozenset[str]) -> int:
+        """CBO — distinct outbound class references from a class body (CK 1994).
+
+        Walks the class body collecting PascalCase identifier-like
+        tokens, intersects with ``known_classes`` (the set of class
+        names visible in the corpus), adds declared superclasses that
+        are known, excludes self.
+        """
+        language_id = self._language_by_path.get(str(class_scope.path))
+        if language_id is None:
+            return 0
+        lang = LANGUAGE_BY_ID.get(language_id)
+        if lang is None:
+            return 0
+        key = (str(class_scope.path), class_scope.qualname)
+        node = self._scope_node_by_key.get(key)
+        if node is None:
+            return 0
+        content = b""
+        for p in self._parses:
+            if str(p.path) == str(class_scope.path):
+                content = p.content
+                break
+        ident_types = lang.identifiers()
+        refs: set[str] = set()
+        stack = [node]
+        while stack:
+            cur = stack.pop()
+            if cur is not node and cur.type in lang.classes():
+                # Don't descend into nested classes — they get their own metric.
+                continue
+            if cur.type in ident_types:
+                text = content[cur.start_byte:cur.end_byte].decode("utf-8", errors="replace")
+                if text and text[0].isupper():
+                    refs.add(text)
+            for child in reversed(cur.children):
+                stack.append(child)
+        refs &= known_classes
+        for sc in lang.extract_superclasses(node, content):
+            if sc in known_classes:
+                refs.add(sc)
+        simple = class_scope.qualname.split(".")[-1]
+        refs.discard(simple)
+        return len(refs)
+
+    def inheritance_depth(
+        self, class_scope: Scope, parent_map: dict[str, list[str]], known: frozenset[str],
+    ) -> int:
+        """DIT — depth of inheritance tree from this class (CK 1994).
+
+        ``parent_map`` is a precomputed mapping of simple class name →
+        list of declared parent names (caller builds it once across the
+        corpus). ``known`` is the set of class names present in the
+        corpus; only known parents contribute to depth (unknown
+        parents are external references). Cycle-safe.
+        """
+        visited: set[str] = set()
+        max_depth = 0
+
+        def walk(current: str, depth: int) -> None:
+            nonlocal max_depth
+            if current in visited:
+                return
+            visited.add(current)
+            if depth > max_depth:
+                max_depth = depth
+            for parent in parent_map.get(current, []):
+                if parent in known:
+                    walk(parent, depth + 1)
+
+        walk(class_scope.qualname.split(".")[-1], 0)
+        return max_depth
+
+    def subclasses_count(
+        self, class_scope: Scope, children_map: dict[str, list[str]],
+    ) -> int:
+        """NOC — direct subclass count (CK 1994).
+
+        ``children_map`` maps simple class name → list of simple names
+        of classes that declare it as a parent. Caller builds it once.
+        """
+        return len(children_map.get(class_scope.qualname.split(".")[-1], []))
 
     # ---- slicing -----------------------------------------------------
 

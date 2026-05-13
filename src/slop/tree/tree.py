@@ -115,6 +115,7 @@ class Tree:
         callables: list[Callable] = []
         occurrences: list[Occurrence] = []
         callable_nodes: dict[str, Any] = {}
+        scope_nodes: dict[str, Any] = {}
 
         # File-level scope (single-file-as-module convention).
         file_qualname = path.stem if path.stem != "__init__" else (path.parent.name or "<root>")
@@ -154,6 +155,7 @@ class Tree:
             callables=callables,
             occurrences=occurrences,
             callable_nodes=callable_nodes,
+            scope_nodes=scope_nodes,
         )
 
         return ParseResult(
@@ -163,6 +165,7 @@ class Tree:
             callables=tuple(callables),
             occurrences=tuple(occurrences),
             callable_nodes=callable_nodes,
+            scope_nodes=scope_nodes,
             content=content,
         )
 
@@ -183,6 +186,7 @@ class Tree:
         callables: list[Callable],
         occurrences: list[Occurrence],
         callable_nodes: dict[str, Any],
+        scope_nodes: dict[str, Any],
     ) -> None:
         """Invariant DFS — uses grammar classmethods for per-language tests."""
         ntype = node.type
@@ -202,6 +206,7 @@ class Tree:
                     parent=".".join(qualname_parts) if qualname_parts else None,
                 )
             )
+            scope_nodes[qn] = node
             new_parts = (*qualname_parts, name)
             new_in_class = True
 
@@ -255,6 +260,7 @@ class Tree:
                 callables=callables,
                 occurrences=occurrences,
                 callable_nodes=callable_nodes,
+                scope_nodes=scope_nodes,
             )
 
     # ---- views -------------------------------------------------------

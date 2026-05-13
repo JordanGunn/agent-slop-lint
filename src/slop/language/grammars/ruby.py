@@ -70,6 +70,24 @@ class Ruby(MultiPurpose):
         })
 
     @classmethod
+    def extract_superclasses(cls, node: Any, content: bytes) -> list[str]:
+        """Ruby: ``class Dog < Animal`` — superclass child.
+
+        Modules have no superclass concept. Mixins (``include MyMod``)
+        are body call-statements and are NOT counted as inheritance for
+        DIT — Ruby convention treats them as composition (the CBO
+        metric captures the coupling).
+        """
+        if node.type == "module":
+            return []
+        for child in node.children:
+            if child.type == "superclass":
+                for sub in child.children:
+                    if sub.type == "constant":
+                        return [content[sub.start_byte:sub.end_byte].decode("utf-8", errors="replace")]
+        return []
+
+    @classmethod
     def operator_nodes(cls) -> frozenset[str]:
         return frozenset({
             # Keywords

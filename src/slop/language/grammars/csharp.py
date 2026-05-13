@@ -1,7 +1,7 @@
 """C# grammar — class-only (no top-level free functions historically)."""
 from __future__ import annotations
 
-from typing import ClassVar
+from typing import Any, ClassVar
 
 from ..ast import Callable, Catch, Conditional, Literal, Loop, Operator, Scope, Switch
 from ..objectoriented import ObjectOriented
@@ -89,3 +89,14 @@ class CSharp(ObjectOriented):
             "character_literal",
             "true", "false", "null",
         })
+
+    @classmethod
+    def extract_superclasses(cls, node: Any, content: bytes) -> list[str]:
+        """C#: ``base_list`` child holds identifier classes + interfaces."""
+        out: list[str] = []
+        for child in node.children:
+            if child.type == "base_list":
+                for gc in child.children:
+                    if gc.type == "identifier":
+                        out.append(content[gc.start_byte:gc.end_byte].decode("utf-8", errors="replace"))
+        return out

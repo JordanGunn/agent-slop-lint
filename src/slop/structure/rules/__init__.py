@@ -17,9 +17,14 @@ from slop.linter.types import RuleDefinition
 
 from .any_type_density import run_any_type_density
 from .architecture import run_distance
-from .class_metrics import run_coupling, run_inheritance_children, run_inheritance_depth
+from .class_metrics import (
+    run_coupling_v2,
+    run_inheritance_children_v2,
+    run_inheritance_depth_v2,
+    run_weighted_v2,
+)
 from .clone_density import run_clone_density
-from .complexity import run_cognitive_v2, run_cyclomatic_v2, run_weighted
+from .complexity import run_cognitive_v2, run_cyclomatic_v2
 from .dependencies import run_cycles
 from .god_module import run_god_module_v2
 from .halstead import run_density_v2, run_volume_v2
@@ -67,7 +72,7 @@ STRUCTURAL_RULES: list[RuleDefinition] = [
         default_severity="error",
         default_enabled=True,
         threshold_label="WMC > 40",
-        run=legacy_v2_shim(run_weighted),
+        run=run_weighted_v2,
     ),
     RuleDefinition(
         name="structural.class.coupling",
@@ -76,7 +81,7 @@ STRUCTURAL_RULES: list[RuleDefinition] = [
         default_severity="error",
         default_enabled=True,
         threshold_label="CBO > 8",
-        run=legacy_v2_shim(run_coupling),
+        run=run_coupling_v2,
     ),
     RuleDefinition(
         name="structural.class.inheritance.depth",
@@ -85,7 +90,7 @@ STRUCTURAL_RULES: list[RuleDefinition] = [
         default_severity="error",
         default_enabled=True,
         threshold_label="DIT > 4",
-        run=legacy_v2_shim(run_inheritance_depth),
+        run=run_inheritance_depth_v2,
     ),
     RuleDefinition(
         name="structural.class.inheritance.children",
@@ -94,7 +99,7 @@ STRUCTURAL_RULES: list[RuleDefinition] = [
         default_severity="error",
         default_enabled=True,
         threshold_label="NOC > 10",
-        run=legacy_v2_shim(run_inheritance_children),
+        run=run_inheritance_children_v2,
     ),
 
     # --- structural.packages (Martin Distance) ---

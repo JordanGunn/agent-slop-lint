@@ -211,6 +211,28 @@ class Language(ABC):
         return frozenset()
 
     @classmethod
+    def extract_superclasses(cls, node: Any, content: bytes) -> list[str]:
+        """Extract base-class / interface names from a class-shaped node.
+
+        Each grammar exposes inheritance differently: Python's
+        ``superclasses`` field; Java's ``superclass`` field plus
+        ``interfaces`` for implements; C#'s ``base_list`` child;
+        TypeScript's ``class_heritage`` with ``extends_clause`` and
+        ``implements_clause``; C++'s ``base_class_clause`` direct
+        child; Ruby's positional identifier after ``<``; Go and Rust
+        use struct + receiver / impl-based pseudo-inheritance handled
+        separately (default empty list for those).
+
+        Consumed by CK class metrics (WMC sums method CCX,
+        CBO references inheritance, DIT walks parent chain, NOC
+        counts subclasses). Default returns empty list — grammars
+        without inheritance contribute 0 to DIT / NOC and don't
+        boost CBO via parent links.
+        """
+        del node, content  # default no-op; concrete grammars override
+        return []
+
+    @classmethod
     def extract_parameters(cls, node: Any, content: bytes) -> tuple[Parameter, ...]:
         """Extract parameters from a callable definition node.
 

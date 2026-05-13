@@ -4,7 +4,7 @@ Like JavaScript, syntactically distinguishes function/method node types.
 """
 from __future__ import annotations
 
-from typing import ClassVar
+from typing import Any, ClassVar
 
 from ..ast import Callable, Catch, Conditional, Identifier, Literal, Loop, Operator, Scope, Switch
 from ..multipurpose import MultiPurpose
@@ -105,3 +105,16 @@ class TypeScript(MultiPurpose):
             "template_string", "regex",
             "true", "false", "null", "undefined",
         })
+
+    @classmethod
+    def extract_superclasses(cls, node: Any, content: bytes) -> list[str]:
+        """TS: ``class_heritage`` with ``extends_clause`` and ``implements_clause``."""
+        out: list[str] = []
+        for child in node.children:
+            if child.type == "class_heritage":
+                for clause in child.children:
+                    if clause.type in ("extends_clause", "implements_clause"):
+                        for c in clause.children:
+                            if c.type in ("type_identifier", "identifier"):
+                                out.append(content[c.start_byte:c.end_byte].decode("utf-8", errors="replace"))
+        return out

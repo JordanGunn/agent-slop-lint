@@ -1,7 +1,7 @@
 """Java grammar — class-only (no free functions; `static` lives in a class)."""
 from __future__ import annotations
 
-from typing import ClassVar
+from typing import Any, ClassVar
 
 from ..ast import Callable, Catch, Conditional, Literal, Loop, Operator, Scope, Switch
 from ..objectoriented import ObjectOriented
@@ -94,3 +94,23 @@ class Java(ObjectOriented):
             "character_literal",
             "true", "false", "null",
         })
+
+    @classmethod
+    def extract_superclasses(cls, node: Any, content: bytes) -> list[str]:
+        """Java: ``superclass`` field for extends + ``interfaces`` for implements."""
+        out: list[str] = []
+        sc = node.child_by_field_name("superclass")
+        if sc is not None:
+            for child in sc.children:
+                if child.type == "type_identifier":
+                    out.append(content[child.start_byte:child.end_byte].decode("utf-8", errors="replace"))
+        ifaces = node.child_by_field_name("interfaces")
+        if ifaces is not None:
+            for child in ifaces.children:
+                if child.type == "type_list":
+                    for tc in child.children:
+                        if tc.type == "type_identifier":
+                            out.append(content[tc.start_byte:tc.end_byte].decode("utf-8", errors="replace"))
+                elif child.type == "type_identifier":
+                    out.append(content[child.start_byte:child.end_byte].decode("utf-8", errors="replace"))
+        return out

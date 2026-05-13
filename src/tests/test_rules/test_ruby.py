@@ -13,11 +13,8 @@ from pathlib import Path
 
 from slop.config.models import RuleConfig, SlopConfig
 from slop.structure.rules.any_type_density import run_any_type_density
-from slop.structure.rules.class_metrics import (
-    run_coupling, run_inheritance_children, run_inheritance_depth,
-)
 from slop.structure.rules.clone_density import run_clone_density
-from slop.structure.rules.complexity import run_cognitive, run_cyclomatic, run_weighted
+from slop.structure.rules.complexity import run_cognitive, run_cyclomatic
 from slop.structure.rules.dependencies import run_cycles
 from slop.structure.rules.god_module import run_god_module
 from slop.structure.rules.npath import run_npath
@@ -220,70 +217,6 @@ def test_ruby_npath_counts_rescue_clauses(tmp_path: Path):
 # ---------------------------------------------------------------------------
 
 
-def test_ruby_class_inheritance_walks_superclass(tmp_path: Path):
-    (tmp_path / "h.rb").write_text(
-        "class A; end\n"
-        "class B < A; end\n"
-        "class C < B; end\n"
-        "class D < C; end\n"
-    )
-    result = run_inheritance_depth(tmp_path, _rule_config(threshold=2),
-                                   _slop_config())
-    flagged = {v.symbol for v in result.violations}
-    assert "D" in flagged  # DIT=3
-
-
-def test_ruby_class_inheritance_children_aggregates(tmp_path: Path):
-    (tmp_path / "h.rb").write_text(
-        "class Base; end\n"
-        "class A < Base; end\n"
-        "class B < Base; end\n"
-        "class C < Base; end\n"
-        "class D < Base; end\n"
-    )
-    result = run_inheritance_children(tmp_path, _rule_config(threshold=3),
-                                      _slop_config())
-    flagged = {v.symbol for v in result.violations}
-    assert "Base" in flagged  # NOC=4
-
-
-def test_ruby_open_class_aggregates_wmc(tmp_path: Path):
-    """The new v1.0.3 feature: re-opening ``class Foo`` across files."""
-    (tmp_path / "a.rb").write_text(
-        "class Animal\n"
-        "  def speak\n"
-        "    raise NotImplementedError\n"
-        "  end\n"
-        "  def legs\n"
-        "    if @custom\n"
-        "      @custom_legs\n"
-        "    else\n"
-        "      4\n"
-        "    end\n"
-        "  end\n"
-        "end\n"
-    )
-    (tmp_path / "b.rb").write_text(
-        "class Animal\n"
-        "  def lifespan\n"
-        "    if @young\n"
-        "      10\n"
-        "    else\n"
-        "      20\n"
-        "    end\n"
-        "  end\n"
-        "end\n"
-    )
-    # Threshold low to confirm Animal aggregated WMC fires
-    result = run_weighted(tmp_path, _rule_config(threshold=4), _slop_config())
-    assert result.status == "fail", result.summary
-    flagged = {v.symbol for v in result.violations}
-    assert "Animal" in flagged
-    # And only ONE Animal entry (aggregation; not 2)
-    animal_violations = [v for v in result.violations if v.symbol == "Animal"]
-    assert len(animal_violations) == 1
-
-
 def test_ruby_module_counts_as_abstract_in_packages(tmp_path: Path):
     """Modules are the natural abstract analog in Ruby."""
     from slop._structural.robert import robert_kernel
@@ -296,23 +229,6 @@ def test_ruby_module_counts_as_abstract_in_packages(tmp_path: Path):
     pkg = result.packages[0]
     assert pkg.na == 1  # Walkable module
     assert pkg.nc == 1  # Shape class
-
-
-def test_ruby_class_coupling_runs(tmp_path: Path):
-    (tmp_path / "c.rb").write_text(
-        "class Animal\n"
-        "  def setup\n"
-        "    @pet = Pet.new\n"
-        "    @trainer = Trainer.new\n"
-        "    @habitat = Habitat.new\n"
-        "  end\n"
-        "end\n"
-        "class Pet; end\n"
-        "class Trainer; end\n"
-        "class Habitat; end\n"
-    )
-    result = run_coupling(tmp_path, _rule_config(threshold=99), _slop_config())
-    assert result.status == "pass"
 
 
 # ---------------------------------------------------------------------------

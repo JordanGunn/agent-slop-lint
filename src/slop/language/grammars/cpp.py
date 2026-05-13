@@ -79,6 +79,29 @@ class Cpp(MultiPurpose):
         return frozenset({Literal.NUMBER_LITERAL})
 
     @classmethod
+    def extract_superclasses(cls, node: Any, content: bytes) -> list[str]:
+        """C++: ``base_class_clause`` direct child holds parent type names.
+
+        ``class Dog : public Animal, private Pet`` → ['Animal', 'Pet'].
+        Qualified names (``std::exception``) keep only the last segment.
+        """
+        out: list[str] = []
+        for child in node.children:
+            if child.type != "base_class_clause":
+                continue
+            for sub in child.children:
+                if sub.type == "type_identifier":
+                    out.append(content[sub.start_byte:sub.end_byte].decode("utf-8", errors="replace"))
+                elif sub.type == "qualified_identifier":
+                    last = None
+                    for c in sub.children:
+                        if c.type in ("identifier", "type_identifier"):
+                            last = c
+                    if last is not None:
+                        out.append(content[last.start_byte:last.end_byte].decode("utf-8", errors="replace"))
+        return out
+
+    @classmethod
     def operator_nodes(cls) -> frozenset[str]:
         return frozenset({
             # C keywords (carry over)

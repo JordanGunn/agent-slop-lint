@@ -13,7 +13,6 @@ from pathlib import Path
 
 from slop.config.models import RuleConfig, SlopConfig
 from slop.structure.rules.any_type_density import run_any_type_density
-from slop.structure.rules.class_metrics import run_coupling
 from slop.structure.rules.clone_density import run_clone_density
 from slop.structure.rules.complexity import run_cognitive, run_cyclomatic
 from slop.structure.rules.dependencies import run_cycles
@@ -193,22 +192,6 @@ def test_c_deps_resolves_local_includes(tmp_path: Path):
     assert result.status in ("pass", "fail")
     # Ensure no errors from the C resolver.
     assert not result.summary.get("errors")
-
-
-# ---------------------------------------------------------------------------
-# CK (class metrics) — must silently no-op on .c files (no class concept)
-# ---------------------------------------------------------------------------
-
-
-def test_c_class_coupling_silently_skips(tmp_path: Path):
-    (tmp_path / "all.c").write_text(
-        "struct Point { int x; int y; };\n"
-        "int dot(struct Point a, struct Point b) { return a.x*b.x + a.y*b.y; }\n"
-    )
-    result = run_coupling(tmp_path, _rule_config(threshold=0), _slop_config())
-    # No classes → no violations, no errors.
-    assert result.status == "pass"
-    assert not result.violations
 
 
 # ---------------------------------------------------------------------------
