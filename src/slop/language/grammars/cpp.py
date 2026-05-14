@@ -114,6 +114,45 @@ class Cpp(MultiPurpose):
         return frozenset({Block.COMPOUND_STATEMENT})
 
     @classmethod
+    def call_node_types(cls) -> frozenset[str]:
+        return frozenset({"call_expression"})
+
+    @classmethod
+    def extract_callee_name(cls, call_node: Any, content: bytes) -> str | None:
+        fn = call_node.child_by_field_name("function")
+        if fn is None:
+            return None
+        if fn.type == "identifier":
+            return content[fn.start_byte:fn.end_byte].decode("utf-8", errors="replace")
+        if fn.type == "field_expression":
+            field = fn.child_by_field_name("field")
+            if field is not None and field.type in ("identifier", "field_identifier"):
+                return content[field.start_byte:field.end_byte].decode("utf-8", errors="replace")
+        if fn.type == "qualified_identifier":
+            last = None
+            for c in fn.children:
+                if c.type == "identifier":
+                    last = c
+            if last is not None:
+                return content[last.start_byte:last.end_byte].decode("utf-8", errors="replace")
+        return None
+
+    @classmethod
+    def trivial_callees(cls) -> frozenset[str]:
+        # Inherits the C stdlib filter (C/C++ usually mix) plus the
+        # most common std:: free functions and container methods that
+        # otherwise show up in nearly every body.
+        from .c import C as _C
+        return _C.trivial_callees() | frozenset({
+            "make_unique", "make_shared", "move", "forward",
+            "begin", "end", "cbegin", "cend", "rbegin", "rend",
+            "size", "empty", "front", "back", "push_back", "pop_back",
+            "emplace", "emplace_back", "insert", "erase", "find", "count",
+            "data", "clear", "reserve", "resize",
+            "to_string", "stoi", "stol", "stof", "stod",
+        })
+
+    @classmethod
     def import_queries(cls) -> tuple[tuple[str, str], ...]:
         # tree-sitter-cpp inherits C's preprocessor node types.
         return (

@@ -292,6 +292,48 @@ class Language(ABC):
         """
         return None
 
+    # ---- Call-site vocabulary --------------------------------------
+    # Per-language identification of function calls — the node type
+    # representing a call expression plus a per-language extractor for
+    # the callee name. Consumed by ``Structure.callees_of`` which feeds
+    # ``structural.redundancy`` (sibling-callee overlap detection) and
+    # any future caller-graph analysis.
+
+    @classmethod
+    def call_node_types(cls) -> frozenset[str]:
+        """Tree-sitter node types representing a function / method call.
+
+        Most C-family grammars emit ``call_expression``; Python emits
+        ``call``; Ruby emits ``call`` (and also implicit calls via bare
+        identifiers, not counted here). Default empty — grammars
+        without an override contribute no callee data.
+        """
+        return frozenset()
+
+    @classmethod
+    def extract_callee_name(cls, call_node: Any, content: bytes) -> str | None:
+        """Extract the textual name of the function being called.
+
+        Returns the final identifier of the callee — for ``obj.method()``
+        returns ``method``; for ``ns::fn()`` returns ``fn``; for
+        ``ptr->fn()`` returns ``fn``. Returns ``None`` for unsupported
+        call shapes (e.g. call expressions on indexed access). Grammars
+        without an override return ``None`` for every call.
+        """
+        del call_node, content
+        return None
+
+    @classmethod
+    def trivial_callees(cls) -> frozenset[str]:
+        """Callee names that should be filtered before overlap analysis.
+
+        Per-language stdlib / built-in names that show up in many
+        function bodies and would create spurious sibling-call overlap.
+        Universal filters (length < 3, dunder names) are applied
+        separately by ``Structure.callees_of``.
+        """
+        return frozenset()
+
     # ---- Package architecture vocabulary ----------------------------
     # Per-language signals consumed by ``Structure.packages`` (Martin
     # 1994 distance from the main sequence): abstractness classification

@@ -150,6 +150,38 @@ class Python(MultiPurpose):
         return out
 
     @classmethod
+    def call_node_types(cls) -> frozenset[str]:
+        return frozenset({"call"})
+
+    @classmethod
+    def extract_callee_name(cls, call_node: Any, content: bytes) -> str | None:
+        fn_child = call_node.child_by_field_name("function")
+        if fn_child is None:
+            return None
+        if fn_child.type == "identifier":
+            return content[fn_child.start_byte:fn_child.end_byte].decode("utf-8", errors="replace")
+        if fn_child.type == "attribute":
+            attr = fn_child.child_by_field_name("attribute")
+            if attr is not None:
+                return content[attr.start_byte:attr.end_byte].decode("utf-8", errors="replace")
+        return None
+
+    @classmethod
+    def trivial_callees(cls) -> frozenset[str]:
+        return frozenset({
+            "print", "len", "range", "sorted", "reversed", "enumerate", "zip",
+            "map", "filter", "any", "all", "sum", "min", "max", "abs", "round",
+            "list", "dict", "set", "tuple", "str", "int", "float", "bool",
+            "isinstance", "issubclass", "type", "id", "hash", "repr", "getattr",
+            "setattr", "hasattr", "delattr", "callable", "iter", "next",
+            "open", "input", "super", "vars", "dir", "locals", "globals",
+            "staticmethod", "classmethod", "property",
+            "Exception", "ValueError", "TypeError", "KeyError", "IndexError",
+            "AttributeError", "RuntimeError", "StopIteration", "NotImplementedError",
+            "True", "False", "None",
+        })
+
+    @classmethod
     def is_abstract_scope(cls, node: Any, content: bytes) -> bool | None:
         """A class inheriting from ABC / Protocol / ABCMeta is abstract.
 

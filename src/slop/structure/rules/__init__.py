@@ -31,7 +31,7 @@ from .god_module import run_god_module_v2
 from .halstead import run_density_v2, run_volume_v2
 from .magic_literals import run_magic_literals_v2
 from .out_parameters import run_out_parameters
-from .sibling_calls import run_sibling_call_redundancy
+from .redundancy import run_redundancy
 from .stringly_typed import run_stringly_typed
 
 STRUCTURAL_RULES: list[RuleDefinition] = [
@@ -141,7 +141,7 @@ STRUCTURAL_RULES: list[RuleDefinition] = [
         default_severity="warning",
         default_enabled=True,
         threshold_label="≥ 3 shared",
-        run=legacy_v2_shim(run_sibling_call_redundancy),
+        run=run_redundancy,
     ),
 
     # --- structural.types.sentinels (sentinel str parameters) ---

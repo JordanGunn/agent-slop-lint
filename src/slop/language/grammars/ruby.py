@@ -118,6 +118,37 @@ class Ruby(MultiPurpose):
         })
 
     @classmethod
+    def call_node_types(cls) -> frozenset[str]:
+        return frozenset({"call"})
+
+    @classmethod
+    def extract_callee_name(cls, call_node: Any, content: bytes) -> str | None:
+        method = call_node.child_by_field_name("method")
+        if method is not None and method.type in ("identifier", "constant"):
+            return content[method.start_byte:method.end_byte].decode("utf-8", errors="replace")
+        return None
+
+    @classmethod
+    def trivial_callees(cls) -> frozenset[str]:
+        return frozenset({
+            "puts", "print", "pp", "raise",
+            "require", "require_relative", "load",
+            "attr_reader", "attr_writer", "attr_accessor",
+            "include", "extend", "prepend",
+            "lambda", "proc", "new",
+            "to_s", "to_i", "to_a", "to_h", "to_sym",
+            "inspect", "send", "public_send",
+            "freeze", "dup", "clone",
+            "kind_of?", "is_a?", "respond_to?", "nil?", "empty?",
+            "each", "map", "select", "reject", "reduce", "inject",
+            "find", "any?", "all?", "none?", "first", "last",
+            "size", "length", "count", "include?",
+            "push", "pop", "shift", "unshift",
+            "sort", "sort_by", "uniq", "flatten",
+            "keys", "values", "fetch",
+        })
+
+    @classmethod
     def is_abstract_scope(cls, node: Any, content: bytes) -> bool | None:
         """A Ruby ``module`` is abstract (can't be instantiated); a ``class`` is concrete."""
         del content

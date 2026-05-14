@@ -30,6 +30,24 @@ class Import:
 
 
 @dataclass(frozen=True)
+class RedundancyPair:
+    """Two sibling top-level callables with overlapping callee sets.
+
+    ``score = |shared| / max(|callees_a|, |callees_b|)``. Both fn_a
+    and fn_b live in the same file; the rule reports the pair as one
+    finding anchored on fn_a's location.
+    """
+
+    file: str
+    fn_a: str
+    fn_b: str
+    fn_a_line: int
+    fn_b_line: int
+    shared_callees: tuple[str, ...]
+    score: float
+
+
+@dataclass(frozen=True)
 class CloneMember:
     """One callable that belongs to a Type-2 clone cluster.
 

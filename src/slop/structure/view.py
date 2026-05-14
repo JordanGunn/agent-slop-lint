@@ -468,6 +468,37 @@ class Structure:
 
         return compute_packages(self, _Path(root))
 
+    def callees_of(self, callable_record):
+        """Non-trivial callee names extracted from one callable's body.
+
+        Walks the callable's AST body looking for call-expression
+        nodes (per the grammar's ``call_node_types``), pulls the
+        callee name via ``extract_callee_name``, and filters out
+        per-grammar trivial callees plus universal noise (length < 3,
+        dunder names). Returns a frozenset.
+        """
+        from slop.structure._redundancy import callees_of
+
+        return callees_of(self, callable_record)
+
+    def redundant_siblings(
+        self, *, min_shared: int = 3, min_score: float = 0.5,
+    ):
+        """Pairs of sibling top-level callables with overlapping callee sets.
+
+        Refactoring signal: when two peer functions both call the same
+        helpers, either a shared helper should encapsulate the common
+        calls, or one is a partial copy of the other. Walks callables
+        per file, computes pairwise callee-set intersections, and
+        emits a ``RedundancyPair`` per pair whose ``|shared| >= min_shared``
+        AND whose ``score >= min_score``.
+        """
+        from slop.structure._redundancy import compute_redundancy
+
+        return compute_redundancy(
+            self, min_shared=min_shared, min_score=min_score,
+        )
+
     def clones(self, *, min_leaf_nodes: int = 10):
         """Type-2 clone clusters — callables sharing an AST leaf-type fingerprint.
 

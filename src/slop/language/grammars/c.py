@@ -85,6 +85,35 @@ class C(Procedural):
         return frozenset({Block.COMPOUND_STATEMENT})
 
     @classmethod
+    def call_node_types(cls) -> frozenset[str]:
+        return frozenset({"call_expression"})
+
+    @classmethod
+    def extract_callee_name(cls, call_node: Any, content: bytes) -> str | None:
+        fn = call_node.child_by_field_name("function")
+        if fn is not None and fn.type == "identifier":
+            return content[fn.start_byte:fn.end_byte].decode("utf-8", errors="replace")
+        return None
+
+    @classmethod
+    def trivial_callees(cls) -> frozenset[str]:
+        return frozenset({
+            "malloc", "calloc", "realloc", "free", "alloca",
+            "memcpy", "memmove", "memset", "memcmp",
+            "strlen", "strcpy", "strncpy", "strcat", "strncat",
+            "strcmp", "strncmp", "strdup", "strchr", "strrchr",
+            "strstr", "strtok", "strerror",
+            "printf", "fprintf", "sprintf", "snprintf", "vprintf",
+            "scanf", "fscanf", "sscanf",
+            "fopen", "fclose", "fread", "fwrite", "fseek", "ftell",
+            "fgets", "fputs", "fgetc", "fputc", "feof", "fflush", "ferror",
+            "atoi", "atol", "atoll", "atof",
+            "abort", "exit", "_exit", "atexit",
+            "getenv", "setenv", "unsetenv",
+            "assert", "perror", "errno",
+        })
+
+    @classmethod
     def import_queries(cls) -> tuple[tuple[str, str], ...]:
         return (
             (

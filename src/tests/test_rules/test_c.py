@@ -20,7 +20,7 @@ from slop.structure.rules.dependencies import run_cycles
 from slop.structure.rules.god_module import run_god_module
 from slop.structure.rules.out_parameters import run_out_parameters
 from slop.tree.tree import Tree
-from slop.structure.rules.sibling_calls import run_sibling_call_redundancy
+from slop.structure.rules.redundancy import run_redundancy
 from slop.structure.rules.stringly_typed import run_stringly_typed
 from slop.lexicon.rules.stutter import run_stutter
 from slop.lexicon.rules.verbosity import run_verbosity
@@ -323,7 +323,7 @@ def test_c_sibling_calls_detect_shared_callees(tmp_path: Path):
         "    return 0;\n"
         "}\n"
     )
-    result = run_sibling_call_redundancy(tmp_path, _rule_config(min_shared=3),
-                                         _slop_config())
-    # Two sibling functions sharing 3 callees → flagged
+    t = Tree(tmp_path)
+    t.scan()
+    result = run_redundancy(t.structure, _rule_config(min_shared=3), _slop_config())
     assert result.status == "fail"
