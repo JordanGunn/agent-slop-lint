@@ -185,7 +185,7 @@ STRUCTURAL_RULES: list[RuleDefinition] = [
         default_severity="warning",
         default_enabled=True,
         threshold_label="> 5%",
-        run=legacy_v2_shim(run_clone_density),
+        run=run_clone_density,
     ),
 
     # --- structural.god_module (breadth of top-level definitions) ---

@@ -468,6 +468,24 @@ class Structure:
 
         return compute_packages(self, _Path(root))
 
+    def clones(self, *, min_leaf_nodes: int = 10):
+        """Type-2 clone clusters — callables sharing an AST leaf-type fingerprint.
+
+        Identifier names and literal values are discarded; only the
+        structural shape of the body subtree is fingerprinted. The
+        body subtree is found via each grammar's ``block_types()``
+        vocabulary. Functions whose leaf count is below
+        ``min_leaf_nodes`` are excluded — trivial bodies (``pass``,
+        ``return``) produce noise.
+
+        Returns a ``CloneReport`` carrying clone clusters (size >= 2),
+        the total number of callables analyzed, and the corpus-level
+        clone fraction (cloned callables / total callables).
+        """
+        from slop.structure._clones import compute_clones
+
+        return compute_clones(self, min_leaf_nodes=min_leaf_nodes)
+
     def dependency_cycles(self) -> list[list[str]]:
         """Import cycles in the corpus (Tarjan 1972 SCC on the resolved graph).
 

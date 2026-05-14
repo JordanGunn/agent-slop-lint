@@ -30,6 +30,44 @@ class Import:
 
 
 @dataclass(frozen=True)
+class CloneMember:
+    """One callable that belongs to a Type-2 clone cluster.
+
+    ``file`` is the absolute file path (callers may normalise to
+    relative for display). ``line`` is the 1-based start line.
+    """
+
+    file: str
+    name: str
+    line: int
+    end_line: int
+    language: str
+    fingerprint: str
+
+
+@dataclass(frozen=True)
+class CloneCluster:
+    """A group of callables sharing the same AST leaf-type fingerprint.
+
+    ``size`` is len(members). Clusters with size == 1 are not emitted —
+    a clone needs at least one peer.
+    """
+
+    fingerprint: str
+    size: int
+    members: tuple[CloneMember, ...]
+
+
+@dataclass(frozen=True)
+class CloneReport:
+    """Output of ``Structure.clones`` — clusters + corpus-level summary."""
+
+    clusters: tuple[CloneCluster, ...]
+    functions_analyzed: int
+    clone_fraction: float       # cloned-functions / total-functions
+
+
+@dataclass(frozen=True)
 class PackageMetrics:
     """Robert C. Martin (1994) package architecture metrics for one package.
 

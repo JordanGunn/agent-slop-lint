@@ -260,7 +260,9 @@ def test_cpp_clone_density_detects_duplicates(tmp_path: Path):
         "int sum_c(int x, int y) { return x + y; }\n"
     )
     (tmp_path / "clones.cpp").write_text(body)
-    result = run_clone_density(tmp_path, _rule_config(threshold=0.10),
+    t = Tree(tmp_path)
+    t.scan()
+    result = run_clone_density(t.structure, _rule_config(threshold=0.10),
                                _slop_config())
     assert result.summary.get("functions_analyzed", 0) >= 3
 
