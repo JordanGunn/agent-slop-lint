@@ -105,6 +105,59 @@ class C(Procedural):
         return "void *" in cleaned or "void*" in cleaned
 
     @classmethod
+    def stringly_typed_params(
+        cls, fn_node: Any, content: bytes,
+    ) -> list[tuple[str, bool]]:
+        # Walk the declarator chain to find the function_declarator
+        # holding the parameter_list.
+        declarator = fn_node.child_by_field_name("declarator")
+        for _ in range(6):
+            if declarator is None or declarator.type == "function_declarator":
+                break
+            declarator = declarator.child_by_field_name("declarator")
+        if declarator is None or declarator.type != "function_declarator":
+            return []
+        plist = declarator.child_by_field_name("parameters")
+        if plist is None:
+            return []
+
+        out: list[tuple[str, bool]] = []
+        for param in plist.children:
+            if param.type != "parameter_declaration":
+                continue
+            is_char_ptr = False
+            ptr_decl = None
+            for c in param.children:
+                if c.type == "primitive_type":
+                    ptext = content[c.start_byte:c.end_byte].decode(
+                        "utf-8", errors="replace",
+                    ).strip()
+                    if ptext == "char":
+                        is_char_ptr = True
+                elif c.type == "pointer_declarator":
+                    ptr_decl = c
+            if not is_char_ptr or ptr_decl is None:
+                continue
+
+            cur = ptr_decl
+            name: str | None = None
+            for _ in range(4):
+                if cur is None:
+                    break
+                inner = cur.child_by_field_name("declarator")
+                if inner is None:
+                    break
+                if inner.type == "identifier":
+                    name = content[inner.start_byte:inner.end_byte].decode(
+                        "utf-8", errors="replace",
+                    )
+                    break
+                cur = inner
+            if name is not None:
+                out.append((name, True))
+        return out
+
+    @classmethod
     def call_node_types(cls) -> frozenset[str]:
         return frozenset({"call_expression"})
 

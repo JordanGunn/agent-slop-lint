@@ -22,7 +22,7 @@ from slop.structure.rules.god_module import run_god_module
 from slop.structure.rules.out_parameters import run_out_parameters
 from slop.tree.tree import Tree
 from slop.structure.rules.redundancy import run_redundancy
-from slop.structure.rules.stringly_typed import run_stringly_typed
+from slop.structure.rules.sentinels import run_sentinels
 from slop.lexicon.rules.stutter import run_stutter
 from slop.lexicon.rules.verbosity import run_verbosity
 
@@ -318,7 +318,8 @@ def test_cpp_string_sentinel_flagged(tmp_path: Path):
         "void open_file(const char *mode) { (void)mode; }\n"
         "int connect(const char *host, int port) { return port; }\n"
     )
-    result = run_stringly_typed(tmp_path, _rule_config(), _slop_config())
+    t = Tree(tmp_path); t.scan()
+    result = run_sentinels(t.structure, _rule_config(), _slop_config())
     flagged = {(v.symbol, v.message) for v in result.violations}
     assert any("mode" in str(msg) for _, msg in flagged), flagged
 

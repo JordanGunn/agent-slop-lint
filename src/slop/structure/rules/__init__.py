@@ -32,7 +32,7 @@ from .halstead import run_density_v2, run_volume_v2
 from .magic_literals import run_magic_literals_v2
 from .out_parameters import run_out_parameters
 from .redundancy import run_redundancy
-from .stringly_typed import run_stringly_typed
+from .sentinels import run_sentinels
 
 STRUCTURAL_RULES: list[RuleDefinition] = [
     # --- structural.complexity (function-level control flow) ---
@@ -152,7 +152,7 @@ STRUCTURAL_RULES: list[RuleDefinition] = [
         default_severity="warning",
         default_enabled=True,
         threshold_label="≤ 8 values",
-        run=legacy_v2_shim(run_stringly_typed),
+        run=run_sentinels,
     ),
 
     # --- structural.types.hidden_mutators (mutated collection parameter detection) ---

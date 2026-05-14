@@ -168,6 +168,41 @@ class Python(MultiPurpose):
         return text.strip() == "Any" or "Any" in _python_type_tokens(text)
 
     @classmethod
+    def stringly_typed_params(
+        cls, fn_node: Any, content: bytes,
+    ) -> list[tuple[str, bool]]:
+        params_node = fn_node.child_by_field_name("parameters")
+        if params_node is None:
+            return []
+        out: list[tuple[str, bool]] = []
+        for child in params_node.children:
+            ptype = child.type
+            if ptype == "identifier":
+                name = content[child.start_byte:child.end_byte].decode(
+                    "utf-8", errors="replace",
+                )
+                out.append((name, False))
+            elif ptype in ("typed_parameter", "typed_default_parameter"):
+                name_n = child.child_by_field_name("name") or next(
+                    (c for c in child.children if c.type == "identifier"), None,
+                )
+                type_n = child.child_by_field_name("type")
+                if name_n is None:
+                    continue
+                name = content[name_n.start_byte:name_n.end_byte].decode(
+                    "utf-8", errors="replace",
+                )
+                has_str = False
+                if type_n is not None:
+                    type_text = content[
+                        type_n.start_byte:type_n.end_byte
+                    ].decode("utf-8", errors="replace")
+                    # Token-aware match: "str", "Optional[str]", "str | None".
+                    has_str = "str" in _python_type_tokens(type_text)
+                out.append((name, has_str))
+        return out
+
+    @classmethod
     def call_node_types(cls) -> frozenset[str]:
         return frozenset({"call"})
 

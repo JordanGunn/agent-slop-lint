@@ -132,6 +132,87 @@ class Cpp(MultiPurpose):
         )
 
     @classmethod
+    def stringly_typed_params(
+        cls, fn_node: Any, content: bytes,
+    ) -> list[tuple[str, bool]]:
+        declarator = fn_node.child_by_field_name("declarator")
+        for _ in range(8):
+            if declarator is None or declarator.type == "function_declarator":
+                break
+            if declarator.type in (
+                "pointer_declarator", "reference_declarator",
+                "parenthesized_declarator",
+            ):
+                declarator = declarator.child_by_field_name("declarator")
+                continue
+            break
+        if declarator is None or declarator.type != "function_declarator":
+            return []
+        plist = declarator.child_by_field_name("parameters")
+        if plist is None:
+            return []
+
+        out: list[tuple[str, bool]] = []
+        for param in plist.children:
+            if param.type != "parameter_declaration":
+                continue
+            is_string = False
+            ptr_or_ref = None
+            for child in param.children:
+                ctype = child.type
+                if ctype == "primitive_type":
+                    text = content[child.start_byte:child.end_byte].decode(
+                        "utf-8", errors="replace",
+                    ).strip()
+                    if text == "char":
+                        is_string = True
+                elif ctype in ("pointer_declarator", "reference_declarator"):
+                    ptr_or_ref = child
+                elif ctype == "qualified_identifier":
+                    text = content[child.start_byte:child.end_byte].decode(
+                        "utf-8", errors="replace",
+                    ).strip()
+                    if text in (
+                        "std::string", "std::string_view",
+                        "std::wstring", "std::wstring_view",
+                    ):
+                        is_string = True
+                elif ctype == "type_identifier":
+                    text = content[child.start_byte:child.end_byte].decode(
+                        "utf-8", errors="replace",
+                    ).strip()
+                    if text in ("string", "string_view", "wstring", "wstring_view"):
+                        is_string = True
+            if not is_string:
+                continue
+
+            name: str | None = None
+            if ptr_or_ref is not None:
+                cur = ptr_or_ref
+                for _ in range(4):
+                    if cur is None:
+                        break
+                    inner = cur.child_by_field_name("declarator")
+                    if inner is None:
+                        break
+                    if inner.type == "identifier":
+                        name = content[inner.start_byte:inner.end_byte].decode(
+                            "utf-8", errors="replace",
+                        )
+                        break
+                    cur = inner
+            else:
+                for child in param.children:
+                    if child.type == "identifier":
+                        name = content[child.start_byte:child.end_byte].decode(
+                            "utf-8", errors="replace",
+                        )
+                        break
+            if name is not None:
+                out.append((name, True))
+        return out
+
+    @classmethod
     def call_node_types(cls) -> frozenset[str]:
         return frozenset({"call_expression"})
 

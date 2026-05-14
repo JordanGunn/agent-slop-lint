@@ -118,6 +118,34 @@ class Ruby(MultiPurpose):
         })
 
     @classmethod
+    def stringly_typed_params(
+        cls, fn_node: Any, content: bytes,
+    ) -> list[tuple[str, bool]]:
+        # Ruby is dynamically typed — no annotations. Walk the
+        # ``method_parameters`` child for every ``identifier`` name and
+        # treat it as a candidate (annotated=False).
+        params = fn_node.child_by_field_name("parameters")
+        if params is None:
+            return []
+        out: list[tuple[str, bool]] = []
+        for child in params.children:
+            if child.type == "identifier":
+                name = content[child.start_byte:child.end_byte].decode(
+                    "utf-8", errors="replace",
+                )
+                out.append((name, False))
+            elif child.type in ("optional_parameter", "keyword_parameter"):
+                name_n = child.child_by_field_name("name") or next(
+                    (c for c in child.children if c.type == "identifier"), None,
+                )
+                if name_n is not None:
+                    name = content[name_n.start_byte:name_n.end_byte].decode(
+                        "utf-8", errors="replace",
+                    )
+                    out.append((name, False))
+        return out
+
+    @classmethod
     def call_node_types(cls) -> frozenset[str]:
         return frozenset({"call"})
 

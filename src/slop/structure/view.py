@@ -468,6 +468,24 @@ class Structure:
 
         return compute_packages(self, _Path(root))
 
+    def sentinel_parameters(self, *, require_str_annotation: bool = True):
+        """Stringly-typed parameter candidates across the corpus.
+
+        Iterates callables, extracts parameters via each grammar's
+        ``stringly_typed_params`` hook, filters to the universal
+        sentinel-name list, and enriches each candidate with the
+        distinct string literals observed at call sites (substrate-
+        native — no external grep).
+
+        Returns ``list[SentinelParameter]``. The rule layer applies
+        ``max_cardinality`` thresholds.
+        """
+        from slop.structure._sentinels import compute_sentinels
+
+        return compute_sentinels(
+            self, require_str_annotation=require_str_annotation,
+        )
+
     def type_annotations(self):
         """Tree-sitter-extracted type annotations across the corpus.
 

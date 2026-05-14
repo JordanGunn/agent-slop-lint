@@ -30,6 +30,29 @@ class Import:
 
 
 @dataclass(frozen=True)
+class SentinelParameter:
+    """A stringly-typed parameter candidate.
+
+    ``annotated`` is True when the parameter has an explicit
+    string-typed annotation (Python ``str``, C ``char *``,
+    C++ ``std::string``); False for dynamically-typed languages
+    (Ruby) and for Python params with no annotation. Call-site
+    enrichment populates ``call_site_literals`` (the distinct string
+    constants observed at call sites) for the languages where the
+    substrate can find them.
+    """
+
+    file: str
+    function_name: str
+    param_name: str
+    param_line: int
+    language: str
+    annotated: bool
+    call_site_literals: tuple[str, ...] = field(default_factory=tuple)
+    call_site_count: int = 0
+
+
+@dataclass(frozen=True)
 class RedundancyPair:
     """Two sibling top-level callables with overlapping callee sets.
 

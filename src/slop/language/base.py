@@ -292,6 +292,31 @@ class Language(ABC):
         """
         return None
 
+    # ---- Sentinel-parameter vocabulary ---------------------------
+    # Per-grammar detection of stringly-typed parameters — function
+    # parameters with sentinel names ("status", "mode", "kind", …)
+    # that should be modelled as Literal[] or Enum. Consumed by
+    # ``Structure.sentinel_parameters`` which feeds
+    # ``structural.types.sentinels``.
+
+    @classmethod
+    def stringly_typed_params(
+        cls, fn_node: Any, content: bytes,
+    ) -> list[tuple[str, bool]]:
+        """Extract ``(param_name, has_string_annotation)`` pairs from one callable.
+
+        Implementations walk the callable's parameter list, identify
+        each parameter's name, and report whether it has a string-typed
+        annotation (Python ``str``, C/C++ ``char *`` / ``std::string``,
+        etc.). Sentinel-name filtering is done at the substrate layer
+        from the universal sentinel word list.
+
+        Default returns empty — grammars without an override
+        contribute no sentinel candidates.
+        """
+        del fn_node, content
+        return []
+
     # ---- Type-annotation vocabulary -------------------------------
     # Tree-sitter queries that capture type-annotation text + a per-
     # language predicate identifying escape-hatch type names. Consumed
