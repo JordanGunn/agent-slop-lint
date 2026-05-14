@@ -132,6 +132,24 @@ class TypeScript(MultiPurpose):
         )
 
     @classmethod
+    def type_annotation_queries(cls) -> tuple[tuple[str, str], ...]:
+        # tree-sitter-typescript wraps both parameter annotations and
+        # return-type annotations in ``type_annotation`` nodes whose
+        # child is the bare type. ``predefined_type`` is the bare-keyword
+        # form (``any``, ``string``, ``number``, ``unknown``, ``void``).
+        return (
+            ("(type_annotation (_) @annotation)", "annotation"),
+        )
+
+    @classmethod
+    def is_escape_hatch_text(cls, text: str) -> bool:
+        cleaned = text.strip().lstrip(":").strip()
+        # Also count ``unknown`` when explicitly used as an escape
+        # hatch — but TS conventionally treats unknown as safer than
+        # any, so we restrict to literal ``any``.
+        return cleaned == "any" or "any" in _ts_type_tokens(cleaned)
+
+    @classmethod
     def is_abstract_scope(cls, node: Any, content: bytes) -> bool | None:
         """Interfaces are abstract; ``abstract class`` is abstract; classes otherwise concrete."""
         ntype = node.type
@@ -194,3 +212,23 @@ class TypeScript(MultiPurpose):
                             if c.type in ("type_identifier", "identifier"):
                                 out.append(content[c.start_byte:c.end_byte].decode("utf-8", errors="replace"))
         return out
+
+
+def _ts_type_tokens(text: str) -> set[str]:
+    """Split a TypeScript type-annotation text into top-level token names.
+
+    ``string | any`` → {string, any}; ``Array<any>`` → {Array, any};
+    ``{x: any}`` → {x, any}.
+    """
+    out: set[str] = set()
+    buf: list[str] = []
+    for ch in text:
+        if ch.isalnum() or ch == "_":
+            buf.append(ch)
+        else:
+            if buf:
+                out.add("".join(buf))
+                buf = []
+    if buf:
+        out.add("".join(buf))
+    return out

@@ -95,6 +95,18 @@ class Rust(MultiPurpose):
         return frozenset({Block.BLOCK})
 
     @classmethod
+    def type_annotation_queries(cls) -> tuple[tuple[str, str], ...]:
+        return (
+            ("(parameter type: (_) @annotation)", "param"),
+            ("(function_item return_type: (_) @annotation)", "return"),
+        )
+
+    @classmethod
+    def is_escape_hatch_text(cls, text: str) -> bool:
+        # Rust escape: ``dyn Any`` (with possible Box/Arc/Rc wrappers).
+        return "dyn Any" in text or "dyn std::any::Any" in text
+
+    @classmethod
     def is_abstract_scope(cls, node: Any, content: bytes) -> bool | None:
         """Traits are abstract; structs and enums are concrete; impl is neither (skip).
 

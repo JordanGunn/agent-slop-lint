@@ -118,6 +118,21 @@ class Go(MultiPurpose):
         )
 
     @classmethod
+    def type_annotation_queries(cls) -> tuple[tuple[str, str], ...]:
+        return (
+            ("(parameter_declaration type: (_) @annotation)", "param"),
+            ("(function_declaration result: (_) @annotation)", "return"),
+            ("(method_declaration result: (_) @annotation)", "return"),
+        )
+
+    @classmethod
+    def is_escape_hatch_text(cls, text: str) -> bool:
+        cleaned = text.strip()
+        # ``interface{}`` and the Go 1.18 alias ``any`` are equivalent
+        # escape hatches.
+        return cleaned in ("any", "interface{}") or cleaned.startswith("interface{}")
+
+    @classmethod
     def is_abstract_scope(cls, node: Any, content: bytes) -> bool | None:
         """Go ``type Foo interface { ... }`` is abstract; ``type Foo struct { ... }`` is concrete.
 

@@ -91,6 +91,21 @@ class Julia(Procedural):
         })
 
     @classmethod
+    def type_annotation_queries(cls) -> tuple[tuple[str, str], ...]:
+        # Julia's ``::`` operator creates ``typed_expression`` binary nodes.
+        # The right side of the binary is the annotation; capture every
+        # node whose parent is a typed_expression and whose left sibling
+        # is the bound identifier.
+        return (
+            ("(typed_expression . (_) (_) @annotation)", "annotation"),
+        )
+
+    @classmethod
+    def is_escape_hatch_text(cls, text: str) -> bool:
+        cleaned = text.strip().lstrip(":").strip()
+        return cleaned == "Any" or cleaned.endswith(".Any")
+
+    @classmethod
     def import_queries(cls) -> tuple[tuple[str, str], ...]:
         return (
             # ``using Foo`` / ``using Foo, Bar``

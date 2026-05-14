@@ -12,7 +12,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from slop.config.models import RuleConfig, SlopConfig
-from slop.structure.rules.any_type_density import run_any_type_density
+from slop.structure.rules.escape_hatches import run_escape_hatches
 from slop.structure.rules.clone_density import run_clone_density
 from slop.structure.rules.complexity import run_cognitive, run_cyclomatic
 from slop.structure.rules.dependencies import run_cycles
@@ -295,9 +295,11 @@ def test_ruby_clone_density_detects_duplicates(tmp_path: Path):
 def test_ruby_any_type_density_silent_skip(tmp_path: Path):
     """Ruby is dynamically typed; rule does not apply."""
     (tmp_path / "x.rb").write_text("def foo(x); x; end\n")
-    result = run_any_type_density(tmp_path, _rule_config(threshold=0.30),
-                                  _slop_config())
-    # No registration → no entries, no errors.
+    t = Tree(tmp_path)
+    t.scan()
+    result = run_escape_hatches(t.structure, _rule_config(threshold=0.30),
+                                _slop_config())
+    # Ruby has no annotation node types — no entries, no violations.
     assert result.status == "pass"
     assert not result.violations
 

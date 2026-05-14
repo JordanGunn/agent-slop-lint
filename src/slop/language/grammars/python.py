@@ -150,6 +150,24 @@ class Python(MultiPurpose):
         return out
 
     @classmethod
+    def type_annotation_queries(cls) -> tuple[tuple[str, str], ...]:
+        return (
+            ("(typed_parameter type: (_) @annotation)", "param"),
+            ("(typed_default_parameter type: (_) @annotation)", "param"),
+            ("(function_definition return_type: (_) @annotation)", "return"),
+            # ``x: T = ...`` and bare ``x: T`` annotated assignments.
+            # tree-sitter-python emits these as ``assignment`` with a
+            # ``type`` field present.
+            ("(assignment type: (_) @annotation)", "variable"),
+        )
+
+    @classmethod
+    def is_escape_hatch_text(cls, text: str) -> bool:
+        # Match ``Any`` as a bare token. Strip generic / union baggage:
+        # ``Optional[Any]`` and ``list[Any]`` both count as Any-bearing.
+        return text.strip() == "Any" or "Any" in _python_type_tokens(text)
+
+    @classmethod
     def call_node_types(cls) -> frozenset[str]:
         return frozenset({"call"})
 
@@ -212,3 +230,24 @@ class Python(MultiPurpose):
             if any(_Path(f).name == "__init__.py" for f in dir_files):
                 result[name] = list(dir_files)
         return result  # type: ignore[return-value]
+
+
+def _python_type_tokens(text: str) -> set[str]:
+    """Split a Python type-annotation text into top-level token names.
+
+    ``Optional[Any]`` → {Optional, Any}; ``list[int]`` → {list, int};
+    ``dict[str, Any]`` → {dict, str, Any}; ``Foo | Any`` → {Foo, Any}.
+    Crude but sufficient for the escape-hatch predicate.
+    """
+    out: set[str] = set()
+    buf: list[str] = []
+    for ch in text:
+        if ch.isalnum() or ch == "_":
+            buf.append(ch)
+        else:
+            if buf:
+                out.add("".join(buf))
+                buf = []
+    if buf:
+        out.add("".join(buf))
+    return out

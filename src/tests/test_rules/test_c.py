@@ -12,7 +12,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from slop.config.models import RuleConfig, SlopConfig
-from slop.structure.rules.any_type_density import run_any_type_density
+from slop.structure.rules.escape_hatches import run_escape_hatches
 from slop.structure.rules.clone_density import run_clone_density
 from slop.structure.rules.combinatorial import run_combinatorial
 from slop.structure.rules.complexity import run_cognitive, run_cyclomatic
@@ -242,8 +242,11 @@ def test_c_void_star_flagged_as_escape_hatch(tmp_path: Path):
         "void *registry[10];\n"
         "void *handler(void *data, int kind) { return data; }\n"
     )
-    result = run_any_type_density(
-        tmp_path, _rule_config(threshold=0.30, min_annotations=2),
+    t = Tree(tmp_path)
+    t.scan()
+    result = run_escape_hatches(
+        t.structure,
+        _rule_config(threshold=0.30, min_annotations=2),
         _slop_config(),
     )
     assert result.status == "fail"

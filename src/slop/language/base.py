@@ -292,6 +292,37 @@ class Language(ABC):
         """
         return None
 
+    # ---- Type-annotation vocabulary -------------------------------
+    # Tree-sitter queries that capture type-annotation text + a per-
+    # language predicate identifying escape-hatch type names. Consumed
+    # by ``Structure.type_annotations`` which feeds
+    # ``structural.types.escape_hatches`` (fraction of annotations
+    # using the language's universal escape-hatch type).
+
+    @classmethod
+    def type_annotation_queries(cls) -> tuple[tuple[str, str], ...]:
+        """Tree-sitter ``(query, kind_label)`` pairs capturing type annotation nodes.
+
+        Each query captures the annotation as ``@annotation``. Multi-
+        pattern languages (e.g. Python has typed_parameter + return_type)
+        declare multiple pairs. Returns empty by default — grammars
+        without annotation node types (C, C++, JS, Ruby) contribute
+        nothing to the escape-hatch metric.
+        """
+        return ()
+
+    @classmethod
+    def is_escape_hatch_text(cls, text: str) -> bool:
+        """True if the annotation text represents the language's escape-hatch type.
+
+        Python: ``Any`` (often imported from typing). TS: ``any``. Go:
+        ``any`` or ``interface{}``. Rust: ``dyn Any`` / ``Box<dyn Any>``.
+        Java: ``Object``. C#: ``object`` / ``dynamic``. Julia: ``Any``.
+        Default returns False — every annotation classifies as concrete.
+        """
+        del text
+        return False
+
     # ---- Call-site vocabulary --------------------------------------
     # Per-language identification of function calls — the node type
     # representing a call expression plus a per-language extractor for

@@ -85,6 +85,26 @@ class C(Procedural):
         return frozenset({Block.COMPOUND_STATEMENT})
 
     @classmethod
+    def type_annotation_queries(cls) -> tuple[tuple[str, str], ...]:
+        # C encodes types in declarations rather than annotation nodes:
+        # ``void *raw`` splits as ``type: primitive_type "void"`` plus
+        # ``declarator: pointer_declarator``. Capturing the whole
+        # parameter_declaration text and pattern-matching on ``void *``
+        # is the substrate-aligned approach. Return-type pointer-ness
+        # lives in the function-definition declarator chain; that
+        # path is not covered here.
+        return (
+            ("(parameter_declaration) @annotation", "param"),
+        )
+
+    @classmethod
+    def is_escape_hatch_text(cls, text: str) -> bool:
+        # ``void *`` (with or without space) is C's universal escape
+        # hatch; any pointer-to-void parameter defeats the type checker.
+        cleaned = text.replace("\n", " ")
+        return "void *" in cleaned or "void*" in cleaned
+
+    @classmethod
     def call_node_types(cls) -> frozenset[str]:
         return frozenset({"call_expression"})
 

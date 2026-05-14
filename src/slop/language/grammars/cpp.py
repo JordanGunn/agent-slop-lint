@@ -114,6 +114,24 @@ class Cpp(MultiPurpose):
         return frozenset({Block.COMPOUND_STATEMENT})
 
     @classmethod
+    def type_annotation_queries(cls) -> tuple[tuple[str, str], ...]:
+        # Same approach as C — parameter_declaration captures the
+        # whole parameter; ``is_escape_hatch_text`` pattern-matches.
+        # C++ adds ``std::any`` (C++17) on top of C's ``void *``.
+        return (
+            ("(parameter_declaration) @annotation", "param"),
+        )
+
+    @classmethod
+    def is_escape_hatch_text(cls, text: str) -> bool:
+        cleaned = text.replace("\n", " ")
+        return (
+            "void *" in cleaned
+            or "void*" in cleaned
+            or "std::any" in cleaned
+        )
+
+    @classmethod
     def call_node_types(cls) -> frozenset[str]:
         return frozenset({"call_expression"})
 

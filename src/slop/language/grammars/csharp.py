@@ -107,6 +107,32 @@ class CSharp(ObjectOriented):
         )
 
     @classmethod
+    def type_annotation_queries(cls) -> tuple[tuple[str, str], ...]:
+        return (
+            ("(parameter type: (_) @annotation)", "param"),
+            ("(method_declaration returns: (_) @annotation)", "return"),
+        )
+
+    @classmethod
+    def is_escape_hatch_text(cls, text: str) -> bool:
+        # C# escapes: ``object`` (universal base) and ``dynamic`` (runtime-dispatched).
+        cleaned = text.strip()
+        if cleaned in ("object", "dynamic"):
+            return True
+        tokens = set()
+        buf: list[str] = []
+        for ch in cleaned:
+            if ch.isalnum() or ch == "_":
+                buf.append(ch)
+            else:
+                if buf:
+                    tokens.add("".join(buf))
+                    buf = []
+        if buf:
+            tokens.add("".join(buf))
+        return "object" in tokens or "dynamic" in tokens
+
+    @classmethod
     def is_abstract_scope(cls, node: Any, content: bytes) -> bool | None:
         """Interfaces are abstract; ``abstract class`` is abstract; concrete class / struct otherwise."""
         ntype = node.type

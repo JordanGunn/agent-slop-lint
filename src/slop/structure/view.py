@@ -468,6 +468,23 @@ class Structure:
 
         return compute_packages(self, _Path(root))
 
+    def type_annotations(self):
+        """Tree-sitter-extracted type annotations across the corpus.
+
+        Yields one ``TypeAnnotation`` record per ``@annotation`` capture
+        from each grammar's ``type_annotation_queries``. The
+        ``is_escape`` field is set by the grammar's
+        ``is_escape_hatch_text`` predicate.
+
+        Supported grammars: Python, TypeScript, Go, Rust, Java, C#,
+        Julia. JavaScript / C / C++ / Ruby return no annotations
+        (JSDoc isn't in the AST; C/C++ encode types in declarations
+        not annotation nodes; Ruby is dynamically typed).
+        """
+        from slop.structure._annotations import extract_annotations
+
+        return extract_annotations(self)
+
     def callees_of(self, callable_record):
         """Non-trivial callee names extracted from one callable's body.
 

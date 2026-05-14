@@ -15,7 +15,7 @@ from __future__ import annotations
 from slop.linter._shim import legacy_v2_shim
 from slop.linter.types import RuleDefinition
 
-from .any_type_density import run_any_type_density
+from .escape_hatches import run_escape_hatches
 from .architecture import run_rigidity, run_uselessness
 from .class_metrics import (
     run_coupling_v2,
@@ -174,7 +174,7 @@ STRUCTURAL_RULES: list[RuleDefinition] = [
         default_severity="warning",
         default_enabled=True,
         threshold_label="> 30%",
-        run=legacy_v2_shim(run_any_type_density),
+        run=run_escape_hatches,
     ),
 
     # --- structural.duplication (Type-2 clone detection) ---

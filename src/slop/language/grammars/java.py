@@ -108,6 +108,34 @@ class Java(ObjectOriented):
         )
 
     @classmethod
+    def type_annotation_queries(cls) -> tuple[tuple[str, str], ...]:
+        return (
+            ("(formal_parameter type: (_) @annotation)", "param"),
+            ("(method_declaration type: (_) @annotation)", "return"),
+        )
+
+    @classmethod
+    def is_escape_hatch_text(cls, text: str) -> bool:
+        # Java escape: ``Object``. Generic forms ``Object[]``, ``List<Object>``,
+        # ``Map<String, Object>`` all count.
+        cleaned = text.strip()
+        if cleaned == "Object":
+            return True
+        # Strip generics and array brackets, then check trailing token.
+        tokens = set()
+        buf: list[str] = []
+        for ch in cleaned:
+            if ch.isalnum() or ch == "_":
+                buf.append(ch)
+            else:
+                if buf:
+                    tokens.add("".join(buf))
+                    buf = []
+        if buf:
+            tokens.add("".join(buf))
+        return "Object" in tokens
+
+    @classmethod
     def is_abstract_scope(cls, node: Any, content: bytes) -> bool | None:
         """Interfaces are abstract; ``abstract class`` is abstract; records and plain classes are concrete."""
         ntype = node.type
