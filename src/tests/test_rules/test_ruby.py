@@ -250,7 +250,9 @@ def test_ruby_deps_resolves_require_relative(tmp_path: Path):
         "puts 'hi'\n"
     )
     (tmp_path / "util.rb").write_text("def util; end\n")
-    result = run_cycles(tmp_path, _rule_config(), _slop_config())
+    t = Tree(tmp_path)
+    t.scan()
+    result = run_cycles(t.structure, _rule_config(), _slop_config())
     assert result.status in ("pass", "fail")
     assert not result.summary.get("errors")
 

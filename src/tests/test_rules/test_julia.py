@@ -79,7 +79,9 @@ def test_julia_deps_runs_without_error(tmp_path: Path):
         "function f(x); x + 1; end\n"
     )
     cfg = _rule_config()
-    result = run_cycles(tmp_path, cfg, _slop_config())
+    t = Tree(tmp_path)
+    t.scan()
+    result = run_cycles(t.structure, cfg, _slop_config())
     # Cycle detection on a single file with external-only imports should
     # not flag anything. We just verify the rule plumbed Julia files.
     assert result.status == "pass"

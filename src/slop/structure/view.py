@@ -468,6 +468,20 @@ class Structure:
 
         return compute_packages(self, _Path(root))
 
+    def dependency_cycles(self) -> list[list[str]]:
+        """Import cycles in the corpus (Tarjan 1972 SCC on the resolved graph).
+
+        Each returned entry is a strongly connected component of more
+        than one file, sorted by absolute path. Self-loops are dropped
+        at the resolver layer. The Acyclic Dependencies Principle
+        (Lakos 1996; Martin 2002 ch. 20) holds that any cycle prevents
+        independent reasoning, testing, or extraction of any module in
+        the loop.
+        """
+        from slop.structure._imports import detect_cycles
+
+        return detect_cycles(self.dependency_graph())
+
     def dependency_graph(self):
         """File→file import graph with raw modules resolved against the corpus.
 

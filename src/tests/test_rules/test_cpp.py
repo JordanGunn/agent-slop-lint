@@ -229,7 +229,9 @@ def test_cpp_deps_resolves_local_includes(tmp_path: Path):
     (tmp_path / "util.cpp").write_text(
         "#include \"util.hpp\"\nvoid util() {}\n"
     )
-    result = run_cycles(tmp_path, _rule_config(), _slop_config())
+    t = Tree(tmp_path)
+    t.scan()
+    result = run_cycles(t.structure, _rule_config(), _slop_config())
     assert result.status in ("pass", "fail")
     assert not result.summary.get("errors")
 

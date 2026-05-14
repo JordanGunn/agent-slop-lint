@@ -1,64 +1,61 @@
-"""Dependencies rules — wraps the vendored deps_kernel.
+"""Dependencies rules — Acyclic Dependencies Principle enforcement.
 
 Rules:
-  structural.deps  — fail if any dependency cycles exist
+  ``structural.deps``  — fail if any dependency cycles exist
 
-The Acyclic Dependencies Principle (Lakos 1996; Martin 2002, ch. 20) holds
-that import cycles prevent independent reasoning about, testing of, or
-extraction of any module in the cycle — every change touches the whole
-loop. slop detects cycles via Tarjan's (1972) SCC algorithm on the import
-graph, with tree-sitter extracting imports per language (regex fallback
-when the parser fails).
+The Acyclic Dependencies Principle (Lakos 1996; Martin 2002 ch. 20)
+holds that import cycles prevent independent reasoning about, testing
+of, or extraction of any module in the cycle — every change touches
+the whole loop. ``Structure.dependency_cycles`` runs Tarjan's (1972)
+SCC algorithm over the resolved file→file import graph; this rule
+threshold-checks the result.
 """
-
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 
-from slop._structural.deps import deps_kernel
 from slop.config.models import RuleConfig, SlopConfig
-from slop.linter.types import RuleResult
 from slop.linter.slop import Slop
+from slop.linter.types import RuleResult
+
+if TYPE_CHECKING:
+    from slop.structure.view import Structure
 
 
 def run_cycles(
-    root: Path, rule_config: RuleConfig, slop_config: SlopConfig
+    structure: Structure, rule_config: RuleConfig, slop_config: SlopConfig,
 ) -> RuleResult:
-    """Check for dependency cycles."""
+    """Flag every import cycle in the corpus."""
+    del slop_config
     fail_on_cycles = rule_config.params.get("fail_on_cycles", True)
     severity = rule_config.severity
 
-    result = deps_kernel(
-        root=root,
-        excludes=slop_config.exclude or None,
-    )
+    cycles = structure.dependency_cycles()
+    files_analyzed = len(structure.dependency_graph().efferent)
 
     violations: list[Slop] = []
-    if fail_on_cycles and result.cycles:
-        for cycle in result.cycles:
-            cycle_str = " \u2192 ".join(cycle)
-            violations.append(
-                Slop(
-                    rule="structural.deps",
-                    file=cycle[0] if cycle else "",
-                    line=None,
-                    symbol=None,
-                    message=f"cycle: {cycle_str}",
-                    severity=severity,
-                    value=len(cycle),
-                    threshold=0,
-                    metadata={"cycle": cycle},
-                )
-            )
+    if fail_on_cycles:
+        for cycle in cycles:
+            cycle_str = " → ".join(cycle)
+            violations.append(Slop(
+                rule="structural.deps",
+                file=cycle[0] if cycle else "",
+                line=None,
+                symbol=None,
+                message=f"cycle: {cycle_str}",
+                severity=severity,
+                value=len(cycle),
+                threshold=0,
+                metadata={"cycle": cycle},
+            ))
 
     return RuleResult(
         rule="structural.deps",
         status="fail" if violations else "pass",
         violations=violations,
         summary={
-            "files_analyzed": len(result.files),
-            "cycles_found": len(result.cycles),
+            "files_analyzed": files_analyzed,
+            "cycles_found": len(cycles),
             "violation_count": len(violations),
         },
-        errors=list(result.errors),
     )

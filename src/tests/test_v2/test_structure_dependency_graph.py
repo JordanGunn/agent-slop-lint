@@ -93,6 +93,34 @@ class TestGoResolution:
         assert util in graph.efferent[main]
 
 
+class TestCycles:
+    def test_no_cycles_when_acyclic(self, tmp_path: Path):
+        graph, t = _graph_for(tmp_path, {
+            "a.py": "from b import x\n",
+            "b.py": "x = 1\n",
+        })
+        assert t.structure.dependency_cycles() == []
+
+    def test_two_node_cycle(self, tmp_path: Path):
+        graph, t = _graph_for(tmp_path, {
+            "a.py": "from b import x\n",
+            "b.py": "from a import x\n",
+        })
+        cycles = t.structure.dependency_cycles()
+        assert len(cycles) == 1
+        assert {Path(p).name for p in cycles[0]} == {"a.py", "b.py"}
+
+    def test_strongly_connected_three_node_cycle_collapses_to_one(self, tmp_path: Path):
+        graph, t = _graph_for(tmp_path, {
+            "a.py": "import b\n",
+            "b.py": "import c\n",
+            "c.py": "import a\n",
+        })
+        cycles = t.structure.dependency_cycles()
+        assert len(cycles) == 1
+        assert {Path(p).name for p in cycles[0]} == {"a.py", "b.py", "c.py"}
+
+
 class TestCResolution:
     def test_local_include_resolves_to_header(self, tmp_path: Path):
         graph, _ = _graph_for(tmp_path, {

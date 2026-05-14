@@ -130,7 +130,7 @@ STRUCTURAL_RULES: list[RuleDefinition] = [
         default_severity="error",
         default_enabled=True,
         threshold_label="cycles",
-        run=legacy_v2_shim(run_cycles),
+        run=run_cycles,
     ),
 
     # --- structural.redundancy (shared callees between sibling fns) ---

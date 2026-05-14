@@ -171,6 +171,56 @@ def _module_names_for_path(fp: Path) -> list[str]:
     return out
 
 
+def detect_cycles(graph: DependencyGraph) -> list[list[str]]:
+    """Tarjan SCC (Tarjan 1972) over a resolved dependency graph.
+
+    Returns each strongly connected component with more than one node
+    as a sorted list of absolute paths. Self-loops (a file that imports
+    itself) are excluded by the resolver before reaching this layer.
+
+    The recursive form is fine for typical codebases (a few thousand
+    files); for pathological cases switch to an explicit-stack version.
+    """
+    index = 0
+    indexes: dict[str, int] = {}
+    lowlinks: dict[str, int] = {}
+    stack: list[str] = []
+    on_stack: set[str] = set()
+    cycles: list[list[str]] = []
+
+    def strongconnect(node: str) -> None:
+        nonlocal index
+        indexes[node] = index
+        lowlinks[node] = index
+        index += 1
+        stack.append(node)
+        on_stack.add(node)
+
+        for neighbor in sorted(graph.efferent.get(node, frozenset())):
+            if neighbor not in indexes:
+                strongconnect(neighbor)
+                lowlinks[node] = min(lowlinks[node], lowlinks[neighbor])
+            elif neighbor in on_stack:
+                lowlinks[node] = min(lowlinks[node], indexes[neighbor])
+
+        if lowlinks[node] == indexes[node]:
+            component: list[str] = []
+            while stack:
+                current = stack.pop()
+                on_stack.remove(current)
+                component.append(current)
+                if current == node:
+                    break
+            if len(component) > 1:
+                cycles.append(sorted(component))
+
+    for node in graph.efferent:
+        if node not in indexes:
+            strongconnect(node)
+
+    return cycles
+
+
 def build_dependency_graph(parses, imports: list[Import]) -> DependencyGraph:
     """Resolve raw imports to file→file edges.
 

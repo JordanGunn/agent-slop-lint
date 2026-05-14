@@ -190,7 +190,9 @@ def test_c_deps_resolves_local_includes(tmp_path: Path):
     (tmp_path / "util.h").write_text("void util(void);\n")
     (tmp_path / "util.c").write_text("#include \"util.h\"\nvoid util(void) {}\n")
 
-    result = run_cycles(tmp_path, _rule_config(), _slop_config())
+    t = Tree(tmp_path)
+    t.scan()
+    result = run_cycles(t.structure, _rule_config(), _slop_config())
     # No cycles in this layout.
     assert result.status in ("pass", "fail")
     # Ensure no errors from the C resolver.
