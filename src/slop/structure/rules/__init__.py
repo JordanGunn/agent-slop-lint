@@ -12,7 +12,6 @@ Cross-cutting rules that need git history or whole-tree analysis
 """
 from __future__ import annotations
 
-from slop.linter._shim import legacy_v2_shim
 from slop.linter.types import RuleDefinition
 
 from .escape_hatches import run_escape_hatches
@@ -30,7 +29,7 @@ from .dependencies import run_cycles
 from .god_module import run_god_module_v2
 from .halstead import run_density_v2, run_volume_v2
 from .magic_literals import run_magic_literals_v2
-from .out_parameters import run_out_parameters
+from .hidden_mutators import run_hidden_mutators
 from .redundancy import run_redundancy
 from .sentinels import run_sentinels
 
@@ -163,7 +162,7 @@ STRUCTURAL_RULES: list[RuleDefinition] = [
         default_severity="warning",
         default_enabled=True,
         threshold_label="any mutation",
-        run=legacy_v2_shim(run_out_parameters),
+        run=run_hidden_mutators,
     ),
 
     # --- structural.types.escape_hatches (escape-hatch type annotation density) ---

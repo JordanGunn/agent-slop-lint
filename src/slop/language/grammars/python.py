@@ -168,6 +168,78 @@ class Python(MultiPurpose):
         return text.strip() == "Any" or "Any" in _python_type_tokens(text)
 
     @classmethod
+    def hidden_mutators(
+        cls, fn_node: Any, content: bytes,
+        *,
+        require_type_annotation: bool = True,
+    ) -> list[tuple[str, str, int]]:
+        params_node = fn_node.child_by_field_name("parameters")
+        if params_node is None:
+            return []
+        candidates: set[str] = set()
+        for child in params_node.children:
+            ptype = child.type
+            if ptype == "identifier":
+                if not require_type_annotation:
+                    name = content[child.start_byte:child.end_byte].decode(
+                        "utf-8", errors="replace",
+                    )
+                    candidates.add(name)
+            elif ptype in ("typed_parameter", "typed_default_parameter"):
+                name_n = child.child_by_field_name("name") or next(
+                    (c for c in child.children if c.type == "identifier"), None,
+                )
+                type_n = child.child_by_field_name("type")
+                if name_n is None:
+                    continue
+                pname = content[name_n.start_byte:name_n.end_byte].decode(
+                    "utf-8", errors="replace",
+                )
+                if not require_type_annotation:
+                    candidates.add(pname)
+                elif type_n is not None:
+                    type_text = content[type_n.start_byte:type_n.end_byte].decode(
+                        "utf-8", errors="replace",
+                    )
+                    tokens = _python_type_tokens(type_text)
+                    if tokens & _PYTHON_COLLECTION_TYPES:
+                        candidates.add(pname)
+            elif ptype == "default_parameter" and not require_type_annotation:
+                name_n = child.child_by_field_name("name")
+                if name_n is not None:
+                    candidates.add(content[name_n.start_byte:name_n.end_byte].decode(
+                        "utf-8", errors="replace",
+                    ))
+        if not candidates:
+            return []
+
+        body = fn_node.child_by_field_name("body") or fn_node
+        out: list[tuple[str, str, int]] = []
+        stack = [body]
+        while stack:
+            n = stack.pop()
+            if n.type == "call":
+                fn_child = n.child_by_field_name("function")
+                if fn_child is not None and fn_child.type == "attribute":
+                    obj_n = fn_child.child_by_field_name("object")
+                    attr_n = fn_child.child_by_field_name("attribute")
+                    if (
+                        obj_n is not None
+                        and attr_n is not None
+                        and obj_n.type == "identifier"
+                    ):
+                        obj_name = content[obj_n.start_byte:obj_n.end_byte].decode(
+                            "utf-8", errors="replace",
+                        )
+                        method = content[attr_n.start_byte:attr_n.end_byte].decode(
+                            "utf-8", errors="replace",
+                        )
+                        if obj_name in candidates and method in _PYTHON_MUTATIONS:
+                            out.append((obj_name, method, n.start_point[0] + 1))
+            stack.extend(n.children)
+        return out
+
+    @classmethod
     def stringly_typed_params(
         cls, fn_node: Any, content: bytes,
     ) -> list[tuple[str, bool]]:
@@ -265,6 +337,25 @@ class Python(MultiPurpose):
             if any(_Path(f).name == "__init__.py" for f in dir_files):
                 result[name] = list(dir_files)
         return result  # type: ignore[return-value]
+
+
+_PYTHON_COLLECTION_TYPES: frozenset[str] = frozenset({
+    "list", "List", "dict", "Dict", "set", "Set",
+    "MutableSequence", "MutableMapping", "MutableSet",
+    "Sequence", "Mapping",
+    "deque", "Deque", "defaultdict", "Counter",
+})
+
+_PYTHON_MUTATIONS: frozenset[str] = frozenset({
+    # list
+    "append", "extend", "insert", "remove", "pop", "clear",
+    "sort", "reverse",
+    # dict
+    "update", "setdefault", "popitem",
+    # set
+    "add", "discard",
+    "intersection_update", "difference_update", "symmetric_difference_update",
+})
 
 
 def _python_type_tokens(text: str) -> set[str]:

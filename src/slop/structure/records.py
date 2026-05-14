@@ -30,6 +30,35 @@ class Import:
 
 
 @dataclass(frozen=True)
+class HiddenMutation:
+    """One detected mutation event on a parameter."""
+
+    param_name: str
+    method: str
+    line: int
+
+
+@dataclass(frozen=True)
+class HiddenMutator:
+    """A function found to mutate one or more parameters in place.
+
+    ``mutations`` is the ordered list of mutation events. ``mutation_count``
+    is convenience — equals ``len(mutations)``.
+    """
+
+    file: str
+    function_name: str
+    line: int
+    end_line: int
+    language: str
+    mutations: tuple[HiddenMutation, ...]
+
+    @property
+    def mutation_count(self) -> int:
+        return len(self.mutations)
+
+
+@dataclass(frozen=True)
 class SentinelParameter:
     """A stringly-typed parameter candidate.
 

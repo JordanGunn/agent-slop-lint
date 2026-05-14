@@ -19,7 +19,7 @@ from slop.structure.rules.complexity import run_cognitive, run_cyclomatic
 from slop.structure.rules.dependencies import run_cycles
 from slop.structure.rules.combinatorial import run_combinatorial
 from slop.structure.rules.god_module import run_god_module
-from slop.structure.rules.out_parameters import run_out_parameters
+from slop.structure.rules.hidden_mutators import run_hidden_mutators
 from slop.tree.tree import Tree
 from slop.structure.rules.redundancy import run_redundancy
 from slop.structure.rules.sentinels import run_sentinels
@@ -295,7 +295,8 @@ def test_cpp_reference_param_mutation_flagged(tmp_path: Path):
         "void plus_one(int& x) { x = x + 1; }\n"
         "int read_only(const int& src) { return src; }\n"
     )
-    result = run_out_parameters(tmp_path, _rule_config(), _slop_config())
+    t = Tree(tmp_path); t.scan()
+    result = run_hidden_mutators(t.structure, _rule_config(), _slop_config())
     names = {v.symbol for v in result.violations}
     assert "update" in names
     assert "plus_one" in names
@@ -307,7 +308,8 @@ def test_cpp_pointer_param_mutation_flagged(tmp_path: Path):
         "void clear(int* out) { *out = 0; }\n"
         "void fill(int* arr, int n) { arr[0] = n; }\n"
     )
-    result = run_out_parameters(tmp_path, _rule_config(), _slop_config())
+    t = Tree(tmp_path); t.scan()
+    result = run_hidden_mutators(t.structure, _rule_config(), _slop_config())
     names = {v.symbol for v in result.violations}
     assert "clear" in names
     assert "fill" in names

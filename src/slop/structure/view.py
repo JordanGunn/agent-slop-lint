@@ -468,6 +468,20 @@ class Structure:
 
         return compute_packages(self, _Path(root))
 
+    def hidden_mutators(self, *, require_type_annotation: bool = True):
+        """Functions that silently mutate their parameters in place.
+
+        Iterates callables and asks each grammar to report mutation
+        events on its callables' bodies. Returns ``list[HiddenMutator]``
+        with per-event detail; the rule layer threshold-checks the
+        mutation count.
+        """
+        from slop.structure._hidden_mutators import compute_hidden_mutators
+
+        return compute_hidden_mutators(
+            self, require_type_annotation=require_type_annotation,
+        )
+
     def sentinel_parameters(self, *, require_str_annotation: bool = True):
         """Stringly-typed parameter candidates across the corpus.
 

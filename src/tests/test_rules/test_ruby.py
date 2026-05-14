@@ -18,7 +18,7 @@ from slop.structure.rules.complexity import run_cognitive, run_cyclomatic
 from slop.structure.rules.dependencies import run_cycles
 from slop.structure.rules.combinatorial import run_combinatorial
 from slop.structure.rules.god_module import run_god_module
-from slop.structure.rules.out_parameters import run_out_parameters
+from slop.structure.rules.hidden_mutators import run_hidden_mutators
 from slop.tree.tree import Tree
 from slop.structure.rules.redundancy import run_redundancy
 from slop.structure.rules.sentinels import run_sentinels
@@ -312,7 +312,8 @@ def test_ruby_out_parameters_silent_skip(tmp_path: Path):
         "  arr << 2\n"
         "end\n"
     )
-    result = run_out_parameters(tmp_path, _rule_config(), _slop_config())
+    t = Tree(tmp_path); t.scan()
+    result = run_hidden_mutators(t.structure, _rule_config(), _slop_config())
     # No registration → no violations
     assert not result.violations
 

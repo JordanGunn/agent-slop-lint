@@ -292,6 +292,34 @@ class Language(ABC):
         """
         return None
 
+    # ---- Hidden-mutator vocabulary -------------------------------
+    # Per-grammar detection of parameter mutations — functions that
+    # silently modify a passed-in collection / pointer / reference.
+    # Consumed by ``Structure.hidden_mutators`` which feeds
+    # ``structural.types.hidden_mutators``.
+
+    @classmethod
+    def hidden_mutators(
+        cls, fn_node: Any, content: bytes,
+        *,
+        require_type_annotation: bool = True,
+    ) -> list[tuple[str, str, int]]:
+        """Return ``(param_name, method, line)`` triples for each mutation event.
+
+        Each grammar walks its callable body looking for the language-
+        specific mutation shapes (Python ``param.append(...)``,
+        C ``*p = ...``, Go ``append(param, ...)``, etc.). The
+        ``require_type_annotation`` knob is honoured per-grammar where
+        applicable (Python collection-type annotations).
+
+        Default returns empty — grammars without an override
+        contribute no hidden-mutator findings. Ruby intentionally
+        defaults to empty: by-reference parameter passing is the
+        language norm.
+        """
+        del fn_node, content, require_type_annotation
+        return []
+
     # ---- Sentinel-parameter vocabulary ---------------------------
     # Per-grammar detection of stringly-typed parameters — function
     # parameters with sentinel names ("status", "mode", "kind", …)

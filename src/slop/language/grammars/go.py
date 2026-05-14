@@ -133,6 +133,35 @@ class Go(MultiPurpose):
         return cleaned in ("any", "interface{}") or cleaned.startswith("interface{}")
 
     @classmethod
+    def hidden_mutators(
+        cls, fn_node: Any, content: bytes,
+        *,
+        require_type_annotation: bool = True,
+    ) -> list[tuple[str, str, int]]:
+        # Go's flavour of "hidden mutation" is ``param = append(param, ...)``
+        # — the slice header is reassigned in the caller's scope. Walk for
+        # short_var_declaration / assignment_statement where the RHS is a
+        # call to ``append`` whose first arg matches one of the parameters.
+        del require_type_annotation
+        params = _go_parameter_names(fn_node, content)
+        if not params:
+            return []
+        body = fn_node.child_by_field_name("body") or fn_node
+        out: list[tuple[str, str, int]] = []
+        stack = [body]
+        while stack:
+            n = stack.pop()
+            if n.type == "assignment_statement":
+                rhs_node = n.child_by_field_name("right")
+                if rhs_node is not None:
+                    for call in _go_iter_calls(rhs_node):
+                        target = _go_append_target(call, content, params)
+                        if target is not None:
+                            out.append((target, "append", n.start_point[0] + 1))
+            stack.extend(n.children)
+        return out
+
+    @classmethod
     def is_abstract_scope(cls, node: Any, content: bytes) -> bool | None:
         """Go ``type Foo interface { ... }`` is abstract; ``type Foo struct { ... }`` is concrete.
 
@@ -283,3 +312,54 @@ def _go_receiver_type_name(method_node: Any, content: bytes) -> str | None:
             "rune_literal", "raw_string_literal", "interpreted_string_literal",
             "true", "false", "nil", "iota",
         })
+
+
+def _go_parameter_names(fn_node: Any, content: bytes) -> set[str]:
+    """Collect names from a Go function/method's parameter_list."""
+    plist = fn_node.child_by_field_name("parameters")
+    if plist is None:
+        return set()
+    names: set[str] = set()
+    for decl in plist.children:
+        if decl.type != "parameter_declaration":
+            continue
+        for child in decl.children:
+            if child.type == "identifier":
+                names.add(content[child.start_byte:child.end_byte].decode(
+                    "utf-8", errors="replace",
+                ))
+    return names
+
+
+def _go_iter_calls(node):
+    """Yield every call_expression in the subtree."""
+    stack = [node]
+    while stack:
+        n = stack.pop()
+        if n.type == "call_expression":
+            yield n
+        stack.extend(n.children)
+
+
+def _go_append_target(call_node: Any, content: bytes, params: set[str]) -> str | None:
+    """If ``call_node`` is ``append(p, ...)`` with p in params, return p."""
+    fn_child = call_node.child_by_field_name("function")
+    if fn_child is None or fn_child.type != "identifier":
+        return None
+    fn_name = content[fn_child.start_byte:fn_child.end_byte].decode(
+        "utf-8", errors="replace",
+    )
+    if fn_name != "append":
+        return None
+    args = call_node.child_by_field_name("arguments")
+    if args is None:
+        return None
+    for arg in args.children:
+        if arg.type == "identifier":
+            name = content[arg.start_byte:arg.end_byte].decode(
+                "utf-8", errors="replace",
+            )
+            return name if name in params else None
+        if arg.type not in ("(", ")", ","):
+            return None
+    return None

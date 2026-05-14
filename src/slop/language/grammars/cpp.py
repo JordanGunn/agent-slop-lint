@@ -132,6 +132,89 @@ class Cpp(MultiPurpose):
         )
 
     @classmethod
+    def hidden_mutators(
+        cls, fn_node: Any, content: bytes,
+        *,
+        require_type_annotation: bool = True,
+    ) -> list[tuple[str, str, int]]:
+        del require_type_annotation
+        declarator = fn_node.child_by_field_name("declarator")
+        for _ in range(8):
+            if declarator is None or declarator.type == "function_declarator":
+                break
+            if declarator.type in (
+                "pointer_declarator", "reference_declarator",
+                "parenthesized_declarator",
+            ):
+                declarator = declarator.child_by_field_name("declarator")
+                continue
+            break
+        if declarator is None or declarator.type != "function_declarator":
+            return []
+        plist = declarator.child_by_field_name("parameters")
+        if plist is None:
+            return []
+
+        ptr_params: set[str] = set()
+        ref_params: set[str] = set()
+        for param in plist.children:
+            if param.type != "parameter_declaration":
+                continue
+            has_const = False
+            ptr_decl = None
+            ref_decl = None
+            for child in param.children:
+                ctype = child.type
+                if ctype == "type_qualifier":
+                    qtext = content[child.start_byte:child.end_byte].decode(
+                        "utf-8", errors="replace",
+                    ).strip()
+                    if qtext == "const":
+                        has_const = True
+                elif ctype == "pointer_declarator":
+                    ptr_decl = child
+                elif ctype == "reference_declarator":
+                    ref_decl = child
+            if has_const:
+                continue
+            target_decl = ptr_decl or ref_decl
+            if target_decl is None:
+                continue
+            cur = target_decl
+            for _ in range(4):
+                if cur is None:
+                    break
+                inner = cur.child_by_field_name("declarator")
+                if inner is None:
+                    for c in cur.children:
+                        if c.type == "identifier":
+                            inner = c
+                            break
+                if inner is None:
+                    break
+                if inner.type == "identifier":
+                    name = content[inner.start_byte:inner.end_byte].decode(
+                        "utf-8", errors="replace",
+                    )
+                    if target_decl is ptr_decl:
+                        ptr_params.add(name)
+                    else:
+                        ref_params.add(name)
+                    break
+                cur = inner
+
+        body = fn_node.child_by_field_name("body") or fn_node
+        out: list[tuple[str, str, int]] = []
+        # Pointer-mutation shapes (same as C) for ptr_params.
+        if ptr_params:
+            out.extend(_cpp_walk_pointer_mutations(body, content, ptr_params))
+        # Reference-mutation shapes for ref_params: ``p = ...`` (direct
+        # assignment to a non-const reference) and ``p.field = ...``.
+        if ref_params:
+            out.extend(_cpp_walk_reference_mutations(body, content, ref_params))
+        return out
+
+    @classmethod
     def stringly_typed_params(
         cls, fn_node: Any, content: bytes,
     ) -> list[tuple[str, bool]]:
@@ -426,3 +509,45 @@ class Cpp(MultiPurpose):
                 continue
             break
         return "<anonymous>"
+
+
+def _cpp_walk_pointer_mutations(
+    body: Any, content: bytes, params: set[str],
+) -> list[tuple[str, str, int]]:
+    # Shares the C pointer-mutation walker.
+    from .c import _c_walk_pointer_mutations
+    return _c_walk_pointer_mutations(body, content, params)
+
+
+def _cpp_walk_reference_mutations(
+    body: Any, content: bytes, params: set[str],
+) -> list[tuple[str, str, int]]:
+    """Find direct or field assignments through C++ reference parameters."""
+    out: list[tuple[str, str, int]] = []
+    stack = [body]
+    while stack:
+        n = stack.pop()
+        if n.type == "assignment_expression":
+            lhs = n.child_by_field_name("left")
+            if lhs is not None:
+                if lhs.type == "identifier":
+                    name = content[lhs.start_byte:lhs.end_byte].decode(
+                        "utf-8", errors="replace",
+                    )
+                    if name in params:
+                        out.append((name, "ref-assign", n.start_point[0] + 1))
+                elif lhs.type == "field_expression":
+                    obj = lhs.child_by_field_name("argument")
+                    if obj is None:
+                        for c in lhs.children:
+                            if c.type == "identifier":
+                                obj = c
+                                break
+                    if obj is not None and obj.type == "identifier":
+                        name = content[obj.start_byte:obj.end_byte].decode(
+                            "utf-8", errors="replace",
+                        )
+                        if name in params:
+                            out.append((name, "ref-field-assign", n.start_point[0] + 1))
+        stack.extend(n.children)
+    return out

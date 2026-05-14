@@ -150,6 +150,24 @@ class TypeScript(MultiPurpose):
         return cleaned == "any" or "any" in _ts_type_tokens(cleaned)
 
     @classmethod
+    def hidden_mutators(
+        cls, fn_node: Any, content: bytes,
+        *,
+        require_type_annotation: bool = True,
+    ) -> list[tuple[str, str, int]]:
+        # Delegate to JavaScript's logic — same call shape, plus TS's
+        # type-annotation gating when require_type_annotation is True.
+        from .javascript import _js_walk_mutations, _ts_parameter_names_with_annotation
+
+        params = _ts_parameter_names_with_annotation(
+            fn_node, content, require_type_annotation,
+        )
+        if not params:
+            return []
+        body = fn_node.child_by_field_name("body") or fn_node
+        return _js_walk_mutations(body, content, params)
+
+    @classmethod
     def is_abstract_scope(cls, node: Any, content: bytes) -> bool | None:
         """Interfaces are abstract; ``abstract class`` is abstract; classes otherwise concrete."""
         ntype = node.type
