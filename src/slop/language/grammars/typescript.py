@@ -23,7 +23,11 @@ class TypeScript(MultiPurpose):
 
     @classmethod
     def classes(cls) -> frozenset[str]:
-        return frozenset({Scope.CLASS_DECLARATION, Scope.INTERFACE_DECLARATION})
+        return frozenset({
+            Scope.CLASS_DECLARATION,
+            Scope.INTERFACE_DECLARATION,
+            Scope.ABSTRACT_CLASS_DECLARATION,
+        })
 
     @classmethod
     def identifiers(cls) -> frozenset[str]:
@@ -126,6 +130,27 @@ class TypeScript(MultiPurpose):
                 "require",
             ),
         )
+
+    @classmethod
+    def is_abstract_scope(cls, node: Any, content: bytes) -> bool | None:
+        """Interfaces are abstract; ``abstract class`` is abstract; classes otherwise concrete."""
+        ntype = node.type
+        if ntype == Scope.INTERFACE_DECLARATION:
+            return True
+        if ntype == "abstract_class_declaration":
+            return True
+        if ntype == Scope.CLASS_DECLARATION:
+            # ``abstract`` modifier appears as a direct child token.
+            for child in node.children:
+                if child.type == "abstract":
+                    return True
+                text = content[child.start_byte:child.end_byte].decode(
+                    "utf-8", errors="replace",
+                ).strip()
+                if text == "abstract":
+                    return True
+            return False
+        return None
 
     @classmethod
     def numeric_literal_nodes(cls) -> frozenset[str]:

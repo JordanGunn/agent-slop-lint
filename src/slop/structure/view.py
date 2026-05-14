@@ -446,6 +446,28 @@ class Structure:
 
         return extract_imports(self._parses)
 
+    def packages(self, root: Any):
+        """Per-package architecture metrics (Martin 1994 D' = |A + I - 1|).
+
+        Groups files into packages via each grammar's
+        ``Language.resolve_packages``, counts abstract/concrete scopes
+        via ``Language.is_abstract_scope``, and aggregates the
+        file-level dependency graph to package-level Ca/Ce. Returns
+        one ``PackageMetrics`` per resolved package, zone-classified
+        per legacy thresholds.
+
+        Packages whose grammar declares no abstractness signal end up
+        in the ``unknown`` zone — this is intentional. The legacy
+        kernel rounded the same situation to "Zone of Pain" (Na = 0,
+        Nc = N), which is a false signal: there's no abstractness
+        evidence either way. ``unknown`` is the honest classification.
+        """
+        from pathlib import Path as _Path
+
+        from slop.structure._packages import compute_packages
+
+        return compute_packages(self, _Path(root))
+
     def dependency_graph(self):
         """File→file import graph with raw modules resolved against the corpus.
 

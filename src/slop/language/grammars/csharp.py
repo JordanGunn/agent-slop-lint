@@ -107,6 +107,27 @@ class CSharp(ObjectOriented):
         )
 
     @classmethod
+    def is_abstract_scope(cls, node: Any, content: bytes) -> bool | None:
+        """Interfaces are abstract; ``abstract class`` is abstract; concrete class / struct otherwise."""
+        ntype = node.type
+        if ntype == Scope.INTERFACE_DECLARATION:
+            return True
+        if ntype == Scope.STRUCT_DECLARATION:
+            return False
+        if ntype == Scope.CLASS_DECLARATION:
+            # tree-sitter-c-sharp emits modifiers as a flat ``modifier`` child
+            # rather than wrapped in ``(modifiers ...)``.
+            for child in node.children:
+                if child.type == "modifier":
+                    text = content[child.start_byte:child.end_byte].decode(
+                        "utf-8", errors="replace",
+                    ).strip()
+                    if text == "abstract":
+                        return True
+            return False
+        return None
+
+    @classmethod
     def numeric_literal_nodes(cls) -> frozenset[str]:
         return frozenset({Literal.INTEGER_LITERAL, Literal.REAL_LITERAL})
 

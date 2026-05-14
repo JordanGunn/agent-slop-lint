@@ -92,6 +92,16 @@ class Rust(MultiPurpose):
         return frozenset({Block.BLOCK})
 
     @classmethod
+    def is_abstract_scope(cls, node: Any, content: bytes) -> bool | None:
+        """Traits are abstract; structs and enums are concrete; impl is neither (skip)."""
+        ntype = node.type
+        if ntype == Scope.TRAIT_ITEM:
+            return True
+        if ntype in (Scope.STRUCT_ITEM, "enum_item"):
+            return False
+        return None
+
+    @classmethod
     def import_queries(cls) -> tuple[tuple[str, str], ...]:
         # Rust ``use foo::bar::Baz;`` — the use_declaration's argument is
         # a scoped_identifier (multi-segment), bare identifier (single

@@ -20,6 +20,7 @@ class Scope(StrEnum):
     STRUCT_SPECIFIER = "struct_specifier"
     STRUCT_ITEM = "struct_item"
     INTERFACE_DECLARATION = "interface_declaration"
+    ABSTRACT_CLASS_DECLARATION = "abstract_class_declaration"
     RECORD_DECLARATION = "record_declaration"
     TRAIT_ITEM = "trait_item"
     IMPL_ITEM = "impl_item"

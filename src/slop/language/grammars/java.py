@@ -108,6 +108,18 @@ class Java(ObjectOriented):
         )
 
     @classmethod
+    def is_abstract_scope(cls, node: Any, content: bytes) -> bool | None:
+        """Interfaces are abstract; ``abstract class`` is abstract; records and plain classes are concrete."""
+        ntype = node.type
+        if ntype == Scope.INTERFACE_DECLARATION:
+            return True
+        if ntype == Scope.RECORD_DECLARATION:
+            return False
+        if ntype == Scope.CLASS_DECLARATION:
+            return _has_modifier(node, content, "abstract")
+        return None
+
+    @classmethod
     def numeric_literal_nodes(cls) -> frozenset[str]:
         return frozenset({
             Literal.DECIMAL_INTEGER_LITERAL,
@@ -165,3 +177,23 @@ class Java(ObjectOriented):
                 elif child.type == "type_identifier":
                     out.append(content[child.start_byte:child.end_byte].decode("utf-8", errors="replace"))
         return out
+
+
+def _has_modifier(node: Any, content: bytes, keyword: str) -> bool:
+    """Scan a ``(modifiers ...)`` child for a bare keyword token.
+
+    Java/C#/TS emit modifiers as direct children of ``modifiers`` —
+    e.g. ``(modifiers (public) (abstract))``. Matching by ``node.type``
+    handles the common case; matching by text covers grammars that
+    expose the keyword as a generic node.
+    """
+    for child in node.children:
+        if child.type != "modifiers":
+            continue
+        for mod in child.children:
+            if mod.type == keyword:
+                return True
+            text = content[mod.start_byte:mod.end_byte].decode("utf-8", errors="replace").strip()
+            if text == keyword:
+                return True
+    return False

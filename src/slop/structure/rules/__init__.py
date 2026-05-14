@@ -110,7 +110,7 @@ STRUCTURAL_RULES: list[RuleDefinition] = [
         default_severity="warning",
         default_enabled=True,
         threshold_label="pain & D' > 0.7",
-        run=legacy_v2_shim(run_rigidity),
+        run=run_rigidity,
     ),
     RuleDefinition(
         name="structural.packages.uselessness",
@@ -119,7 +119,7 @@ STRUCTURAL_RULES: list[RuleDefinition] = [
         default_severity="warning",
         default_enabled=True,
         threshold_label="uselessness & D' > 0.7",
-        run=legacy_v2_shim(run_uselessness),
+        run=run_uselessness,
     ),
 
     # --- structural.deps (cycle detection) ---

@@ -292,6 +292,65 @@ class Language(ABC):
         """
         return None
 
+    # ---- Package architecture vocabulary ----------------------------
+    # Per-language signals consumed by ``Structure.packages`` (Martin
+    # 1994 distance from the main sequence): abstractness classification
+    # for individual class-like scopes + the rule for grouping files
+    # into packages.
+    #
+    # ``is_abstract_scope`` returns a tri-state:
+    #   - ``True``  → scope counts toward Na (abstract types: interfaces,
+    #                 traits, Java ``abstract class``, Python ABCs)
+    #   - ``False`` → scope counts toward Nc (concrete classes / structs)
+    #   - ``None``  → scope is neither (skip — e.g. Go type aliases,
+    #                 Rust impl_item, anonymous scopes)
+    #
+    # The default is ``None``: a grammar without abstractness opinions
+    # contributes nothing to either Na or Nc, which puts every package
+    # in that language permanently in Zone of Pain (the legacy kernel
+    # behaviour for C and JavaScript).
+
+    @classmethod
+    def is_abstract_scope(cls, node: Any, content: bytes) -> bool | None:
+        """Classify a class-like scope as abstract / concrete / neither.
+
+        Receives the AST node stored in ``ParseResult.scope_nodes`` —
+        whatever the grammar's ``classes()`` set matched. Default
+        returns ``None`` (uncountable). Concrete grammars override.
+        """
+        del node, content
+        return None
+
+    @classmethod
+    def resolve_packages(
+        cls, root: Any, files: list[Any],
+    ) -> dict[str, list[Any]]:
+        """Group source files into packages by language-specific rules.
+
+        Default: directory-grouping (every directory containing source
+        files is one package). Python overrides to require an
+        ``__init__.py`` per directory. Go could override for
+        main-package handling; the current implementation keeps the
+        default (the legacy kernel's Go path was also directory-only).
+
+        Returns a mapping of ``package_name → file paths``. The name is
+        an opaque string — typically the directory path relative to
+        ``root``.
+        """
+        from pathlib import Path as _Path
+
+        root_path = _Path(root)
+        by_dir: dict[str, list[_Path]] = {}
+        for f in files:
+            fp = _Path(f)
+            try:
+                rel = fp.parent.resolve().relative_to(root_path.resolve())
+                name = rel.as_posix() or root_path.name or "<root>"
+            except ValueError:
+                name = str(fp.parent)
+            by_dir.setdefault(name, []).append(fp)
+        return by_dir  # type: ignore[return-value]
+
     # ---- Import-graph vocabulary ------------------------------------
     # Tree-sitter queries that extract per-file module-import edges.
     # Each grammar emits its own import-statement shape, and the

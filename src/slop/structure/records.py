@@ -30,6 +30,35 @@ class Import:
 
 
 @dataclass(frozen=True)
+class PackageMetrics:
+    """Robert C. Martin (1994) package architecture metrics for one package.
+
+    The distance from the main sequence ``D' = |A + I - 1|`` measures how
+    far a package is from the line connecting Zone of Pain (I=0, A=0,
+    stable + concrete) to Zone of Uselessness (I=1, A=1, unstable +
+    abstract). Both endpoints are equally far off — D'=1 is maximum
+    drift; D'=0 is on the line.
+
+    ``ca``/``ce`` are package-level afferent / efferent coupling counts;
+    ``na``/``nc`` are per-package counts of abstract / concrete types as
+    classified by ``Language.is_abstract_scope``.
+    """
+
+    name: str
+    language: str
+    files: tuple[str, ...]
+    ca: int                            # afferent coupling
+    ce: int                            # efferent coupling
+    na: int                            # abstract type count
+    nc: int                            # concrete type count
+    instability: float | None          # I = Ce / (Ca + Ce)
+    abstractness: float | None         # A = Na / (Na + Nc)
+    distance: float | None             # D' = |A + I - 1|
+    zone: str                          # "pain" | "uselessness" | "warning" |
+                                       # "clean" | "ok" | "unknown"
+
+
+@dataclass(frozen=True)
 class DependencyGraph:
     """Resolved file→file import graph.
 

@@ -744,8 +744,9 @@ def _interpret(cm: ClassMetrics) -> str:
 # their class for WMC.
 #
 # Ruby IS registered (v1.0.3). Classes, modules (treated as the
-# "abstract" analog for ``structural.packages`` — see robert.py), and
-# single inheritance via the ``superclass`` field translate cleanly.
+# "abstract" analog for ``structural.packages`` — see
+# ``slop.language.grammars.ruby.is_abstract_scope``), and single
+# inheritance via the ``superclass`` field translate cleanly.
 # Mixins (``include MyMod``) are NOT counted as inheritance for DIT
 # (Ruby community convention treats them as composition); CBO picks up
 # the coupling. Open-class re-openings of the same ``class Foo`` across

@@ -1,70 +1,34 @@
 """Architecture rules — Robert C. Martin package design metrics, split by failure mode.
 
-Two rules consume ``slop._structural.robert.robert_kernel`` (Distance from
-the Main Sequence, D' = |A + I - 1|). Each names one of the two failure
+Two rules consume ``Structure.packages`` (Martin 1994 Distance from the
+Main Sequence, D' = |A + I - 1|). Each names one of the two failure
 modes off the main sequence so the rule that fires identifies the kind
 of problem:
 
   ``structural.packages.rigidity``     — Zone of Pain (low I, low A):
     stable + concrete packages are rigid under changing requirements.
-    Many depend on them, they can't be extended without breaking
-    callers.
+    Many packages depend on them, but they have no abstractions to
+    substitute through. Changes ripple to every caller.
 
   ``structural.packages.uselessness``  — Zone of Uselessness (high I,
     high A): unstable + abstract packages are pure indirection with
-    no dependents. Abstractions exist but no one calls through them.
+    no dependents. Abstractions exist but nothing calls through them.
 
 D' is the same metric for both; the zone is what distinguishes the
 failure. Each rule has its own ``threshold`` for how far off the main
 sequence the package must drift before flagging — surfacing rigidity
 and uselessness at different sensitivities is the point of the split.
 """
-
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 
-from slop._structural.robert import robert_kernel
 from slop.config.models import RuleConfig, SlopConfig
 from slop.linter.slop import Slop
 from slop.linter.types import RuleResult
 
-# Languages robert_kernel can compute D' for. Must stay in sync with
-# _LANG_GLOBS in slop._structural.robert.
-_SUPPORTED_LANGUAGES = {
-    "go", "python", "java", "c_sharp", "typescript", "javascript", "rust",
-}
-
-
-def _resolve_languages(rule_languages, slop_languages):
-    """Narrow a language selection to what robert_kernel supports."""
-    candidates = rule_languages or slop_languages or _SUPPORTED_LANGUAGES
-    return [lang for lang in candidates if lang in _SUPPORTED_LANGUAGES]
-
-
-def _run_kernel(
-    root: Path, rule_config: RuleConfig, slop_config: SlopConfig,
-) -> tuple[list, list[str], int, list[str]]:
-    """Run robert_kernel across every resolved language, aggregating results.
-
-    Returns ``(packages, errors, packages_analyzed, languages)``. Packages
-    are pooled across languages; the caller filters by zone.
-    """
-    languages = _resolve_languages(
-        rule_config.params.get("languages", []),
-        slop_config.languages or [],
-    )
-    packages: list = []
-    errors: list[str] = []
-    analyzed = 0
-    for lang in languages:
-        result = robert_kernel(
-            root=root, language=lang, excludes=slop_config.exclude or None,
-        )
-        errors.extend(result.errors)
-        analyzed += result.packages_analyzed
-        packages.extend(result.packages)
-    return packages, errors, analyzed, languages
+if TYPE_CHECKING:
+    from slop.structure.view import Structure
 
 
 def _slop_for(
@@ -72,7 +36,7 @@ def _slop_for(
 ) -> Slop:
     return Slop(
         rule=rule_name,
-        file=pkg.package,
+        file=pkg.name,
         line=None,
         symbol=None,
         message=(
@@ -88,13 +52,15 @@ def _slop_for(
             "abstractness": pkg.abstractness,
             "ca": pkg.ca,
             "ce": pkg.ce,
+            "na": pkg.na,
+            "nc": pkg.nc,
             "language": pkg.language,
         },
     )
 
 
 def _run_zone_rule(
-    root: Path,
+    structure: Structure,
     rule_config: RuleConfig,
     slop_config: SlopConfig,
     *,
@@ -103,25 +69,24 @@ def _run_zone_rule(
     zone_label: str,
     default_threshold: float,
 ) -> RuleResult:
-    """Common worker — filter packages to one zone and threshold-check D'."""
+    """Filter packages to one zone and threshold-check D'."""
     threshold = rule_config.params.get("threshold", default_threshold)
     severity = rule_config.severity
 
-    languages = _resolve_languages(
-        rule_config.params.get("languages", []),
-        slop_config.languages or [],
+    root = slop_config.root or "."
+    languages_filter = (
+        rule_config.params.get("languages") or slop_config.languages or None
     )
-    if not languages:
-        return RuleResult(
-            rule=rule_name,
-            status="skip",
-            summary={
-                "reason": "no supported languages",
-                "supported": sorted(_SUPPORTED_LANGUAGES),
-            },
-        )
 
-    packages, errors, analyzed, _ = _run_kernel(root, rule_config, slop_config)
+    if languages_filter:
+        all_packages: list = []
+        for lang in languages_filter:
+            sliced = structure.where(language=lang)
+            all_packages.extend(sliced.packages(root))
+        packages = all_packages
+    else:
+        packages = structure.packages(root)
+
     violations: list[Slop] = []
     for pkg in packages:
         if pkg.zone != zone:
@@ -135,16 +100,15 @@ def _run_zone_rule(
         status="fail" if violations else "pass",
         violations=violations,
         summary={
-            "packages_analyzed": analyzed,
-            "languages": languages,
+            "packages_analyzed": len(packages),
+            "languages_filter": list(languages_filter) if languages_filter else None,
             "violation_count": len(violations),
         },
-        errors=errors,
     )
 
 
 def run_rigidity(
-    root: Path, rule_config: RuleConfig, slop_config: SlopConfig,
+    structure: Structure, rule_config: RuleConfig, slop_config: SlopConfig,
 ) -> RuleResult:
     """Flag Zone-of-Pain packages whose D' exceeds the rigidity threshold.
 
@@ -153,7 +117,7 @@ def run_rigidity(
     by its callers and lacks extension points.
     """
     return _run_zone_rule(
-        root, rule_config, slop_config,
+        structure, rule_config, slop_config,
         rule_name="structural.packages.rigidity",
         zone="pain",
         zone_label="Pain",
@@ -162,7 +126,7 @@ def run_rigidity(
 
 
 def run_uselessness(
-    root: Path, rule_config: RuleConfig, slop_config: SlopConfig,
+    structure: Structure, rule_config: RuleConfig, slop_config: SlopConfig,
 ) -> RuleResult:
     """Flag Zone-of-Uselessness packages whose D' exceeds the uselessness threshold.
 
@@ -171,7 +135,7 @@ def run_uselessness(
     uses them; the indirection is wasted.
     """
     return _run_zone_rule(
-        root, rule_config, slop_config,
+        structure, rule_config, slop_config,
         rule_name="structural.packages.uselessness",
         zone="uselessness",
         zone_label="Uselessness",

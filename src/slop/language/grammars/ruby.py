@@ -118,6 +118,16 @@ class Ruby(MultiPurpose):
         })
 
     @classmethod
+    def is_abstract_scope(cls, node: Any, content: bytes) -> bool | None:
+        """A Ruby ``module`` is abstract (can't be instantiated); a ``class`` is concrete."""
+        del content
+        if node.type == Scope.MODULE:
+            return True
+        if node.type == Scope.CLASS:
+            return False
+        return None
+
+    @classmethod
     def import_queries(cls) -> tuple[tuple[str, str], ...]:
         # Ruby imports are method calls, not statements. Match every
         # ``call`` whose method-identifier is ``require`` /

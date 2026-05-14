@@ -223,14 +223,17 @@ def test_ruby_npath_counts_rescue_clauses(tmp_path: Path):
 
 def test_ruby_module_counts_as_abstract_in_packages(tmp_path: Path):
     """Modules are the natural abstract analog in Ruby."""
-    from slop._structural.robert import robert_kernel
+    from slop.tree.tree import Tree
     (tmp_path / "core").mkdir()
     (tmp_path / "core" / "shapes.rb").write_text(
         "module Walkable; def walk; end; end\n"
         "class Shape; def area; end; end\n"
     )
-    result = robert_kernel(tmp_path, language="ruby")
-    pkg = result.packages[0]
+    t = Tree(tmp_path)
+    t.scan()
+    pkgs = t.structure.packages(tmp_path)
+    assert len(pkgs) == 1
+    pkg = pkgs[0]
     assert pkg.na == 1  # Walkable module
     assert pkg.nc == 1  # Shape class
 

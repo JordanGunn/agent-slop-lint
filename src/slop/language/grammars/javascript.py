@@ -115,6 +115,14 @@ class JavaScript(MultiPurpose):
         return frozenset({Block.SWITCH_BODY})
 
     @classmethod
+    def is_abstract_scope(cls, node: Any, content: bytes) -> bool | None:
+        """JavaScript has no abstract-class concept — every class is concrete."""
+        del content
+        if node.type == Scope.CLASS_DECLARATION:
+            return False
+        return None
+
+    @classmethod
     def import_queries(cls) -> tuple[tuple[str, str], ...]:
         return (
             ("(import_statement source: (string (string_fragment) @module))", "esm"),

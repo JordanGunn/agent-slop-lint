@@ -148,3 +148,35 @@ class Python(MultiPurpose):
                 text = content[child.start_byte:child.end_byte].decode("utf-8", errors="replace")
                 out.append(text.split(".")[-1])
         return out
+
+    @classmethod
+    def is_abstract_scope(cls, node: Any, content: bytes) -> bool | None:
+        """A class inheriting from ABC / Protocol / ABCMeta is abstract.
+
+        Anything else is concrete. Python doesn't have an ``abstract``
+        keyword; abstraction is signalled by base class.
+        """
+        if node.type != Scope.CLASS_DEFINITION:
+            return None
+        bases = cls.extract_superclasses(node, content)
+        for b in bases:
+            if b in ("ABC", "Protocol", "ABCMeta"):
+                return True
+        return False
+
+    @classmethod
+    def resolve_packages(cls, root: Any, files: list[Any]) -> dict[str, list[Any]]:
+        """A Python package is a directory containing ``__init__.py``.
+
+        Directories without ``__init__.py`` are dropped — their files
+        are module-level scripts, not part of a package. This matches
+        importlib's package-discovery semantics and the legacy kernel.
+        """
+        from pathlib import Path as _Path
+
+        by_dir = super().resolve_packages(root, files)
+        result: dict[str, list[_Path]] = {}
+        for name, dir_files in by_dir.items():
+            if any(_Path(f).name == "__init__.py" for f in dir_files):
+                result[name] = list(dir_files)
+        return result  # type: ignore[return-value]

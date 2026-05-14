@@ -118,6 +118,29 @@ class Go(MultiPurpose):
         )
 
     @classmethod
+    def is_abstract_scope(cls, node: Any, content: bytes) -> bool | None:
+        """Go ``type Foo interface { ... }`` is abstract; ``type Foo struct { ... }`` is concrete.
+
+        The grammar emits ``type_declaration`` as the scope-bearing node
+        (see ``classes()``); inspect its child ``type_spec``'s ``type``
+        field to disambiguate.
+        """
+        del content
+        if node.type != Scope.TYPE_DECLARATION:
+            return None
+        for child in node.children:
+            if child.type != "type_spec":
+                continue
+            inner = child.child_by_field_name("type")
+            if inner is None:
+                continue
+            if inner.type == "interface_type":
+                return True
+            if inner.type == "struct_type":
+                return False
+        return None
+
+    @classmethod
     def numeric_literal_nodes(cls) -> frozenset[str]:
         return frozenset({
             Literal.INT_LITERAL, Literal.FLOAT_LITERAL,
