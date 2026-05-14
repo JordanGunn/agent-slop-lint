@@ -430,6 +430,37 @@ class Structure:
             min_name_length=min_name_length, max_refs=max_refs,
         )
 
+    def imports(self):
+        """Raw import / include / require edges per file.
+
+        One ``Import`` record per ``@module`` capture across every
+        parsed file. Resolution to file→file edges is a separate step
+        (see ``dependency_graph``); this method returns the unresolved
+        edges so language-aware consumers can post-process the raw
+        module strings.
+
+        Returns a ``list[Import]``. Files whose grammar declares no
+        ``import_queries()`` contribute nothing.
+        """
+        from slop.structure._imports import extract_imports
+
+        return extract_imports(self._parses)
+
+    def dependency_graph(self):
+        """File→file import graph with raw modules resolved against the corpus.
+
+        Builds a flat module-name index from every parsed file (dotted,
+        slashed, stem, ``__init__.py`` package forms), then asks each
+        grammar to resolve its own raw module strings via
+        ``Language.resolve_module``. Unresolved imports are dropped.
+
+        Returns a ``DependencyGraph`` with ``efferent`` (outbound) and
+        ``afferent`` (inbound) adjacency maps.
+        """
+        from slop.structure._imports import build_dependency_graph, extract_imports
+
+        return build_dependency_graph(self._parses, extract_imports(self._parses))
+
     # ---- slicing -----------------------------------------------------
 
     def under(self, *, path: str | None = None) -> Structure:

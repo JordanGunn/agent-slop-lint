@@ -91,6 +91,23 @@ class Julia(Procedural):
         })
 
     @classmethod
+    def import_queries(cls) -> tuple[tuple[str, str], ...]:
+        return (
+            # ``using Foo`` / ``using Foo, Bar``
+            ("(using_statement (identifier) @module)", "julia_using"),
+            # ``using Foo.Bar``
+            ("(using_statement (scoped_identifier) @module)", "julia_using"),
+            # ``using Foo: a, b`` — only the leading identifier is the module
+            ("(using_statement (selected_import . (identifier) @module))", "julia_using"),
+            # ``import Foo`` / ``import Foo, Bar``
+            ("(import_statement (identifier) @module)", "julia_import"),
+            # ``import Foo.Bar``
+            ("(import_statement (scoped_identifier) @module)", "julia_import"),
+            # ``import Base: show`` — only the leading identifier is the module
+            ("(import_statement (selected_import . (identifier) @module))", "julia_import"),
+        )
+
+    @classmethod
     def numeric_literal_nodes(cls) -> frozenset[str]:
         return frozenset({Literal.INTEGER_LITERAL, Literal.FLOAT_LITERAL})
 

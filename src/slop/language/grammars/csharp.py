@@ -100,6 +100,13 @@ class CSharp(ObjectOriented):
         return "else"
 
     @classmethod
+    def import_queries(cls) -> tuple[tuple[str, str], ...]:
+        return (
+            ("(using_directive (identifier) @module)", "csharp_using"),
+            ("(using_directive (qualified_name) @module)", "csharp_using"),
+        )
+
+    @classmethod
     def numeric_literal_nodes(cls) -> frozenset[str]:
         return frozenset({Literal.INTEGER_LITERAL, Literal.REAL_LITERAL})
 

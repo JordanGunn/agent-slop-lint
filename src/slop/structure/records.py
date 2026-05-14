@@ -12,6 +12,39 @@ from dataclasses import dataclass, field
 
 
 @dataclass(frozen=True)
+class Import:
+    """A single import / include / require edge extracted from a file.
+
+    ``module`` is the raw string from the import statement (e.g.
+    ``"foo.bar"``, ``"./util"``, ``"stdio.h"``); resolution to an
+    absolute file path is a separate step on the dependency graph.
+    """
+
+    file: str       # absolute path of the importing file
+    module: str     # raw module string from the import statement
+    kind: str       # grammar-specific label: "import" | "from_import" |
+                    # "esm" | "go_import" | "java_import" | "csharp_using" |
+                    # "include_local" | "include_system" | "ruby_require" |
+                    # "use" | etc.
+    line: int       # 1-based source line
+
+
+@dataclass(frozen=True)
+class DependencyGraph:
+    """Resolved file→file import graph.
+
+    ``efferent[f]`` is the set of files that ``f`` imports (outbound
+    edges). ``afferent[f]`` is the reverse — files that import ``f``.
+    Unresolved imports (module strings that don't map to any file in
+    the corpus) are dropped at this layer; they remain visible in the
+    raw ``Structure.imports()`` output.
+    """
+
+    efferent: dict[str, frozenset[str]]
+    afferent: dict[str, frozenset[str]]
+
+
+@dataclass(frozen=True)
 class FileHotspot:
     """Per-file growth-weighted complexity record (Tornhill 2015).
 

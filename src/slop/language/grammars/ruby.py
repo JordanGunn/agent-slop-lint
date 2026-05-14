@@ -118,6 +118,22 @@ class Ruby(MultiPurpose):
         })
 
     @classmethod
+    def import_queries(cls) -> tuple[tuple[str, str], ...]:
+        # Ruby imports are method calls, not statements. Match every
+        # ``call`` whose method-identifier is ``require`` /
+        # ``require_relative`` / ``load`` and whose argument is a
+        # string literal — that gives both the module name (via
+        # ``string_content``) and the kind discriminator.
+        return (
+            (
+                "((call method: (identifier) @method"
+                " arguments: (argument_list (string (string_content) @module)))"
+                " (#match? @method \"^(require|require_relative|load)$\"))",
+                "ruby_require",
+            ),
+        )
+
+    @classmethod
     def numeric_literal_nodes(cls) -> frozenset[str]:
         return frozenset({
             Literal.INTEGER, Literal.FLOAT,

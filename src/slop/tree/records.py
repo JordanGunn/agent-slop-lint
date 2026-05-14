@@ -161,3 +161,4 @@ class ParseResult:
     callable_nodes: dict[str, Any] = field(default_factory=dict)
     scope_nodes: dict[str, Any] = field(default_factory=dict)
     content: bytes = b""
+    root_node: Any = None

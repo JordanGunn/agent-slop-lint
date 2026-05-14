@@ -114,6 +114,20 @@ class Cpp(MultiPurpose):
         return frozenset({Block.COMPOUND_STATEMENT})
 
     @classmethod
+    def import_queries(cls) -> tuple[tuple[str, str], ...]:
+        # tree-sitter-cpp inherits C's preprocessor node types.
+        return (
+            (
+                "(preproc_include path: (string_literal (string_content) @module))",
+                "include_local",
+            ),
+            (
+                "(preproc_include path: (system_lib_string) @module)",
+                "include_system",
+            ),
+        )
+
+    @classmethod
     def numeric_literal_nodes(cls) -> frozenset[str]:
         return frozenset({Literal.NUMBER_LITERAL})
 

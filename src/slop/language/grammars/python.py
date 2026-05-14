@@ -98,6 +98,16 @@ class Python(MultiPurpose):
         return frozenset({Block.BLOCK})
 
     @classmethod
+    def import_queries(cls) -> tuple[tuple[str, str], ...]:
+        return (
+            ("(import_statement name: (dotted_name) @module)", "import"),
+            ("(import_from_statement module_name: (dotted_name) @module)", "from_import"),
+            # ``import foo as bar`` wraps the dotted_name in aliased_import.
+            ("(import_statement name: (aliased_import name: (dotted_name) @module))", "import"),
+            ("(import_from_statement module_name: (relative_import) @module)", "from_import"),
+        )
+
+    @classmethod
     def numeric_literal_nodes(cls) -> frozenset[str]:
         return frozenset({Literal.INTEGER, Literal.FLOAT})
 

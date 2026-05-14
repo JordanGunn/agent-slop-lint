@@ -1,6 +1,6 @@
 """``slop.language.ast`` — tree-sitter node-type registries.
 
-Ten semantic StrEnums, one per module:
+Eleven semantic StrEnums, one per module:
 
   - ``Identifier``    — name-like nodes (identifier, field_identifier,
                         qualified_identifier, operator, destructor_name, …)
@@ -17,6 +17,9 @@ Ten semantic StrEnums, one per module:
                         shadowing Python's built-in Exception)
   - ``Operator``      — boolean/binary operator nodes (short-circuit
                         operator counting for complexity metrics)
+  - ``Import``        — import / include / require / use declarations
+                        (statement-level types; module-string extraction
+                        is delegated to per-grammar tree-sitter queries)
 
 Each enum subclasses ``StrEnum`` so its members are interchangeable
 with their string values: ``Conditional.IF_STATEMENT == "if_statement"``,
@@ -37,6 +40,7 @@ from .callable import Callable
 from .catch import Catch
 from .conditional import Conditional
 from .identifier import Identifier
+from .import_stmt import Import
 from .literal import Literal
 from .loop import Loop
 from .operator import Operator
@@ -50,6 +54,7 @@ __all__ = [
     "Catch",
     "Conditional",
     "Identifier",
+    "Import",
     "Literal",
     "Loop",
     "Operator",

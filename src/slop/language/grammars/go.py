@@ -109,6 +109,15 @@ class Go(MultiPurpose):
         return frozenset({Block.BLOCK})
 
     @classmethod
+    def import_queries(cls) -> tuple[tuple[str, str], ...]:
+        # Go's import_spec covers both single-line ``import "foo"`` and
+        # block ``import (...)`` forms — tree-sitter emits one
+        # import_spec per imported package.
+        return (
+            ("(import_spec path: (interpreted_string_literal) @module)", "go_import"),
+        )
+
+    @classmethod
     def numeric_literal_nodes(cls) -> frozenset[str]:
         return frozenset({
             Literal.INT_LITERAL, Literal.FLOAT_LITERAL,

@@ -101,6 +101,13 @@ class Java(ObjectOriented):
         return frozenset({Block.SWITCH_BLOCK, Block.SWITCH_BLOCK_STATEMENT_GROUP})
 
     @classmethod
+    def import_queries(cls) -> tuple[tuple[str, str], ...]:
+        return (
+            ("(import_declaration (scoped_identifier) @module)", "java_import"),
+            ("(import_declaration (identifier) @module)", "java_import"),
+        )
+
+    @classmethod
     def numeric_literal_nodes(cls) -> frozenset[str]:
         return frozenset({
             Literal.DECIMAL_INTEGER_LITERAL,

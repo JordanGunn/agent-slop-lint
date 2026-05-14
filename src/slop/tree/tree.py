@@ -167,6 +167,7 @@ class Tree:
             callable_nodes=callable_nodes,
             scope_nodes=scope_nodes,
             content=content,
+            root_node=tree.root_node,
         )
         # Language-specific post-scan adjustment (Go method-receiver
         # parenting, Rust impl-block parenting). Default returns

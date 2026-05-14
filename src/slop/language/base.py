@@ -292,6 +292,62 @@ class Language(ABC):
         """
         return None
 
+    # ---- Import-graph vocabulary ------------------------------------
+    # Tree-sitter queries that extract per-file module-import edges.
+    # Each grammar emits its own import-statement shape, and the
+    # interesting bit (the module-name string) is typically a nested
+    # capture rather than the statement node itself — so the contract
+    # is "give me a list of (query, kind_label) pairs" rather than a
+    # bare frozenset of node types. The kind label flows through to
+    # ``Import`` records so downstream rules can distinguish, e.g.,
+    # ``include_local`` from ``include_system`` or ``require_relative``
+    # from ``require``.
+    #
+    # See ``slop.structure._imports`` for query execution and module
+    # resolution. Default is empty — a grammar without an override
+    # contributes no import edges to the dependency graph.
+
+    @classmethod
+    def import_queries(cls) -> tuple[tuple[str, str], ...]:
+        """Tree-sitter ``(query, kind_label)`` pairs for extracting imports.
+
+        Each query string is a tree-sitter S-expression that captures
+        the module-name fragment as ``@module``. Multi-pattern languages
+        (Python: ``import`` + ``from``; C: local + system include) declare
+        several pairs. The walker runs every query against each parsed
+        tree, emitting one ``Import`` record per match.
+
+        Returns an empty tuple by default — grammars without an override
+        contribute zero edges to the dependency graph.
+        """
+        return ()
+
+    @classmethod
+    def resolve_module(
+        cls, module: str, candidates: dict[str, str],
+    ) -> str | None:
+        """Resolve a raw import string to an absolute file path.
+
+        ``candidates`` is a flat module-name → abs-path index built by
+        the view from the corpus. Default behaviour: try the raw module
+        string, then its trailing segment (after the final ``.`` or
+        ``/`` or ``::``), then the basename with common extensions
+        stripped. Grammars whose import strings need language-specific
+        massaging override this — e.g. C/C++ to strip ``./`` prefixes,
+        Ruby to handle ``require_relative`` paths.
+
+        Returns ``None`` if no candidate matches.
+        """
+        if module in candidates:
+            return candidates[module]
+        # Trailing segment (Python ``foo.bar`` → ``bar``; Rust ``foo::bar`` → ``bar``)
+        for sep in (".", "::", "/"):
+            if sep in module:
+                tail = module.rsplit(sep, 1)[1]
+                if tail in candidates:
+                    return candidates[tail]
+        return None
+
     @classmethod
     def numeric_literal_nodes(cls) -> frozenset[str]:
         """Tree-sitter node types for numeric literal values.

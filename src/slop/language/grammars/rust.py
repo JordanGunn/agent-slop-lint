@@ -92,6 +92,27 @@ class Rust(MultiPurpose):
         return frozenset({Block.BLOCK})
 
     @classmethod
+    def import_queries(cls) -> tuple[tuple[str, str], ...]:
+        # Rust ``use foo::bar::Baz;`` — the use_declaration's argument is
+        # a scoped_identifier (multi-segment), bare identifier (single
+        # crate name), or scoped_use_list (``use foo::{a, b}`` — leading
+        # crate captured via the scoped_identifier root).
+        return (
+            ("(use_declaration argument: (scoped_identifier) @module)", "use"),
+            ("(use_declaration argument: (identifier) @module)", "use"),
+            ("(use_declaration argument: (use_as_clause path: (scoped_identifier) @module))", "use"),
+            ("(use_declaration argument: (use_as_clause path: (identifier) @module))", "use"),
+            (
+                "(use_declaration argument: (scoped_use_list path: (scoped_identifier) @module))",
+                "use",
+            ),
+            (
+                "(use_declaration argument: (scoped_use_list path: (identifier) @module))",
+                "use",
+            ),
+        )
+
+    @classmethod
     def numeric_literal_nodes(cls) -> frozenset[str]:
         return frozenset({Literal.INTEGER_LITERAL, Literal.FLOAT_LITERAL})
 

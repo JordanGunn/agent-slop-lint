@@ -115,6 +115,20 @@ class JavaScript(MultiPurpose):
         return frozenset({Block.SWITCH_BODY})
 
     @classmethod
+    def import_queries(cls) -> tuple[tuple[str, str], ...]:
+        return (
+            ("(import_statement source: (string (string_fragment) @module))", "esm"),
+            # CommonJS: ``const x = require('foo')`` — capture method=require
+            # via predicate so it doesn't conflate with arbitrary calls.
+            (
+                "((call_expression function: (identifier) @fn"
+                " arguments: (arguments (string (string_fragment) @module)))"
+                " (#eq? @fn \"require\"))",
+                "require",
+            ),
+        )
+
+    @classmethod
     def numeric_literal_nodes(cls) -> frozenset[str]:
         return frozenset({Literal.NUMBER})
 
