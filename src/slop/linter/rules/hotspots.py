@@ -1,60 +1,63 @@
-"""Hotspots rule — wraps the vendored hotspots_kernel.
+"""Hotspots rule — wraps Structure.hotspots (view-native).
 
-Rules:
-  structural.hotspots  — fail if any file lands in a forbidden quadrant
+Rule:
+  structural.hotspots  — fail when any file lands in a forbidden quadrant
+                        (default: ``hotspot``) over the configured git
+                        log window.
+
+Tornhill 2015's churn × complexity framework with the v2.0 LOC-delta
+churn proxy. Default window is 14 days — agentic code rot accumulates
+in days not months. Widen to 90 days for human-pace repos.
 """
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from slop._compose.hotspots import hotspots_kernel
 from slop.config.models import RuleConfig, SlopConfig
-from slop.linter.types import RuleResult
 from slop.linter.slop import Slop
+from slop.linter.types import RuleResult
+from slop.structure.view import Structure
 
 
 def run_churn_weighted(
-    root: Path, rule_config: RuleConfig, slop_config: SlopConfig
+    structure: Structure,
+    rule_config: RuleConfig,
+    slop_config: SlopConfig,
 ) -> RuleResult:
-    """Check growth-weighted complexity hotspots."""
+    """Threshold-check growth-weighted complexity hotspots."""
     since = rule_config.params.get("since", "14 days ago")
     min_commits = rule_config.params.get("min_commits", 2)
     fail_on_quadrant = set(rule_config.params.get("fail_on_quadrant", ["hotspot"]))
     severity = rule_config.severity
+    root = Path(slop_config.root).expanduser().resolve()
 
-    result = hotspots_kernel(
-        root=root,
-        excludes=slop_config.exclude or None,
-        since=since,
-        min_commits=min_commits,
-    )
+    result = structure.hotspots(root, since=since, min_commits=min_commits)
 
     violations: list[Slop] = []
     for fh in result.files:
-        if fh.quadrant in fail_on_quadrant:
-            violations.append(
-                Slop(
-                    rule="structural.hotspots",
-                    file=fh.file,
-                    line=None,
-                    symbol=None,
-                    message=(
-                        f"{fh.quadrant} (CCX={fh.sum_ccx}, "
-                        f"growth=+{fh.loc_delta} LOC, score={fh.hotspot_score:.0f})"
-                    ),
-                    severity=severity,
-                    value=fh.hotspot_score,
-                    threshold=None,
-                    metadata={
-                        "quadrant": fh.quadrant,
-                        "sum_ccx": fh.sum_ccx,
-                        "loc_delta": fh.loc_delta,
-                        "commit_count": fh.commit_count,
-                        "last_seen": fh.last_seen,
-                    },
-                )
-            )
+        if fh.quadrant not in fail_on_quadrant:
+            continue
+        violations.append(Slop(
+            rule="structural.hotspots",
+            file=fh.file,
+            line=None,
+            symbol=None,
+            message=(
+                f"{fh.quadrant} (CCX={fh.sum_ccx}, "
+                f"growth=+{fh.loc_delta} LOC, score={fh.hotspot_score:.0f})"
+            ),
+            severity=severity,
+            value=fh.hotspot_score,
+            threshold=None,
+            metadata={
+                "quadrant": fh.quadrant,
+                "sum_ccx": fh.sum_ccx,
+                "loc_delta": fh.loc_delta,
+                "commit_count": fh.commit_count,
+                "last_seen": fh.last_seen,
+            },
+        ))
 
     return RuleResult(
         rule="structural.hotspots",

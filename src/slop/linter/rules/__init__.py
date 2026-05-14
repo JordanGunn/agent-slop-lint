@@ -7,11 +7,10 @@ lexicon view.
 """
 from __future__ import annotations
 
-from slop.linter._shim import legacy_v2_shim
 from slop.linter.types import RuleDefinition
 
-from .dead_code import run_unreferenced
 from .hotspots import run_churn_weighted
+from .orphans import run_orphans
 
 CROSS_CUTTING_RULES: list[RuleDefinition] = [
     RuleDefinition(
@@ -21,7 +20,7 @@ CROSS_CUTTING_RULES: list[RuleDefinition] = [
         default_severity="error",
         default_enabled=True,
         threshold_label="14d window",
-        run=legacy_v2_shim(run_churn_weighted),
+        run=run_churn_weighted,
     ),
     RuleDefinition(
         name="structural.orphans",
@@ -30,6 +29,6 @@ CROSS_CUTTING_RULES: list[RuleDefinition] = [
         default_severity="warning",
         default_enabled=False,
         threshold_label="",
-        run=legacy_v2_shim(run_unreferenced),
+        run=run_orphans,
     ),
 ]

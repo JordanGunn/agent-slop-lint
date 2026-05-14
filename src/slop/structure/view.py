@@ -360,6 +360,76 @@ class Structure:
         """
         return len(children_map.get(class_scope.qualname.split(".")[-1], []))
 
+    # ---- cross-cutting compute methods -------------------------------
+
+    def hotspots(
+        self,
+        root: Any,
+        *,
+        since: str | None = "14 days ago",
+        until: str | None = None,
+        min_commits: int = 2,
+        hotspot_percentile: float = 0.75,
+    ):
+        """Per-file growth-weighted complexity hotspots (Tornhill 2015).
+
+        Aggregates cyclomatic complexity from this view's callables
+        bucketed by file, joins with git numstat over ``since``..``until``
+        (LOC delta = insertions − deletions), and classifies into
+        quadrants by 75th-percentile cutoffs on both axes. Score is
+        ``sum_ccx × max(0, loc_delta)``; files that shrank in the
+        window keep their raw delta for display but score as zero.
+
+        Returns a ``HotspotsComputeResult`` carrying rich
+        ``FileHotspot`` records sorted worst-first plus diagnostic
+        metadata. The rule layer (``run_churn_weighted``) threshold-
+        checks the records into ``Slop`` findings.
+        """
+        from pathlib import Path as _Path
+
+        from slop.structure._hotspots import compute_hotspots
+
+        return compute_hotspots(
+            self, _Path(root),
+            since=since, until=until,
+            min_commits=min_commits,
+            hotspot_percentile=hotspot_percentile,
+        )
+
+    def orphans(
+        self,
+        root: Any,
+        *,
+        min_name_length: int = 4,
+        max_refs: int = 0,
+    ):
+        """Enumerate definitions with zero detected external references.
+
+        Iterates top-level callables and named class-like scopes from
+        this view, then uses ripgrep (``grep_kernel``) to count word-
+        boundary references in OTHER files. Methods and nested
+        functions are skipped — name-based reference counting on
+        them is too noisy (matches every property access on every
+        object).
+
+        Confidence is heuristic: short names and common verbs
+        (``run`` / ``main`` / ``get``) get downgraded because they
+        collide with unrelated identifiers; Python / JavaScript / Ruby
+        lose a step because reflection and dynamic dispatch can't be
+        detected statically.
+
+        Returns an ``OrphansComputeResult``. The rule layer
+        (``run_orphans``) applies a ``min_confidence`` filter.
+        """
+        from pathlib import Path as _Path
+
+        from slop.structure._orphans import compute_orphans
+
+        return compute_orphans(
+            self, _Path(root),
+            min_name_length=min_name_length, max_refs=max_refs,
+        )
+
     # ---- slicing -----------------------------------------------------
 
     def under(self, *, path: str | None = None) -> Structure:

@@ -8,6 +8,12 @@ from pathlib import Path
 
 from slop.config.models import RuleConfig, SlopConfig
 from slop.linter.rules.hotspots import run_churn_weighted
+from slop.tree.tree import Tree
+
+
+def _structure(repo: Path):
+    tree = Tree(repo); tree.scan()
+    return tree.structure
 
 
 def _git(repo: Path, *args: str, env: dict[str, str] | None = None) -> None:
@@ -54,7 +60,7 @@ def test_hotspot_violation_when_complex_and_churned(tmp_path: Path):
     rc = RuleConfig(enabled=True, severity="error", params={
         "since": "all", "min_commits": 2, "fail_on_quadrant": ["hotspot"],
     })
-    result = run_churn_weighted(repo, rc, SlopConfig(root=str(repo)))
+    result = run_churn_weighted(_structure(repo), rc, SlopConfig(root=str(repo)))
     # hot.py should be the hotspot (high ccx + high churn relative to fillers)
     hotspot_files = [v.file for v in result.violations]
     assert any("hot.py" in f for f in hotspot_files)
@@ -67,7 +73,7 @@ def test_hotspot_pass_when_no_hotspots(tmp_path: Path):
     rc = RuleConfig(enabled=True, severity="error", params={
         "since": "all", "min_commits": 2, "fail_on_quadrant": ["hotspot"],
     })
-    result = run_churn_weighted(repo, rc, SlopConfig(root=str(repo)))
+    result = run_churn_weighted(_structure(repo), rc, SlopConfig(root=str(repo)))
     # Too few files for quadrant classification — no violations
     assert result.status == "pass"
 
@@ -78,6 +84,6 @@ def test_hotspot_summary_includes_window(tmp_path: Path):
     rc = RuleConfig(enabled=True, severity="error", params={
         "since": "90 days ago", "min_commits": 1, "fail_on_quadrant": ["hotspot"],
     })
-    result = run_churn_weighted(repo, rc, SlopConfig(root=str(repo)))
+    result = run_churn_weighted(_structure(repo), rc, SlopConfig(root=str(repo)))
     assert "window_since" in result.summary
     assert result.summary["window_since"] == "90 days ago"
