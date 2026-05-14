@@ -29,7 +29,10 @@ class Rust(MultiPurpose):
 
     @classmethod
     def classes(cls) -> frozenset[str]:
-        return frozenset({Scope.STRUCT_ITEM, Scope.TRAIT_ITEM, Scope.IMPL_ITEM})
+        return frozenset({
+            Scope.STRUCT_ITEM, Scope.ENUM_ITEM,
+            Scope.TRAIT_ITEM, Scope.IMPL_ITEM,
+        })
 
     @classmethod
     def identifiers(cls) -> frozenset[str]:
@@ -93,11 +96,18 @@ class Rust(MultiPurpose):
 
     @classmethod
     def is_abstract_scope(cls, node: Any, content: bytes) -> bool | None:
-        """Traits are abstract; structs and enums are concrete; impl is neither (skip)."""
+        """Traits are abstract; structs and enums are concrete; impl is neither (skip).
+
+        Rust enums are sum types — no virtual methods, no abstract
+        members; they're concrete data definitions. impl_item is a
+        method-grouping block, not a type — it would double-count if
+        treated as concrete, so it's uncountable.
+        """
+        del content
         ntype = node.type
         if ntype == Scope.TRAIT_ITEM:
             return True
-        if ntype in (Scope.STRUCT_ITEM, "enum_item"):
+        if ntype in (Scope.STRUCT_ITEM, Scope.ENUM_ITEM):
             return False
         return None
 

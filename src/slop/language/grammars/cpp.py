@@ -128,6 +128,40 @@ class Cpp(MultiPurpose):
         )
 
     @classmethod
+    def is_abstract_scope(cls, node: Any, content: bytes) -> bool | None:
+        """C++ has no ``abstract`` keyword — abstractness is determined by whether the class declares any pure-virtual method.
+
+        A pure-virtual method is a field_declaration containing a
+        ``function_declarator`` followed by ``= 0`` (the ``number_literal``
+        ``0`` appears as a direct child of the field_declaration in
+        tree-sitter-cpp's emission). Structs are always concrete (C++
+        structs are technically classes too but the abstract pattern
+        is almost never used with struct keyword).
+        """
+        del content
+        ntype = node.type
+        if ntype == Scope.STRUCT_SPECIFIER:
+            return False
+        if ntype == Scope.CLASS_SPECIFIER:
+            body = node.child_by_field_name("body")
+            if body is None:
+                return False
+            for member in body.children:
+                if member.type != "field_declaration":
+                    continue
+                has_func_decl = False
+                has_zero_literal = False
+                for c in member.children:
+                    if c.type == "function_declarator":
+                        has_func_decl = True
+                    elif c.type == "number_literal":
+                        has_zero_literal = True
+                if has_func_decl and has_zero_literal:
+                    return True
+            return False
+        return None
+
+    @classmethod
     def numeric_literal_nodes(cls) -> frozenset[str]:
         return frozenset({Literal.NUMBER_LITERAL})
 

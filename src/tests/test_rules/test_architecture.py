@@ -197,11 +197,7 @@ def test_javascript_counts_all_classes_as_concrete(tmp_path: Path):
     assert p.nc == 2
 
 
-def test_rust_counts_trait_and_struct(tmp_path: Path):
-    # Rust's classes() set is {struct_item, trait_item, impl_item}; ``enum_item``
-    # is not currently emitted as a scope by the v2.0 walker, so Color
-    # doesn't contribute to nc. (Extending Rust to cover enums would be
-    # a separate intent — see Intent D scope deferral.)
+def test_rust_counts_trait_struct_and_enum(tmp_path: Path):
     (tmp_path / "lib.rs").write_text(
         "pub trait Shape { fn area(&self) -> f64; }\n"
         "pub struct Circle { r: f64 }\n"
@@ -209,7 +205,7 @@ def test_rust_counts_trait_and_struct(tmp_path: Path):
     )
     p = _one_pkg(_structure(tmp_path), tmp_path)
     assert p.na == 1       # trait Shape
-    assert p.nc == 1       # struct Circle (enum Color uncounted)
+    assert p.nc == 2       # struct Circle + enum Color
 
 
 def test_go_counts_interface_and_struct(tmp_path: Path):
@@ -233,6 +229,48 @@ def test_ruby_counts_module_as_abstract_class_as_concrete(tmp_path: Path):
     p = _one_pkg(_structure(tmp_path), tmp_path)
     assert p.na == 1       # module Drawable
     assert p.nc == 1       # class Circle
+
+
+def test_cpp_pure_virtual_class_is_abstract(tmp_path: Path):
+    """A C++ class with at least one pure-virtual method counts as abstract."""
+    (tmp_path / "shapes.cpp").write_text(
+        "class Shape {\n"
+        "public:\n"
+        "    virtual double area() = 0;\n"
+        "    virtual ~Shape() = default;\n"
+        "};\n"
+        "class Circle {\n"
+        "public:\n"
+        "    double area() { return 0; }\n"
+        "};\n",
+    )
+    p = _one_pkg(_structure(tmp_path), tmp_path)
+    assert p.na == 1       # Shape (pure-virtual area())
+    assert p.nc == 1       # Circle (concrete area())
+
+
+def test_cpp_class_without_pure_virtual_is_concrete(tmp_path: Path):
+    """A C++ class with only normal virtual (overridable) methods is still concrete."""
+    (tmp_path / "shapes.cpp").write_text(
+        "class A {\n"
+        "public:\n"
+        "    virtual double f();\n"  # overridable but not pure
+        "    double g() { return 0; }\n"
+        "};\n",
+    )
+    p = _one_pkg(_structure(tmp_path), tmp_path)
+    assert p.na == 0
+    assert p.nc == 1
+
+
+def test_cpp_struct_is_concrete_even_with_pure_virtual(tmp_path: Path):
+    """C++ structs are pragmatically concrete — the abstract-class idiom uses ``class``."""
+    (tmp_path / "shapes.cpp").write_text(
+        "struct Point { int x; int y; };\n",
+    )
+    p = _one_pkg(_structure(tmp_path), tmp_path)
+    assert p.na == 0
+    assert p.nc == 1
 
 
 def test_python_counts_abc_as_abstract_plain_as_concrete(tmp_path: Path):

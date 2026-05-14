@@ -18,6 +18,7 @@ class Scope(StrEnum):
     CLASS_SPECIFIER = "class_specifier"
     STRUCT_DECLARATION = "struct_declaration"
     STRUCT_SPECIFIER = "struct_specifier"
+    ENUM_ITEM = "enum_item"
     STRUCT_ITEM = "struct_item"
     INTERFACE_DECLARATION = "interface_declaration"
     ABSTRACT_CLASS_DECLARATION = "abstract_class_declaration"
