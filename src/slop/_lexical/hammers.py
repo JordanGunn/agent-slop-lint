@@ -19,7 +19,54 @@ from slop._ast.treesitter import detect_language, load_language
 from slop._fs.find import find_kernel
 from slop._lexical._naming import enumerate_functions
 from slop._lexical._naming import split_identifier
-from slop._lexical.verbosity import _CLASS_NODES, _LANG_GLOBS, _extract_type_name
+
+
+# Inlined from the retired slop._lexical.verbosity kernel — these tables
+# will retire with hammers itself when its port lands.
+_CLASS_NODES: dict[str, frozenset[str]] = {
+    "python":     frozenset({"class_definition"}),
+    "javascript": frozenset({"class_declaration"}),
+    "typescript": frozenset({"class_declaration", "interface_declaration"}),
+    "java":       frozenset({"class_declaration", "interface_declaration"}),
+    "c_sharp":    frozenset({"class_declaration", "interface_declaration"}),
+    "cpp":        frozenset({"class_specifier", "struct_specifier"}),
+    "ruby":       frozenset({"class", "module"}),
+    "rust":       frozenset({"struct_item", "trait_item", "enum_item"}),
+    "go":         frozenset({"type_declaration"}),
+}
+
+_LANG_GLOBS: dict[str, list[str]] = {
+    "python":     ["**/*.py"],
+    "javascript": ["**/*.js", "**/*.mjs", "**/*.cjs"],
+    "typescript": ["**/*.ts", "**/*.tsx"],
+    "go":         ["**/*.go"],
+    "rust":       ["**/*.rs"],
+    "java":       ["**/*.java"],
+    "c_sharp":    ["**/*.cs"],
+    "cpp":        ["**/*.cpp", "**/*.cc", "**/*.cxx", "**/*.hpp", "**/*.hxx"],
+    "ruby":       ["**/*.rb"],
+}
+
+
+def _extract_type_name(node, content: bytes) -> str:
+    """Best-effort name extraction for class/struct/interface/trait nodes."""
+    name_node = node.child_by_field_name("name")
+    if name_node is not None:
+        return content[name_node.start_byte:name_node.end_byte].decode(
+            "utf-8", errors="replace",
+        )
+    for child in node.children:
+        if child.type == "type_spec":
+            for grand in child.children:
+                if grand.type == "type_identifier":
+                    return content[grand.start_byte:grand.end_byte].decode(
+                        "utf-8", errors="replace",
+                    )
+        if child.type in ("type_identifier", "identifier", "constant"):
+            return content[child.start_byte:child.end_byte].decode(
+                "utf-8", errors="replace",
+            )
+    return ""
 
 
 # ---------------------------------------------------------------------------

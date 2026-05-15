@@ -19,6 +19,12 @@ def _structure(root: Path):
     return t.structure
 
 
+def _lexicon(root: Path):
+    t = Tree(root)
+    t.scan()
+    return t.lexicon
+
+
 from slop.lexicon.rules.verbosity import run_verbosity
 from slop.lexicon.rules.cowards import run_cowards
 from slop.lexicon.rules.tautology import run_tautology
@@ -43,7 +49,7 @@ def test_name_verbosity_flags_long_function_name(tmp_path: Path):
         "def check_required_binaries_for_python_runtime(): pass\n"
         "def short(): pass\n"
     )
-    result = run_verbosity(tmp_path, _rc(), _slop())
+    result = run_verbosity(_lexicon(tmp_path), _rc(), _slop())
     assert result.status == "fail"
     flagged = {v.symbol for v in result.violations}
     assert "check_required_binaries_for_python_runtime" in flagged
@@ -53,10 +59,10 @@ def test_name_verbosity_flags_long_function_name(tmp_path: Path):
 def test_name_verbosity_threshold(tmp_path: Path):
     (tmp_path / "f.py").write_text("def a_b_c_d(): pass\n")
     # max_tokens=4 => 4 tokens passes
-    result = run_verbosity(tmp_path, _rc(max_tokens=4), _slop())
+    result = run_verbosity(_lexicon(tmp_path), _rc(max_tokens=4), _slop())
     assert result.status == "pass"
     # max_tokens=3 => 4 tokens fails
-    result = run_verbosity(tmp_path, _rc(max_tokens=3), _slop())
+    result = run_verbosity(_lexicon(tmp_path), _rc(max_tokens=3), _slop())
     assert result.status == "fail"
 
 
@@ -64,7 +70,7 @@ def test_name_verbosity_flags_class_name(tmp_path: Path):
     (tmp_path / "f.py").write_text(
         "class AbstractFooBarBazManager:\n    pass\n"
     )
-    result = run_verbosity(tmp_path, _rc(), _slop())
+    result = run_verbosity(_lexicon(tmp_path), _rc(), _slop())
     assert any(v.metadata.get("kind") == "class" for v in result.violations)
 
 
@@ -72,7 +78,7 @@ def test_name_verbosity_check_classes_off(tmp_path: Path):
     (tmp_path / "f.py").write_text(
         "class AbstractFooBarBaz:\n    pass\n"
     )
-    result = run_verbosity(tmp_path, _rc(check_classes=False), _slop())
+    result = run_verbosity(_lexicon(tmp_path), _rc(check_classes=False), _slop())
     assert result.status == "pass"
 
 

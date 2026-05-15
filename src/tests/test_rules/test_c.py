@@ -26,6 +26,12 @@ def _structure(root: Path):
     t = Tree(root)
     t.scan()
     return t.structure
+
+
+def _lexicon(root: Path):
+    t = Tree(root)
+    t.scan()
+    return t.lexicon
 from slop.structure.rules.redundancy import run_redundancy
 from slop.structure.rules.sentinels import run_sentinels
 from slop.lexicon.rules.stutter import run_stutter
@@ -308,8 +314,8 @@ def test_c_verbosity_runs_without_error(tmp_path: Path):
         "    return a + b;\n"
         "}\n"
     )
-    result = run_verbosity(tmp_path, _rule_config(), _slop_config())
-    assert result.summary.get("items_checked", 0) >= 1
+    result = run_verbosity(_lexicon(tmp_path), _rule_config(), _slop_config())
+    assert result.summary.get("entities_analyzed", 0) >= 1
 
 
 # ---------------------------------------------------------------------------

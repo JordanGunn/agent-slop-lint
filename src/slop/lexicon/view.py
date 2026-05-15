@@ -33,7 +33,16 @@ from typing import (
 
 from slop._lexical._naming import scope_label
 
-from slop.tree.records import Callable, Occurrence, ParseResult
+from slop.tree.records import Callable, Occurrence, ParseResult, ScopeKind
+
+import re
+
+_CAMEL_LOWER_UPPER = re.compile(r"([a-z])([A-Z])")
+_CAMEL_UPPER_TITLE = re.compile(r"([A-Z]+)([A-Z][a-z])")
+
+_CLASS_LIKE_SCOPE_KINDS: frozenset[ScopeKind] = frozenset({
+    ScopeKind.CLASS, ScopeKind.INTERFACE, ScopeKind.STRUCT, ScopeKind.TRAIT,
+})
 
 
 class Lexicon:
@@ -101,6 +110,80 @@ class Lexicon:
     def overlap(self, other: Lexicon) -> float:
         """Jaccard-style overlap between this view's alphabet and ``other``'s."""
         raise NotImplementedError
+
+    # ---- identifier-level compute methods ----------------------------------
+
+    @staticmethod
+    def split_tokens(name: str) -> tuple[str, ...]:
+        """Split an identifier into word tokens (snake_case + CamelCase aware).
+
+        ``my_func`` → ``("my", "func")``; ``processData`` → ``("process", "Data")``;
+        ``HTTPClient`` → ``("HTTP", "Client")``; ``__init__`` → ``("init",)``.
+
+        Static — operates on the name string alone, exposed on Lexicon
+        so rules don't need to reach into ``slop._lexical._naming``.
+        """
+        import re
+        cleaned = name.strip("_")
+        cleaned = _CAMEL_LOWER_UPPER.sub(r"\1_\2", cleaned)
+        cleaned = _CAMEL_UPPER_TITLE.sub(r"\1_\2", cleaned)
+        return tuple(p for p in re.split(r"[_\d]+", cleaned) if p)
+
+    def named_entities(self):
+        """Iterate token-split named entities (callables + class-like scopes).
+
+        Yields one ``NamedEntity`` per emitted callable (excluding
+        anonymous lambdas) and per class-like scope (``CLASS``,
+        ``INTERFACE``, ``STRUCT``, ``TRAIT``). The ``kind`` field is
+        ``"function"`` for callables, ``"class"`` for scopes.
+
+        Consumed by entity-name rules (verbosity, stutter, cowards,
+        hammers, tautology). Filters declared via ``where`` /
+        ``under`` apply.
+        """
+        from slop.lexicon.records import NamedEntity
+        from slop.tree.records import CallableKind, ScopeKind
+
+        for p in self._parses:
+            content = p.content
+            for c in p.callables:
+                if not all(f(c) for f in self._filters):
+                    continue
+                if c.kind == CallableKind.LAMBDA:
+                    continue
+                name = c.qualname.rsplit(".", 1)[-1]
+                if name.startswith("<"):
+                    continue
+                tokens = Lexicon.split_tokens(name)
+                if not tokens:
+                    continue
+                yield NamedEntity(
+                    name=name,
+                    kind="function",
+                    file=str(c.path),
+                    line=c.line,
+                    language=p.language,
+                    tokens=tokens,
+                )
+            for s in p.scopes:
+                if not all(f(s) for f in self._filters):
+                    continue
+                if s.kind not in _CLASS_LIKE_SCOPE_KINDS:
+                    continue
+                name = s.qualname.rsplit(".", 1)[-1]
+                if not name or name.startswith("<"):
+                    continue
+                tokens = Lexicon.split_tokens(name)
+                if not tokens:
+                    continue
+                yield NamedEntity(
+                    name=name,
+                    kind="class",
+                    file=str(s.path),
+                    line=s.line,
+                    language=p.language,
+                    tokens=tokens,
+                )
 
     # ---- per-callable compute methods --------------------------------------
 

@@ -1,52 +1,62 @@
-"""lexical.verbosity — flag function/class names with too many tokens.
+"""lexical.verbosity — flag entity names exceeding N word-tokens.
 
-A long function or class name compensates for a missing namespace
-or class. The smell is structural — the name encodes scope the
-codebase doesn't have.
+A long function or class name is usually a class-without-class:
+``check_required_binaries`` is three tokens because the namespace it
+should belong to doesn't exist yet. The smell is structural — the
+name compensates for missing scope.
 """
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from slop._lexical.verbosity import verbosity_kernel
 from slop.config.models import RuleConfig, SlopConfig
-from slop.linter.types import RuleResult
 from slop.linter.slop import Slop
+from slop.linter.types import RuleResult
+
+if TYPE_CHECKING:
+    from slop.lexicon.view import Lexicon
 
 
 def run_verbosity(
-    root: Path, rule_config: RuleConfig, slop_config: SlopConfig,
+    lexicon: Lexicon, rule_config: RuleConfig, slop_config: SlopConfig,
 ) -> RuleResult:
-    max_tokens: int = int(rule_config.params.get("max_tokens", 3))
-    check_classes: bool = bool(rule_config.params.get("check_classes", True))
+    """Flag named entities whose token-split exceeds the threshold."""
+    max_tokens = int(rule_config.params.get("max_tokens", 3))
+    check_classes = bool(rule_config.params.get("check_classes", True))
     severity = rule_config.severity
-
-    result = verbosity_kernel(
-        root=root,
-        languages=slop_config.languages or None,
-        excludes=slop_config.exclude or None,
-        max_tokens=max_tokens,
-        check_classes=check_classes,
-    )
+    root = Path(slop_config.root).expanduser().resolve() if slop_config.root else None
 
     violations: list[Slop] = []
-    for item in result.items:
+    analyzed = 0
+    for entity in lexicon.named_entities():
+        analyzed += 1
+        if entity.kind == "class" and not check_classes:
+            continue
+        if len(entity.tokens) <= max_tokens:
+            continue
+        file = entity.file
+        if root is not None:
+            try:
+                file = str(Path(entity.file).relative_to(root))
+            except ValueError:
+                pass
         violations.append(Slop(
             rule="lexical.verbosity",
-            file=item.file,
-            line=item.line,
-            symbol=item.name,
+            file=file,
+            line=entity.line,
+            symbol=entity.name,
             message=(
-                f"{item.kind} name `{item.name}` has {item.token_count} tokens "
-                f"(> {max_tokens}); consider extracting a namespace or class"
+                f"{entity.kind} '{entity.name}' has {len(entity.tokens)} tokens "
+                f"(threshold {max_tokens}): {list(entity.tokens)}"
             ),
             severity=severity,
-            value=item.token_count,
+            value=len(entity.tokens),
             threshold=max_tokens,
             metadata={
-                "kind": item.kind,
-                "tokens": item.tokens,
-                "language": item.language,
+                "kind": entity.kind,
+                "tokens": list(entity.tokens),
+                "language": entity.language,
             },
         ))
 
@@ -55,9 +65,8 @@ def run_verbosity(
         status="fail" if violations else "pass",
         violations=violations,
         summary={
-            "items_checked": result.items_analyzed,
-            "files_searched": result.files_searched,
+            "entities_analyzed": analyzed,
             "violation_count": len(violations),
+            "check_classes": check_classes,
         },
-        errors=list(result.errors),
     )

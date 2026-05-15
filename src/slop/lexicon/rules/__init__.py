@@ -37,7 +37,7 @@ LEXICAL_RULES: list[RuleDefinition] = [
         default_severity="warning",
         default_enabled=True,
         threshold_label="> 3 tokens",
-        run=legacy_v2_shim(run_verbosity),
+        run=run_verbosity,
     ),
     RuleDefinition(
         name="lexical.cowards",
