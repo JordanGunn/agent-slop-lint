@@ -1,6 +1,6 @@
 """Tests for the v2 ``structural.magic_literals`` rule.
 
-Exercises ``run_magic_literals_v2`` end-to-end via the Structure view.
+Exercises ``run_magic_literals`` end-to-end via the Structure view.
 Verifies the rule detects distinct non-trivial numeric literals in
 function bodies across all 11 supported languages, that the trivial
 set is honoured, and that nested callables get their own metric
@@ -11,7 +11,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from slop.config.models import RuleConfig, SlopConfig
-from slop.structure.rules.magic_literals import run_magic_literals_v2
+from slop.structure.rules.magic_literals import run_magic_literals
 from slop.tree.tree import Tree
 
 
@@ -26,7 +26,7 @@ def _sc(tmp_path: Path) -> SlopConfig:
 def _run(tmp_path: Path, threshold: int = 3):
     cb = Tree(tmp_path)
     cb.scan()
-    return run_magic_literals_v2(cb.structure, _rc(threshold), _sc(tmp_path))
+    return run_magic_literals(cb.structure, _rc(threshold), _sc(tmp_path))
 
 
 class TestTrivials:

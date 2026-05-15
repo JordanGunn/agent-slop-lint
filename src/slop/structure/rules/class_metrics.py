@@ -138,7 +138,7 @@ def _slop(
     )
 
 
-def run_weighted_v2(
+def run_weighted(
     structure: Structure,
     rule_config: RuleConfig,
     slop_config: SlopConfig,
@@ -170,7 +170,7 @@ def run_weighted_v2(
     )
 
 
-def run_coupling_v2(
+def run_coupling(
     structure: Structure,
     rule_config: RuleConfig,
     slop_config: SlopConfig,
@@ -202,7 +202,7 @@ def run_coupling_v2(
     )
 
 
-def run_inheritance_depth_v2(
+def run_inheritance_depth(
     structure: Structure,
     rule_config: RuleConfig,
     slop_config: SlopConfig,
@@ -234,7 +234,7 @@ def run_inheritance_depth_v2(
     )
 
 
-def run_inheritance_children_v2(
+def run_inheritance_children(
     structure: Structure,
     rule_config: RuleConfig,
     slop_config: SlopConfig,

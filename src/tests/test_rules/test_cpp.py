@@ -21,6 +21,12 @@ from slop.structure.rules.combinatorial import run_combinatorial
 from slop.structure.rules.god_module import run_god_module
 from slop.structure.rules.hidden_mutators import run_hidden_mutators
 from slop.tree.tree import Tree
+
+
+def _structure(root: Path):
+    t = Tree(root)
+    t.scan()
+    return t.structure
 from slop.structure.rules.redundancy import run_redundancy
 from slop.structure.rules.sentinels import run_sentinels
 from slop.lexicon.rules.stutter import run_stutter
@@ -49,7 +55,7 @@ def test_cpp_in_class_method_extracts_field_identifier_name(tmp_path: Path):
         "    int legs() const { return 4; }\n"
         "};\n"
     )
-    result = run_cyclomatic(tmp_path, _rule_config(cyclomatic_threshold=0),
+    result = run_cyclomatic(_structure(tmp_path), _rule_config(cyclomatic_threshold=0),
                             _slop_config())
     names = {v.symbol for v in result.violations}
     assert "speak" in names
@@ -63,7 +69,7 @@ def test_cpp_out_of_line_method_extracts_qualified_name(tmp_path: Path):
         "void Animal::speak() { return; }\n"
         "int Animal::legs() const { return 4; }\n"
     )
-    result = run_cyclomatic(tmp_path, _rule_config(cyclomatic_threshold=0),
+    result = run_cyclomatic(_structure(tmp_path), _rule_config(cyclomatic_threshold=0),
                             _slop_config())
     names = {v.symbol for v in result.violations}
     assert "speak" in names
@@ -78,7 +84,7 @@ def test_cpp_operator_overload_extracts_operator_symbol(tmp_path: Path):
         "    Vec operator+(const Vec& r) const { return Vec(); }\n"
         "};\n"
     )
-    result = run_cyclomatic(tmp_path, _rule_config(cyclomatic_threshold=0),
+    result = run_cyclomatic(_structure(tmp_path), _rule_config(cyclomatic_threshold=0),
                             _slop_config())
     names = {v.symbol for v in result.violations}
     assert "==" in names
@@ -92,7 +98,7 @@ def test_cpp_destructor_extracts_tilde_prefix(tmp_path: Path):
         "    ~Shape() { cleanup(); }\n"
         "};\n"
     )
-    result = run_cyclomatic(tmp_path, _rule_config(cyclomatic_threshold=0),
+    result = run_cyclomatic(_structure(tmp_path), _rule_config(cyclomatic_threshold=0),
                             _slop_config())
     names = {v.symbol for v in result.violations}
     assert "~Shape" in names
@@ -105,7 +111,7 @@ def test_cpp_lambda_treated_as_anonymous(tmp_path: Path):
         "    add(1, 2);\n"
         "}\n"
     )
-    result = run_cyclomatic(tmp_path, _rule_config(cyclomatic_threshold=0),
+    result = run_cyclomatic(_structure(tmp_path), _rule_config(cyclomatic_threshold=0),
                             _slop_config())
     names = {v.symbol for v in result.violations}
     assert "<lambda>" in names
@@ -121,7 +127,7 @@ def test_cpp_template_function_detected(tmp_path: Path):
         "    return c;\n"
         "}\n"
     )
-    result = run_cyclomatic(tmp_path, _rule_config(cyclomatic_threshold=2),
+    result = run_cyclomatic(_structure(tmp_path), _rule_config(cyclomatic_threshold=2),
                             _slop_config())
     assert result.status == "fail"
     assert any(v.symbol == "pick" for v in result.violations)
@@ -143,7 +149,7 @@ def test_cpp_cyclomatic_counts_range_for_and_try(tmp_path: Path):
         "    return total;\n"
         "}\n"
     )
-    result = run_cyclomatic(tmp_path, _rule_config(cyclomatic_threshold=2),
+    result = run_cyclomatic(_structure(tmp_path), _rule_config(cyclomatic_threshold=2),
                             _slop_config())
     assert result.status == "fail"
     assert any(v.symbol == "process" for v in result.violations)
@@ -157,7 +163,7 @@ def test_cpp_cognitive_runs_without_error(tmp_path: Path):
         "    return 1;\n"
         "}\n"
     )
-    result = run_cognitive(tmp_path, _rule_config(cognitive_threshold=99),
+    result = run_cognitive(_structure(tmp_path), _rule_config(cognitive_threshold=99),
                            _slop_config())
     assert result.status == "pass"
 
@@ -248,7 +254,7 @@ def test_cpp_god_module_counts_top_level_definitions(tmp_path: Path):
     body.append("template <typename T> T id(T v) { return v; }")
     (tmp_path / "many.cpp").write_text("\n".join(body) + "\n")
 
-    result = run_god_module(tmp_path, _rule_config(threshold=10), _slop_config())
+    result = run_god_module(_structure(tmp_path), _rule_config(threshold=10), _slop_config())
     assert result.status == "fail"
     assert any("many.cpp" in v.file for v in result.violations)
 

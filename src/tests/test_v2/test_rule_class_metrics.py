@@ -17,10 +17,10 @@ from pathlib import Path
 
 from slop.config.models import RuleConfig, SlopConfig
 from slop.structure.rules.class_metrics import (
-    run_coupling_v2,
-    run_inheritance_children_v2,
-    run_inheritance_depth_v2,
-    run_weighted_v2,
+    run_coupling,
+    run_inheritance_children,
+    run_inheritance_depth,
+    run_weighted,
 )
 from slop.tree.tree import Tree
 
@@ -42,7 +42,7 @@ def _structure(tmp_path: Path):
 class TestWMC:
     def test_class_with_no_methods_has_wmc_zero(self, tmp_path: Path):
         (tmp_path / "a.py").write_text("class A:\n    pass\n")
-        result = run_weighted_v2(_structure(tmp_path), _rc(0), _sc(tmp_path))
+        result = run_weighted(_structure(tmp_path), _rc(0), _sc(tmp_path))
         assert result.status == "pass"
 
     def test_class_method_ccx_sums(self, tmp_path: Path):
@@ -60,7 +60,7 @@ class TestWMC:
             "        return 0\n"
         )
         # WMC = 1 + 2 + 3 = 6. Threshold 5 → fail with WMC=6.
-        result = run_weighted_v2(_structure(tmp_path), _rc(5), _sc(tmp_path))
+        result = run_weighted(_structure(tmp_path), _rc(5), _sc(tmp_path))
         assert result.status == "fail"
         assert result.violations[0].symbol == "A"
         assert result.violations[0].value == 6
@@ -79,7 +79,7 @@ class TestCBO:
             "        self.habitat = Habitat()\n"
         )
         # Animal refs Pet, Trainer, Habitat → CBO = 3.
-        result = run_coupling_v2(_structure(tmp_path), _rc(2), _sc(tmp_path))
+        result = run_coupling(_structure(tmp_path), _rc(2), _sc(tmp_path))
         animal = next(v for v in result.violations if v.symbol == "Animal")
         assert animal.value == 3
 
@@ -89,7 +89,7 @@ class TestCBO:
             "    def make(self):\n"
             "        return A()\n"
         )
-        result = run_coupling_v2(_structure(tmp_path), _rc(0), _sc(tmp_path))
+        result = run_coupling(_structure(tmp_path), _rc(0), _sc(tmp_path))
         # A references only itself → CBO = 0.
         assert result.status == "pass"
 
@@ -100,7 +100,7 @@ class TestCBO:
             "        # External, not declared in corpus → not counted.\n"
             "        return ExternalLib.Stuff()\n"
         )
-        result = run_coupling_v2(_structure(tmp_path), _rc(0), _sc(tmp_path))
+        result = run_coupling(_structure(tmp_path), _rc(0), _sc(tmp_path))
         # No known classes outside Foo → CBO = 0.
         assert result.status == "pass"
 
@@ -113,7 +113,7 @@ class TestDIT:
             "class C(B): pass\n"
             "class D(C): pass\n"
         )
-        result = run_inheritance_depth_v2(_structure(tmp_path), _rc(2), _sc(tmp_path))
+        result = run_inheritance_depth(_structure(tmp_path), _rc(2), _sc(tmp_path))
         # D's chain: D → C → B → A → 3 levels above D. DIT = 3.
         flagged = {v.symbol: v.value for v in result.violations}
         assert flagged.get("D") == 3
@@ -122,7 +122,7 @@ class TestDIT:
         (tmp_path / "a.py").write_text(
             "class Root: pass\n"
         )
-        result = run_inheritance_depth_v2(_structure(tmp_path), _rc(0), _sc(tmp_path))
+        result = run_inheritance_depth(_structure(tmp_path), _rc(0), _sc(tmp_path))
         # Root has no parents → DIT = 0, threshold = 0, NOT > 0.
         assert result.status == "pass"
 
@@ -131,7 +131,7 @@ class TestDIT:
         (tmp_path / "a.py").write_text(
             "class A(ExternalBase): pass\n"
         )
-        result = run_inheritance_depth_v2(_structure(tmp_path), _rc(0), _sc(tmp_path))
+        result = run_inheritance_depth(_structure(tmp_path), _rc(0), _sc(tmp_path))
         # ExternalBase isn't in known classes → DIT(A) = 0.
         assert result.status == "pass"
 
@@ -147,7 +147,7 @@ class TestNOC:
             "class E(Base): pass\n"
         )
         # Base has 5 direct subclasses.
-        result = run_inheritance_children_v2(_structure(tmp_path), _rc(3), _sc(tmp_path))
+        result = run_inheritance_children(_structure(tmp_path), _rc(3), _sc(tmp_path))
         flagged = {v.symbol: v.value for v in result.violations}
         assert flagged.get("Base") == 5
 
@@ -158,7 +158,7 @@ class TestNOC:
             "class C(B): pass\n"  # C inherits B, not A directly
         )
         # A has 1 direct child (B); C is a grandchild, not a child.
-        result = run_inheritance_children_v2(_structure(tmp_path), _rc(0), _sc(tmp_path))
+        result = run_inheritance_children(_structure(tmp_path), _rc(0), _sc(tmp_path))
         flagged = {v.symbol: v.value for v in result.violations}
         assert flagged.get("A") == 1
         assert flagged.get("B") == 1
@@ -174,7 +174,7 @@ class TestMultiLanguage:
             "class C(B): pass\n"
             "class D(C): pass\n"
         )
-        result = run_inheritance_depth_v2(_structure(tmp_path), _rc(0), _sc(tmp_path))
+        result = run_inheritance_depth(_structure(tmp_path), _rc(0), _sc(tmp_path))
         d = next(v for v in result.violations if v.symbol == "D")
         assert d.value == 3
 
@@ -185,7 +185,7 @@ class TestMultiLanguage:
             "class C extends B {}\n"
             "class D extends C {}\n"
         )
-        result = run_inheritance_depth_v2(_structure(tmp_path), _rc(0), _sc(tmp_path))
+        result = run_inheritance_depth(_structure(tmp_path), _rc(0), _sc(tmp_path))
         d = next(v for v in result.violations if v.symbol == "D")
         assert d.value == 3
 
@@ -196,7 +196,7 @@ class TestMultiLanguage:
             "class C < B; end\n"
             "class D < C; end\n"
         )
-        result = run_inheritance_depth_v2(_structure(tmp_path), _rc(0), _sc(tmp_path))
+        result = run_inheritance_depth(_structure(tmp_path), _rc(0), _sc(tmp_path))
         d = next(v for v in result.violations if v.symbol == "D")
         assert d.value == 3
 
@@ -207,7 +207,7 @@ class TestMultiLanguage:
             "class C : public B {};\n"
             "class D : public C {};\n"
         )
-        result = run_inheritance_depth_v2(_structure(tmp_path), _rc(0), _sc(tmp_path))
+        result = run_inheritance_depth(_structure(tmp_path), _rc(0), _sc(tmp_path))
         d = next(v for v in result.violations if v.symbol == "D")
         assert d.value == 3
 
@@ -225,7 +225,7 @@ class TestGoReceiverLinking:
             "func (a Animal) Walk() { for i := 0; i < 4; i++ { _ = i } }\n"  # ccx 2
             "func (a *Animal) Run() { if a == nil { return } }\n"            # ccx 2
         )
-        result = run_weighted_v2(_structure(tmp_path), _rc(0), _sc(tmp_path))
+        result = run_weighted(_structure(tmp_path), _rc(0), _sc(tmp_path))
         animal = next(v for v in result.violations if v.symbol == "Animal")
         assert animal.value == 6  # 2 + 2 + 2
 
@@ -262,7 +262,7 @@ class TestRustImplLinking:
             "    }\n"
             "}\n"
         )
-        result = run_weighted_v2(_structure(tmp_path), _rc(0), _sc(tmp_path))
+        result = run_weighted(_structure(tmp_path), _rc(0), _sc(tmp_path))
         animal = next(v for v in result.violations if v.symbol == "Animal")
         assert animal.value == 6
 
@@ -323,7 +323,7 @@ class TestRubyOpenClassAggregation:
             "end\n"
         )
         # Aggregated WMC = 1 + 2 + 2 = 5. Threshold 4 → fail.
-        result = run_weighted_v2(_structure(tmp_path), _rc(4), _sc(tmp_path))
+        result = run_weighted(_structure(tmp_path), _rc(4), _sc(tmp_path))
         flagged = [v for v in result.violations if v.symbol == "Animal"]
         # ONE entry, not two — aggregation merged them.
         assert len(flagged) == 1
@@ -347,6 +347,6 @@ class TestRubyOpenClassAggregation:
         )
         # If aggregated: WMC = 2 + 2 = 4 → fail at threshold 3.
         # If NOT aggregated: WMC = 2 each → pass at threshold 3.
-        result = run_weighted_v2(_structure(tmp_path), _rc(3), _sc(tmp_path))
+        result = run_weighted(_structure(tmp_path), _rc(3), _sc(tmp_path))
         flagged = [v for v in result.violations if v.symbol == "Animal"]
         assert len(flagged) == 0  # both pass independently

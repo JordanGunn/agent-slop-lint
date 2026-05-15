@@ -20,6 +20,12 @@ from slop.structure.rules.dependencies import run_cycles
 from slop.structure.rules.god_module import run_god_module
 from slop.structure.rules.hidden_mutators import run_hidden_mutators
 from slop.tree.tree import Tree
+
+
+def _structure(root: Path):
+    t = Tree(root)
+    t.scan()
+    return t.structure
 from slop.structure.rules.redundancy import run_redundancy
 from slop.structure.rules.sentinels import run_sentinels
 from slop.lexicon.rules.stutter import run_stutter
@@ -53,12 +59,12 @@ unsigned long long big(void) { return 0; }
 
 def test_c_cyclomatic_extracts_plain_function_name(tmp_path: Path):
     (tmp_path / "names.c").write_text(_NAME_EXTRACTION_C)
-    result = run_cyclomatic(tmp_path, _rule_config(cyclomatic_threshold=99), _slop_config())
+    result = run_cyclomatic(_structure(tmp_path), _rule_config(cyclomatic_threshold=99), _slop_config())
     names = {f.get("symbol") if isinstance(f, dict) else f.symbol for f in result.violations}
     # No violations expected; we instead inspect the kernel via summary
     # — but to verify name extraction, run with threshold=1 to flag every
     # function and check the symbol set.
-    result = run_cyclomatic(tmp_path, _rule_config(cyclomatic_threshold=0), _slop_config())
+    result = run_cyclomatic(_structure(tmp_path), _rule_config(cyclomatic_threshold=0), _slop_config())
     names = {v.symbol for v in result.violations}
     assert "add" in names
     assert "square" in names
@@ -76,7 +82,7 @@ def test_c_typedef_function_pointer_not_treated_as_function(tmp_path: Path):
         "typedef int (*comparator)(int, int);\n"
         "int real_fn(int a, int b) { return a + b; }\n"
     )
-    result = run_cyclomatic(tmp_path, _rule_config(cyclomatic_threshold=0), _slop_config())
+    result = run_cyclomatic(_structure(tmp_path), _rule_config(cyclomatic_threshold=0), _slop_config())
     names = {v.symbol for v in result.violations}
     assert "real_fn" in names
     assert "comparator" not in names
@@ -103,14 +109,14 @@ int classify(int x) {
 
 def test_c_cyclomatic_flags_branchy_function(tmp_path: Path):
     (tmp_path / "branchy.c").write_text(_BRANCHY_C)
-    result = run_cyclomatic(tmp_path, _rule_config(cyclomatic_threshold=4), _slop_config())
+    result = run_cyclomatic(_structure(tmp_path), _rule_config(cyclomatic_threshold=4), _slop_config())
     assert result.status == "fail", result.summary
     assert any(v.symbol == "classify" for v in result.violations)
 
 
 def test_c_cognitive_flags_nested_branchy(tmp_path: Path):
     (tmp_path / "branchy.c").write_text(_BRANCHY_C)
-    result = run_cognitive(tmp_path, _rule_config(cognitive_threshold=3), _slop_config())
+    result = run_cognitive(_structure(tmp_path), _rule_config(cognitive_threshold=3), _slop_config())
     assert result.status == "fail"
     assert any(v.symbol == "classify" for v in result.violations)
 
@@ -126,7 +132,7 @@ def test_c_cyclomatic_counts_switch_cases(tmp_path: Path):
         "    }\n"
         "}\n"
     )
-    result = run_cyclomatic(tmp_path, _rule_config(cyclomatic_threshold=2), _slop_config())
+    result = run_cyclomatic(_structure(tmp_path), _rule_config(cyclomatic_threshold=2), _slop_config())
     assert result.status == "fail"
     assert any(v.symbol == "sw" for v in result.violations)
 
@@ -213,7 +219,7 @@ def test_c_god_module_counts_top_level_definitions(tmp_path: Path):
     body.append("typedef int Counter;")
     (tmp_path / "many.c").write_text("\n".join(body) + "\n")
 
-    result = run_god_module(tmp_path, _rule_config(threshold=10), _slop_config())
+    result = run_god_module(_structure(tmp_path), _rule_config(threshold=10), _slop_config())
     assert result.status == "fail"
     assert any("many.c" in v.file for v in result.violations)
 

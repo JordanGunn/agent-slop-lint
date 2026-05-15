@@ -42,7 +42,7 @@ _TRIVIAL_INTS: frozenset[int] = frozenset({-1, 0, 1, 2})
 _TRIVIAL_FLOATS: frozenset[float] = frozenset({-1.0, 0.0, 0.5, 1.0, 2.0, 100.0})
 
 
-def run_magic_literals_v2(
+def run_magic_literals(
     structure: Structure,
     rule_config: RuleConfig,
     slop_config: SlopConfig,

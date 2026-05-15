@@ -17,18 +17,18 @@ from slop.linter.types import RuleDefinition
 from .escape_hatches import run_escape_hatches
 from .architecture import run_rigidity, run_uselessness
 from .class_metrics import (
-    run_coupling_v2,
-    run_inheritance_children_v2,
-    run_inheritance_depth_v2,
-    run_weighted_v2,
+    run_coupling,
+    run_inheritance_children,
+    run_inheritance_depth,
+    run_weighted,
 )
 from .clone_density import run_clone_density
 from .combinatorial import run_combinatorial
-from .complexity import run_cognitive_v2, run_cyclomatic_v2
+from .complexity import run_cognitive, run_cyclomatic
 from .dependencies import run_cycles
-from .god_module import run_god_module_v2
-from .halstead import run_density_v2, run_volume_v2
-from .magic_literals import run_magic_literals_v2
+from .god_module import run_god_module
+from .halstead import run_density, run_volume
+from .magic_literals import run_magic_literals
 from .hidden_mutators import run_hidden_mutators
 from .redundancy import run_redundancy
 from .sentinels import run_sentinels
@@ -42,7 +42,7 @@ STRUCTURAL_RULES: list[RuleDefinition] = [
         default_severity="error",
         default_enabled=True,
         threshold_label="CCX > 10",
-        run=run_cyclomatic_v2,
+        run=run_cyclomatic,
     ),
     RuleDefinition(
         name="structural.complexity.cognitive",
@@ -51,7 +51,7 @@ STRUCTURAL_RULES: list[RuleDefinition] = [
         default_severity="error",
         default_enabled=True,
         threshold_label="CogC > 15",
-        run=run_cognitive_v2,
+        run=run_cognitive,
     ),
     RuleDefinition(
         name="structural.complexity.combinatorial",
@@ -71,7 +71,7 @@ STRUCTURAL_RULES: list[RuleDefinition] = [
         default_severity="error",
         default_enabled=True,
         threshold_label="WMC > 40",
-        run=run_weighted_v2,
+        run=run_weighted,
     ),
     RuleDefinition(
         name="structural.class.coupling",
@@ -80,7 +80,7 @@ STRUCTURAL_RULES: list[RuleDefinition] = [
         default_severity="error",
         default_enabled=True,
         threshold_label="CBO > 8",
-        run=run_coupling_v2,
+        run=run_coupling,
     ),
     RuleDefinition(
         name="structural.class.inheritance.depth",
@@ -89,7 +89,7 @@ STRUCTURAL_RULES: list[RuleDefinition] = [
         default_severity="error",
         default_enabled=True,
         threshold_label="DIT > 4",
-        run=run_inheritance_depth_v2,
+        run=run_inheritance_depth,
     ),
     RuleDefinition(
         name="structural.class.inheritance.children",
@@ -98,7 +98,7 @@ STRUCTURAL_RULES: list[RuleDefinition] = [
         default_severity="error",
         default_enabled=True,
         threshold_label="NOC > 10",
-        run=run_inheritance_children_v2,
+        run=run_inheritance_children,
     ),
 
     # --- structural.packages.* (Martin 1994 — D' split by failure mode) ---
@@ -195,7 +195,7 @@ STRUCTURAL_RULES: list[RuleDefinition] = [
         default_severity="warning",
         default_enabled=True,
         threshold_label="> 20",
-        run=run_god_module_v2,
+        run=run_god_module,
     ),
 
     # --- structural.difficulty.* (Halstead vocabulary/density family) ---
@@ -206,7 +206,7 @@ STRUCTURAL_RULES: list[RuleDefinition] = [
         default_severity="error",
         default_enabled=True,
         threshold_label="V > 1500",
-        run=run_volume_v2,
+        run=run_volume,
     ),
     RuleDefinition(
         name="structural.difficulty.density",
@@ -215,7 +215,7 @@ STRUCTURAL_RULES: list[RuleDefinition] = [
         default_severity="error",
         default_enabled=True,
         threshold_label="D > 30",
-        run=run_density_v2,
+        run=run_density,
     ),
     RuleDefinition(
         name="structural.magic_literals",
@@ -224,6 +224,6 @@ STRUCTURAL_RULES: list[RuleDefinition] = [
         default_severity="warning",
         default_enabled=True,
         threshold_label="> 3",
-        run=run_magic_literals_v2,
+        run=run_magic_literals,
     ),
 ]

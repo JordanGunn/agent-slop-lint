@@ -5,6 +5,13 @@ from __future__ import annotations
 from pathlib import Path
 
 from slop.config.models import RuleConfig, SlopConfig
+from slop.tree.tree import Tree
+
+
+def _structure(root: Path):
+    t = Tree(root)
+    t.scan()
+    return t.structure
 from slop.structure.rules.complexity import run_cognitive, run_cyclomatic
 
 # Python source with known complexity values
@@ -65,14 +72,14 @@ def _rule_config(**overrides) -> RuleConfig:
 
 def test_cyclomatic_pass_when_below_threshold(tmp_path: Path):
     _write_file(tmp_path, _SIMPLE)
-    result = run_cyclomatic(tmp_path, _rule_config(), _default_config())
+    result = run_cyclomatic(_structure(tmp_path), _rule_config(), _default_config())
     assert result.status == "pass"
     assert result.violations == []
 
 
 def test_cyclomatic_fail_when_above_threshold(tmp_path: Path):
     _write_file(tmp_path, _COMPLEX)
-    result = run_cyclomatic(tmp_path, _rule_config(cyclomatic_threshold=10), _default_config())
+    result = run_cyclomatic(_structure(tmp_path), _rule_config(cyclomatic_threshold=10), _default_config())
     assert result.status == "fail"
     assert len(result.violations) == 1
     v = result.violations[0]
@@ -84,27 +91,28 @@ def test_cyclomatic_fail_when_above_threshold(tmp_path: Path):
 def test_cyclomatic_threshold_is_configurable(tmp_path: Path):
     _write_file(tmp_path, _MODERATE)
     # threshold=5 → ccx=6 should fail
-    result = run_cyclomatic(tmp_path, _rule_config(cyclomatic_threshold=5), _default_config())
+    result = run_cyclomatic(_structure(tmp_path), _rule_config(cyclomatic_threshold=5), _default_config())
     assert result.status == "fail"
     # threshold=10 → ccx=6 should pass
-    result = run_cyclomatic(tmp_path, _rule_config(cyclomatic_threshold=10), _default_config())
+    result = run_cyclomatic(_structure(tmp_path), _rule_config(cyclomatic_threshold=10), _default_config())
     assert result.status == "pass"
 
 
 def test_cyclomatic_violation_has_correct_fields(tmp_path: Path):
     _write_file(tmp_path, _COMPLEX)
-    result = run_cyclomatic(tmp_path, _rule_config(cyclomatic_threshold=10), _default_config())
+    result = run_cyclomatic(_structure(tmp_path), _rule_config(cyclomatic_threshold=10), _default_config())
     v = result.violations[0]
     assert v.file is not None
     assert v.line is not None and v.line > 0
     assert v.severity == "error"
     assert v.threshold == 10
-    assert "zone" in v.metadata
+    assert "end_line" in v.metadata
+    assert "qualname" in v.metadata
 
 
 def test_cyclomatic_summary_includes_function_count(tmp_path: Path):
     _write_file(tmp_path, _SIMPLE + "\n" + _MODERATE)
-    result = run_cyclomatic(tmp_path, _rule_config(), _default_config())
+    result = run_cyclomatic(_structure(tmp_path), _rule_config(), _default_config())
     assert result.summary["functions_checked"] >= 2
 
 
@@ -125,13 +133,13 @@ def deeply_nested(a, b, c):
 
 def test_cognitive_pass_when_below_threshold(tmp_path: Path):
     _write_file(tmp_path, _SIMPLE)
-    result = run_cognitive(tmp_path, _rule_config(), _default_config())
+    result = run_cognitive(_structure(tmp_path), _rule_config(), _default_config())
     assert result.status == "pass"
 
 
 def test_cognitive_fail_when_above_threshold(tmp_path: Path):
     _write_file(tmp_path, _NESTED)
-    result = run_cognitive(tmp_path, _rule_config(cognitive_threshold=3), _default_config())
+    result = run_cognitive(_structure(tmp_path), _rule_config(cognitive_threshold=3), _default_config())
     assert result.status == "fail"
     assert len(result.violations) >= 1
     assert result.violations[0].rule == "structural.complexity.cognitive"
@@ -140,5 +148,5 @@ def test_cognitive_fail_when_above_threshold(tmp_path: Path):
 def test_cognitive_threshold_configurable(tmp_path: Path):
     _write_file(tmp_path, _NESTED)
     # threshold=100 → should pass
-    result = run_cognitive(tmp_path, _rule_config(cognitive_threshold=100), _default_config())
+    result = run_cognitive(_structure(tmp_path), _rule_config(cognitive_threshold=100), _default_config())
     assert result.status == "pass"

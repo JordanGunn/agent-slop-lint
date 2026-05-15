@@ -10,6 +10,13 @@ from __future__ import annotations
 from pathlib import Path
 
 from slop.config.models import RuleConfig, SlopConfig
+from slop.tree.tree import Tree
+
+
+def _structure(root: Path):
+    t = Tree(root)
+    t.scan()
+    return t.structure
 
 
 from slop.lexicon.rules.verbosity import run_verbosity

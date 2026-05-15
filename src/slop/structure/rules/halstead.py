@@ -48,7 +48,7 @@ from slop.linter.types import RuleResult
 from slop.structure.view import Structure, _resolve_body
 
 
-def run_volume_v2(
+def run_volume(
     structure: Structure,
     rule_config: RuleConfig,
     slop_config: SlopConfig,
@@ -94,7 +94,7 @@ def run_volume_v2(
     )
 
 
-def run_density_v2(
+def run_density(
     structure: Structure,
     rule_config: RuleConfig,
     slop_config: SlopConfig,
