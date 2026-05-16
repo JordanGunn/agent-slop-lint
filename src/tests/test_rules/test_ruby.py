@@ -366,7 +366,7 @@ def test_ruby_stutter_runs(tmp_path: Path):
         "  parse_buffer + parse_size\n"
         "end\n"
     )
-    result = run_stutter(tmp_path, _rule_config(min_overlap_tokens=1),
+    result = run_stutter(_lexicon(tmp_path), _rule_config(min_overlap_tokens=1),
                          _slop_config())
     assert result.status in ("pass", "fail")
 

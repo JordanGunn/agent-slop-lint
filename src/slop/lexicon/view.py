@@ -129,6 +129,26 @@ class Lexicon:
         cleaned = _CAMEL_UPPER_TITLE.sub(r"\1_\2", cleaned)
         return tuple(p for p in re.split(r"[_\d]+", cleaned) if p)
 
+    def files(self) -> Iterable[Any]:
+        """Yield each unique parsed file's path (as ``pathlib.Path``).
+
+        Used by rules that operate at the file/module level (hammers'
+        module-name check, future per-file lexical signals).
+        """
+        for p in self._parses:
+            yield p.path
+
+    def callables(self) -> Iterable[Callable]:
+        """Yield every callable record in this view (filtered if sliced).
+
+        Used by rules that need parameter / annotation access — the
+        Lexicon's view of callables, with the same where/under filters
+        applied that ``walk``/``named_entities`` honour.
+        """
+        for c in self._callable_by_key.values():
+            if all(f(c) for f in self._filters):
+                yield c
+
     def named_entities(self):
         """Iterate token-split named entities (callables + class-like scopes).
 

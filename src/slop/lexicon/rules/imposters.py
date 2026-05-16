@@ -32,6 +32,22 @@ from slop.lexicon.view import Lexicon
 from slop.linter.slop import Slop
 from slop.config.models import RuleConfig, SlopConfig
 from slop.linter.types import RuleResult
+
+
+def _derive_root(lexicon, slop_config: SlopConfig):
+    """Prefer slop_config.root when explicitly set; otherwise fall back
+    to the longest common directory across the lexicon's parses."""
+    if slop_config.root and slop_config.root != ".":
+        return Path(slop_config.root).expanduser().resolve()
+    import os
+    paths = [p.path for p in lexicon._parses]
+    if paths:
+        common = Path(os.path.commonpath([str(p) for p in paths]))
+        return common.parent if common.is_file() else common
+    if slop_config.root:
+        return Path(slop_config.root).expanduser().resolve()
+    return Path.cwd()
+
 from slop.linter.slop import Slop
 
 
@@ -61,91 +77,6 @@ _PROFILE_MESSAGES = {
 
 
 def run_imposters(
-    root: Path, rule_config: RuleConfig, slop_config: SlopConfig,
-) -> RuleResult:
-    """Flag parameter clusters; profile each by body-shape + receiver-call density."""
-    min_cluster: int = int(rule_config.params.get("min_cluster", 3))
-    raw_exempt = rule_config.params.get("exempt_names",
-                                        ["self", "cls"])
-    exempt_names = frozenset(raw_exempt) if raw_exempt else frozenset()
-    severity = rule_config.severity
-
-    result = imposters_kernel(
-        root,
-        languages=slop_config.languages or None,
-        excludes=slop_config.exclude or None,
-        min_cluster=min_cluster,
-        exempt_names=exempt_names,
-    )
-
-    violations: list[Slop] = []
-    for cluster in result.clusters:
-        # Suppress non-actionable profiles (infrastructure, false_positive)
-        # and unknown (which only happens when the cluster has fewer than
-        # 2 members with body data — rare).
-        if cluster.profile_label in (
-            "infrastructure", "false_positive", "unknown",
-        ):
-            continue
-        anchor_name, anchor_file, anchor_line = cluster.members[0]
-        scope_phrase = (
-            f"in `{cluster.scope}`" if cluster.scope_kind == "file"
-            else f"under `{cluster.scope}/`" if cluster.scope_kind == "package"
-            else "across the codebase"
-        )
-        message = _PROFILE_MESSAGES.get(
-            cluster.profile_label,
-            "{n} functions share `{param}` as first parameter.",
-        ).format(
-            n=len(cluster.members),
-            scope_phrase=scope_phrase,
-            param=cluster.parameter_name,
-            rc=cluster.mean_receiver_calls,
-            bj=cluster.body_jaccard_mean,
-        )
-        violations.append(Slop(
-            rule="lexical.imposters",
-            file=anchor_file,
-            line=anchor_line,
-            symbol=cluster.parameter_name,
-            message=message,
-            severity=severity,
-            metadata={
-                "profile": cluster.profile_label,
-                "verdict": cluster.verdict,
-                "scope": cluster.scope,
-                "scope_kind": cluster.scope_kind,
-                "body_jaccard_mean": round(cluster.body_jaccard_mean, 3),
-                "mean_receiver_calls": round(cluster.mean_receiver_calls, 2),
-                "modal_overlap_mean": round(cluster.modal_overlap_mean, 3),
-                "members": [
-                    {"name": n, "file": f, "line": l}
-                    for n, f, l in cluster.members
-                ],
-                "parameter_types": sorted(cluster.parameter_types),
-            },
-        ))
-
-    profile_counts: dict[str, int] = {}
-    for c in result.clusters:
-        profile_counts[c.profile_label] = profile_counts.get(c.profile_label, 0) + 1
-
-    return RuleResult(
-        rule="lexical.imposters",
-        status="fail" if violations else "pass",
-        violations=violations,
-        summary={
-            "functions_checked": result.functions_analyzed,
-            "files_searched": result.files_searched,
-            "clusters_detected": len(result.clusters),
-            "profile_counts": profile_counts,
-            "violation_count": len(violations),
-        },
-        errors=list(result.errors),
-    )
-
-
-def run_imposters_v2(
     lexicon: Lexicon,
     rule_config: RuleConfig,
     slop_config: SlopConfig,
@@ -164,7 +95,7 @@ def run_imposters_v2(
     raw_exempt = rule_config.params.get("exempt_names", ["self", "cls"])
     exempt_names = frozenset(raw_exempt) if raw_exempt else frozenset()
     severity = rule_config.severity
-    root = Path(slop_config.root).expanduser().resolve()
+    root = _derive_root(lexicon, slop_config)
 
     clusters = lexicon.first_param_clusters(
         min_cluster=min_cluster,

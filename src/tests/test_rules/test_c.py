@@ -303,7 +303,7 @@ def test_c_stutter_flags_repeated_function_tokens(tmp_path: Path):
         "    return parse_buffer + parse_size;\n"
         "}\n"
     )
-    result = run_stutter(tmp_path, _rule_config(min_overlap_tokens=1), _slop_config())
+    result = run_stutter(_lexicon(tmp_path), _rule_config(min_overlap_tokens=1), _slop_config())
     # Best-effort assertion: kernel runs and inspects the function.
     assert result.status in ("pass", "fail")
 

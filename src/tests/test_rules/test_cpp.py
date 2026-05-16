@@ -349,7 +349,7 @@ def test_cpp_stutter_flags_repeated_function_tokens(tmp_path: Path):
         "    return parse_buffer + parse_size;\n"
         "}\n"
     )
-    result = run_stutter(tmp_path, _rule_config(min_overlap_tokens=1),
+    result = run_stutter(_lexicon(tmp_path), _rule_config(min_overlap_tokens=1),
                          _slop_config())
     assert result.status in ("pass", "fail")
 

@@ -93,7 +93,7 @@ def test_numbered_variants_flags_numeric_suffix(tmp_path: Path):
         "def attempt_2(): pass\n"
         "def normal(): pass\n"
     )
-    result = run_cowards(tmp_path, _rc(), _slop())
+    result = run_cowards(_lexicon(tmp_path), _rc(), _slop())
     flagged = {v.symbol for v in result.violations}
     assert "attempt_1" in flagged
     assert "attempt_2" in flagged
@@ -106,7 +106,7 @@ def test_numbered_variants_flags_alphabetic_suffix(tmp_path: Path):
         "def parse_new(): pass\n"
         "def fetch_local(): pass\n"
     )
-    result = run_cowards(tmp_path, _rc(), _slop())
+    result = run_cowards(_lexicon(tmp_path), _rc(), _slop())
     flagged = {v.symbol for v in result.violations}
     assert "parse_old" in flagged
     assert "parse_new" in flagged
@@ -116,7 +116,7 @@ def test_numbered_variants_flags_alphabetic_suffix(tmp_path: Path):
 def test_numbered_variants_skips_short_stems(tmp_path: Path):
     """Single-char stems (a1, x2) are loop vars / array indices."""
     (tmp_path / "f.py").write_text("def a1(): pass\n")
-    result = run_cowards(tmp_path, _rc(min_stem_tokens=2), _slop())
+    result = run_cowards(_lexicon(tmp_path), _rc(min_stem_tokens=2), _slop())
     flagged = {v.symbol for v in result.violations}
     assert "a1" not in flagged
 
@@ -131,7 +131,7 @@ def test_weasel_words_flags_manager_suffix(tmp_path: Path):
         "class UserManager:\n    pass\n"
         "class Order:\n    pass\n"
     )
-    result = run_hammers(tmp_path, _rc(), _slop())
+    result = run_hammers(_lexicon(tmp_path), _rc(), _slop())
     flagged = {v.symbol for v in result.violations}
     assert "UserManager" in flagged
     assert "Order" not in flagged
@@ -139,7 +139,7 @@ def test_weasel_words_flags_manager_suffix(tmp_path: Path):
 
 def test_weasel_words_severity_override(tmp_path: Path):
     (tmp_path / "f.py").write_text("class FooObject:\n    pass\n")
-    result = run_hammers(tmp_path, _rc(), _slop())
+    result = run_hammers(_lexicon(tmp_path), _rc(), _slop())
     obj_hits = [v for v in result.violations if v.symbol == "FooObject"]
     assert obj_hits
     # Object → severity = error in default profile
@@ -149,7 +149,7 @@ def test_weasel_words_severity_override(tmp_path: Path):
 def test_weasel_words_module_name_match(tmp_path: Path):
     """A file named utils.py should flag on the module-name position."""
     (tmp_path / "utils.py").write_text("def normal(): pass\n")
-    result = run_hammers(tmp_path, _rc(), _slop())
+    result = run_hammers(_lexicon(tmp_path), _rc(), _slop())
     module_hits = [
         v for v in result.violations
         if v.metadata.get("matched_position") == "module_name"
@@ -162,7 +162,7 @@ def test_weasel_words_test_module_exempt(tmp_path: Path):
     test_dir = tmp_path / "tests"
     test_dir.mkdir()
     (test_dir / "test_foo.py").write_text("class UserSpec:\n    pass\n")
-    result = run_hammers(tmp_path, _rc(), _slop())
+    result = run_hammers(_lexicon(tmp_path), _rc(), _slop())
     flagged = {v.symbol for v in result.violations}
     assert "UserSpec" not in flagged
 
@@ -172,7 +172,7 @@ def test_weasel_words_custom_terms(tmp_path: Path):
     custom = [
         {"word": "Frobnicator", "positions": ["suffix"], "severity": "warning"}
     ]
-    result = run_hammers(tmp_path, _rc(terms=custom), _slop())
+    result = run_hammers(_lexicon(tmp_path), _rc(terms=custom), _slop())
     flagged = {v.symbol for v in result.violations}
     assert "FooFrobnicator" in flagged
 
@@ -186,7 +186,7 @@ def test_type_tag_suffixes_flags_dict(tmp_path: Path):
     (tmp_path / "f.py").write_text(
         "def a(result_dict: dict[str, int]) -> None: ...\n"
     )
-    result = run_tautology(tmp_path, _rc(), _slop())
+    result = run_tautology(_lexicon(tmp_path), _rc(), _slop())
     flagged = {v.symbol for v in result.violations}
     assert "result_dict" in flagged
 
@@ -196,7 +196,7 @@ def test_type_tag_suffixes_flags_path(tmp_path: Path):
         "from pathlib import Path\n"
         "def x(config_path: Path) -> None: ...\n"
     )
-    result = run_tautology(tmp_path, _rc(), _slop())
+    result = run_tautology(_lexicon(tmp_path), _rc(), _slop())
     flagged = {v.symbol for v in result.violations}
     assert "config_path" in flagged
 
@@ -206,7 +206,7 @@ def test_type_tag_suffixes_skips_legitimate_domain_term(tmp_path: Path):
     (tmp_path / "f.py").write_text(
         "def a(username: str) -> None: ...\n"
     )
-    result = run_tautology(tmp_path, _rc(), _slop())
+    result = run_tautology(_lexicon(tmp_path), _rc(), _slop())
     flagged = {v.symbol for v in result.violations}
     assert "username" not in flagged
 
@@ -216,7 +216,7 @@ def test_type_tag_suffixes_skips_unmatched_annotation(tmp_path: Path):
     (tmp_path / "f.py").write_text(
         "def a(item_dict: list) -> None: ...\n"
     )
-    result = run_tautology(tmp_path, _rc(), _slop())
+    result = run_tautology(_lexicon(tmp_path), _rc(), _slop())
     flagged = {v.symbol for v in result.violations}
     assert "item_dict" not in flagged
 

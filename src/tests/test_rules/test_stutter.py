@@ -13,6 +13,14 @@ from pathlib import Path
 
 from slop.config.models import RuleConfig, SlopConfig
 from slop.lexicon.rules.stutter import run_stutter
+from slop.tree.tree import Tree
+
+
+def _lexicon(root):
+    t = Tree(root)
+    t.scan()
+    return t.lexicon
+
 
 
 def _rc(**params) -> RuleConfig:
@@ -30,7 +38,7 @@ def test_stutter_module_overlap(tmp_path: Path):
     (tmp_path / "lidar_utils.py").write_text(
         "def load():\n    lidar_utils_config = {}\n    return lidar_utils_config\n"
     )
-    result = run_stutter(tmp_path, _rc(), SlopConfig(root=str(tmp_path)))
+    result = run_stutter(_lexicon(tmp_path), _rc(), SlopConfig(root=str(tmp_path)))
     assert result.status == "fail"
     module_hits = [v for v in result.violations
                    if v.metadata.get("scope_level") == "module"]
@@ -48,7 +56,7 @@ def test_stutter_function_overlap(tmp_path: Path):
         "    pdf_document_bytes = data.read()\n"
         "    return pdf_document_bytes\n"
     )
-    result = run_stutter(tmp_path, _rc(), SlopConfig(root=str(tmp_path)))
+    result = run_stutter(_lexicon(tmp_path), _rc(), SlopConfig(root=str(tmp_path)))
     assert result.status == "fail"
     function_hits = [v for v in result.violations
                      if v.metadata.get("scope_level") == "function"]
@@ -67,7 +75,7 @@ def test_stutter_class_overlap(tmp_path: Path):
         "        user_service_helper = self.helper\n"
         "        return user_service_helper\n"
     )
-    result = run_stutter(tmp_path, _rc(), SlopConfig(root=str(tmp_path)))
+    result = run_stutter(_lexicon(tmp_path), _rc(), SlopConfig(root=str(tmp_path)))
     assert result.status == "fail"
     class_hits = [v for v in result.violations
                   if v.metadata.get("scope_level") == "class"]
@@ -88,7 +96,7 @@ def test_stutter_method_name_stutters_with_class(tmp_path: Path):
         "    def get_user_service_id(self):\n"
         "        return 1\n"
     )
-    result = run_stutter(tmp_path, _rc(), SlopConfig(root=str(tmp_path)))
+    result = run_stutter(_lexicon(tmp_path), _rc(), SlopConfig(root=str(tmp_path)))
     assert result.status == "fail"
     name_hits = [v for v in result.violations
                  if v.metadata.get("is_entity_name") is True]
@@ -108,7 +116,7 @@ def test_stutter_no_overlap_pass(tmp_path: Path):
         "    content = data.read()\n"
         "    return content\n"
     )
-    result = run_stutter(tmp_path, _rc(), SlopConfig(root=str(tmp_path)))
+    result = run_stutter(_lexicon(tmp_path), _rc(), SlopConfig(root=str(tmp_path)))
     assert result.status == "pass"
 
 
@@ -125,7 +133,7 @@ def test_stutter_disable_function_level(tmp_path: Path):
         "    return pdf_document_bytes\n"
     )
     result = run_stutter(
-        tmp_path, _rc(check_functions=False),
+        _lexicon(tmp_path), _rc(check_functions=False),
         SlopConfig(root=str(tmp_path)),
     )
     function_hits = [v for v in result.violations
@@ -139,7 +147,7 @@ def test_stutter_disable_module_level(tmp_path: Path):
         "def load():\n    lidar_utils_config = {}\n    return lidar_utils_config\n"
     )
     result = run_stutter(
-        tmp_path, _rc(check_modules=False),
+        _lexicon(tmp_path), _rc(check_modules=False),
         SlopConfig(root=str(tmp_path)),
     )
     module_hits = [v for v in result.violations

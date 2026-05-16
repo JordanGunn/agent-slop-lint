@@ -4,24 +4,78 @@ When all you have is a hammer, everything looks like a nail.
 ``Manager``, ``Helper``, ``Util``, ``Spec``, ``Object`` are the
 nouns the codebase reaches for when it doesn't have a real one —
 hammering every responsibility into the same shape.
+
+Configurable: pass ``terms`` (list of {word, positions, severity,
+exempt_when}) to override the default profile.
 """
 from __future__ import annotations
 
+import re
+from dataclasses import dataclass
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from slop._lexical.hammers import (
-    DEFAULT_PROFILE,
-    HammerTerm,
-    hammers_kernel,
-)
 from slop.config.models import RuleConfig, SlopConfig
-from slop.linter.types import RuleResult
 from slop.linter.slop import Slop
+from slop.linter.types import RuleResult
+
+if TYPE_CHECKING:
+    from slop.lexicon.view import Lexicon
+
+
+@dataclass(frozen=True)
+class HammerTerm:
+    word: str
+    positions: tuple[str, ...]
+    severity: str | None = None
+    exempt_when: tuple[str, ...] = ()
+
+
+DEFAULT_PROFILE: tuple[HammerTerm, ...] = (
+    HammerTerm("Manager",       ("suffix",), "warning"),
+    HammerTerm("Coordinator",   ("suffix",), "warning"),
+    HammerTerm("Helper",        ("any", "module_name"), "warning"),
+    HammerTerm("Utility",       ("any", "module_name"), "warning"),
+    HammerTerm("Util",          ("any", "module_name"), "warning"),
+    HammerTerm("Utils",         ("any", "module_name"), "warning"),
+    HammerTerm("Handler",       ("suffix",), "info"),
+    HammerTerm("Processor",     ("suffix",), "info"),
+    HammerTerm("Service",       ("suffix",), "info"),
+    HammerTerm("Provider",      ("suffix",), "info"),
+    HammerTerm("Engine",        ("suffix",), "info"),
+    HammerTerm("Factory",       ("suffix",), "info"),
+    HammerTerm("Builder",       ("suffix",), "info"),
+    HammerTerm("Wrapper",       ("suffix",), "info"),
+    HammerTerm("Adapter",       ("suffix",), "info"),
+    HammerTerm("Spec",          ("suffix",), "warning",
+               exempt_when=("module_is_test",)),
+    HammerTerm("Specification", ("suffix",), "warning",
+               exempt_when=("module_is_test",)),
+    HammerTerm("Base",          ("suffix",), "warning"),
+    HammerTerm("Abstract",      ("prefix",), "info"),
+    HammerTerm("Object",        ("suffix",), "error"),
+    HammerTerm("Item",          ("suffix",), "error"),
+    HammerTerm("Element",       ("suffix",), "error"),
+    HammerTerm("Thing",         ("suffix",), "error"),
+    HammerTerm("Data",          ("suffix",), "warning"),
+    HammerTerm("Info",          ("suffix",), "warning"),
+    HammerTerm("Container",     ("suffix",), "warning"),
+    HammerTerm("Holder",        ("suffix",), "warning"),
+    HammerTerm("Common",        ("module_name", "suffix"), "warning"),
+    HammerTerm("Core",          ("module_name", "suffix"), "warning"),
+    HammerTerm("Misc",          ("module_name", "suffix"), "warning"),
+    HammerTerm("Extra",         ("module_name", "suffix"), "warning"),
+    HammerTerm("Shared",        ("module_name", "suffix"), "warning"),
+    HammerTerm("Stuff",         ("any",), "error"),
+    HammerTerm("Things",        ("any",), "error"),
+)
+
+
+_TEST_PATH_RE = re.compile(r"(^|/)tests?/|test_|_test\.|\.test\.")
+_MAIN_PATH_RE = re.compile(r"(^|/)(__main__|main)\.[a-z]+$")
 
 
 def _terms_from_config(rule_config: RuleConfig) -> tuple[HammerTerm, ...]:
-    """Parse user-provided terms (a list of dicts) into ``HammerTerm``
-    tuples. Falls back to the default profile if no override given."""
     raw = rule_config.params.get("terms")
     if not raw:
         return DEFAULT_PROFILE
@@ -42,38 +96,141 @@ def _terms_from_config(rule_config: RuleConfig) -> tuple[HammerTerm, ...]:
     return tuple(parsed) if parsed else DEFAULT_PROFILE
 
 
-def run_hammers(
-    root: Path, rule_config: RuleConfig, slop_config: SlopConfig,
-) -> RuleResult:
-    default_severity = rule_config.severity
-    terms = _terms_from_config(rule_config)
+def _is_exempt(term: HammerTerm, file_path: str) -> bool:
+    for predicate in term.exempt_when:
+        if predicate == "module_is_test" and _TEST_PATH_RE.search(file_path):
+            return True
+        if predicate == "module_is_main" and _MAIN_PATH_RE.search(file_path):
+            return True
+    return False
 
-    result = hammers_kernel(
-        root=root,
-        languages=slop_config.languages or None,
-        excludes=slop_config.exclude or None,
-        terms=terms,
-        default_severity=default_severity,
-    )
+
+def _check_identifier(
+    tokens: tuple[str, ...],
+    by_word: dict[str, HammerTerm],
+    file_path: str,
+    default_severity: str,
+) -> tuple[str, str, str] | None:
+    """If any token matches a configured term in its positions, return
+    ``(matched_word, matched_position, severity)``."""
+    if not tokens:
+        return None
+    first_lower = tokens[0].lower()
+    last_lower = tokens[-1].lower()
+    for token in tokens:
+        term = by_word.get(token.lower())
+        if term is None:
+            continue
+        if _is_exempt(term, file_path):
+            continue
+        positions = set(term.positions)
+        token_lower = token.lower()
+        if "prefix" in positions and token_lower == first_lower:
+            return (term.word, "prefix", term.severity or default_severity)
+        if "suffix" in positions and token_lower == last_lower:
+            return (term.word, "suffix", term.severity or default_severity)
+        if "any" in positions:
+            return (term.word, "any", term.severity or default_severity)
+    return None
+
+
+def _check_module_name(
+    stem: str,
+    by_word: dict[str, HammerTerm],
+    file_path: str,
+    default_severity: str,
+) -> tuple[str, str] | None:
+    """Check the file stem against terms with ``module_name`` position."""
+    from slop.lexicon.view import Lexicon as _Lex
+    tokens = _Lex.split_tokens(stem)
+    if not tokens:
+        return None
+    for token in tokens:
+        term = by_word.get(token.lower())
+        if term is None:
+            continue
+        if "module_name" not in term.positions:
+            continue
+        if _is_exempt(term, file_path):
+            continue
+        return (term.word, term.severity or default_severity)
+    return None
+
+
+def run_hammers(
+    lexicon: Lexicon, rule_config: RuleConfig, slop_config: SlopConfig,
+) -> RuleResult:
+    """Flag callable / class / module names that match the catchall banlist."""
+    terms = _terms_from_config(rule_config)
+    default_severity = rule_config.severity
+    by_word: dict[str, HammerTerm] = {t.word.lower(): t for t in terms}
+    root = Path(slop_config.root).expanduser().resolve() if slop_config.root else None
+
+    def _relfile(p: str) -> str:
+        if root is None:
+            return p
+        try:
+            return str(Path(p).relative_to(root))
+        except ValueError:
+            return p
 
     violations: list[Slop] = []
-    for item in result.items:
+    items_analyzed = 0
+
+    # 1 + 2. Function and class names.
+    for entity in lexicon.named_entities():
+        items_analyzed += 1
+        rel = _relfile(entity.file)
+        hit = _check_identifier(entity.tokens, by_word, rel, default_severity)
+        if hit is None:
+            continue
+        word, pos, severity = hit
         violations.append(Slop(
             rule="lexical.hammers",
-            file=item.file,
-            line=item.line,
-            symbol=item.name,
+            file=rel,
+            line=entity.line,
+            symbol=entity.name,
             message=(
-                f"{item.kind} `{item.name}` matches hammer-word "
-                f"`{item.matched_word}` ({item.matched_position}); "
+                f"{entity.kind} `{entity.name}` matches hammer-word "
+                f"`{word}` ({pos}); the term carries no semantic content"
+            ),
+            severity=severity,
+            metadata={
+                "matched_word": word,
+                "matched_position": pos,
+                "kind": entity.kind,
+                "language": entity.language,
+            },
+        ))
+
+    # 3. Module-name (file stem) check.
+    seen_stems: set[str] = set()
+    for file_path in lexicon.files():
+        stem = Path(file_path).stem
+        if not stem or stem in seen_stems:
+            continue
+        seen_stems.add(stem)
+        items_analyzed += 1
+        rel = _relfile(str(file_path))
+        hit = _check_module_name(stem, by_word, rel, default_severity)
+        if hit is None:
+            continue
+        word, severity = hit
+        violations.append(Slop(
+            rule="lexical.hammers",
+            file=rel,
+            line=1,
+            symbol=stem,
+            message=(
+                f"module `{stem}` matches hammer-word `{word}` (module_name); "
                 f"the term carries no semantic content"
             ),
-            severity=item.severity,
+            severity=severity,
             metadata={
-                "matched_word": item.matched_word,
-                "matched_position": item.matched_position,
-                "kind": item.kind,
-                "language": item.language,
+                "matched_word": word,
+                "matched_position": "module_name",
+                "kind": "module",
+                "language": lexicon._language_by_path.get(str(file_path), "<unknown>"),
             },
         ))
 
@@ -82,10 +239,8 @@ def run_hammers(
         status="fail" if violations else "pass",
         violations=violations,
         summary={
-            "items_checked": result.items_analyzed,
-            "files_searched": result.files_searched,
+            "items_checked": items_analyzed,
             "terms_loaded": len(terms),
             "violation_count": len(violations),
         },
-        errors=list(result.errors),
     )

@@ -7,15 +7,14 @@ naming.
 """
 from __future__ import annotations
 
-from slop.linter._shim import legacy_v2_shim
 from slop.linter.types import RuleDefinition
 
 from .confusion import run_confusion
 from .cowards import run_cowards
 from .hammers import run_hammers
-from .imposters import run_imposters_v2
+from .imposters import run_imposters
 from .slackers import run_slackers
-from .sprawl import run_sprawl_v2
+from .sprawl import run_sprawl
 from .stutter import run_stutter
 from .tautology import run_tautology
 from .verbosity import run_verbosity
@@ -28,7 +27,7 @@ LEXICAL_RULES: list[RuleDefinition] = [
         default_severity="warning",
         default_enabled=True,
         threshold_label="≥ 2 tokens",
-        run=legacy_v2_shim(run_stutter),
+        run=run_stutter,
     ),
     RuleDefinition(
         name="lexical.verbosity",
@@ -46,7 +45,7 @@ LEXICAL_RULES: list[RuleDefinition] = [
         default_severity="warning",
         default_enabled=True,
         threshold_label="any match",
-        run=legacy_v2_shim(run_cowards),
+        run=run_cowards,
     ),
     RuleDefinition(
         name="lexical.hammers",
@@ -55,7 +54,7 @@ LEXICAL_RULES: list[RuleDefinition] = [
         default_severity="warning",
         default_enabled=True,
         threshold_label="banlist match",
-        run=legacy_v2_shim(run_hammers),
+        run=run_hammers,
     ),
     RuleDefinition(
         name="lexical.tautology",
@@ -64,7 +63,7 @@ LEXICAL_RULES: list[RuleDefinition] = [
         default_severity="warning",
         default_enabled=True,
         threshold_label="suffix matches type",
-        run=legacy_v2_shim(run_tautology),
+        run=run_tautology,
     ),
     RuleDefinition(
         name="lexical.sprawl",
@@ -73,7 +72,7 @@ LEXICAL_RULES: list[RuleDefinition] = [
         default_severity="warning",
         default_enabled=True,
         threshold_label="≥ 3 alphabet × ≥ 2 ops",
-        run=run_sprawl_v2,
+        run=run_sprawl,
     ),
     RuleDefinition(
         name="lexical.imposters",
@@ -82,7 +81,7 @@ LEXICAL_RULES: list[RuleDefinition] = [
         default_severity="warning",
         default_enabled=True,
         threshold_label="≥ 3 functions sharing param",
-        run=run_imposters_v2,
+        run=run_imposters,
     ),
     RuleDefinition(
         name="lexical.slackers",
@@ -91,7 +90,7 @@ LEXICAL_RULES: list[RuleDefinition] = [
         default_severity="warning",
         default_enabled=True,
         threshold_label="< 30% template coverage",
-        run=legacy_v2_shim(run_slackers),
+        run=run_slackers,
     ),
     RuleDefinition(
         name="lexical.confusion",
@@ -100,6 +99,6 @@ LEXICAL_RULES: list[RuleDefinition] = [
         default_severity="warning",
         default_enabled=True,
         threshold_label="≥ 2 strong receivers in one file",
-        run=legacy_v2_shim(run_confusion),
+        run=run_confusion,
     ),
 ]

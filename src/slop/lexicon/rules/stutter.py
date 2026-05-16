@@ -1,33 +1,32 @@
 """lexical.stutter — names repeating tokens from any enclosing scope.
 
 The hierarchy is checked top-down: every named entity (class,
-function, method) is compared against package, module, and
-ancestor class/function names; every body identifier inside a
-function is compared against the same scope chain.
+function, method) is compared against package, module, and ancestor
+class/function names; every body identifier inside a function is
+compared against the same scope chain.
 
 Per-level toggle parameters dial down specific levels without
 splitting the rule. Defaults: all four levels enabled.
 
-This unifies the v1.1.0 ``lexical.stutter.{namespaces, callers,
+Unifies the v1.1.0 ``lexical.stutter.{namespaces, callers,
 identifiers}`` split into a single hierarchy-aware rule.
-
-Catches a case the v1.1.0 split missed: method NAMES stuttering
-with their class name (e.g. ``class UserService: def
-get_user_service_id(self): ...`` — the method name itself
-stutters with the class name).
 """
 from __future__ import annotations
 
+import os
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from slop._lexical.stutter import ALL_LEVELS, stutter_kernel
 from slop.config.models import RuleConfig, SlopConfig
-from slop.linter.types import RuleResult
 from slop.linter.slop import Slop
+from slop.linter.types import RuleResult
+
+if TYPE_CHECKING:
+    from slop.lexicon.view import Lexicon
 
 
 def _levels_from_config(rule_config: RuleConfig) -> frozenset[str]:
-    """Build the active ``levels`` set from per-level toggle params."""
     toggle_keys = {
         "package": "check_packages",
         "module": "check_modules",
@@ -40,13 +39,24 @@ def _levels_from_config(rule_config: RuleConfig) -> frozenset[str]:
     ) or ALL_LEVELS
 
 
+def _derive_root(lexicon, slop_config: SlopConfig) -> Path:
+    paths = [p.path for p in lexicon._parses]
+    if paths:
+        common = Path(os.path.commonpath([str(p) for p in paths]))
+        return common.parent if common.is_file() else common
+    if slop_config.root:
+        return Path(slop_config.root).expanduser().resolve()
+    return Path.cwd()
+
+
 def run_stutter(
-    root: Path, rule_config: RuleConfig, slop_config: SlopConfig,
+    lexicon: Lexicon, rule_config: RuleConfig, slop_config: SlopConfig,
 ) -> RuleResult:
     """Flag names that stutter with any enabled enclosing-scope level."""
-    min_overlap: int = int(rule_config.params.get("min_overlap_tokens", 2))
+    min_overlap = int(rule_config.params.get("min_overlap_tokens", 2))
     severity = rule_config.severity
     levels = _levels_from_config(rule_config)
+    root = _derive_root(lexicon, slop_config)
 
     result = stutter_kernel(
         root=root,
