@@ -1,4 +1,4 @@
-"""Tests for ``structural.god_module`` rule (rule-layer wrapper).
+"""Tests for ``god_module`` rule (rule-layer wrapper).
 
 Substrate-native unit tests live in tests/test_v2/test_rule_god_module.py;
 this file covers the rule's threshold / severity / summary plumbing.
@@ -7,8 +7,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop.config.models import RuleConfig, SlopConfig
-from slop.structure.rules.god_module import run_god_module
+from slop.linter.rule_config import RuleConfig
+from slop.config import Config
+from slop.structure.metrics.god_module import run_god_module
 from slop.tree.tree import Tree
 
 
@@ -19,11 +20,11 @@ def _structure(root: Path):
 
 
 def _rc(threshold: int = 20) -> RuleConfig:
-    return RuleConfig(enabled=True, severity="warning", params={"threshold": threshold})
+    return RuleConfig(enabled=True, severity="warning", params={"thresholds": {"module": threshold}})
 
 
-def _sc(tmp_path: Path) -> SlopConfig:
-    return SlopConfig(root=str(tmp_path))
+def _sc(tmp_path: Path) -> Config:
+    return Config(root=str(tmp_path))
 
 
 def _funcs(n: int) -> str:
@@ -43,7 +44,7 @@ def test_rule_fail_above_threshold(tmp_path: Path):
     assert result.status == "fail"
     assert len(result.violations) == 1
     v = result.violations[0]
-    assert v.rule == "structural.god_module"
+    assert v.rule == "god_module"
     assert v.severity == "warning"
     assert v.value == 25
     assert v.threshold == 20

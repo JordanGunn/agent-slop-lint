@@ -11,24 +11,26 @@ operator and operand sets.
 Verifies threshold behaviour, cross-language parity (vs legacy
 halstead_kernel), nested-callable scoping, body-vs-signature
 boundary, and the v2.0 namespace relocation
-(``information.*`` → ``structural.difficulty.*``).
+(``information.*`` → ``difficulty.*``).
 """
 from __future__ import annotations
 
 import math
 from pathlib import Path
 
-from slop.config.models import RuleConfig, SlopConfig
-from slop.structure.rules.halstead import run_density, run_volume
+from slop.linter.rule_config import RuleConfig
+from slop.config import Config
+from slop.structure.metrics.density import run_density
+from slop.structure.metrics.volume import run_volume
 from slop.tree.tree import Tree
 
 
 def _rc(threshold: float) -> RuleConfig:
-    return RuleConfig(enabled=True, severity="error", params={"threshold": threshold})
+    return RuleConfig(enabled=True, severity="error", params={"thresholds": {"function": threshold}})
 
 
-def _sc(tmp_path: Path) -> SlopConfig:
-    return SlopConfig(root=str(tmp_path))
+def _sc(tmp_path: Path) -> Config:
+    return Config(root=str(tmp_path))
 
 
 def _structure(tmp_path: Path):
@@ -127,32 +129,18 @@ class TestNestedCallableBoundary:
         assert "inner" in symbols
 
 
-class TestRuleNameAndCompat:
-    """The v2.0 relocation: rules emit structural.difficulty.* names;
-    legacy ``information.*`` and ``halstead.*`` aliases canonicalise.
-    """
+class TestRuleName:
+    """v2.0 relocation: rules emit ``difficulty.*`` names."""
 
     def test_volume_rule_name(self, tmp_path: Path):
         (tmp_path / "a.py").write_text("def f(a, b): return a + b * a - b\n")
         result = run_volume(_structure(tmp_path), _rc(0), _sc(tmp_path))
-        assert result.violations[0].rule == "structural.difficulty.volume"
+        assert result.violations[0].rule == "complexity.volume"
 
     def test_density_rule_name(self, tmp_path: Path):
         (tmp_path / "a.py").write_text("def f(a): return a + a * a - a / a + a\n")
         result = run_density(_structure(tmp_path), _rc(0), _sc(tmp_path))
-        assert result.violations[0].rule == "structural.difficulty.density"
-
-    def test_legacy_names_canonicalise(self):
-        from slop._compat import canonical_rule_name
-        for legacy, canonical in [
-            ("information.volume", "structural.difficulty.volume"),
-            ("information.difficulty", "structural.difficulty.density"),
-            ("halstead.volume", "structural.difficulty.volume"),
-            ("halstead.difficulty", "structural.difficulty.density"),
-        ]:
-            got, was_legacy = canonical_rule_name(legacy)
-            assert got == canonical, f"{legacy} → {got}, expected {canonical}"
-            assert was_legacy is True
+        assert result.violations[0].rule == "complexity.density"
 
 
 class TestSummaryShape:
@@ -161,7 +149,9 @@ class TestSummaryShape:
         result = run_volume(_structure(tmp_path), _rc(99999), _sc(tmp_path))
         assert result.summary["functions_analyzed"] == 2
 
-    def test_threshold_in_summary(self, tmp_path: Path):
+    def test_summary_includes_violations_key(self, tmp_path: Path):
         (tmp_path / "a.py").write_text("def f(): pass\n")
         result = run_density(_structure(tmp_path), _rc(15.5), _sc(tmp_path))
-        assert result.summary["threshold"] == 15.5
+        assert "violations" in result.summary
+        # Under the new shape, per-scope thresholds live on
+        # rule_config.params["thresholds"], not on the result summary.

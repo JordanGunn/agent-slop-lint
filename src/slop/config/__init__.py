@@ -1,18 +1,19 @@
-"""``slop.config`` — config loading + dataclasses.
+"""``slop.config`` — configuration domain.
 
-Re-exports the loader entry points and the three config dataclasses
-for ergonomic ``from slop.config import load_config, SlopConfig`` use.
+Owns the file-shape of slop's configuration: the top-level ``Config``
+object, the ``Waiver`` record, the TOML loader that walks upward from
+CWD looking for ``.slop.toml`` / ``pyproject.toml[tool.slop]``, and the
+versioned JSON Schema asset under ``schema/``.
+
+Rule-domain types (``RuleConfig``, ``Severity``, ``Tag``, ``Scope``)
+deliberately do not live here — they live in ``slop.linter`` because
+they describe rule settings, not config-file shape. A config file
+populates them; it does not own their semantics.
 """
 from __future__ import annotations
 
-from .loader import DEFAULT_RULE_CONFIGS, generate_default_config, load_config
-from .models import RuleConfig, SlopConfig, WaiverConfig
+from . import schema
+from .loader import load_config
+from .models import Config, Waiver
 
-__all__ = [
-    "load_config",
-    "generate_default_config",
-    "DEFAULT_RULE_CONFIGS",
-    "RuleConfig",
-    "SlopConfig",
-    "WaiverConfig",
-]
+__all__ = ["Config", "Waiver", "load_config", "schema"]

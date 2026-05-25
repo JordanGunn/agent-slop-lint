@@ -96,6 +96,91 @@ Newman et al. also report:
   for per-identifier POS-style tags, and the framework requires
   type information beyond what tree-sitter routinely surfaces.
 
+## The distribution principle (Zipf 1949)
+
+The Newman 14 list answers "what tokens are noise?" empirically.
+Zipf's law answers "what *shape* should the rest of the
+distribution have?" structurally.
+
+In *Human Behavior and the Principle of Least Effort*, George Zipf
+observed that the rank-frequency distribution of words in natural-
+language corpora follows a power law: a word's frequency is
+inversely proportional to its rank. The most common word appears
+about twice as often as the second most common, three times as the
+third, and so on. The general form is:
+
+> `frequency(rank) ≈ C / rank^s`
+
+with `s ≈ 1` for English. The defining shape is **heavy tail +
+extreme head**: a tiny number of items account for most
+occurrences; most items appear once or twice.
+
+Subsequent work has shown software-identifier corpora follow the
+same shape. Pierret & Poshyvanyk (ICPC 2009, *"An empirical
+exploration of regularities in open-source software lexicons"*)
+documented Zipf-shaped frequency distributions across Java
+identifiers in 9 systems totaling 30M LOC; Newman et al. (SANER
+2017, our seed paper above) observed the same on their 50-system
+C/C++ corpus implicitly — their finding that only 14 identifiers
+appear in *all* 50 systems is itself a Zipf consequence.
+
+The v1.2.0 snapshot of slop confirms the shape on our own corpus
+(see `docs/research/observations/05-diagnostic-suite-and-thresholds.md`):
+177 of 475 distinct tokens (37%) appear exactly once, while a
+single token (`node`) appears 144 times.
+
+### Why this matters for slop
+
+The Zipf shape gives us a structural reason to expect specific
+parts of the distribution to be slop-laden vs. signal-rich:
+
+- **Head (top ~5%, e.g. >32 occurrences in our snapshot)** — almost
+  always infrastructure plumbing (`node`, `root`, `content`,
+  `config`). High frequency *because* every component uses them,
+  not because they're domain-meaningful. The hub-vs-packet design
+  in `Lexicon.packets` already exploits this: max-normalised
+  association naturally excludes hub tokens.
+- **Body (middle ~25%, ~8–32 occurrences)** — where domain
+  vocabulary tends to live. The actionable refactor signals
+  (FindOptions cluster members, language-handler alphabets) sit
+  here.
+- **Long tail (bottom ~70%, ≤4 occurrences)** — mostly noise:
+  one-off variable names, local helpers, hapax legomena. Useful
+  as a vocabulary-richness metric but not as a sprawl signal.
+
+This stratification is the empirical basis for our
+`(min_bags=5, min_association=0.7)` threshold default — it places
+the floor just above the long-tail noise.
+
+## Tooling implications
+
+Both sources are actively used, with room to expand:
+
+- **Newman 14** ships as `UNIVERSAL_NOISE` in
+  `slop.lexicon.affix` and is wired through every distribution
+  method (`frequencies`, `modal_tokens`, `alphabet`, `coverage`,
+  `overlap`, `packets`, `token_locations`, ...) via the
+  `exclude=UNIVERSAL_NOISE` parameter. Observation 06 surfaced
+  the need for a Layer-4 per-language idiom list (Python
+  builtins) as a separate filter for body-identifier analysis;
+  that list is the natural next addition.
+- **Zipf** is not yet wired into the diagnostic primitives.
+  Three concrete tooling uses, in order of effort:
+  1. **Hapax-legomena ratio** (one number per corpus: fraction
+     of tokens appearing exactly once) as a vocabulary-richness
+     metric in `emit_diagnostic_report`. Trivial — already
+     computable from existing data.
+  2. **Zipf-residual signal** per token: actual frequency vs.
+     expected frequency given the corpus's fitted Zipf
+     distribution. Tokens with large positive residual at the
+     head are hub-like; large positive residual elsewhere
+     indicates over-represented domain vocabulary worth
+     investigating.
+  3. **Adaptive thresholds** for packets / sprawl: instead of
+     hard-coded `min_bags=5`, derive the threshold from the
+     corpus's Zipf elbow (the rank where head transitions to
+     long tail). Self-calibrating across corpus sizes.
+
 ## Out of scope (upstream of filtering)
 
 The literature on **identifier splitting** and **vocabulary
@@ -124,6 +209,18 @@ reference.
 > University of Melbourne & Monash University.
 > <https://arxiv.org/abs/2303.10439>
 > Online appendix: <https://zenodo.org/record/7865748>
+
+> Zipf, G. K. (1949). *Human Behavior and the Principle of Least
+> Effort: An Introduction to Human Ecology*. Addison-Wesley,
+> Cambridge, MA. The original observation; subsequent literature
+> ("Zipf's law") refers back to this work.
+
+> Pierret, D., & Poshyvanyk, D. (2009). "An empirical exploration
+> of regularities in open-source software lexicons."
+> *Proceedings of the IEEE 17th International Conference on
+> Program Comprehension (ICPC 2009)*, Vancouver, BC. pp. 228–232.
+> Documents Zipf-shaped frequency distributions across Java
+> identifiers in 9 systems totaling 30M LOC.
 
 The full bibliographic entries appear in [NOTICE](../../NOTICE)
 under the lexical-rule citations.

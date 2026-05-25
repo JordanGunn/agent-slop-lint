@@ -27,7 +27,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop._lexical.imposters import imposters_kernel
+from slop.lexical.imposters import imposters_kernel
 from slop.models import RuleConfig, RuleResult, SlopConfig, Violation
 
 

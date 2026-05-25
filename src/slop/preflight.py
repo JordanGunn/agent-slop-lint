@@ -8,16 +8,17 @@ points at install instructions.
 
 The required-binary set is rule-driven:
 - ``fd`` is always required (every file-discovery kernel uses it).
-- ``git`` is required when the ``structural.hotspots`` rule is enabled.
-- ``rg`` is required when the ``structural.orphans`` rule is enabled.
+- ``git`` is required when the ``hotspots`` rule is enabled.
+- ``rg`` is required when the ``orphans`` rule is enabled.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 
-from slop._util.doctor import check_tool
-from slop.config.models import SlopConfig
+from slop.linter.tags import Tag
+from slop.config import Config
+from slop.doctor import check_tool
 
 
 @dataclass(frozen=True)
@@ -25,11 +26,11 @@ class MissingBinary:
     """A system binary required by an enabled rule that was not found."""
 
     name: str                # canonical tool name (e.g. "fd")
-    rules: tuple[str, ...]   # slop rules that need it (e.g. ("structural.hotspots", ...))
+    rules: tuple[str, ...]   # slop rules that need it (e.g. ("hotspots", ...))
     install: str             # install hint URL or command
 
 
-def required_binaries(config: SlopConfig) -> dict[str, tuple[str, ...]]:
+def required_binaries(config: Config) -> dict[str, tuple[str, ...]]:
     """Return {binary_name: (rules_that_need_it, ...)} for enabled rules.
 
     ``fd`` is always listed because all file-discovery kernels use it.
@@ -38,18 +39,18 @@ def required_binaries(config: SlopConfig) -> dict[str, tuple[str, ...]]:
     # than enumerating every rule that indirectly depends on it.
     needed: dict[str, list[str]] = {"fd": ["file discovery"]}
 
-    hotspots = config.rules.get("structural.hotspots")
+    hotspots = config.rules.get(Tag.HOTSPOTS)
     if hotspots is None or hotspots.enabled:
-        needed.setdefault("git", []).append("structural.hotspots")
+        needed.setdefault("git", []).append(Tag.HOTSPOTS)
 
-    orphans = config.rules.get("structural.orphans")
+    orphans = config.rules.get(Tag.ORPHANS)
     if orphans is not None and orphans.enabled:
-        needed.setdefault("rg", []).append("structural.orphans")
+        needed.setdefault("rg", []).append(Tag.ORPHANS)
 
     return {k: tuple(v) for k, v in needed.items()}
 
 
-def check_required_binaries(config: SlopConfig) -> list[MissingBinary]:
+def check_required_binaries(config: Config) -> list[MissingBinary]:
     """Check every binary required by the enabled rule set.
 
     Returns the list of missing binaries (empty when everything is present).

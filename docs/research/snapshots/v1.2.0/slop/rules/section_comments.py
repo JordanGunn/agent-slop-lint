@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop._structural.section_comments import section_comment_kernel
+from slop.structural.section_comments import section_comment_kernel
 from slop.models import RuleConfig, RuleResult, SlopConfig, Violation
 
 

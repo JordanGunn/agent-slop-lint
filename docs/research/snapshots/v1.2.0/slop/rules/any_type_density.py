@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop._structural.any_type_density import any_type_density_kernel
+from slop.structural.any_type_density import any_type_density_kernel
 from slop.models import RuleConfig, RuleResult, SlopConfig, Violation
 
 DEFAULT_THRESHOLD = 0.30

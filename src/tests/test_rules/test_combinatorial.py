@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop.config.models import RuleConfig, SlopConfig
-from slop.structure.rules.combinatorial import run_combinatorial
+from slop.linter.rule_config import RuleConfig
+from slop.config import Config
+from slop.structure.metrics.combinatorial import run_combinatorial
 from slop.tree.tree import Tree
 
 _LINEAR = "def f(x):\n    y = x + 1\n    return y\n"  # NPath=1
@@ -35,14 +36,15 @@ def _structure(tmp_path: Path, source: str, name: str = "sample.py"):
     return tree.structure
 
 
-def _slop_config(tmp_path: Path) -> SlopConfig:
-    return SlopConfig(root=str(tmp_path), rules={})
+def _slop_config(tmp_path: Path) -> Config:
+    return Config(root=str(tmp_path), rules={})
 
 
 def _rule_config(**overrides) -> RuleConfig:
-    defaults = {"combinatorial_threshold": 400}
-    defaults.update(overrides)
-    return RuleConfig(enabled=True, severity="error", params=defaults)
+    threshold = overrides.pop("threshold", 400)
+    params: dict = {"thresholds": {"function": threshold}}
+    params.update(overrides)
+    return RuleConfig(enabled=True, severity="error", params=params)
 
 
 def test_combinatorial_passes_on_linear_function(tmp_path: Path) -> None:
@@ -63,14 +65,14 @@ def test_combinatorial_flags_sequential_ifs(tmp_path: Path) -> None:
     assert any(v.symbol == "f" for v in result.violations)
     flagged = next(v for v in result.violations if v.symbol == "f")
     assert flagged.value is not None and flagged.value > 400
-    assert flagged.rule == "structural.complexity.combinatorial"
+    assert flagged.rule == "complexity.combinatorial"
 
 
 def test_combinatorial_respects_custom_threshold(tmp_path: Path) -> None:
     # Raise threshold above 1024 and the violation disappears.
     result = run_combinatorial(
         _structure(tmp_path, _SEQUENTIAL_IFS),
-        _rule_config(combinatorial_threshold=2000),
+        _rule_config(threshold=2000),
         _slop_config(tmp_path),
     )
     assert result.status == "pass"
@@ -81,7 +83,7 @@ def test_combinatorial_flags_at_low_threshold(tmp_path: Path) -> None:
     # Linear NPath is 1; threshold 0 should flag it.
     result = run_combinatorial(
         _structure(tmp_path, _LINEAR),
-        _rule_config(combinatorial_threshold=0),
+        _rule_config(threshold=0),
         _slop_config(tmp_path),
     )
     assert result.status == "fail"

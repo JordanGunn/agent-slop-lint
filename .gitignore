@@ -1,14 +1,23 @@
-# Local agent tooling
+# tools
 .engram/
 .ml-cache/
-.mainline/local.toml
+.mainline/
+.iris/
 
 # Python bytecode (root-level dirs; src/.gitignore covers src/)
 __pycache__/
 *.pyc
+
+# quality
+.pytest_cache/
+.ruff_cache/
 
 # agents
 .codex/
 .cursor/
 .windsurf/
 .copilot/
+
+# other
+scratch/
+

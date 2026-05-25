@@ -1,10 +1,11 @@
-"""Tests for ``structural.types.escape_hatches`` (annotation density)."""
+"""Tests for ``types.escape_hatches`` (annotation density)."""
 from __future__ import annotations
 
 from pathlib import Path
 
-from slop.config.models import RuleConfig, SlopConfig
-from slop.structure.rules.escape_hatches import run_escape_hatches
+from slop.linter.rule_config import RuleConfig
+from slop.config import Config
+from slop.structure.metrics.escape_hatches import run_escape_hatches
 from slop.tree.tree import Tree
 
 
@@ -15,13 +16,17 @@ def _structure(root: Path):
 
 
 def _rc(**overrides) -> RuleConfig:
-    params = {"threshold": 0.30, "min_annotations": 2}
+    threshold = overrides.pop("threshold", 0.30)
+    params: dict = {
+        "thresholds": {"module": threshold},
+        "min_annotations": 2,
+    }
     params.update(overrides)
     return RuleConfig(enabled=True, severity="warning", params=params)
 
 
-def _sc(tmp_path: Path) -> SlopConfig:
-    return SlopConfig(root=str(tmp_path))
+def _sc(tmp_path: Path) -> Config:
+    return Config(root=str(tmp_path))
 
 
 _ANY_HEAVY = """\
@@ -152,7 +157,7 @@ def test_rule_fail_heavy_any(tmp_path: Path):
     assert result.status == "fail"
     assert len(result.violations) >= 1
     v = result.violations[0]
-    assert v.rule == "structural.types.escape_hatches"
+    assert v.rule == "escape_hatches"
     assert v.severity == "warning"
     assert v.value > 0.10
 

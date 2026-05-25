@@ -1,4 +1,10 @@
-"""Tests for slop config loading."""
+"""Tests for slop config loading.
+
+Under the scope-as-first-class design, rule names are bare (no scope
+prefix) and per-scope thresholds live in a nested ``thresholds`` dict.
+Loader.py merges nested ``thresholds`` so a user override of one scope
+keeps other scope defaults intact.
+"""
 
 from __future__ import annotations
 
@@ -6,12 +12,9 @@ from pathlib import Path
 
 import pytest
 
-from slop.config import (
-    DEFAULT_RULE_CONFIGS,
-    generate_default_config,
-    load_config,
-)
-from slop.config.models import SlopConfig
+from slop.cli._templates import generate_default_config
+from slop.config import Config
+from slop.config.loader import DEFAULT_RULE_CONFIGS, load_config
 
 # ---------------------------------------------------------------------------
 # 1. Default config
@@ -20,25 +23,40 @@ from slop.config.models import SlopConfig
 
 def test_load_defaults_when_no_config_files(tmp_path: Path):
     config = load_config(root=str(tmp_path))
-    assert isinstance(config, SlopConfig)
+    assert isinstance(config, Config)
     assert config.root == str(tmp_path)
     assert config.languages == []
     assert config.exclude == []
 
 
-def test_default_complexity_enabled_with_standard_thresholds(tmp_path: Path):
+def test_default_complexity_function_thresholds(tmp_path: Path):
     config = load_config(root=str(tmp_path))
-    rc = config.rule_config("structural.complexity")
-    assert rc.enabled is True
-    assert rc.severity == "error"
-    assert rc.params["cyclomatic_threshold"] == 10
-    assert rc.params["cognitive_threshold"] == 15
-    assert rc.params["combinatorial_threshold"] == 400
+    cyc = config.rule_config("complexity.cyclomatic")
+    cog = config.rule_config("complexity.cognitive")
+    comb = config.rule_config("complexity.combinatorial")
+    assert cyc.enabled and cyc.severity == "error"
+    assert cyc.params["thresholds"]["function"] == 10
+    assert cog.params["thresholds"]["function"] == 15
+    assert comb.params["thresholds"]["function"] == 400
+
+
+def test_default_complexity_class_thresholds(tmp_path: Path):
+    config = load_config(root=str(tmp_path))
+    assert config.rule_config("complexity.cyclomatic").params["thresholds"]["class"] == 40
+    # cognitive / combinatorial class-scope: slop calibration defaults.
+    assert config.rule_config("complexity.cognitive").params["thresholds"]["class"] == 60
+    assert config.rule_config("complexity.combinatorial").params["thresholds"]["class"] == 1600
+
+
+def test_default_density_function_scope_only(tmp_path: Path):
+    config = load_config(root=str(tmp_path))
+    rc = config.rule_config("complexity.density")
+    assert rc.params["thresholds"] == {"function": 30}
 
 
 def test_default_hotspots_since_14_days(tmp_path: Path):
     config = load_config(root=str(tmp_path))
-    rc = config.rule_config("structural.hotspots")
+    rc = config.rule_config("hotspots")
     assert rc.enabled is True
     assert rc.params["since"] == "14 days ago"
     assert rc.params["min_commits"] == 2
@@ -47,60 +65,36 @@ def test_default_hotspots_since_14_days(tmp_path: Path):
 
 def test_default_orphans_disabled(tmp_path: Path):
     config = load_config(root=str(tmp_path))
-    rc = config.rule_config("structural.orphans")
+    rc = config.rule_config("orphans")
     assert rc.enabled is False
     assert rc.severity == "warning"
 
 
-def test_default_rigidity_severity_warning(tmp_path: Path):
+def test_default_rigidity_threshold(tmp_path: Path):
     config = load_config(root=str(tmp_path))
-    rc = config.rule_config("structural.packages.rigidity")
+    rc = config.rule_config("rigidity")
     assert rc.severity == "warning"
-    assert rc.params["threshold"] == 0.7
+    assert rc.params["thresholds"]["package"] == 0.7
 
 
-def test_default_uselessness_severity_warning(tmp_path: Path):
+def test_default_uselessness_threshold(tmp_path: Path):
     config = load_config(root=str(tmp_path))
-    rc = config.rule_config("structural.packages.uselessness")
+    rc = config.rule_config("uselessness")
     assert rc.severity == "warning"
-    assert rc.params["threshold"] == 0.7
-
-
-def test_legacy_v20_packages_table_fans_out_to_split_rules(tmp_path: Path):
-    """v2.0 [rules.structural.packages] migrates to both v2.1 split rules.
-
-    max_distance → each rule's threshold; severity, languages, enabled
-    propagate to both; fail_on_zone is silently dropped (zone selection
-    is now expressed by enabling/disabling the rule that owns the zone).
-    """
-    (tmp_path / ".slop.toml").write_text(
-        '[rules.structural.packages]\n'
-        'enabled = true\n'
-        'max_distance = 0.6\n'
-        'fail_on_zone = ["pain"]\n'
-        'severity = "error"\n'
-    )
-    config = load_config(root=str(tmp_path))
-    rigidity = config.rule_config("structural.packages.rigidity")
-    useless = config.rule_config("structural.packages.uselessness")
-    assert rigidity.severity == "error"
-    assert rigidity.params["threshold"] == 0.6
-    assert useless.severity == "error"
-    assert useless.params["threshold"] == 0.6
+    assert rc.params["thresholds"]["package"] == 0.7
 
 
 def test_default_deps_fail_on_cycles(tmp_path: Path):
     config = load_config(root=str(tmp_path))
-    rc = config.rule_config("structural.deps")
+    rc = config.rule_config("deps")
     assert rc.params["fail_on_cycles"] is True
 
 
-def test_default_class_thresholds(tmp_path: Path):
+def test_default_ck_class_thresholds(tmp_path: Path):
     config = load_config(root=str(tmp_path))
-    assert config.rule_config("structural.class.complexity").params["threshold"] == 40
-    assert config.rule_config("structural.class.coupling").params["threshold"] == 8
-    assert config.rule_config("structural.class.inheritance.depth").params["threshold"] == 4
-    assert config.rule_config("structural.class.inheritance.children").params["threshold"] == 10
+    assert config.rule_config("coupling").params["thresholds"]["class"] == 8
+    assert config.rule_config("inheritance.depth").params["thresholds"]["class"] == 4
+    assert config.rule_config("inheritance.children").params["thresholds"]["class"] == 10
 
 
 def test_default_all_categories_present(tmp_path: Path):
@@ -121,20 +115,38 @@ root = "src"
 languages = ["python"]
 exclude = ["**/vendor/**"]
 
-[rules.structural.complexity]
-cyclomatic_threshold = 20
+[rules.complexity.cyclomatic]
+thresholds = { function = 20 }
 """
     )
     config = load_config(root=str(tmp_path))
-    # Relative config roots are now resolved against the config file's
-    # directory (ruff/mypy convention).
     assert Path(config.root) == (tmp_path / "src").resolve()
     assert config.config_path == (tmp_path / ".slop.toml").resolve()
     assert config.languages == ["python"]
     assert config.exclude == ["**/vendor/**"]
-    rc = config.rule_config("structural.complexity")
-    assert rc.params["cyclomatic_threshold"] == 20
-    assert rc.params["cognitive_threshold"] == 15
+    cyc = config.rule_config("complexity.cyclomatic")
+    # User override applied to function scope.
+    assert cyc.params["thresholds"]["function"] == 20
+    # Class scope default preserved by the deep-merge.
+    assert cyc.params["thresholds"]["class"] == 40
+    # Sibling cognitive rule untouched.
+    cog = config.rule_config("complexity.cognitive")
+    assert cog.params["thresholds"]["function"] == 15
+
+
+def test_threshold_override_deep_merges(tmp_path: Path):
+    """User overrides one scope; the other scope keeps its default."""
+    (tmp_path / ".slop.toml").write_text(
+        """\
+[rules.complexity.cyclomatic]
+thresholds = { class = 999 }
+"""
+    )
+    config = load_config(root=str(tmp_path))
+    rc = config.rule_config("complexity.cyclomatic")
+    # Class override applied; function default preserved.
+    assert rc.params["thresholds"]["class"] == 999
+    assert rc.params["thresholds"]["function"] == 10
 
 
 def test_loads_top_level_waivers(tmp_path: Path):
@@ -143,7 +155,7 @@ def test_loads_top_level_waivers(tmp_path: Path):
 [[waivers]]
 id = "parser-npath"
 path = "src/parser/**"
-rule = "structural.complexity.combinatorial"
+rule = "complexity.combinatorial"
 allow_up_to = 1200
 reason = "Parser branch shape mirrors grammar alternatives."
 expires = "2099-01-01"
@@ -154,7 +166,7 @@ expires = "2099-01-01"
     waiver = config.waivers[0]
     assert waiver.id == "parser-npath"
     assert waiver.path == "src/parser/**"
-    assert waiver.rule == "structural.complexity.combinatorial"  # canonical name (post-v2.1 rename)
+    assert waiver.rule == "complexity.combinatorial"
     assert waiver.allow_up_to == 1200
     assert waiver.reason.startswith("Parser branch")
     assert waiver.expires == "2099-01-01"
@@ -166,7 +178,7 @@ def test_waiver_requires_reason(tmp_path: Path):
 [[waivers]]
 id = "missing-reason"
 path = "src/parser/**"
-rule = "structural.complexity.combinatorial"
+rule = "complexity.combinatorial"
 """
     )
     with pytest.raises(ValueError, match="reason"):
@@ -179,13 +191,13 @@ def test_waiver_rejects_duplicate_ids(tmp_path: Path):
 [[waivers]]
 id = "same"
 path = "a.py"
-rule = "structural.complexity.combinatorial"
+rule = "complexity.combinatorial"
 reason = "one"
 
 [[waivers]]
 id = "same"
 path = "b.py"
-rule = "structural.complexity.combinatorial"
+rule = "complexity.combinatorial"
 reason = "two"
 """
     )
@@ -211,24 +223,24 @@ def test_load_from_pyproject_tool_slop(tmp_path: Path):
 [tool.slop]
 root = "lib"
 
-[tool.slop.rules.structural.complexity]
-cyclomatic_threshold = 5
+[tool.slop.rules.complexity.cyclomatic]
+thresholds = { function = 5 }
 severity = "warning"
 """
     )
     config = load_config(root=str(tmp_path))
     assert Path(config.root) == (tmp_path / "lib").resolve()
     assert config.config_path == (tmp_path / "pyproject.toml").resolve()
-    rc = config.rule_config("structural.complexity")
-    assert rc.params["cyclomatic_threshold"] == 5
+    rc = config.rule_config("complexity.cyclomatic")
+    assert rc.params["thresholds"]["function"] == 5
     assert rc.severity == "warning"
 
 
 def test_pyproject_without_tool_slop_section_gives_defaults(tmp_path: Path):
     (tmp_path / "pyproject.toml").write_text('[project]\nname = "something-else"\n')
     config = load_config(root=str(tmp_path))
-    rc = config.rule_config("structural.complexity")
-    assert rc.params["cyclomatic_threshold"] == 10
+    rc = config.rule_config("complexity.cyclomatic")
+    assert rc.params["thresholds"]["function"] == 10
 
 
 # ---------------------------------------------------------------------------
@@ -239,10 +251,10 @@ def test_pyproject_without_tool_slop_section_gives_defaults(tmp_path: Path):
 def test_explicit_config_path(tmp_path: Path):
     custom = tmp_path / "custom.toml"
     custom.write_text(
-        '[rules.structural.deps]\nfail_on_cycles = false\nroot = "custom_root"\n'
+        '[rules.deps]\nfail_on_cycles = false\nroot = "custom_root"\n'
     )
     config = load_config(config_path=str(custom))
-    rc = config.rule_config("structural.deps")
+    rc = config.rule_config("deps")
     assert rc.params["fail_on_cycles"] is False
 
 
@@ -265,10 +277,10 @@ def test_explicit_pyproject_extracts_tool_slop(tmp_path: Path):
 
 def test_disable_rule_via_config(tmp_path: Path):
     (tmp_path / ".slop.toml").write_text(
-        "[rules.structural.hotspots]\nenabled = false\n"
+        "[rules.hotspots]\nenabled = false\n"
     )
     config = load_config(root=str(tmp_path))
-    rc = config.rule_config("structural.hotspots")
+    rc = config.rule_config("hotspots")
     assert rc.enabled is False
     assert rc.params["since"] == "14 days ago"
 
@@ -281,83 +293,24 @@ def test_unknown_category_returns_default_rule_config(tmp_path: Path):
     assert rc.params == {}
 
 
-def test_disable_suite_via_prefix_table(tmp_path: Path):
-    (tmp_path / ".slop.toml").write_text("[rules.structural]\nenabled = false\n")
-    config = load_config(root=str(tmp_path))
-    for category in DEFAULT_RULE_CONFIGS:
-        rc = config.rule_config(category)
-        if category.startswith("structural."):
-            assert rc.enabled is False, f"{category} should be disabled"
-        else:
-            assert rc.enabled is True, f"{category} should remain enabled"
-
-
-def test_disable_group_via_prefix_table(tmp_path: Path):
-    (tmp_path / ".slop.toml").write_text("[rules.structural.class]\nenabled = false\n")
-    config = load_config(root=str(tmp_path))
-    assert config.rule_config("structural.class.complexity").enabled is False
-    assert config.rule_config("structural.class.coupling").enabled is False
-    assert config.rule_config("structural.class.inheritance.depth").enabled is False
-    assert config.rule_config("structural.class.inheritance.children").enabled is False
-    assert config.rule_config("structural.hotspots").enabled is True
-    assert config.rule_config("structural.complexity").enabled is True
-
-
-def test_specific_table_overrides_prefix(tmp_path: Path):
-    (tmp_path / ".slop.toml").write_text(
-        "[rules.structural]\nenabled = false\n\n"
-        "[rules.structural.hotspots]\nenabled = true\n"
-    )
-    config = load_config(root=str(tmp_path))
-    assert config.rule_config("structural.hotspots").enabled is True
-    assert config.rule_config("structural.deps").enabled is False
-    assert config.rule_config("structural.complexity").enabled is False
-
-
-def test_prefix_severity_propagates(tmp_path: Path):
-    (tmp_path / ".slop.toml").write_text(
-        '[rules.structural]\nseverity = "warning"\n'
-    )
-    config = load_config(root=str(tmp_path))
-    assert config.rule_config("structural.complexity").severity == "warning"
-    assert config.rule_config("structural.hotspots").severity == "warning"
-    assert config.rule_config("structural.difficulty.volume").severity == "warning"
-    # A rule in a different top-level namespace keeps its own default.
-    assert config.rule_config("lexical.stutter").severity == "warning"
-
-
-def test_nested_prefix_more_specific_wins(tmp_path: Path):
-    (tmp_path / ".slop.toml").write_text(
-        '[rules.structural]\nseverity = "warning"\n\n'
-        '[rules.structural.class]\nseverity = "error"\n'
-    )
-    config = load_config(root=str(tmp_path))
-    assert config.rule_config("structural.complexity").severity == "warning"
-    assert config.rule_config("structural.class.complexity").severity == "error"
-    assert config.rule_config("structural.class.coupling").severity == "error"
-
-
 # ---------------------------------------------------------------------------
 # 6. Upward config discovery
 # ---------------------------------------------------------------------------
 
 
 def test_upward_walk_finds_parent_slop_toml(tmp_path: Path):
-    """Running from a deep subdirectory still finds .slop.toml at the root."""
     (tmp_path / ".slop.toml").write_text(
-        'root = "src"\n[rules.structural.complexity]\ncyclomatic_threshold = 7\n'
+        'root = "src"\n[rules.complexity.cyclomatic]\nthresholds = { function = 7 }\n'
     )
     deep = tmp_path / "a" / "b" / "c"
     deep.mkdir(parents=True)
     config = load_config(root=str(deep))
-    # Config discovered at tmp_path; its "src" resolves relative to tmp_path.
     assert config.config_path == (tmp_path / ".slop.toml").resolve()
     assert Path(config.root) == (tmp_path / "src").resolve()
-    assert config.rule_config("structural.complexity").params["cyclomatic_threshold"] == 7
+    assert config.rule_config("complexity.cyclomatic").params["thresholds"]["function"] == 7
 
 
 def test_upward_walk_finds_parent_pyproject(tmp_path: Path):
-    """pyproject.toml with [tool.slop] in a parent directory is honored."""
     (tmp_path / "pyproject.toml").write_text('[tool.slop]\nroot = "lib"\n')
     deep = tmp_path / "inner"
     deep.mkdir()
@@ -367,26 +320,20 @@ def test_upward_walk_finds_parent_pyproject(tmp_path: Path):
 
 
 def test_pyproject_without_tool_slop_does_not_halt_walk(tmp_path: Path):
-    """A pyproject.toml with no [tool.slop] section is skipped during the walk."""
-    # Outer: a .slop.toml that should still be discovered.
     outer = tmp_path
     outer_slop = outer / ".slop.toml"
     outer_slop.write_text(
-        '[rules.structural.complexity]\ncyclomatic_threshold = 99\n'
+        '[rules.complexity.cyclomatic]\nthresholds = { function = 99 }\n'
     )
-    # Inner: a sub-project pyproject.toml without [tool.slop]. Common in
-    # nested layouts (e.g. monorepo with multiple Python packages). The walk
-    # must skip past it and keep looking for a real slop config above.
     inner = tmp_path / "sub"
     inner.mkdir()
     (inner / "pyproject.toml").write_text('[project]\nname = "x"\n')
     config = load_config(root=str(inner))
     assert config.config_path == outer_slop.resolve()
-    assert config.rule_config("structural.complexity").params["cyclomatic_threshold"] == 99
+    assert config.rule_config("complexity.cyclomatic").params["thresholds"]["function"] == 99
 
 
 def test_absolute_root_in_config_stays_absolute(tmp_path: Path):
-    """An absolute `root` in config is used verbatim, not re-resolved."""
     target = tmp_path / "explicit_abs"
     target.mkdir()
     (tmp_path / ".slop.toml").write_text(f'root = "{target}"\n')
@@ -395,7 +342,6 @@ def test_absolute_root_in_config_stays_absolute(tmp_path: Path):
 
 
 def test_no_config_found_populates_config_path_none(tmp_path: Path):
-    """Falling back to defaults leaves config_path unset."""
     config = load_config(root=str(tmp_path))
     assert config.config_path is None
 
@@ -408,16 +354,26 @@ def test_no_config_found_populates_config_path_none(tmp_path: Path):
 def test_generate_default_config_is_valid_toml(tmp_path: Path):
     content = generate_default_config()
     assert isinstance(content, str)
-    assert "[rules.structural.complexity]" in content
-    assert "[rules.structural.class.complexity]" in content
-    assert "[rules.structural.hotspots]" in content
-    assert "[rules.structural.orphans]" in content
-    assert "[rules.structural.packages.rigidity]" in content
-    assert "[rules.structural.packages.uselessness]" in content
-    assert "[rules.structural.deps]" in content
-    assert "[rules.structural.difficulty.volume]" in content
-    assert "[rules.structural.difficulty.density]" in content
+    # Complexity family (bare names)
+    assert "[rules.complexity.cyclomatic]" in content
+    assert "[rules.complexity.cognitive]" in content
+    assert "[rules.complexity.combinatorial]" in content
+    assert "[rules.complexity.volume]" in content
+    assert "[rules.complexity.density]" in content
+    # Standalone scope-determined rules
+    assert "[rules.coupling]" in content
+    assert "[rules.inheritance.depth]" in content
+    assert "[rules.god_module]" in content
+    assert "[rules.escape_hatches]" in content
+    assert "[rules.sentinels]" in content
+    assert "[rules.rigidity]" in content
+    assert "[rules.uselessness]" in content
+    # Cross-cutting (no scope)
+    assert "[rules.hotspots]" in content
+    assert "[rules.deps]" in content
+    assert "[rules.orphans]" in content
+    # Round-trip: the generated template loads back to the defaults.
     config_file = tmp_path / ".slop.toml"
     config_file.write_text(content)
     config = load_config(root=str(tmp_path))
-    assert config.rule_config("structural.complexity").params["cyclomatic_threshold"] == 10
+    assert config.rule_config("complexity.cyclomatic").params["thresholds"]["function"] == 10

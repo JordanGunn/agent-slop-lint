@@ -1,36 +1,53 @@
 """Tests for the v2 CK class metrics (Chidamber & Kemerer 1994).
 
-  structural.class.complexity              — WMC > threshold
-  structural.class.coupling                — CBO > threshold
-  structural.class.inheritance.depth       — DIT > threshold
-  structural.class.inheritance.children    — NOC > threshold
+  class.complexity.cyclomatic       — WMC > threshold
+  class.coupling                    — CBO > threshold
+  class.inheritance.depth           — DIT > threshold
+  class.inheritance.children        — NOC > threshold
 
-The rules share a per-corpus inheritance index (parent_map +
+WMC is the per-class sum of method CCNs; it is its own rule under the
+``class.complexity.*`` namespace, distinct from
+``function.complexity.cyclomatic`` (per-callable McCabe CCN).
+
+The class rules share a per-corpus inheritance index (parent_map +
 children_map + known set), built once across structure.classes().
-Verified against legacy ck_kernel on hand-computed fixtures for
-Python / Java / Ruby; Go (receiver-based) and Rust (impl-based)
-contribute 0 to all four — their pseudo-class story is a follow-up.
+Verified against hand-computed fixtures for Python / Java / Ruby; Go
+(receiver-based) and Rust (impl-based) contribute 0 to all four — their
+pseudo-class story is a follow-up.
 """
 from __future__ import annotations
 
 from pathlib import Path
 
-from slop.config.models import RuleConfig, SlopConfig
-from slop.structure.rules.class_metrics import (
-    run_coupling,
-    run_inheritance_children,
-    run_inheritance_depth,
-    run_weighted,
-)
+from slop.linter.rule_config import RuleConfig
+from slop.config import Config
+from slop.structure.metrics.coupling import run_coupling
+from slop.structure.metrics.inheritance_children import run_inheritance_children
+from slop.structure.metrics.inheritance_depth import run_inheritance_depth
+from slop.structure.metrics.cyclomatic import run_cyclomatic
 from slop.tree.tree import Tree
 
 
 def _rc(threshold: int) -> RuleConfig:
-    return RuleConfig(enabled=True, severity="error", params={"threshold": threshold})
+    """Class-scope RuleConfig for CK metrics (coupling, inheritance.*)."""
+    return RuleConfig(
+        enabled=True, severity="error",
+        params={"thresholds": {"class": threshold}},
+    )
 
 
-def _sc(tmp_path: Path) -> SlopConfig:
-    return SlopConfig(root=str(tmp_path))
+def _rc_wmc(class_threshold: int) -> RuleConfig:
+    """RuleConfig that exercises only the class scope of run_cyclomatic
+    (WMC). function scope is omitted so the rule skips function findings.
+    """
+    return RuleConfig(
+        enabled=True, severity="error",
+        params={"thresholds": {"class": class_threshold}},
+    )
+
+
+def _sc(tmp_path: Path) -> Config:
+    return Config(root=str(tmp_path))
 
 
 def _structure(tmp_path: Path):
@@ -42,7 +59,7 @@ def _structure(tmp_path: Path):
 class TestWMC:
     def test_class_with_no_methods_has_wmc_zero(self, tmp_path: Path):
         (tmp_path / "a.py").write_text("class A:\n    pass\n")
-        result = run_weighted(_structure(tmp_path), _rc(0), _sc(tmp_path))
+        result = run_cyclomatic(_structure(tmp_path), _rc_wmc(0), _sc(tmp_path))
         assert result.status == "pass"
 
     def test_class_method_ccx_sums(self, tmp_path: Path):
@@ -60,7 +77,7 @@ class TestWMC:
             "        return 0\n"
         )
         # WMC = 1 + 2 + 3 = 6. Threshold 5 → fail with WMC=6.
-        result = run_weighted(_structure(tmp_path), _rc(5), _sc(tmp_path))
+        result = run_cyclomatic(_structure(tmp_path), _rc_wmc(5), _sc(tmp_path))
         assert result.status == "fail"
         assert result.violations[0].symbol == "A"
         assert result.violations[0].value == 6
@@ -225,7 +242,7 @@ class TestGoReceiverLinking:
             "func (a Animal) Walk() { for i := 0; i < 4; i++ { _ = i } }\n"  # ccx 2
             "func (a *Animal) Run() { if a == nil { return } }\n"            # ccx 2
         )
-        result = run_weighted(_structure(tmp_path), _rc(0), _sc(tmp_path))
+        result = run_cyclomatic(_structure(tmp_path), _rc_wmc(1), _sc(tmp_path))
         animal = next(v for v in result.violations if v.symbol == "Animal")
         assert animal.value == 6  # 2 + 2 + 2
 
@@ -262,7 +279,7 @@ class TestRustImplLinking:
             "    }\n"
             "}\n"
         )
-        result = run_weighted(_structure(tmp_path), _rc(0), _sc(tmp_path))
+        result = run_cyclomatic(_structure(tmp_path), _rc_wmc(1), _sc(tmp_path))
         animal = next(v for v in result.violations if v.symbol == "Animal")
         assert animal.value == 6
 
@@ -323,7 +340,7 @@ class TestRubyOpenClassAggregation:
             "end\n"
         )
         # Aggregated WMC = 1 + 2 + 2 = 5. Threshold 4 → fail.
-        result = run_weighted(_structure(tmp_path), _rc(4), _sc(tmp_path))
+        result = run_cyclomatic(_structure(tmp_path), _rc_wmc(4), _sc(tmp_path))
         flagged = [v for v in result.violations if v.symbol == "Animal"]
         # ONE entry, not two — aggregation merged them.
         assert len(flagged) == 1
@@ -347,6 +364,6 @@ class TestRubyOpenClassAggregation:
         )
         # If aggregated: WMC = 2 + 2 = 4 → fail at threshold 3.
         # If NOT aggregated: WMC = 2 each → pass at threshold 3.
-        result = run_weighted(_structure(tmp_path), _rc(3), _sc(tmp_path))
+        result = run_cyclomatic(_structure(tmp_path), _rc_wmc(3), _sc(tmp_path))
         flagged = [v for v in result.violations if v.symbol == "Animal"]
         assert len(flagged) == 0  # both pass independently

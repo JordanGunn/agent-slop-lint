@@ -20,7 +20,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop._lexical.stutter import ALL_LEVELS, stutter_kernel
+from slop.lexical.stutter import ALL_LEVELS, stutter_kernel
 from slop.models import RuleConfig, RuleResult, SlopConfig, Violation
 
 

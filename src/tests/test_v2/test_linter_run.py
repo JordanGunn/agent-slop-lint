@@ -4,12 +4,13 @@ from __future__ import annotations
 from pathlib import Path
 
 from slop.linter.linter import Linter
-from slop.config.models import RuleConfig, SlopConfig
+from slop.linter.rule_config import RuleConfig
+from slop.config import Config
 
 
-def _config(root: Path) -> SlopConfig:
-    """Minimal SlopConfig — enabled rules, no waivers."""
-    return SlopConfig(
+def _config(root: Path) -> Config:
+    """Minimal Config — enabled rules, no waivers."""
+    return Config(
         root=str(root),
         languages=["python"],
         exclude=[],

@@ -1,6 +1,11 @@
 # slop — agentic code quality linter
 # https://github.com/JordanGunn/agent-slop-lint
 # Profile: default
+#
+# Every rule name carries an explicit scope prefix matching its emission
+# unit: function.*, class.*, module.*, parameter.*, package.* . Cluster /
+# whole-repo families (lexical.*, hotspots, deps, orphans, redundancy,
+# duplication) are exempt and live at the top level.
 
 # Root directory (default: ".")
 root = "."
@@ -17,165 +22,188 @@ root = "."
 # [[waivers]]
 # id = "parser-npath"
 # path = "src/parser/**"
-# rule = "structural.complexity.combinatorial"
+# rule = "function.complexity.combinatorial"
 # allow_up_to = 1200
 # reason = "Parser branch shape mirrors grammar alternatives."
 # expires = "2026-09-01"
 
-[rules.structural.complexity]
+[rules.function.complexity.cyclomatic]
 enabled = true
-cyclomatic_threshold = 10       # fail if any function CCX exceeds this
-cognitive_threshold = 15        # fail if any function CogC exceeds this
-combinatorial_threshold = 400 # fail if any function NPath exceeds this (Nejmeh 1988)
+threshold = 10        # fail if any function CCX exceeds this (McCabe 1976)
 severity = "error"
 
-[rules.structural.class.complexity]
+[rules.function.complexity.cognitive]
 enabled = true
-threshold = 40              # fail if any class WMC exceeds this
+threshold = 15        # fail if any function CogC exceeds this (Campbell 2018)
 severity = "error"
 
-[rules.structural.class.coupling]
+[rules.function.complexity.combinatorial]
+enabled = true
+threshold = 400       # fail if any function NPath exceeds this (Nejmeh 1988)
+severity = "error"
+
+[rules.class.complexity.cyclomatic]
+enabled = true
+threshold = 40        # WMC: per-class sum of method CCX (CK 1994). Set to 0 to disable.
+severity = "error"
+
+[rules.class.complexity.cognitive]
+enabled = true
+threshold = 0         # off by default (opt-in). Set > 0 to enable per-class CogC sum.
+severity = "error"
+
+[rules.class.complexity.combinatorial]
+enabled = true
+threshold = 0         # off by default (opt-in). Set > 0 to enable per-class NPath sum.
+severity = "error"
+
+[rules.class.coupling]
 enabled = true
 threshold = 8
 severity = "error"
 
-[rules.structural.class.inheritance.depth]
+[rules.class.inheritance.depth]
 enabled = true
 threshold = 4
 severity = "error"
 
-[rules.structural.class.inheritance.children]
+[rules.class.inheritance.children]
 enabled = true
 threshold = 10
 severity = "error"
 
-[rules.structural.hotspots]
+[rules.function.difficulty.volume]
+enabled = true
+threshold = 1500      # fail if any function Halstead V exceeds this
+severity = "error"
+
+[rules.function.difficulty.density]
+enabled = true
+threshold = 30        # fail if any function Halstead D (operand-reuse density) exceeds this
+severity = "error"
+
+[rules.function.types.hidden_mutators]
+enabled = true
+require_type_annotation = true   # only flag params with explicit collection types
+min_mutations = 1
+severity = "warning"
+
+[rules.function.magic_literals]
+enabled = true
+threshold = 3         # flag functions with > 3 distinct non-trivial numeric literals
+severity = "warning"
+
+[rules.module.god_module]
+enabled = true
+threshold = 20        # flag files with more than this many top-level definitions
+severity = "warning"
+
+[rules.module.types.escape_hatches]
+enabled = true
+threshold = 0.30      # flag files where > 30% of annotations use escape-hatch types
+min_annotations = 5
+severity = "warning"
+
+[rules.parameter.types.sentinels]
+enabled = true
+max_cardinality = 8   # flag sentinel str params with ≤ 8 distinct call-site values
+require_str_annotation = true
+severity = "warning"
+
+[rules.package.rigidity]
+enabled = true
+# languages = ["python"]        # optional: restrict to a subset of slop's supported languages
+threshold = 0.7       # flag pain-zone packages whose D' exceeds this
+severity = "warning"
+
+[rules.package.uselessness]
+enabled = true
+threshold = 0.7       # flag uselessness-zone packages whose D' exceeds this
+severity = "warning"
+
+[rules.hotspots]
 enabled = true
 since = "14 days ago"
 min_commits = 2
 fail_on_quadrant = ["hotspot"]
 severity = "error"
 
-[rules.structural.packages.rigidity]
-enabled = true
-# languages = ["python"]        # optional: restrict to a subset of slop's supported languages
-threshold = 0.7    # flag pain-zone packages whose D' exceeds this
-severity = "warning"
-
-[rules.structural.packages.uselessness]
-enabled = true
-threshold = 0.7    # flag uselessness-zone packages whose D' exceeds this
-severity = "warning"
-
-[rules.structural.deps]
+[rules.deps]
 enabled = true
 fail_on_cycles = true
 severity = "error"
 
-[rules.structural.local_imports]
-enabled = true
-# threshold = 0     # allow up to N local imports per file before flagging
-severity = "warning"
-# ── Python: local imports are a genuine idiom in three common situations ──────
-# 1. Optional / heavy dependencies deferred until the feature is actually used:
-#    [[waivers]]
-#    id = "local-imports-optional-dep"
-#    path = "src/your_package/**"
-#    rule = "structural.local_imports"
-#    reason = "Heavy optional dependency deferred to avoid import-time cost or crash when wheels are absent."
-#
-# 2. CLI subcommand handlers deferring imports for startup speed:
-#    [[waivers]]
-#    id = "local-imports-cli-startup"
-#    path = "src/your_package/cli.py"
-#    rule = "structural.local_imports"
-#    reason = "CLI command handlers defer imports so users only pay the cost for the subcommand they invoke."
-#
-# 3. Test functions that import inside the body for monkeypatching:
-#    [[waivers]]
-#    id = "local-imports-test-monkeypatch"
-#    path = "tests/**"
-#    rule = "structural.local_imports"
-#    reason = "Import inside function body is required so the test can monkeypatch the module before the code under test runs."
-# ─────────────────────────────────────────────────────────────────────────────
-
-[rules.structural.redundancy]
-enabled = true
-min_shared = 3      # minimum shared non-trivial callees between two sibling functions
-min_score = 0.5     # minimum overlap ratio (shared / max callee count)
-severity = "warning"
-
-[rules.structural.types.sentinels]
-enabled = true
-max_cardinality = 8   # flag sentinel str params with ≤ 8 distinct call-site values
-require_str_annotation = true
-severity = "warning"
-
-[rules.structural.types.hidden_mutators]
-enabled = true
-require_type_annotation = true   # only flag params with explicit collection types
-min_mutations = 1
-severity = "warning"
-
-[rules.structural.types.escape_hatches]
-enabled = true
-threshold = 0.30    # flag files where > 30% of annotations use escape-hatch types
-min_annotations = 5
-severity = "warning"
-
-[rules.structural.duplication]
-enabled = true
-threshold = 0.05    # flag when > 5% of functions are Type-2 clones
-min_leaf_nodes = 10 # ignore trivially short functions
-min_cluster_size = 2
-severity = "warning"
-
-[rules.structural.god_module]
-enabled = true
-threshold = 20      # flag files with more than this many top-level definitions
-severity = "warning"
-
-[rules.structural.orphans]
+[rules.orphans]
 enabled = false
 min_confidence = "high"
 severity = "warning"
 
-[rules.information.volume]
+[rules.redundancy]
 enabled = true
-threshold = 1500         # fail if any function V exceeds this
-# token_weight_alpha = 0.0   # > 0 tightens threshold for terse-identifier functions
-severity = "error"
-
-[rules.information.difficulty]
-enabled = true
-threshold = 30        # fail if any function D exceeds this
-severity = "error"
-
-[rules.information.magic_literals]
-enabled = true
-threshold = 3       # flag functions with > 3 distinct non-trivial numeric literals
+min_shared = 3        # minimum shared non-trivial callees between two sibling functions
+min_score = 0.5       # minimum overlap ratio (shared / max callee count)
 severity = "warning"
 
-[rules.information.section_comments]
+[rules.duplication]
 enabled = true
-threshold = 2       # flag functions with more than this many section-divider comments
+threshold = 0.05      # flag when > 5% of functions are Type-2 clones
+min_leaf_nodes = 10   # ignore trivially short functions
+min_cluster_size = 2
 severity = "warning"
 
 [rules.lexical.stutter]
 enabled = true
-min_overlap_tokens = 2   # flag identifiers repeating ≥ N tokens from enclosing scope
+min_overlap_tokens = 2     # flag names repeating >= N tokens from any enclosing scope
+check_packages = true
+check_modules = true
+check_classes = true
+check_functions = true
 severity = "warning"
 
 [rules.lexical.verbosity]
 enabled = true
-max_mean_tokens = 3.0   # flag functions where mean word-tokens-per-identifier > this
-min_identifiers = 5     # skip functions with fewer identifiers than this
+max_tokens = 3             # flag function/class names with more tokens than this
+check_classes = true
 severity = "warning"
 
-[rules.lexical.tersity]
+[rules.lexical.cowards]
 enabled = true
-max_density = 0.50      # flag functions where > 50% of identifiers are ≤ max_len chars
-max_len = 2
-min_identifiers = 5
-# allow_list = ["i", "j", "k", "x", "y", "z", "ok", "n"]   # conventional short names
+min_stem_tokens = 1
+severity = "warning"
+
+[rules.lexical.hammers]
+enabled = true
+severity = "warning"
+
+[rules.lexical.tautology]
+enabled = true
+severity = "warning"
+
+[rules.lexical.sprawl]
+enabled = true
+min_alphabet = 3
+min_concept_extent = 2
+min_concept_intent = 2
+severity = "warning"
+
+[rules.lexical.imposters]
+enabled = true
+min_cluster = 3
+exempt_names = ["self", "cls"]
+severity = "warning"
+
+[rules.lexical.slackers]
+enabled = true
+min_cluster = 3
+exempt_names = ["self", "cls"]
+max_coverage = 0.30
+severity = "warning"
+
+[rules.lexical.confusion]
+enabled = true
+min_functions = 5
+min_clusters = 2
+min_cluster_size = 3
+min_strong_receivers = 2
+exempt_names = ["self", "cls"]
 severity = "warning"

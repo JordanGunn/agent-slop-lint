@@ -54,8 +54,8 @@ def test_lint_skips_binary_check_for_disabled_rules(tmp_path: Path, monkeypatch)
     from slop import preflight
 
     (tmp_path / ".slop.toml").write_text(
-        "[rules.structural.hotspots]\nenabled = false\n"
-        "[rules.structural.orphans]\nenabled = false\n"
+        "[rules.hotspots]\nenabled = false\n"
+        "[rules.orphans]\nenabled = false\n"
     )
     (tmp_path / "a.py").write_text("x = 1\n")
 
@@ -80,7 +80,7 @@ def test_lint_with_all_deps_present_runs_normally(tmp_path: Path, monkeypatch):
 
     # Disable hotspots so the test doesn't require a git repo in tmp_path.
     (tmp_path / ".slop.toml").write_text(
-        "[rules.structural.hotspots]\nenabled = false\n"
+        "[rules.hotspots]\nenabled = false\n"
     )
     (tmp_path / "a.py").write_text("x = 1\n")
 
@@ -114,7 +114,7 @@ def test_doctor_reports_all_present(monkeypatch):
         }
 
     # cmd_doctor imports run_doctor lazily inside the function.
-    import slop._util.doctor as doctor_mod
+    import slop.doctor as doctor_mod
     monkeypatch.setattr(doctor_mod, "run_doctor", fake_run_doctor)
 
     code, stdout, _stderr = _run(["doctor"])
@@ -142,7 +142,7 @@ def test_doctor_exits_2_when_binary_missing(monkeypatch):
             "message": "Some dependencies missing",
         }
 
-    import slop._util.doctor as doctor_mod
+    import slop.doctor as doctor_mod
     monkeypatch.setattr(doctor_mod, "run_doctor", fake_run_doctor)
 
     code, stdout, _stderr = _run(["doctor"])

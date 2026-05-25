@@ -1,10 +1,11 @@
-"""Tests for ``structural.types.sentinels`` (stringly-typed parameters)."""
+"""Tests for ``types.sentinels`` (stringly-typed parameters)."""
 from __future__ import annotations
 
 from pathlib import Path
 
-from slop.config.models import RuleConfig, SlopConfig
-from slop.structure.rules.sentinels import run_sentinels
+from slop.linter.rule_config import RuleConfig
+from slop.config import Config
+from slop.structure.metrics.sentinels import run_sentinels
 from slop.tree.tree import Tree
 
 
@@ -15,13 +16,17 @@ def _structure(root: Path):
 
 
 def _rc(**overrides) -> RuleConfig:
-    params = {"max_cardinality": 8, "require_str_annotation": True}
+    max_cardinality = overrides.pop("max_cardinality", 8)
+    params: dict = {
+        "thresholds": {"parameter": max_cardinality},
+        "require_str_annotation": True,
+    }
     params.update(overrides)
     return RuleConfig(enabled=True, severity="warning", params=params)
 
 
-def _sc(tmp_path: Path) -> SlopConfig:
-    return SlopConfig(root=str(tmp_path))
+def _sc(tmp_path: Path) -> Config:
+    return Config(root=str(tmp_path))
 
 
 _STRINGLY = """\
@@ -135,7 +140,7 @@ def test_rule_fail_sentinel_str(tmp_path: Path):
     assert result.status == "fail"
     assert len(result.violations) >= 1
     v = result.violations[0]
-    assert v.rule == "structural.types.sentinels"
+    assert v.rule == "sentinels"
     assert "level" in v.message
 
 

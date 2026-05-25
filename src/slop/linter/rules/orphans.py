@@ -1,7 +1,7 @@
 """Orphans rule — wraps Structure.orphans (view-native).
 
 Rule:
-  structural.orphans  — symbols with zero detected external references
+  orphans  — symbols with zero detected external references
                         (advisory by default; off by default since static
                         analysis can't see dynamic dispatch).
 
@@ -15,7 +15,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop.config.models import RuleConfig, SlopConfig
+from slop.linter.rule_config import RuleConfig
+from slop.config import Config
 from slop.linter.slop import Slop
 from slop.linter.types import RuleResult
 from slop.structure.view import Structure
@@ -26,7 +27,7 @@ _CONFIDENCE_ORDER = {"high": 3, "medium": 2, "low": 1}
 def run_orphans(
     structure: Structure,
     rule_config: RuleConfig,
-    slop_config: SlopConfig,
+    slop_config: Config,
 ) -> RuleResult:
     """Report unreferenced symbols at or above a confidence threshold."""
     min_confidence = rule_config.params.get("min_confidence", "high")
@@ -41,7 +42,7 @@ def run_orphans(
         if _CONFIDENCE_ORDER.get(candidate.confidence, 0) < min_confidence_level:
             continue
         violations.append(Slop(
-            rule="structural.orphans",
+            rule="orphans",
             file=candidate.file,
             line=candidate.line if candidate.line > 0 else None,
             symbol=candidate.symbol,
@@ -60,7 +61,7 @@ def run_orphans(
         ))
 
     return RuleResult(
-        rule="structural.orphans",
+        rule="orphans",
         status="fail" if violations else "pass",
         violations=violations,
         summary={

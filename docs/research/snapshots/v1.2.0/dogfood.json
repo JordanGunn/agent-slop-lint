@@ -10,7 +10,7 @@
       "violations": [
         {
           "rule": "structural.complexity.cyclomatic",
-          "file": "_lexical/stutter.py",
+          "file": "lexical/stutter.py",
           "line": 351,
           "symbol": "_get_name",
           "message": "CCX 32 exceeds 10 (complex)",
@@ -25,7 +25,7 @@
         },
         {
           "rule": "structural.complexity.cyclomatic",
-          "file": "_lexical/sprawl.py",
+          "file": "lexical/sprawl.py",
           "line": 294,
           "symbol": "sprawl_kernel",
           "message": "CCX 28 exceeds 10 (complex)",
@@ -55,7 +55,7 @@
         },
         {
           "rule": "structural.complexity.cyclomatic",
-          "file": "_lexical/hammers.py",
+          "file": "lexical/hammers.py",
           "line": 114,
           "symbol": "hammers_kernel",
           "message": "CCX 23 exceeds 10 (complex)",
@@ -70,7 +70,7 @@
         },
         {
           "rule": "structural.complexity.cyclomatic",
-          "file": "_lexical/verbosity.py",
+          "file": "lexical/verbosity.py",
           "line": 70,
           "symbol": "verbosity_kernel",
           "message": "CCX 19 exceeds 10 (moderate)",
@@ -85,7 +85,7 @@
         },
         {
           "rule": "structural.complexity.cyclomatic",
-          "file": "_lexical/_naming.py",
+          "file": "lexical/_naming.py",
           "line": 269,
           "symbol": "_extract_c_or_cpp_name",
           "message": "CCX 17 exceeds 10 (moderate)",
@@ -100,7 +100,7 @@
         },
         {
           "rule": "structural.complexity.cyclomatic",
-          "file": "_lexical/imposters.py",
+          "file": "lexical/imposters.py",
           "line": 343,
           "symbol": "_recursive_first_param_findings",
           "message": "CCX 16 exceeds 10 (moderate)",
@@ -115,7 +115,7 @@
         },
         {
           "rule": "structural.complexity.cyclomatic",
-          "file": "_lexical/imposters.py",
+          "file": "lexical/imposters.py",
           "line": 154,
           "symbol": "_profile_cluster",
           "message": "CCX 16 exceeds 10 (moderate)",
@@ -130,7 +130,7 @@
         },
         {
           "rule": "structural.complexity.cyclomatic",
-          "file": "_lexical/imposters.py",
+          "file": "lexical/imposters.py",
           "line": 271,
           "symbol": "_extract_first_param",
           "message": "CCX 15 exceeds 10 (moderate)",
@@ -145,7 +145,7 @@
         },
         {
           "rule": "structural.complexity.cyclomatic",
-          "file": "_lexical/hammers.py",
+          "file": "lexical/hammers.py",
           "line": 245,
           "symbol": "_check_identifier",
           "message": "CCX 13 exceeds 10 (moderate)",
@@ -160,7 +160,7 @@
         },
         {
           "rule": "structural.complexity.cyclomatic",
-          "file": "_lexical/_naming.py",
+          "file": "lexical/_naming.py",
           "line": 155,
           "symbol": "enumerate_functions",
           "message": "CCX 12 exceeds 10 (moderate)",
@@ -175,7 +175,7 @@
         },
         {
           "rule": "structural.complexity.cyclomatic",
-          "file": "_lexical/sprawl.py",
+          "file": "lexical/sprawl.py",
           "line": 227,
           "symbol": "_find_inheritance_pairs",
           "message": "CCX 11 exceeds 10 (moderate)",
@@ -190,7 +190,7 @@
         },
         {
           "rule": "structural.complexity.cyclomatic",
-          "file": "_lexical/tautology.py",
+          "file": "lexical/tautology.py",
           "line": 106,
           "symbol": "_check_python_params",
           "message": "CCX 11 exceeds 10 (moderate)",
@@ -217,7 +217,7 @@
       "violations": [
         {
           "rule": "structural.complexity.cognitive",
-          "file": "_lexical/stutter.py",
+          "file": "lexical/stutter.py",
           "line": 351,
           "symbol": "_get_name",
           "message": "CogC 92 exceeds 15",
@@ -232,7 +232,7 @@
         },
         {
           "rule": "structural.complexity.cognitive",
-          "file": "_lexical/sprawl.py",
+          "file": "lexical/sprawl.py",
           "line": 294,
           "symbol": "sprawl_kernel",
           "message": "CogC 51 exceeds 15",
@@ -262,7 +262,7 @@
         },
         {
           "rule": "structural.complexity.cognitive",
-          "file": "_lexical/hammers.py",
+          "file": "lexical/hammers.py",
           "line": 114,
           "symbol": "hammers_kernel",
           "message": "CogC 41 exceeds 15",
@@ -277,7 +277,7 @@
         },
         {
           "rule": "structural.complexity.cognitive",
-          "file": "_lexical/verbosity.py",
+          "file": "lexical/verbosity.py",
           "line": 70,
           "symbol": "verbosity_kernel",
           "message": "CogC 47 exceeds 15",
@@ -292,7 +292,7 @@
         },
         {
           "rule": "structural.complexity.cognitive",
-          "file": "_lexical/_naming.py",
+          "file": "lexical/_naming.py",
           "line": 269,
           "symbol": "_extract_c_or_cpp_name",
           "message": "CogC 61 exceeds 15",
@@ -307,7 +307,7 @@
         },
         {
           "rule": "structural.complexity.cognitive",
-          "file": "_lexical/imposters.py",
+          "file": "lexical/imposters.py",
           "line": 343,
           "symbol": "_recursive_first_param_findings",
           "message": "CogC 33 exceeds 15",
@@ -322,7 +322,7 @@
         },
         {
           "rule": "structural.complexity.cognitive",
-          "file": "_lexical/imposters.py",
+          "file": "lexical/imposters.py",
           "line": 154,
           "symbol": "_profile_cluster",
           "message": "CogC 20 exceeds 15",
@@ -337,7 +337,7 @@
         },
         {
           "rule": "structural.complexity.cognitive",
-          "file": "_lexical/imposters.py",
+          "file": "lexical/imposters.py",
           "line": 271,
           "symbol": "_extract_first_param",
           "message": "CogC 43 exceeds 15",
@@ -352,7 +352,7 @@
         },
         {
           "rule": "structural.complexity.cognitive",
-          "file": "_lexical/hammers.py",
+          "file": "lexical/hammers.py",
           "line": 245,
           "symbol": "_check_identifier",
           "message": "CogC 17 exceeds 15",
@@ -367,7 +367,7 @@
         },
         {
           "rule": "structural.complexity.cognitive",
-          "file": "_lexical/_naming.py",
+          "file": "lexical/_naming.py",
           "line": 155,
           "symbol": "enumerate_functions",
           "message": "CogC 19 exceeds 15",
@@ -382,7 +382,7 @@
         },
         {
           "rule": "structural.complexity.cognitive",
-          "file": "_lexical/sprawl.py",
+          "file": "lexical/sprawl.py",
           "line": 227,
           "symbol": "_find_inheritance_pairs",
           "message": "CogC 26 exceeds 15",
@@ -397,7 +397,7 @@
         },
         {
           "rule": "structural.complexity.cognitive",
-          "file": "_lexical/tautology.py",
+          "file": "lexical/tautology.py",
           "line": 106,
           "symbol": "_check_python_params",
           "message": "CogC 16 exceeds 15",
@@ -412,7 +412,7 @@
         },
         {
           "rule": "structural.complexity.cognitive",
-          "file": "_lexical/slackers.py",
+          "file": "lexical/slackers.py",
           "line": 69,
           "symbol": "slackers_kernel",
           "message": "CogC 16 exceeds 15",
@@ -439,7 +439,7 @@
       "violations": [
         {
           "rule": "structural.complexity.npath",
-          "file": "_lexical/stutter.py",
+          "file": "lexical/stutter.py",
           "line": 351,
           "symbol": "_get_name",
           "message": "NPath 840072 exceeds 400",
@@ -453,7 +453,7 @@
         },
         {
           "rule": "structural.complexity.npath",
-          "file": "_lexical/sprawl.py",
+          "file": "lexical/sprawl.py",
           "line": 294,
           "symbol": "sprawl_kernel",
           "message": "NPath 7371 exceeds 400",
@@ -467,7 +467,7 @@
         },
         {
           "rule": "structural.complexity.npath",
-          "file": "_lexical/hammers.py",
+          "file": "lexical/hammers.py",
           "line": 114,
           "symbol": "hammers_kernel",
           "message": "NPath 1805 exceeds 400",
@@ -481,7 +481,7 @@
         },
         {
           "rule": "structural.complexity.npath",
-          "file": "_lexical/_naming.py",
+          "file": "lexical/_naming.py",
           "line": 269,
           "symbol": "_extract_c_or_cpp_name",
           "message": "NPath 1045 exceeds 400",
@@ -495,7 +495,7 @@
         },
         {
           "rule": "structural.complexity.npath",
-          "file": "_lexical/verbosity.py",
+          "file": "lexical/verbosity.py",
           "line": 70,
           "symbol": "verbosity_kernel",
           "message": "NPath 610 exceeds 400",
@@ -509,7 +509,7 @@
         },
         {
           "rule": "structural.complexity.npath",
-          "file": "_lexical/imposters.py",
+          "file": "lexical/imposters.py",
           "line": 154,
           "symbol": "_profile_cluster",
           "message": "NPath 420 exceeds 400",
@@ -601,7 +601,7 @@
       "waived_violations": [
         {
           "rule": "structural.local_imports",
-          "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/_lexical/_naming.py",
+          "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/lexical/_naming.py",
           "line": 199,
           "symbol": "enumerate_functions",
           "message": "import inside function 'enumerate_functions': import tree_sitter",
@@ -622,7 +622,7 @@
         },
         {
           "rule": "structural.local_imports",
-          "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/_lexical/confusion.py",
+          "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/lexical/confusion.py",
           "line": 91,
           "symbol": "confusion_kernel",
           "message": "import inside function 'confusion_kernel': from slop._lexical._naming import enumerate_functions",
@@ -643,7 +643,7 @@
         },
         {
           "rule": "structural.local_imports",
-          "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/_lexical/hammers.py",
+          "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/lexical/hammers.py",
           "line": 200,
           "symbol": "hammers_kernel",
           "message": "import inside function 'hammers_kernel': import tree_sitter",
@@ -664,7 +664,7 @@
         },
         {
           "rule": "structural.local_imports",
-          "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/_lexical/stutter.py",
+          "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/lexical/stutter.py",
           "line": 163,
           "symbol": "stutter_kernel",
           "message": "import inside function 'stutter_kernel': import tree_sitter",
@@ -685,7 +685,7 @@
         },
         {
           "rule": "structural.local_imports",
-          "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/_lexical/verbosity.py",
+          "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/lexical/verbosity.py",
           "line": 131,
           "symbol": "verbosity_kernel",
           "message": "import inside function 'verbosity_kernel': import tree_sitter",
@@ -1165,7 +1165,7 @@
         },
         {
           "rule": "structural.types.hidden_mutators",
-          "file": "_lexical/stutter.py",
+          "file": "lexical/stutter.py",
           "line": 199,
           "symbol": "_check_against_scopes",
           "message": "'_check_against_scopes' mutates parameter(s) out via .append()",
@@ -1322,7 +1322,7 @@
       "violations": [
         {
           "rule": "information.volume",
-          "file": "_lexical/hammers.py",
+          "file": "lexical/hammers.py",
           "line": 114,
           "symbol": "hammers_kernel",
           "message": "Volume 2933 exceeds 1500",
@@ -1339,7 +1339,7 @@
         },
         {
           "rule": "information.volume",
-          "file": "_lexical/sprawl.py",
+          "file": "lexical/sprawl.py",
           "line": 294,
           "symbol": "sprawl_kernel",
           "message": "Volume 2459 exceeds 1500",
@@ -1356,7 +1356,7 @@
         },
         {
           "rule": "information.volume",
-          "file": "_lexical/verbosity.py",
+          "file": "lexical/verbosity.py",
           "line": 70,
           "symbol": "verbosity_kernel",
           "message": "Volume 2305 exceeds 1500",
@@ -1402,7 +1402,7 @@
       "violations": [
         {
           "rule": "information.difficulty",
-          "file": "_lexical/hammers.py",
+          "file": "lexical/hammers.py",
           "line": 114,
           "symbol": "hammers_kernel",
           "message": "Difficulty 33.3 exceeds 30",
@@ -1419,7 +1419,7 @@
         },
         {
           "rule": "information.difficulty",
-          "file": "_lexical/verbosity.py",
+          "file": "lexical/verbosity.py",
           "line": 70,
           "symbol": "verbosity_kernel",
           "message": "Difficulty 30.9 exceeds 30",
@@ -1436,7 +1436,7 @@
         },
         {
           "rule": "information.difficulty",
-          "file": "_lexical/stutter.py",
+          "file": "lexical/stutter.py",
           "line": 351,
           "symbol": "_get_name",
           "message": "Difficulty 34.2 exceeds 30",
@@ -1489,7 +1489,7 @@
       "violations": [
         {
           "rule": "lexical.stutter",
-          "file": "_lexical/sprawl.py",
+          "file": "lexical/sprawl.py",
           "line": 179,
           "symbol": "cluster_patterns",
           "message": "identifier `cluster_patterns` stutters with enclosing function `_cluster_patterns_by_alphabet` \u2014 shared tokens ['cluster', 'patterns']",
@@ -1513,7 +1513,7 @@
         },
         {
           "rule": "lexical.stutter",
-          "file": "_lexical/sprawl.py",
+          "file": "lexical/sprawl.py",
           "line": 180,
           "symbol": "cluster_patterns",
           "message": "identifier `cluster_patterns` stutters with enclosing function `_cluster_patterns_by_alphabet` \u2014 shared tokens ['cluster', 'patterns']",
@@ -1537,7 +1537,7 @@
         },
         {
           "rule": "lexical.stutter",
-          "file": "_lexical/sprawl.py",
+          "file": "lexical/sprawl.py",
           "line": 184,
           "symbol": "cluster_patterns",
           "message": "identifier `cluster_patterns` stutters with enclosing function `_cluster_patterns_by_alphabet` \u2014 shared tokens ['cluster', 'patterns']",
@@ -1561,7 +1561,7 @@
         },
         {
           "rule": "lexical.stutter",
-          "file": "_lexical/sprawl.py",
+          "file": "lexical/sprawl.py",
           "line": 266,
           "symbol": "items_at_scope",
           "message": "identifier `items_at_scope` stutters with enclosing function `_affix_at_scope` \u2014 shared tokens ['at', 'scope']",
@@ -1586,7 +1586,7 @@
         },
         {
           "rule": "lexical.stutter",
-          "file": "_lexical/sprawl.py",
+          "file": "lexical/sprawl.py",
           "line": 271,
           "symbol": "items_at_scope",
           "message": "identifier `items_at_scope` stutters with enclosing function `_affix_at_scope` \u2014 shared tokens ['at', 'scope']",
@@ -2605,7 +2605,7 @@
         },
         {
           "rule": "lexical.verbosity",
-          "file": "_lexical/_naming.py",
+          "file": "lexical/_naming.py",
           "line": 269,
           "symbol": "_extract_c_or_cpp_name",
           "message": "function name `_extract_c_or_cpp_name` has 5 tokens (> 3); consider extracting a namespace or class",
@@ -2632,7 +2632,7 @@
         },
         {
           "rule": "lexical.verbosity",
-          "file": "_lexical/imposters.py",
+          "file": "lexical/imposters.py",
           "line": 343,
           "symbol": "_recursive_first_param_findings",
           "message": "function name `_recursive_first_param_findings` has 4 tokens (> 3); consider extracting a namespace or class",
@@ -2658,7 +2658,7 @@
         },
         {
           "rule": "lexical.verbosity",
-          "file": "_lexical/sprawl.py",
+          "file": "lexical/sprawl.py",
           "line": 147,
           "symbol": "_cluster_patterns_by_alphabet",
           "message": "function name `_cluster_patterns_by_alphabet` has 4 tokens (> 3); consider extracting a namespace or class",
@@ -2800,7 +2800,7 @@
       "violations": [
         {
           "rule": "lexical.cowards",
-          "file": "_lexical/sprawl.py",
+          "file": "lexical/sprawl.py",
           "line": 95,
           "symbol": "_token_edit_distance_1",
           "message": "function `_token_edit_distance_1` ends in disambiguator `_1` (numeric); the codebase couldn't commit \u2014 either pick one or describe what differs",
@@ -2865,10 +2865,10 @@
       "violations": [
         {
           "rule": "lexical.imposters",
-          "file": "_lexical/_naming.py",
+          "file": "lexical/_naming.py",
           "line": 45,
           "symbol": "name",
-          "message": "7 functions under `_lexical/` share `name` as first parameter; body cohesion 0.08, receiver-call density 0.3. Cluster is real but profile is mixed \u2014 review whether all members belong, or whether helpers should be moved out before deciding on a refactor.",
+          "message": "7 functions under `lexical/` share `name` as first parameter; body cohesion 0.08, receiver-call density 0.3. Cluster is real but profile is mixed \u2014 review whether all members belong, or whether helpers should be moved out before deciding on a refactor.",
           "severity": "warning",
           "value": null,
           "threshold": null,
@@ -2883,37 +2883,37 @@
             "members": [
               {
                 "name": "split_identifier",
-                "file": "_lexical/_naming.py",
+                "file": "lexical/_naming.py",
                 "line": 45
               },
               {
                 "name": "_classify",
-                "file": "_lexical/cowards.py",
+                "file": "lexical/cowards.py",
                 "line": 101
               },
               {
                 "name": "_check_identifier",
-                "file": "_lexical/hammers.py",
+                "file": "lexical/hammers.py",
                 "line": 245
               },
               {
                 "name": "_maybe_skip_self",
-                "file": "_lexical/imposters.py",
+                "file": "lexical/imposters.py",
                 "line": 284
               },
               {
                 "name": "_split_lower",
-                "file": "_lexical/sprawl.py",
+                "file": "lexical/sprawl.py",
                 "line": 40
               },
               {
                 "name": "_lowercase_tokens",
-                "file": "_lexical/stutter.py",
+                "file": "lexical/stutter.py",
                 "line": 128
               },
               {
                 "name": "_check_against_scopes",
-                "file": "_lexical/stutter.py",
+                "file": "lexical/stutter.py",
                 "line": 199
               }
             ],

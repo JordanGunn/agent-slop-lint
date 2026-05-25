@@ -1,4 +1,4 @@
-"""Tests for the v2 ``structural.magic_literals`` rule.
+"""Tests for the v2 ``magic_literals`` rule.
 
 Exercises ``run_magic_literals`` end-to-end via the Structure view.
 Verifies the rule detects distinct non-trivial numeric literals in
@@ -10,17 +10,18 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop.config.models import RuleConfig, SlopConfig
-from slop.structure.rules.magic_literals import run_magic_literals
+from slop.linter.rule_config import RuleConfig
+from slop.config import Config
+from slop.structure.metrics.magic_literals import run_magic_literals
 from slop.tree.tree import Tree
 
 
 def _rc(threshold: int = 3) -> RuleConfig:
-    return RuleConfig(enabled=True, severity="warning", params={"threshold": threshold})
+    return RuleConfig(enabled=True, severity="warning", params={"thresholds": {"function": threshold}})
 
 
-def _sc(tmp_path: Path) -> SlopConfig:
-    return SlopConfig(root=str(tmp_path))
+def _sc(tmp_path: Path) -> Config:
+    return Config(root=str(tmp_path))
 
 
 def _run(tmp_path: Path, threshold: int = 3):
@@ -145,26 +146,8 @@ class TestThresholdAndFormatting:
         assert result.violations[0].symbol == "many"
         assert result.violations[1].symbol == "few"
 
-    def test_rule_name_is_structural(self, tmp_path: Path):
-        # Confirms the v2.0 relocation: rule emits structural.magic_literals,
-        # not the legacy information.magic_literals.
+    def test_rule_name_is_function_scoped(self, tmp_path: Path):
+        # Confirms the scope-prefix rename: rule emits function.magic_literals.
         (tmp_path / "a.py").write_text("def f():\n    return 42 + 365 + 1024 + 999\n")
         result = _run(tmp_path, threshold=2)
-        assert result.violations[0].rule == "structural.magic_literals"
-
-
-class TestCompatLegacyName:
-    """The legacy `information.magic_literals` name resolves to the v2
-    canonical `structural.magic_literals` via slop._compat.
-    """
-
-    def test_legacy_rule_name_canonicalises(self):
-        from slop._compat import canonical_rule_name
-        canonical, was_legacy = canonical_rule_name("information.magic_literals")
-        assert canonical == "structural.magic_literals"
-        assert was_legacy is True
-
-    def test_section_comments_legacy_name_is_removed(self):
-        from slop._compat import REMOVED_RULES
-        assert "information.section_comments" in REMOVED_RULES
-        assert "removed in v2.0" in REMOVED_RULES["information.section_comments"]
+        assert result.violations[0].rule == "magic_literals"

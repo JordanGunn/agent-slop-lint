@@ -1,74 +1,12 @@
-# slop — dogfood config
+# slop — research fixture config
 #
-# Lints against the v1.2.0 snapshot at docs/research/snapshots/v1.2.0/slop
-# rather than the live src/ tree, so dogfood numbers are stable while
-# v2.0+ work iterates on the live code. To lint live code during
-# development, use `slop lint --root src/cli/slop`.
+# Points at the v1.2.0 snapshot. Used as a stable known-slop corpus for
+# the lexical-signal → corrective-action research line. Waivers and
+# threshold tweaks are intentionally absent: signal suppression defeats
+# the purpose of measuring distributions.
 
 root = "docs/research/snapshots/v1.2.0/slop"
 languages = ["python"]
-exclude = [
-    "**/_fs/**",
-    "**/_text/**",
-    "**/_ast/**",
-    "**/_compose/**",
-    "**/_structural/**",
-    "**/_util/**",
-]
 
-[rules.structural.hotspots]
-enabled = false                 # snapshot has no git history
-
-[rules.structural.packages]
-enabled = false                 # small corpus once kernel subpackages are excluded; I/A/D' is noisy
-
-[rules.structural.redundancy]
-min_shared = 5
-
-[[waivers]]
-id = "stutter-rule-wrappers"
-path = "rules/**"
-rule = "lexical.stutter"
-reason = "Rule wrapper functions are named run_X and call X_kernel; the kernel variable name repeating the function name is the most precise choice available. This is a structural idiom of the rule registry pattern, not naming drift."
-
-[[waivers]]
-id = "stutter-engine-filters"
-path = "engine.py"
-rule = "lexical.stutter"
-reason = "filter_rule inside _resolve_rule_filter and filter_category inside _resolve_category_filter: the local variable names the thing being resolved, which is exactly what the enclosing function is doing. Renaming would reduce clarity."
-
-[[waivers]]
-id = "stutter-compat-legacy"
-path = "_compat.py"
-rule = "lexical.stutter"
-reason = "legacy_table inside _apply_one_legacy_table: the function applies one entry from the legacy table, so legacy_table is the precise name for what it holds."
-
-[[waivers]]
-id = "stutter-preflight"
-path = "preflight.py"
-rule = "lexical.stutter"
-reason = "required_binaries inside check_required_binaries: the function checks required binaries, so the local variable holding the list of required binaries is named precisely."
-
-[[waivers]]
-id = "local-imports-optional-dep"
-path = "_lexical/**"
-rule = "structural.local_imports"
-reason = "tree_sitter is an optional heavy dependency; importing at module level would crash startup for users without the wheels installed. Deferred until the kernel is actually invoked."
-
-[[waivers]]
-id = "local-imports-cli-startup"
-path = "cli.py"
-rule = "structural.local_imports"
-reason = "CLI subcommand handlers defer imports so only the invoked command pays the import cost. Standard CLI startup-time optimisation — importing everything at the top would slow down every slop invocation."
-
-[[waivers]]
-id = "local-imports-halstead-optional"
-path = "rules/halstead.py"
-rule = "structural.local_imports"
-reason = "identifier_token_kernel is deferred to avoid a circular import and to keep the Halstead rule loadable without the lexical kernel being initialised."
-
-[[waivers]]
-id = "verbosity-pending-imposters-refactor"
-path = "**"
-rule = "lexical.verbosity"
-reason = "Volume of multi-token function names in this codebase is itself a slop signal — the names accurately describe what the functions do, but the prevalence indicates missing namespaces. Tracked under lexical.imposters and lexical.sprawl findings; the count is expected to decrease mechanically as those refactors land. Threshold stays at the honest default; this waiver silences the dogfood, not the measurement."
+[rules.hotspots]
+enabled = false                 # snapshot has no git history — structurally N/A

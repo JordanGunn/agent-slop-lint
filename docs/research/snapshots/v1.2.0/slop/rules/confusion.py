@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop._lexical.confusion import confusion_kernel
+from slop.lexical.confusion import confusion_kernel
 from slop.models import RuleConfig, RuleResult, SlopConfig, Violation
 
 

@@ -17,7 +17,7 @@ def add_parser(subparsers) -> None:
 
 def cmd_doctor() -> int:
     """Print binary statuses. Exits 2 if any of fd/git/rg are missing."""
-    from slop._util.doctor import run_doctor
+    from slop.doctor import run_doctor
 
     report = run_doctor()
     tools = report.get("tools", {})

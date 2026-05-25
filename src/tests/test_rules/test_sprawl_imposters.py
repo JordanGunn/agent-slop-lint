@@ -7,9 +7,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop.config.models import RuleConfig, SlopConfig
-from slop.lexicon.rules.imposters import run_imposters
-from slop.lexicon.rules.sprawl import run_sprawl
+from slop.linter.rule_config import RuleConfig
+from slop.config import Config
+from slop.lexicon.metrics.imposters import run_imposters
+from slop.lexicon.metrics.sprawl import run_sprawl
 from slop.tree.tree import Tree
 
 
@@ -20,8 +21,8 @@ def _lexicon(root):
 
 
 
-def _slop_config(root: Path | None = None) -> SlopConfig:
-    return SlopConfig(
+def _slop_config(root: Path | None = None) -> Config:
+    return Config(
         rules={},
         languages=["python"],
         root=str(root) if root is not None else ".",

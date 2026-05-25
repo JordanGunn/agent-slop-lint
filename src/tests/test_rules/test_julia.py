@@ -13,10 +13,11 @@ import pytest
 
 from pathlib import Path
 
-from slop.config.models import RuleConfig, SlopConfig
-from slop.structure.rules.combinatorial import run_combinatorial
-from slop.structure.rules.complexity import run_cyclomatic
-from slop.structure.rules.dependencies import run_cycles
+from slop.linter.rule_config import RuleConfig
+from slop.config import Config
+from slop.structure.metrics.combinatorial import run_combinatorial
+from slop.structure.metrics.cyclomatic import run_cyclomatic
+from slop.structure.metrics.dependencies import run_cycles
 from slop.tree.tree import Tree
 
 
@@ -50,17 +51,20 @@ end
 """
 
 
-def _slop_config() -> SlopConfig:
-    return SlopConfig(rules={}, languages=["julia"])
+def _slop_config() -> Config:
+    return Config(rules={}, languages=["julia"])
 
 
 def _rule_config(**overrides) -> RuleConfig:
-    return RuleConfig(enabled=True, severity="error", params=overrides)
+    threshold = overrides.pop("threshold", 0)
+    params: dict = {"thresholds": {"function": threshold}}
+    params.update(overrides)
+    return RuleConfig(enabled=True, severity="error", params=params)
 
 
 def test_julia_cyclomatic_flags_branchy_function(tmp_path: Path):
     (tmp_path / "branchy.jl").write_text(_BRANCHY_JL)
-    cfg = _rule_config(cyclomatic_threshold=5)
+    cfg = _rule_config(threshold=5)
     result = run_cyclomatic(_structure(tmp_path), cfg, _slop_config())
     assert result.status == "fail", result.summary
     assert any(v.symbol == "branchy" for v in result.violations)
@@ -68,9 +72,9 @@ def test_julia_cyclomatic_flags_branchy_function(tmp_path: Path):
 
 def test_julia_combinatorial_runs_without_error(tmp_path: Path):
     (tmp_path / "branchy.jl").write_text(_BRANCHY_JL)
-    cfg = _rule_config(combinatorial_threshold=200)
+    cfg = _rule_config(threshold=200)
     tree = Tree(tmp_path); tree.scan()
-    result = run_combinatorial(tree.structure, cfg, SlopConfig(root=str(tmp_path), languages=["julia"]))
+    result = run_combinatorial(tree.structure, cfg, Config(root=str(tmp_path), languages=["julia"]))
     # NPath under-counts nested branches in flat-body langs (documented
     # limitation in docs/JULIA.md). We only check it runs and analyses
     # the function.
@@ -106,7 +110,7 @@ def test_julia_cyclomatic_detects_short_form_function(tmp_path: Path):
     (tmp_path / "shortform.jl").write_text(
         'branchy(x) = x > 0 ? (x > 10 ? "big" : "small") : "neg"\n'
     )
-    cfg = _rule_config(cyclomatic_threshold=2)
+    cfg = _rule_config(threshold=2)
     result = run_cyclomatic(_structure(tmp_path), cfg, _slop_config())
     assert result.status == "fail", result.summary
     assert any(v.symbol == "branchy" for v in result.violations)
@@ -118,7 +122,7 @@ def test_julia_cyclomatic_detects_operator_method(tmp_path: Path):
     (tmp_path / "op.jl").write_text(
         "-(a::Int, b::Int) = a > b ? a : b\n"
     )
-    cfg = _rule_config(cyclomatic_threshold=1)
+    cfg = _rule_config(threshold=1)
     result = run_cyclomatic(_structure(tmp_path), cfg, _slop_config())
     assert result.status == "fail"
     assert any(v.symbol == "-" for v in result.violations)
@@ -136,7 +140,7 @@ def test_julia_cyclomatic_detects_do_block(tmp_path: Path):
         "    end\n"
         "end\n"
     )
-    cfg = _rule_config(cyclomatic_threshold=1)
+    cfg = _rule_config(threshold=1)
     result = run_cyclomatic(_structure(tmp_path), cfg, _slop_config())
     assert result.status == "fail"
     # do-blocks are anonymous; name is "<lambda>"
@@ -155,7 +159,7 @@ def test_julia_cyclomatic_detects_dotted_method_name(tmp_path: Path):
         "    end\n"
         "end\n"
     )
-    cfg = _rule_config(cyclomatic_threshold=1)
+    cfg = _rule_config(threshold=1)
     result = run_cyclomatic(_structure(tmp_path), cfg, _slop_config())
     assert result.status == "fail"
     assert any(v.symbol == "show" for v in result.violations), [v.symbol for v in result.violations]
@@ -173,7 +177,7 @@ def test_julia_cyclomatic_detects_where_clause_function(tmp_path: Path):
         "    end\n"
         "end\n"
     )
-    cfg = _rule_config(cyclomatic_threshold=1)
+    cfg = _rule_config(threshold=1)
     result = run_cyclomatic(_structure(tmp_path), cfg, _slop_config())
     assert result.status == "fail"
     assert any(v.symbol == "f" for v in result.violations), [v.symbol for v in result.violations]
@@ -189,7 +193,7 @@ def test_julia_assignment_is_not_treated_as_function(tmp_path: Path):
         "y = some_func()\n"
         "z = [1, 2, 3]\n"
     )
-    cfg = _rule_config(cyclomatic_threshold=1)
+    cfg = _rule_config(threshold=1)
     result = run_cyclomatic(_structure(tmp_path), cfg, _slop_config())
     # No functions in the file means: no violations, regardless of threshold.
     assert result.status == "pass", result.summary

@@ -1,0 +1,3162 @@
+[
+  {
+    "rule": "lexical.stutter",
+    "cell": "---",
+    "primary_token": "match",
+    "symbol": "match_dict",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/ast/query.py",
+    "line": 215,
+    "tokens": [
+      "match",
+      "dict"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "---",
+    "primary_token": "legacy",
+    "symbol": "legacy_table",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/_compat.py",
+    "line": 286,
+    "tokens": [
+      "legacy",
+      "table"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "---",
+    "primary_token": "legacy",
+    "symbol": "legacy_table",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/_compat.py",
+    "line": 287,
+    "tokens": [
+      "legacy",
+      "table"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "---",
+    "primary_token": "git",
+    "symbol": "GitLogResult",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/compose/git.py",
+    "line": 374,
+    "tokens": [
+      "git",
+      "log"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "---",
+    "primary_token": "git",
+    "symbol": "GitLogResult",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/compose/git.py",
+    "line": 380,
+    "tokens": [
+      "git",
+      "log"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "---",
+    "primary_token": "git",
+    "symbol": "GitNumstatResult",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/compose/git.py",
+    "line": 421,
+    "tokens": [
+      "git",
+      "numstat"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "---",
+    "primary_token": "git",
+    "symbol": "GitNumstatResult",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/compose/git.py",
+    "line": 427,
+    "tokens": [
+      "git",
+      "numstat"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-BC",
+    "primary_token": "cluster",
+    "symbol": "cluster_patterns",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/lexical/sprawl.py",
+    "line": 179,
+    "tokens": [
+      "cluster",
+      "patterns"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-BC",
+    "primary_token": "cluster",
+    "symbol": "cluster_patterns",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/lexical/sprawl.py",
+    "line": 180,
+    "tokens": [
+      "cluster",
+      "patterns"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-BC",
+    "primary_token": "cluster",
+    "symbol": "cluster_patterns",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/lexical/sprawl.py",
+    "line": 184,
+    "tokens": [
+      "cluster",
+      "patterns"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-BC",
+    "primary_token": "scope",
+    "symbol": "items_at_scope",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/lexical/sprawl.py",
+    "line": 266,
+    "tokens": [
+      "items",
+      "scope"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-BC",
+    "primary_token": "scope",
+    "symbol": "items_at_scope",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/lexical/sprawl.py",
+    "line": 271,
+    "tokens": [
+      "items",
+      "scope"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-BC",
+    "primary_token": "type",
+    "symbol": "AnyTypeDensityEntry",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/any_type_density.py",
+    "line": 133,
+    "tokens": [
+      "any",
+      "type",
+      "density",
+      "entry"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-BC",
+    "primary_token": "type",
+    "symbol": "AnyTypeDensityResult",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/any_type_density.py",
+    "line": 144,
+    "tokens": [
+      "any",
+      "type",
+      "density"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "ABC",
+    "primary_token": "kernel",
+    "symbol": "any_type_density_kernel",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/any_type_density.py",
+    "line": 157,
+    "tokens": [
+      "any",
+      "type",
+      "density",
+      "kernel"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-BC",
+    "primary_token": "type",
+    "symbol": "AnyTypeDensityEntry",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/any_type_density.py",
+    "line": 218,
+    "tokens": [
+      "any",
+      "type",
+      "density",
+      "entry"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-BC",
+    "primary_token": "type",
+    "symbol": "AnyTypeDensityEntry",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/any_type_density.py",
+    "line": 225,
+    "tokens": [
+      "any",
+      "type",
+      "density",
+      "entry"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-BC",
+    "primary_token": "type",
+    "symbol": "AnyTypeDensityResult",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/any_type_density.py",
+    "line": 234,
+    "tokens": [
+      "any",
+      "type",
+      "density"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-BC",
+    "primary_token": "find",
+    "symbol": "find_functions",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/ccx.py",
+    "line": 1014,
+    "tokens": [
+      "find",
+      "functions"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-BC",
+    "primary_token": "file",
+    "symbol": "FileMetrics",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/ccx.py",
+    "line": 1032,
+    "tokens": [
+      "file",
+      "metrics"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-BC",
+    "primary_token": "file",
+    "symbol": "FileMetrics",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/ccx.py",
+    "line": 1036,
+    "tokens": [
+      "file",
+      "metrics"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-BC",
+    "primary_token": "density",
+    "symbol": "CloneDensityResult",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/clone_density.py",
+    "line": 99,
+    "tokens": [
+      "clone",
+      "density"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "ABC",
+    "primary_token": "kernel",
+    "symbol": "clone_density_kernel",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/clone_density.py",
+    "line": 165,
+    "tokens": [
+      "clone",
+      "density",
+      "kernel"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-BC",
+    "primary_token": "density",
+    "symbol": "CloneDensityResult",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/clone_density.py",
+    "line": 251,
+    "tokens": [
+      "clone",
+      "density"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-BC",
+    "primary_token": "file",
+    "symbol": "file_deps",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/deps.py",
+    "line": 416,
+    "tokens": [
+      "file",
+      "deps"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-BC",
+    "primary_token": "file",
+    "symbol": "FileDeps",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/deps.py",
+    "line": 416,
+    "tokens": [
+      "file",
+      "deps"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-BC",
+    "primary_token": "file",
+    "symbol": "file_deps",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/deps.py",
+    "line": 424,
+    "tokens": [
+      "file",
+      "deps"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-BC",
+    "primary_token": "file",
+    "symbol": "FileDeps",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/deps.py",
+    "line": 424,
+    "tokens": [
+      "file",
+      "deps"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-BC",
+    "primary_token": "file",
+    "symbol": "file_deps",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/deps.py",
+    "line": 433,
+    "tokens": [
+      "file",
+      "deps"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-BC",
+    "primary_token": "file",
+    "symbol": "file_deps",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/deps.py",
+    "line": 457,
+    "tokens": [
+      "file",
+      "deps"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-BC",
+    "primary_token": "file",
+    "symbol": "file_deps",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/deps.py",
+    "line": 458,
+    "tokens": [
+      "file",
+      "deps"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-BC",
+    "primary_token": "file",
+    "symbol": "file_deps",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/deps.py",
+    "line": 459,
+    "tokens": [
+      "file",
+      "deps"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-BC",
+    "primary_token": "file",
+    "symbol": "file_deps",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/deps.py",
+    "line": 460,
+    "tokens": [
+      "file",
+      "deps"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "---",
+    "primary_token": "import",
+    "symbol": "ImportEdge",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/deps.py",
+    "line": 606,
+    "tokens": [
+      "import",
+      "edge"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-BC",
+    "primary_token": "entry",
+    "symbol": "GodModuleEntry",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/god_module.py",
+    "line": 123,
+    "tokens": [
+      "god",
+      "module",
+      "entry"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-B-",
+    "primary_token": "module",
+    "symbol": "GodModuleResult",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/god_module.py",
+    "line": 133,
+    "tokens": [
+      "god",
+      "module"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "ABC",
+    "primary_token": "kernel",
+    "symbol": "god_module_kernel",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/god_module.py",
+    "line": 146,
+    "tokens": [
+      "god",
+      "module",
+      "kernel"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-BC",
+    "primary_token": "entry",
+    "symbol": "GodModuleEntry",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/god_module.py",
+    "line": 176,
+    "tokens": [
+      "god",
+      "module",
+      "entry"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-BC",
+    "primary_token": "entry",
+    "symbol": "GodModuleEntry",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/god_module.py",
+    "line": 204,
+    "tokens": [
+      "god",
+      "module",
+      "entry"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-B-",
+    "primary_token": "module",
+    "symbol": "GodModuleResult",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/god_module.py",
+    "line": 211,
+    "tokens": [
+      "god",
+      "module"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-BC",
+    "primary_token": "find",
+    "symbol": "find_functions",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/halstead.py",
+    "line": 819,
+    "tokens": [
+      "find",
+      "functions"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-B-",
+    "primary_token": "imports",
+    "symbol": "LocalImportsResult",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/local_imports.py",
+    "line": 99,
+    "tokens": [
+      "local",
+      "imports"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "ABC",
+    "primary_token": "kernel",
+    "symbol": "local_imports_kernel",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/local_imports.py",
+    "line": 112,
+    "tokens": [
+      "local",
+      "imports",
+      "kernel"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-B-",
+    "primary_token": "imports",
+    "symbol": "local_imports",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/local_imports.py",
+    "line": 133,
+    "tokens": [
+      "local",
+      "imports"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-B-",
+    "primary_token": "imports",
+    "symbol": "local_imports",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/local_imports.py",
+    "line": 147,
+    "tokens": [
+      "local",
+      "imports"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-B-",
+    "primary_token": "imports",
+    "symbol": "LocalImportsResult",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/local_imports.py",
+    "line": 151,
+    "tokens": [
+      "local",
+      "imports"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-B-",
+    "primary_token": "imports",
+    "symbol": "local_imports",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/local_imports.py",
+    "line": 152,
+    "tokens": [
+      "local",
+      "imports"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-B-",
+    "primary_token": "imports",
+    "symbol": "local_imports",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/local_imports.py",
+    "line": 152,
+    "tokens": [
+      "local",
+      "imports"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "ABC",
+    "primary_token": "kernel",
+    "symbol": "magic_literals_kernel",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/magic_literals.py",
+    "line": 224,
+    "tokens": [
+      "magic",
+      "literals",
+      "kernel"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-BC",
+    "primary_token": "find",
+    "symbol": "find_functions",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/npath.py",
+    "line": 832,
+    "tokens": [
+      "find",
+      "functions"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "ABC",
+    "primary_token": "kernel",
+    "symbol": "out_parameters_kernel",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/out_parameters.py",
+    "line": 123,
+    "tokens": [
+      "out",
+      "parameters",
+      "kernel"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "---",
+    "primary_token": "section",
+    "symbol": "SectionCommentResult",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/section_comments.py",
+    "line": 153,
+    "tokens": [
+      "section",
+      "comment"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-BC",
+    "primary_token": "entry",
+    "symbol": "SectionCommentEntry",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/section_comments.py",
+    "line": 160,
+    "tokens": [
+      "section",
+      "comment",
+      "entry"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-BC",
+    "primary_token": "entry",
+    "symbol": "SectionCommentEntry",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/section_comments.py",
+    "line": 197,
+    "tokens": [
+      "section",
+      "comment",
+      "entry"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "---",
+    "primary_token": "section",
+    "symbol": "SectionCommentResult",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/section_comments.py",
+    "line": 210,
+    "tokens": [
+      "section",
+      "comment"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-BC",
+    "primary_token": "name",
+    "symbol": "name_node",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/sibling_calls.py",
+    "line": 169,
+    "tokens": [
+      "name",
+      "node"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-BC",
+    "primary_token": "name",
+    "symbol": "name_node",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/sibling_calls.py",
+    "line": 170,
+    "tokens": [
+      "name",
+      "node"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-BC",
+    "primary_token": "name",
+    "symbol": "name_node",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/sibling_calls.py",
+    "line": 171,
+    "tokens": [
+      "name",
+      "node"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-BC",
+    "primary_token": "name",
+    "symbol": "name_node",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/sibling_calls.py",
+    "line": 171,
+    "tokens": [
+      "name",
+      "node"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-BC",
+    "primary_token": "call",
+    "symbol": "SiblingCallResult",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/sibling_calls.py",
+    "line": 317,
+    "tokens": [
+      "sibling",
+      "call"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "ABC",
+    "primary_token": "kernel",
+    "symbol": "stringly_typed_kernel",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/structural/stringly_typed.py",
+    "line": 97,
+    "tokens": [
+      "stringly",
+      "typed",
+      "kernel"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-BC",
+    "primary_token": "rule",
+    "symbol": "RuleConfig",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/config.py",
+    "line": 239,
+    "tokens": [
+      "rule",
+      "config"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-BC",
+    "primary_token": "default",
+    "symbol": "DEFAULT_RULE_CONFIGS",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/config.py",
+    "line": 253,
+    "tokens": [
+      "default",
+      "rule",
+      "configs"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-BC",
+    "primary_token": "default",
+    "symbol": "DEFAULT_RULE_CONFIGS",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/config.py",
+    "line": 257,
+    "tokens": [
+      "default",
+      "rule",
+      "configs"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-BC",
+    "primary_token": "rule",
+    "symbol": "filter_rule",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/engine.py",
+    "line": 22,
+    "tokens": [
+      "filter",
+      "rule"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-BC",
+    "primary_token": "rule",
+    "symbol": "filter_rule",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/engine.py",
+    "line": 30,
+    "tokens": [
+      "filter",
+      "rule"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-BC",
+    "primary_token": "rules",
+    "symbol": "RULES_BY_CATEGORY",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/engine.py",
+    "line": 42,
+    "tokens": [
+      "rules",
+      "category"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-B-",
+    "primary_token": "filter",
+    "symbol": "filter_category",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/engine.py",
+    "line": 60,
+    "tokens": [
+      "filter",
+      "category"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-B-",
+    "primary_token": "filter",
+    "symbol": "filter_category",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/engine.py",
+    "line": 66,
+    "tokens": [
+      "filter",
+      "category"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-BC",
+    "primary_token": "rule",
+    "symbol": "RuleConfig",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/models.py",
+    "line": 49,
+    "tokens": [
+      "rule",
+      "config"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "---",
+    "primary_token": "required",
+    "symbol": "required_binaries",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/preflight.py",
+    "line": 58,
+    "tokens": [
+      "required",
+      "binaries"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "ABC",
+    "primary_token": "run",
+    "symbol": "run_any_type_density",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/rules/any_type_density.py",
+    "line": 30,
+    "tokens": [
+      "run",
+      "any",
+      "type",
+      "density"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "ABC",
+    "primary_token": "kernel",
+    "symbol": "any_type_density_kernel",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/rules/any_type_density.py",
+    "line": 38,
+    "tokens": [
+      "any",
+      "type",
+      "density",
+      "kernel"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "ABC",
+    "primary_token": "run",
+    "symbol": "run_clone_density",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/rules/clone_density.py",
+    "line": 32,
+    "tokens": [
+      "run",
+      "clone",
+      "density"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "ABC",
+    "primary_token": "kernel",
+    "symbol": "clone_density_kernel",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/rules/clone_density.py",
+    "line": 42,
+    "tokens": [
+      "clone",
+      "density",
+      "kernel"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "ABC",
+    "primary_token": "run",
+    "symbol": "run_god_module",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/rules/god_module.py",
+    "line": 22,
+    "tokens": [
+      "run",
+      "god",
+      "module"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "ABC",
+    "primary_token": "kernel",
+    "symbol": "god_module_kernel",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/rules/god_module.py",
+    "line": 29,
+    "tokens": [
+      "god",
+      "module",
+      "kernel"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "ABC",
+    "primary_token": "run",
+    "symbol": "run_local_imports",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/rules/local_imports.py",
+    "line": 23,
+    "tokens": [
+      "run",
+      "local",
+      "imports"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "ABC",
+    "primary_token": "kernel",
+    "symbol": "local_imports_kernel",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/rules/local_imports.py",
+    "line": 31,
+    "tokens": [
+      "local",
+      "imports",
+      "kernel"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-B-",
+    "primary_token": "imports",
+    "symbol": "local_imports",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/rules/local_imports.py",
+    "line": 39,
+    "tokens": [
+      "local",
+      "imports"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "-B-",
+    "primary_token": "imports",
+    "symbol": "local_imports",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/rules/local_imports.py",
+    "line": 72,
+    "tokens": [
+      "local",
+      "imports"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "ABC",
+    "primary_token": "kernel",
+    "symbol": "magic_literals_kernel",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/rules/magic_literals.py",
+    "line": 37,
+    "tokens": [
+      "magic",
+      "literals",
+      "kernel"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "ABC",
+    "primary_token": "run",
+    "symbol": "run_out_parameters",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/rules/out_parameters.py",
+    "line": 31,
+    "tokens": [
+      "run",
+      "out",
+      "parameters"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "ABC",
+    "primary_token": "kernel",
+    "symbol": "out_parameters_kernel",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/rules/out_parameters.py",
+    "line": 41,
+    "tokens": [
+      "out",
+      "parameters",
+      "kernel"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "ABC",
+    "primary_token": "kernel",
+    "symbol": "section_comment_kernel",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/rules/section_comments.py",
+    "line": 32,
+    "tokens": [
+      "section",
+      "comment",
+      "kernel"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "ABC",
+    "primary_token": "kernel",
+    "symbol": "sibling_call_redundancy_kernel",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/rules/sibling_calls.py",
+    "line": 37,
+    "tokens": [
+      "sibling",
+      "call",
+      "redundancy",
+      "kernel"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "ABC",
+    "primary_token": "run",
+    "symbol": "run_stringly_typed",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/rules/stringly_typed.py",
+    "line": 30,
+    "tokens": [
+      "run",
+      "stringly",
+      "typed"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.stutter",
+    "cell": "ABC",
+    "primary_token": "kernel",
+    "symbol": "stringly_typed_kernel",
+    "file": "/home/jgodau/work/personal/slop/docs/research/snapshots/v1.2.0/slop/rules/stringly_typed.py",
+    "line": 40,
+    "tokens": [
+      "stringly",
+      "typed",
+      "kernel"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "---",
+    "primary_token": "dict",
+    "symbol": "_dict_match_to_captures",
+    "file": "ast/query.py",
+    "line": 212,
+    "tokens": [
+      "dict",
+      "match",
+      "captures"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "---",
+    "primary_token": "leaf",
+    "symbol": "_is_leaf_legacy_table",
+    "file": "_compat.py",
+    "line": 265,
+    "tokens": [
+      "leaf",
+      "legacy",
+      "table"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "---",
+    "primary_token": "apply",
+    "symbol": "_apply_one_legacy_table",
+    "file": "_compat.py",
+    "line": 276,
+    "tokens": [
+      "apply",
+      "one",
+      "legacy",
+      "table"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "---",
+    "primary_token": "migrate",
+    "symbol": "_migrate_v110_stutter_subrules",
+    "file": "_compat.py",
+    "line": 308,
+    "tokens": [
+      "migrate",
+      "v",
+      "stutter",
+      "subrules"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "-BC",
+    "primary_token": "rule",
+    "symbol": "migrate_legacy_rule_tables",
+    "file": "_compat.py",
+    "line": 355,
+    "tokens": [
+      "migrate",
+      "legacy",
+      "rule",
+      "tables"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "-BC",
+    "primary_token": "parse",
+    "symbol": "_parse_numstat_log_output",
+    "file": "compose/git.py",
+    "line": 190,
+    "tokens": [
+      "parse",
+      "numstat",
+      "log",
+      "output"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "-BC",
+    "primary_token": "file",
+    "symbol": "git_log_file_changes",
+    "file": "compose/git.py",
+    "line": 343,
+    "tokens": [
+      "git",
+      "log",
+      "file",
+      "changes"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "-BC",
+    "primary_token": "scope",
+    "symbol": "_scope_commits_to_prefix",
+    "file": "compose/hotspots.py",
+    "line": 158,
+    "tokens": [
+      "scope",
+      "commits",
+      "prefix"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "-BC",
+    "primary_token": "extract",
+    "symbol": "_extract_c_or_cpp_name",
+    "file": "lexical/_naming.py",
+    "line": 269,
+    "tokens": [
+      "extract",
+      "c",
+      "cpp",
+      "name"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "-B-",
+    "primary_token": "param",
+    "symbol": "_recursive_first_param_findings",
+    "file": "lexical/imposters.py",
+    "line": 343,
+    "tokens": [
+      "recursive",
+      "first",
+      "param",
+      "findings"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "-BC",
+    "primary_token": "cluster",
+    "symbol": "_cluster_patterns_by_alphabet",
+    "file": "lexical/sprawl.py",
+    "line": 147,
+    "tokens": [
+      "cluster",
+      "patterns",
+      "alphabet"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "ABC",
+    "primary_token": "kernel",
+    "symbol": "any_type_density_kernel",
+    "file": "structural/any_type_density.py",
+    "line": 157,
+    "tokens": [
+      "any",
+      "type",
+      "density",
+      "kernel"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "-BC",
+    "primary_token": "type",
+    "symbol": "AnyTypeDensityEntry",
+    "file": "structural/any_type_density.py",
+    "line": 133,
+    "tokens": [
+      "any",
+      "type",
+      "density",
+      "entry"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "-BC",
+    "primary_token": "type",
+    "symbol": "AnyTypeDensityResult",
+    "file": "structural/any_type_density.py",
+    "line": 144,
+    "tokens": [
+      "any",
+      "type",
+      "density"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "-BC",
+    "primary_token": "default",
+    "symbol": "_default_is_function_node",
+    "file": "structural/ccx.py",
+    "line": 100,
+    "tokens": [
+      "default",
+      "function",
+      "node"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "-BC",
+    "primary_token": "function",
+    "symbol": "_julia_is_function_node",
+    "file": "structural/ccx.py",
+    "line": 164,
+    "tokens": [
+      "julia",
+      "function",
+      "node"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "-BC",
+    "primary_token": "c",
+    "symbol": "_c_find_function_identifier",
+    "file": "structural/ccx.py",
+    "line": 178,
+    "tokens": [
+      "c",
+      "find",
+      "function",
+      "identifier"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "-BC",
+    "primary_token": "cpp",
+    "symbol": "_cpp_find_function_identifier",
+    "file": "structural/ccx.py",
+    "line": 226,
+    "tokens": [
+      "cpp",
+      "find",
+      "function",
+      "identifier"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "-BC",
+    "primary_token": "ruby",
+    "symbol": "_ruby_find_method_name",
+    "file": "structural/ccx.py",
+    "line": 310,
+    "tokens": [
+      "ruby",
+      "find",
+      "method",
+      "name"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "-BC",
+    "primary_token": "ruby",
+    "symbol": "_ruby_is_function_node",
+    "file": "structural/ccx.py",
+    "line": 361,
+    "tokens": [
+      "ruby",
+      "function",
+      "node"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "-BC",
+    "primary_token": "collect",
+    "symbol": "_collect_cpp_outofline_methods",
+    "file": "structural/ck.py",
+    "line": 249,
+    "tokens": [
+      "collect",
+      "cpp",
+      "outofline",
+      "methods"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "-BC",
+    "primary_token": "extract",
+    "symbol": "_extract_go_receiver_type",
+    "file": "structural/ck.py",
+    "line": 511,
+    "tokens": [
+      "extract",
+      "go",
+      "receiver",
+      "type"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "-BC",
+    "primary_token": "ruby",
+    "symbol": "_aggregate_ruby_open_classes",
+    "file": "structural/ck.py",
+    "line": 659,
+    "tokens": [
+      "aggregate",
+      "ruby",
+      "open",
+      "classes"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "-BC",
+    "primary_token": "names",
+    "symbol": "_module_names_for_path",
+    "file": "structural/deps.py",
+    "line": 346,
+    "tokens": [
+      "module",
+      "names",
+      "path"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "-BC",
+    "primary_token": "file",
+    "symbol": "_sort_and_cap_file_deps",
+    "file": "structural/deps.py",
+    "line": 452,
+    "tokens": [
+      "sort",
+      "cap",
+      "file",
+      "deps"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "-BC",
+    "primary_token": "extract",
+    "symbol": "_extract_go_imports_text",
+    "file": "structural/deps.py",
+    "line": 563,
+    "tokens": [
+      "extract",
+      "go",
+      "imports",
+      "text"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "-B-",
+    "primary_token": "go",
+    "symbol": "_is_go_import_block_start",
+    "file": "structural/deps.py",
+    "line": 586,
+    "tokens": [
+      "go",
+      "import",
+      "block"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "-B-",
+    "primary_token": "go",
+    "symbol": "_is_go_import_block_end",
+    "file": "structural/deps.py",
+    "line": 591,
+    "tokens": [
+      "go",
+      "import",
+      "block",
+      "end"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "-B-",
+    "primary_token": "go",
+    "symbol": "_append_go_import_edge",
+    "file": "structural/deps.py",
+    "line": 596,
+    "tokens": [
+      "append",
+      "go",
+      "import",
+      "edge"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "-BC",
+    "primary_token": "default",
+    "symbol": "_default_is_function_node",
+    "file": "structural/halstead.py",
+    "line": 76,
+    "tokens": [
+      "default",
+      "function",
+      "node"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "-BC",
+    "primary_token": "function",
+    "symbol": "_julia_is_function_node",
+    "file": "structural/halstead.py",
+    "line": 121,
+    "tokens": [
+      "julia",
+      "function",
+      "node"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "-BC",
+    "primary_token": "c",
+    "symbol": "_c_find_function_identifier",
+    "file": "structural/halstead.py",
+    "line": 130,
+    "tokens": [
+      "c",
+      "find",
+      "function",
+      "identifier"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "-BC",
+    "primary_token": "cpp",
+    "symbol": "_cpp_find_function_identifier",
+    "file": "structural/halstead.py",
+    "line": 162,
+    "tokens": [
+      "cpp",
+      "find",
+      "function",
+      "identifier"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "-BC",
+    "primary_token": "ruby",
+    "symbol": "_ruby_find_method_name",
+    "file": "structural/halstead.py",
+    "line": 227,
+    "tokens": [
+      "ruby",
+      "find",
+      "method",
+      "name"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "-BC",
+    "primary_token": "ruby",
+    "symbol": "_ruby_is_function_node",
+    "file": "structural/halstead.py",
+    "line": 263,
+    "tokens": [
+      "ruby",
+      "function",
+      "node"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "AB-",
+    "primary_token": "require",
+    "symbol": "_ruby_is_require_call",
+    "file": "structural/local_imports.py",
+    "line": 44,
+    "tokens": [
+      "ruby",
+      "require",
+      "call"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "-BC",
+    "primary_token": "default",
+    "symbol": "_default_is_function_node",
+    "file": "structural/npath.py",
+    "line": 69,
+    "tokens": [
+      "default",
+      "function",
+      "node"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "-BC",
+    "primary_token": "function",
+    "symbol": "_julia_is_function_node",
+    "file": "structural/npath.py",
+    "line": 114,
+    "tokens": [
+      "julia",
+      "function",
+      "node"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "-BC",
+    "primary_token": "c",
+    "symbol": "_c_find_function_identifier",
+    "file": "structural/npath.py",
+    "line": 123,
+    "tokens": [
+      "c",
+      "find",
+      "function",
+      "identifier"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "-BC",
+    "primary_token": "cpp",
+    "symbol": "_cpp_find_function_identifier",
+    "file": "structural/npath.py",
+    "line": 155,
+    "tokens": [
+      "cpp",
+      "find",
+      "function",
+      "identifier"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "-BC",
+    "primary_token": "ruby",
+    "symbol": "_ruby_find_method_name",
+    "file": "structural/npath.py",
+    "line": 226,
+    "tokens": [
+      "ruby",
+      "find",
+      "method",
+      "name"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "-BC",
+    "primary_token": "ruby",
+    "symbol": "_ruby_is_function_node",
+    "file": "structural/npath.py",
+    "line": 262,
+    "tokens": [
+      "ruby",
+      "function",
+      "node"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "-BC",
+    "primary_token": "body",
+    "symbol": "_npath_of_flat_body",
+    "file": "structural/npath.py",
+    "line": 579,
+    "tokens": [
+      "npath",
+      "flat",
+      "body"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "-BC",
+    "primary_token": "c",
+    "symbol": "_c_extract_pointer_params",
+    "file": "structural/out_parameters.py",
+    "line": 520,
+    "tokens": [
+      "c",
+      "extract",
+      "pointer",
+      "params"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "-BC",
+    "primary_token": "c",
+    "symbol": "_c_lhs_mutates_param",
+    "file": "structural/out_parameters.py",
+    "line": 606,
+    "tokens": [
+      "c",
+      "lhs",
+      "mutates",
+      "param"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "-BC",
+    "primary_token": "cpp",
+    "symbol": "_cpp_extract_mutable_params",
+    "file": "structural/out_parameters.py",
+    "line": 773,
+    "tokens": [
+      "cpp",
+      "extract",
+      "mutable",
+      "params"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "-BC",
+    "primary_token": "cpp",
+    "symbol": "_cpp_lhs_mutates_param",
+    "file": "structural/out_parameters.py",
+    "line": 886,
+    "tokens": [
+      "cpp",
+      "lhs",
+      "mutates",
+      "param"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "-B-",
+    "primary_token": "go",
+    "symbol": "_is_go_main_package",
+    "file": "structural/robert.py",
+    "line": 286,
+    "tokens": [
+      "go",
+      "main",
+      "package"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "-BC",
+    "primary_token": "cpp",
+    "symbol": "_split_cpp_classes_by_abstract",
+    "file": "structural/robert.py",
+    "line": 556,
+    "tokens": [
+      "split",
+      "cpp",
+      "classes",
+      "abstract"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "-B-",
+    "primary_token": "classes",
+    "symbol": "_split_classes_by_abstract_modifier",
+    "file": "structural/robert.py",
+    "line": 673,
+    "tokens": [
+      "split",
+      "classes",
+      "abstract",
+      "modifier"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "-BC",
+    "primary_token": "fn",
+    "symbol": "_fn_name_from_node",
+    "file": "structural/sibling_calls.py",
+    "line": 168,
+    "tokens": [
+      "fn",
+      "name",
+      "from",
+      "node"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "ABC",
+    "primary_token": "kernel",
+    "symbol": "sibling_call_redundancy_kernel",
+    "file": "structural/sibling_calls.py",
+    "line": 245,
+    "tokens": [
+      "sibling",
+      "call",
+      "redundancy",
+      "kernel"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "-BC",
+    "primary_token": "call",
+    "symbol": "_enrich_with_call_sites",
+    "file": "structural/stringly_typed.py",
+    "line": 302,
+    "tokens": [
+      "enrich",
+      "call",
+      "sites"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "-BC",
+    "primary_token": "cpp",
+    "symbol": "_cpp_fn_name_local",
+    "file": "structural/stringly_typed.py",
+    "line": 621,
+    "tokens": [
+      "cpp",
+      "fn",
+      "name",
+      "local"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "-BC",
+    "primary_token": "ruby",
+    "symbol": "_ruby_fn_name_local",
+    "file": "structural/stringly_typed.py",
+    "line": 752,
+    "tokens": [
+      "ruby",
+      "fn",
+      "name",
+      "local"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "ABC",
+    "primary_token": "run",
+    "symbol": "run_any_type_density",
+    "file": "rules/any_type_density.py",
+    "line": 30,
+    "tokens": [
+      "run",
+      "any",
+      "type",
+      "density"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "ABC",
+    "primary_token": "run",
+    "symbol": "run_magic_literal_density",
+    "file": "rules/magic_literals.py",
+    "line": 30,
+    "tokens": [
+      "run",
+      "magic",
+      "literal",
+      "density"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "ABC",
+    "primary_token": "run",
+    "symbol": "run_section_comment_density",
+    "file": "rules/section_comments.py",
+    "line": 25,
+    "tokens": [
+      "run",
+      "section",
+      "comment",
+      "density"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.verbosity",
+    "cell": "ABC",
+    "primary_token": "run",
+    "symbol": "run_sibling_call_redundancy",
+    "file": "rules/sibling_calls.py",
+    "line": 29,
+    "tokens": [
+      "run",
+      "sibling",
+      "call",
+      "redundancy"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.cowards",
+    "cell": "---",
+    "primary_token": "token",
+    "symbol": "_token_edit_distance_1",
+    "file": "lexical/sprawl.py",
+    "line": 95,
+    "tokens": [
+      "token",
+      "edit",
+      "distance"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.cowards",
+    "cell": "-BC",
+    "primary_token": "cpp",
+    "symbol": "_cpp_fn_name_local",
+    "file": "structural/stringly_typed.py",
+    "line": 621,
+    "tokens": [
+      "cpp",
+      "fn",
+      "name",
+      "local"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.cowards",
+    "cell": "-BC",
+    "primary_token": "ruby",
+    "symbol": "_ruby_fn_name_local",
+    "file": "structural/stringly_typed.py",
+    "line": 752,
+    "tokens": [
+      "ruby",
+      "fn",
+      "name",
+      "local"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.hammers",
+    "cell": "---",
+    "primary_token": "class",
+    "symbol": "_ClassInfo",
+    "file": "structural/ck.py",
+    "line": 75,
+    "tokens": [
+      "class",
+      "info"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.tautology",
+    "cell": "-B-",
+    "primary_token": "query",
+    "symbol": "query_str",
+    "file": "ast/query.py",
+    "line": 41,
+    "tokens": [
+      "query"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.tautology",
+    "cell": "-B-",
+    "primary_token": "query",
+    "symbol": "query_str",
+    "file": "ast/query.py",
+    "line": 105,
+    "tokens": [
+      "query"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.tautology",
+    "cell": "---",
+    "primary_token": "match",
+    "symbol": "match_dict",
+    "file": "ast/query.py",
+    "line": 212,
+    "tokens": [
+      "match",
+      "dict"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.tautology",
+    "cell": "-BC",
+    "primary_token": "file",
+    "symbol": "file_str",
+    "file": "compose/prune.py",
+    "line": 296,
+    "tokens": [
+      "file"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.tautology",
+    "cell": "-BC",
+    "primary_token": "file",
+    "symbol": "file_path",
+    "file": "structural/ccx.py",
+    "line": 823,
+    "tokens": [
+      "file",
+      "path"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.tautology",
+    "cell": "-BC",
+    "primary_token": "file",
+    "symbol": "file_path",
+    "file": "structural/ccx.py",
+    "line": 886,
+    "tokens": [
+      "file",
+      "path"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.tautology",
+    "cell": "-BC",
+    "primary_token": "file",
+    "symbol": "file_path",
+    "file": "structural/ccx.py",
+    "line": 988,
+    "tokens": [
+      "file",
+      "path"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.tautology",
+    "cell": "-BC",
+    "primary_token": "file",
+    "symbol": "file_path",
+    "file": "structural/ck.py",
+    "line": 118,
+    "tokens": [
+      "file",
+      "path"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.tautology",
+    "cell": "-BC",
+    "primary_token": "file",
+    "symbol": "file_path",
+    "file": "structural/halstead.py",
+    "line": 640,
+    "tokens": [
+      "file",
+      "path"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.tautology",
+    "cell": "-BC",
+    "primary_token": "file",
+    "symbol": "file_path",
+    "file": "structural/npath.py",
+    "line": 548,
+    "tokens": [
+      "file",
+      "path"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.tautology",
+    "cell": "-B-",
+    "primary_token": "query",
+    "symbol": "query_str",
+    "file": "structural/robert.py",
+    "line": 537,
+    "tokens": [
+      "query"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.tautology",
+    "cell": "-B-",
+    "primary_token": "query",
+    "symbol": "query_str",
+    "file": "structural/robert.py",
+    "line": 673,
+    "tokens": [
+      "query"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.sprawl",
+    "cell": "---",
+    "primary_token": "ccx",
+    "symbol": "ccx",
+    "file": "rules/complexity.py",
+    "line": 18,
+    "tokens": [
+      "ccx"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.sprawl",
+    "cell": "-B-",
+    "primary_token": "npath",
+    "symbol": "npath",
+    "file": "structural/npath.py",
+    "line": 686,
+    "tokens": [
+      "npath"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.sprawl",
+    "cell": "---",
+    "primary_token": "ccx",
+    "symbol": "ccx",
+    "file": "rules/complexity.py",
+    "line": 18,
+    "tokens": [
+      "ccx"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.sprawl",
+    "cell": "---",
+    "primary_token": "halstead",
+    "symbol": "halstead",
+    "file": "rules/halstead.py",
+    "line": 20,
+    "tokens": [
+      "halstead"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.sprawl",
+    "cell": "-B-",
+    "primary_token": "npath",
+    "symbol": "npath",
+    "file": "structural/npath.py",
+    "line": 686,
+    "tokens": [
+      "npath"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.sprawl",
+    "cell": "---",
+    "primary_token": "ccx",
+    "symbol": "ccx",
+    "file": "rules/complexity.py",
+    "line": 18,
+    "tokens": [
+      "ccx"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.sprawl",
+    "cell": "---",
+    "primary_token": "halstead",
+    "symbol": "halstead",
+    "file": "rules/halstead.py",
+    "line": 20,
+    "tokens": [
+      "halstead"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.sprawl",
+    "cell": "-B-",
+    "primary_token": "npath",
+    "symbol": "npath",
+    "file": "structural/npath.py",
+    "line": 686,
+    "tokens": [
+      "npath"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.sprawl",
+    "cell": "---",
+    "primary_token": "ccx",
+    "symbol": "ccx",
+    "file": "rules/complexity.py",
+    "line": 18,
+    "tokens": [
+      "ccx"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.sprawl",
+    "cell": "---",
+    "primary_token": "halstead",
+    "symbol": "halstead",
+    "file": "rules/halstead.py",
+    "line": 20,
+    "tokens": [
+      "halstead"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.sprawl",
+    "cell": "-B-",
+    "primary_token": "npath",
+    "symbol": "npath",
+    "file": "structural/npath.py",
+    "line": 686,
+    "tokens": [
+      "npath"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.sprawl",
+    "cell": "---",
+    "primary_token": "ccx",
+    "symbol": "ccx",
+    "file": "rules/complexity.py",
+    "line": 18,
+    "tokens": [
+      "ccx"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.sprawl",
+    "cell": "---",
+    "primary_token": "halstead",
+    "symbol": "halstead",
+    "file": "rules/halstead.py",
+    "line": 20,
+    "tokens": [
+      "halstead"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.sprawl",
+    "cell": "-B-",
+    "primary_token": "npath",
+    "symbol": "npath",
+    "file": "structural/npath.py",
+    "line": 686,
+    "tokens": [
+      "npath"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.sprawl",
+    "cell": "---",
+    "primary_token": "ccx",
+    "symbol": "ccx",
+    "file": "rules/complexity.py",
+    "line": 18,
+    "tokens": [
+      "ccx"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.sprawl",
+    "cell": "---",
+    "primary_token": "halstead",
+    "symbol": "halstead",
+    "file": "rules/halstead.py",
+    "line": 20,
+    "tokens": [
+      "halstead"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.sprawl",
+    "cell": "-B-",
+    "primary_token": "npath",
+    "symbol": "npath",
+    "file": "structural/npath.py",
+    "line": 686,
+    "tokens": [
+      "npath"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.sprawl",
+    "cell": "---",
+    "primary_token": "ccx",
+    "symbol": "ccx",
+    "file": "rules/complexity.py",
+    "line": 18,
+    "tokens": [
+      "ccx"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.sprawl",
+    "cell": "---",
+    "primary_token": "halstead",
+    "symbol": "halstead",
+    "file": "rules/halstead.py",
+    "line": 20,
+    "tokens": [
+      "halstead"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.sprawl",
+    "cell": "-B-",
+    "primary_token": "npath",
+    "symbol": "npath",
+    "file": "structural/npath.py",
+    "line": 686,
+    "tokens": [
+      "npath"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.sprawl",
+    "cell": "---",
+    "primary_token": "ccx",
+    "symbol": "ccx",
+    "file": "rules/complexity.py",
+    "line": 18,
+    "tokens": [
+      "ccx"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.sprawl",
+    "cell": "---",
+    "primary_token": "halstead",
+    "symbol": "halstead",
+    "file": "rules/halstead.py",
+    "line": 20,
+    "tokens": [
+      "halstead"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.sprawl",
+    "cell": "-B-",
+    "primary_token": "npath",
+    "symbol": "npath",
+    "file": "structural/npath.py",
+    "line": 686,
+    "tokens": [
+      "npath"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.sprawl",
+    "cell": "---",
+    "primary_token": "ccx",
+    "symbol": "ccx",
+    "file": "rules/complexity.py",
+    "line": 18,
+    "tokens": [
+      "ccx"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.sprawl",
+    "cell": "---",
+    "primary_token": "halstead",
+    "symbol": "halstead",
+    "file": "rules/halstead.py",
+    "line": 20,
+    "tokens": [
+      "halstead"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.sprawl",
+    "cell": "-B-",
+    "primary_token": "npath",
+    "symbol": "npath",
+    "file": "structural/npath.py",
+    "line": 686,
+    "tokens": [
+      "npath"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.sprawl",
+    "cell": "---",
+    "primary_token": "ccx",
+    "symbol": "ccx",
+    "file": "rules/complexity.py",
+    "line": 18,
+    "tokens": [
+      "ccx"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.sprawl",
+    "cell": "---",
+    "primary_token": "halstead",
+    "symbol": "halstead",
+    "file": "rules/halstead.py",
+    "line": 20,
+    "tokens": [
+      "halstead"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.sprawl",
+    "cell": "-B-",
+    "primary_token": "npath",
+    "symbol": "npath",
+    "file": "structural/npath.py",
+    "line": 686,
+    "tokens": [
+      "npath"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.sprawl",
+    "cell": "---",
+    "primary_token": "ccx",
+    "symbol": "ccx",
+    "file": "rules/complexity.py",
+    "line": 18,
+    "tokens": [
+      "ccx"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.sprawl",
+    "cell": "---",
+    "primary_token": "halstead",
+    "symbol": "halstead",
+    "file": "rules/halstead.py",
+    "line": 20,
+    "tokens": [
+      "halstead"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.sprawl",
+    "cell": "-B-",
+    "primary_token": "npath",
+    "symbol": "npath",
+    "file": "structural/npath.py",
+    "line": 686,
+    "tokens": [
+      "npath"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.sprawl",
+    "cell": "---",
+    "primary_token": "halstead",
+    "symbol": "halstead",
+    "file": "rules/halstead.py",
+    "line": 20,
+    "tokens": [
+      "halstead"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.sprawl",
+    "cell": "---",
+    "primary_token": "concept[",
+    "symbol": "concept[3\u00d72]",
+    "file": "structural/ccx.py",
+    "line": 84,
+    "tokens": [
+      "concept[",
+      "\u00d7",
+      "]"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.sprawl",
+    "cell": "---",
+    "primary_token": "concept[",
+    "symbol": "concept[3\u00d72]",
+    "file": "structural/ccx.py",
+    "line": 210,
+    "tokens": [
+      "concept[",
+      "\u00d7",
+      "]"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.sprawl",
+    "cell": "---",
+    "primary_token": "concept[",
+    "symbol": "concept[3\u00d73]",
+    "file": "structural/ccx.py",
+    "line": 210,
+    "tokens": [
+      "concept[",
+      "\u00d7",
+      "]"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.sprawl",
+    "cell": "---",
+    "primary_token": "concept[",
+    "symbol": "concept[2\u00d73]",
+    "file": "rules/complexity.py",
+    "line": 18,
+    "tokens": [
+      "concept[",
+      "\u00d7",
+      "]"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.sprawl",
+    "cell": "---",
+    "primary_token": "concept[",
+    "symbol": "concept[13\u00d72]",
+    "file": "rules/complexity.py",
+    "line": 18,
+    "tokens": [
+      "concept[",
+      "\u00d7",
+      "]"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.sprawl",
+    "cell": "---",
+    "primary_token": "concept[",
+    "symbol": "concept[3\u00d72]",
+    "file": "lexical/sprawl.py",
+    "line": 158,
+    "tokens": [
+      "concept[",
+      "\u00d7",
+      "]"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.sprawl",
+    "cell": "---",
+    "primary_token": "concept[",
+    "symbol": "concept[2\u00d72]",
+    "file": "structural/robert.py",
+    "line": 956,
+    "tokens": [
+      "concept[",
+      "\u00d7",
+      "]"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.sprawl",
+    "cell": "---",
+    "primary_token": "concept[",
+    "symbol": "concept[2\u00d72]",
+    "file": "cli.py",
+    "line": 210,
+    "tokens": [
+      "concept[",
+      "\u00d7",
+      "]"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.imposters",
+    "cell": "-BC",
+    "primary_token": "fn",
+    "symbol": "fn_node",
+    "file": "structural/out_parameters.py",
+    "line": 239,
+    "tokens": [
+      "fn",
+      "node"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.imposters",
+    "cell": "-BC",
+    "primary_token": "files",
+    "symbol": "pkg_files",
+    "file": "structural/robert.py",
+    "line": 519,
+    "tokens": [
+      "pkg",
+      "files"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.imposters",
+    "cell": "-BC",
+    "primary_token": "fn",
+    "symbol": "fn_node",
+    "file": "structural/stringly_typed.py",
+    "line": 213,
+    "tokens": [
+      "fn",
+      "node"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.imposters",
+    "cell": "-BC",
+    "primary_token": "file",
+    "symbol": "file_paths",
+    "file": "structural/deps.py",
+    "line": 366,
+    "tokens": [
+      "file",
+      "paths"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.imposters",
+    "cell": "-BC",
+    "primary_token": "body",
+    "symbol": "body",
+    "file": "structural/sibling_calls.py",
+    "line": 175,
+    "tokens": [
+      "body"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.imposters",
+    "cell": "---",
+    "primary_token": "cwd",
+    "symbol": "cwd",
+    "file": "compose/git.py",
+    "line": 240,
+    "tokens": [
+      "cwd"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.imposters",
+    "cell": "-BC",
+    "primary_token": "functions",
+    "symbol": "functions",
+    "file": "structural/ccx.py",
+    "line": 1024,
+    "tokens": [
+      "functions"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.imposters",
+    "cell": "-BC",
+    "primary_token": "body",
+    "symbol": "body_node",
+    "file": "structural/out_parameters.py",
+    "line": 313,
+    "tokens": [
+      "body",
+      "node"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.imposters",
+    "cell": "-BC",
+    "primary_token": "name",
+    "symbol": "name",
+    "file": "lexical/_naming.py",
+    "line": 45,
+    "tokens": [
+      "name"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.imposters",
+    "cell": "-BC",
+    "primary_token": "rules",
+    "symbol": "raw_rules",
+    "file": "_compat.py",
+    "line": 199,
+    "tokens": [
+      "raw",
+      "rules"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.imposters",
+    "cell": "-BC",
+    "primary_token": "text",
+    "symbol": "text",
+    "file": "color.py",
+    "line": 39,
+    "tokens": [
+      "text"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.imposters",
+    "cell": "---",
+    "primary_token": "",
+    "symbol": "result",
+    "file": "output.py",
+    "line": 50,
+    "tokens": [],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.imposters",
+    "cell": "-BC",
+    "primary_token": "rule",
+    "symbol": "rule_pairs",
+    "file": "output.py",
+    "line": 111,
+    "tokens": [
+      "rule",
+      "pairs"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.imposters",
+    "cell": "-B-",
+    "primary_token": "raw",
+    "symbol": "raw",
+    "file": "config.py",
+    "line": 294,
+    "tokens": [
+      "raw"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.imposters",
+    "cell": "-BC",
+    "primary_token": "rule",
+    "symbol": "rule_name",
+    "file": "output.py",
+    "line": 19,
+    "tokens": [
+      "rule",
+      "name"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.imposters",
+    "cell": "-BC",
+    "primary_token": "files",
+    "symbol": "files",
+    "file": "ast/query.py",
+    "line": 41,
+    "tokens": [
+      "files"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.imposters",
+    "cell": "-B-",
+    "primary_token": "output",
+    "symbol": "output",
+    "file": "compose/git.py",
+    "line": 163,
+    "tokens": [
+      "output"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.imposters",
+    "cell": "-BC",
+    "primary_token": "root",
+    "symbol": "root_node",
+    "file": "structural/clone_density.py",
+    "line": 269,
+    "tokens": [
+      "root",
+      "node"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.imposters",
+    "cell": "-BC",
+    "primary_token": "name",
+    "symbol": "name",
+    "file": "util/doctor.py",
+    "line": 44,
+    "tokens": [
+      "name"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.imposters",
+    "cell": "---",
+    "primary_token": "args",
+    "symbol": "args",
+    "file": "cli.py",
+    "line": 155,
+    "tokens": [
+      "args"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.imposters",
+    "cell": "---",
+    "primary_token": "violation",
+    "symbol": "violation",
+    "file": "engine.py",
+    "line": 223,
+    "tokens": [
+      "violation"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.imposters",
+    "cell": "-BC",
+    "primary_token": "config",
+    "symbol": "config",
+    "file": "engine.py",
+    "line": 106,
+    "tokens": [
+      "config"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.slackers",
+    "cell": "-BC",
+    "primary_token": "file",
+    "symbol": "file_paths",
+    "file": "structural/deps.py",
+    "line": 366,
+    "tokens": [
+      "file",
+      "paths"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.slackers",
+    "cell": "---",
+    "primary_token": "cwd",
+    "symbol": "cwd",
+    "file": "compose/git.py",
+    "line": 240,
+    "tokens": [
+      "cwd"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.slackers",
+    "cell": "-BC",
+    "primary_token": "functions",
+    "symbol": "functions",
+    "file": "structural/ccx.py",
+    "line": 1024,
+    "tokens": [
+      "functions"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.slackers",
+    "cell": "-BC",
+    "primary_token": "rules",
+    "symbol": "raw_rules",
+    "file": "_compat.py",
+    "line": 199,
+    "tokens": [
+      "raw",
+      "rules"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.slackers",
+    "cell": "-B-",
+    "primary_token": "raw",
+    "symbol": "raw",
+    "file": "config.py",
+    "line": 294,
+    "tokens": [
+      "raw"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.slackers",
+    "cell": "-BC",
+    "primary_token": "files",
+    "symbol": "files",
+    "file": "ast/query.py",
+    "line": 41,
+    "tokens": [
+      "files"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.slackers",
+    "cell": "-BC",
+    "primary_token": "root",
+    "symbol": "root_node",
+    "file": "structural/clone_density.py",
+    "line": 269,
+    "tokens": [
+      "root",
+      "node"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.slackers",
+    "cell": "-BC",
+    "primary_token": "name",
+    "symbol": "name",
+    "file": "util/doctor.py",
+    "line": 44,
+    "tokens": [
+      "name"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.slackers",
+    "cell": "---",
+    "primary_token": "violation",
+    "symbol": "violation",
+    "file": "engine.py",
+    "line": 223,
+    "tokens": [
+      "violation"
+    ],
+    "severity": "warning"
+  },
+  {
+    "rule": "lexical.slackers",
+    "cell": "-BC",
+    "primary_token": "config",
+    "symbol": "config",
+    "file": "engine.py",
+    "line": 106,
+    "tokens": [
+      "config"
+    ],
+    "severity": "warning"
+  }
+]

@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop._structural.halstead import HalsteadResult, halstead_kernel
+from slop.structural.halstead import HalsteadResult, halstead_kernel
 from slop.models import RuleConfig, RuleResult, SlopConfig, Violation
 
 

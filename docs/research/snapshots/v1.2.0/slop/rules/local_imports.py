@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop._structural.local_imports import local_imports_kernel
+from slop.structural.local_imports import local_imports_kernel
 from slop.models import RuleConfig, RuleResult, SlopConfig, Violation
 
 

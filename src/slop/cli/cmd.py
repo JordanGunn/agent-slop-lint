@@ -16,7 +16,7 @@ from slop import __version__
 from slop.cli.color import set_color
 
 from . import check, doctor, init, rules, schema
-from ._common import DEFAULT_MAX_VIOLATIONS, add_common_args, load_and_run
+from .common import DEFAULT_MAX_VIOLATIONS, add_common_args, load_and_run
 from .install import cmd as install_cmd
 
 
@@ -38,8 +38,8 @@ Commands:
 Examples:
   slop lint
   slop lint --root ./src --output json
-  slop check structural.complexity
-  slop check structural.complexity.cyclomatic
+  slop check complexity
+  slop check complexity.cyclomatic
   slop init                       # default profile
   slop install hook               # git pre-commit hook
   slop install skill ./my-agent   # bundle skill files
@@ -93,8 +93,8 @@ def main(argv: list[str] | None = None) -> int:
         "lint":    cmd_lint,
         "check":   check.cmd_check,
         "init":    lambda a: init.cmd_init(getattr(a, "profile", "default")),
-        "rules":   lambda _: rules.cmd_rules(),
-        "schema":  lambda _: schema.cmd_schema(),
+        "rules":   rules.cmd_rules,
+        "schema":  lambda a: schema.cmd_schema(getattr(a, "version", None)),
         "doctor":  lambda _: doctor.cmd_doctor(),
         "install": install_cmd.dispatch,
     }

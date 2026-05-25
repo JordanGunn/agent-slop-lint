@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop._lexical.hammers import (
+from slop.lexical.hammers import (
     DEFAULT_PROFILE,
     HammerTerm,
     hammers_kernel,

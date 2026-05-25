@@ -1,16 +1,17 @@
-"""Tests for ``structural.duplication`` (Type-2 clone detection).
+"""Tests for ``duplication`` (Type-2 clone detection).
 
 Covers Structure.clones() unit behaviour, the legacy ``_fingerprint`` /
-``_leaf_types`` helpers (now hosted in ``slop.structure._clones``), and
+``_leaf_types`` helpers (now hosted in ``slop.structure.clones``), and
 the rule wrapper.
 """
 from __future__ import annotations
 
 from pathlib import Path
 
-from slop.config.models import RuleConfig, SlopConfig
-from slop.structure._clones import _fingerprint
-from slop.structure.rules.clone_density import run_clone_density
+from slop.linter.rule_config import RuleConfig
+from slop.config import Config
+from slop.structure.clones import _fingerprint
+from slop.structure.metrics.clone_density import run_clone_density
 from slop.tree.tree import Tree
 
 
@@ -26,8 +27,8 @@ def _rc(**overrides) -> RuleConfig:
     return RuleConfig(enabled=True, severity="warning", params=params)
 
 
-def _sc(tmp_path: Path) -> SlopConfig:
-    return SlopConfig(root=str(tmp_path))
+def _sc(tmp_path: Path) -> Config:
+    return Config(root=str(tmp_path))
 
 
 # Two structurally identical functions — same shape, different names
@@ -147,7 +148,7 @@ def test_rule_fail_clone_pair(tmp_path: Path):
     (tmp_path / "b.py").write_text(_CLONE_B)
     result = run_clone_density(_structure(tmp_path), _rc(threshold=0.0), _sc(tmp_path))
     assert result.status == "fail"
-    assert any(v.rule == "structural.duplication" for v in result.violations)
+    assert any(v.rule == "duplication" for v in result.violations)
 
 
 def test_rule_violation_contains_fingerprint(tmp_path: Path):

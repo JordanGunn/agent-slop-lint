@@ -22,12 +22,21 @@ class RuleResult:
 
 # Type alias for rule run functions.
 RuleRunner = Callable[..., RuleResult]
-"""(view: Structure | Lexicon, rule_config: RuleConfig, slop_config: SlopConfig) -> RuleResult"""
+"""(view: Structure | Lexicon, rule_config: RuleConfig, slop_config: Config) -> RuleResult"""
 
 
 @dataclass(frozen=True)
 class RuleDefinition:
-    """Definition of a single linter rule."""
+    """Definition of a single linter rule.
+
+    The ``scopes`` field declares which emission scopes a rule supports
+    (``function``, ``class``, ``module``, ``parameter``, ``package``).
+    Empty tuple means scope-agnostic (cross-cutting rules: cycles,
+    hotspots, orphans, clone clusters, redundancy pairs). The rule body
+    iterates its declared scopes at runtime and consults the per-scope
+    threshold under ``rule_config.params['thresholds'][scope]``; missing
+    scope key means the rule skips that scope.
+    """
 
     name: str
     category: str
@@ -36,3 +45,4 @@ class RuleDefinition:
     default_enabled: bool = True
     threshold_label: str = ""
     run: RuleRunner = field(default=lambda *a, **kw: RuleResult(rule=""))  # type: ignore[assignment]
+    scopes: tuple[str, ...] = ()

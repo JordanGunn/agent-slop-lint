@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop._ast.treesitter import parse_file
+from slop.tree.parse import parse_file
 from slop.language.grammars import Ruby
 
 

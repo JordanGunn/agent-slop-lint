@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop._lexical.tautology import (
+from slop.lexical.tautology import (
     DEFAULT_TAG_TO_TYPES,
     tautology_kernel,
 )

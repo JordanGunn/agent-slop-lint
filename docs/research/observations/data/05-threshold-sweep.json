@@ -1,0 +1,854 @@
+{
+  "snapshot": {
+    "callable": [
+      {
+        "min_bags": 3,
+        "min_association": 0.5,
+        "total": 26,
+        "pathological": 26,
+        "conventional": 0
+      },
+      {
+        "min_bags": 3,
+        "min_association": 0.6,
+        "total": 18,
+        "pathological": 18,
+        "conventional": 0
+      },
+      {
+        "min_bags": 3,
+        "min_association": 0.7,
+        "total": 10,
+        "pathological": 10,
+        "conventional": 0
+      },
+      {
+        "min_bags": 3,
+        "min_association": 0.8,
+        "total": 9,
+        "pathological": 9,
+        "conventional": 0
+      },
+      {
+        "min_bags": 3,
+        "min_association": 0.9,
+        "total": 6,
+        "pathological": 6,
+        "conventional": 0
+      },
+      {
+        "min_bags": 4,
+        "min_association": 0.5,
+        "total": 17,
+        "pathological": 17,
+        "conventional": 0
+      },
+      {
+        "min_bags": 4,
+        "min_association": 0.6,
+        "total": 11,
+        "pathological": 11,
+        "conventional": 0
+      },
+      {
+        "min_bags": 4,
+        "min_association": 0.7,
+        "total": 9,
+        "pathological": 9,
+        "conventional": 0
+      },
+      {
+        "min_bags": 4,
+        "min_association": 0.8,
+        "total": 7,
+        "pathological": 7,
+        "conventional": 0
+      },
+      {
+        "min_bags": 4,
+        "min_association": 0.9,
+        "total": 4,
+        "pathological": 4,
+        "conventional": 0
+      },
+      {
+        "min_bags": 5,
+        "min_association": 0.5,
+        "total": 14,
+        "pathological": 14,
+        "conventional": 0
+      },
+      {
+        "min_bags": 5,
+        "min_association": 0.6,
+        "total": 8,
+        "pathological": 8,
+        "conventional": 0
+      },
+      {
+        "min_bags": 5,
+        "min_association": 0.7,
+        "total": 7,
+        "pathological": 7,
+        "conventional": 0
+      },
+      {
+        "min_bags": 5,
+        "min_association": 0.8,
+        "total": 5,
+        "pathological": 5,
+        "conventional": 0
+      },
+      {
+        "min_bags": 5,
+        "min_association": 0.9,
+        "total": 2,
+        "pathological": 2,
+        "conventional": 0
+      },
+      {
+        "min_bags": 6,
+        "min_association": 0.5,
+        "total": 13,
+        "pathological": 13,
+        "conventional": 0
+      },
+      {
+        "min_bags": 6,
+        "min_association": 0.6,
+        "total": 5,
+        "pathological": 5,
+        "conventional": 0
+      },
+      {
+        "min_bags": 6,
+        "min_association": 0.7,
+        "total": 5,
+        "pathological": 5,
+        "conventional": 0
+      },
+      {
+        "min_bags": 6,
+        "min_association": 0.8,
+        "total": 3,
+        "pathological": 3,
+        "conventional": 0
+      },
+      {
+        "min_bags": 6,
+        "min_association": 0.9,
+        "total": 2,
+        "pathological": 2,
+        "conventional": 0
+      },
+      {
+        "min_bags": 8,
+        "min_association": 0.5,
+        "total": 10,
+        "pathological": 10,
+        "conventional": 0
+      },
+      {
+        "min_bags": 8,
+        "min_association": 0.6,
+        "total": 3,
+        "pathological": 3,
+        "conventional": 0
+      },
+      {
+        "min_bags": 8,
+        "min_association": 0.7,
+        "total": 5,
+        "pathological": 5,
+        "conventional": 0
+      },
+      {
+        "min_bags": 8,
+        "min_association": 0.8,
+        "total": 3,
+        "pathological": 3,
+        "conventional": 0
+      },
+      {
+        "min_bags": 8,
+        "min_association": 0.9,
+        "total": 2,
+        "pathological": 2,
+        "conventional": 0
+      },
+      {
+        "min_bags": 10,
+        "min_association": 0.5,
+        "total": 9,
+        "pathological": 9,
+        "conventional": 0
+      },
+      {
+        "min_bags": 10,
+        "min_association": 0.6,
+        "total": 3,
+        "pathological": 3,
+        "conventional": 0
+      },
+      {
+        "min_bags": 10,
+        "min_association": 0.7,
+        "total": 5,
+        "pathological": 5,
+        "conventional": 0
+      },
+      {
+        "min_bags": 10,
+        "min_association": 0.8,
+        "total": 3,
+        "pathological": 3,
+        "conventional": 0
+      },
+      {
+        "min_bags": 10,
+        "min_association": 0.9,
+        "total": 2,
+        "pathological": 2,
+        "conventional": 0
+      }
+    ],
+    "file": [
+      {
+        "min_bags": 3,
+        "min_association": 0.5,
+        "total": 85,
+        "pathological": 85,
+        "conventional": 0
+      },
+      {
+        "min_bags": 3,
+        "min_association": 0.6,
+        "total": 55,
+        "pathological": 55,
+        "conventional": 0
+      },
+      {
+        "min_bags": 3,
+        "min_association": 0.7,
+        "total": 15,
+        "pathological": 15,
+        "conventional": 0
+      },
+      {
+        "min_bags": 3,
+        "min_association": 0.8,
+        "total": 8,
+        "pathological": 7,
+        "conventional": 1
+      },
+      {
+        "min_bags": 3,
+        "min_association": 0.9,
+        "total": 4,
+        "pathological": 4,
+        "conventional": 0
+      },
+      {
+        "min_bags": 4,
+        "min_association": 0.5,
+        "total": 52,
+        "pathological": 52,
+        "conventional": 0
+      },
+      {
+        "min_bags": 4,
+        "min_association": 0.6,
+        "total": 31,
+        "pathological": 31,
+        "conventional": 0
+      },
+      {
+        "min_bags": 4,
+        "min_association": 0.7,
+        "total": 11,
+        "pathological": 11,
+        "conventional": 0
+      },
+      {
+        "min_bags": 4,
+        "min_association": 0.8,
+        "total": 6,
+        "pathological": 5,
+        "conventional": 1
+      },
+      {
+        "min_bags": 4,
+        "min_association": 0.9,
+        "total": 2,
+        "pathological": 2,
+        "conventional": 0
+      },
+      {
+        "min_bags": 5,
+        "min_association": 0.5,
+        "total": 45,
+        "pathological": 45,
+        "conventional": 0
+      },
+      {
+        "min_bags": 5,
+        "min_association": 0.6,
+        "total": 26,
+        "pathological": 26,
+        "conventional": 0
+      },
+      {
+        "min_bags": 5,
+        "min_association": 0.7,
+        "total": 10,
+        "pathological": 10,
+        "conventional": 0
+      },
+      {
+        "min_bags": 5,
+        "min_association": 0.8,
+        "total": 6,
+        "pathological": 5,
+        "conventional": 1
+      },
+      {
+        "min_bags": 5,
+        "min_association": 0.9,
+        "total": 2,
+        "pathological": 2,
+        "conventional": 0
+      },
+      {
+        "min_bags": 6,
+        "min_association": 0.5,
+        "total": 37,
+        "pathological": 37,
+        "conventional": 0
+      },
+      {
+        "min_bags": 6,
+        "min_association": 0.6,
+        "total": 21,
+        "pathological": 21,
+        "conventional": 0
+      },
+      {
+        "min_bags": 6,
+        "min_association": 0.7,
+        "total": 9,
+        "pathological": 9,
+        "conventional": 0
+      },
+      {
+        "min_bags": 6,
+        "min_association": 0.8,
+        "total": 5,
+        "pathological": 4,
+        "conventional": 1
+      },
+      {
+        "min_bags": 6,
+        "min_association": 0.9,
+        "total": 1,
+        "pathological": 1,
+        "conventional": 0
+      },
+      {
+        "min_bags": 8,
+        "min_association": 0.5,
+        "total": 28,
+        "pathological": 28,
+        "conventional": 0
+      },
+      {
+        "min_bags": 8,
+        "min_association": 0.6,
+        "total": 19,
+        "pathological": 19,
+        "conventional": 0
+      },
+      {
+        "min_bags": 8,
+        "min_association": 0.7,
+        "total": 9,
+        "pathological": 9,
+        "conventional": 0
+      },
+      {
+        "min_bags": 8,
+        "min_association": 0.8,
+        "total": 5,
+        "pathological": 4,
+        "conventional": 1
+      },
+      {
+        "min_bags": 8,
+        "min_association": 0.9,
+        "total": 1,
+        "pathological": 1,
+        "conventional": 0
+      },
+      {
+        "min_bags": 10,
+        "min_association": 0.5,
+        "total": 19,
+        "pathological": 19,
+        "conventional": 0
+      },
+      {
+        "min_bags": 10,
+        "min_association": 0.6,
+        "total": 12,
+        "pathological": 12,
+        "conventional": 0
+      },
+      {
+        "min_bags": 10,
+        "min_association": 0.7,
+        "total": 4,
+        "pathological": 4,
+        "conventional": 0
+      },
+      {
+        "min_bags": 10,
+        "min_association": 0.8,
+        "total": 5,
+        "pathological": 4,
+        "conventional": 1
+      },
+      {
+        "min_bags": 10,
+        "min_association": 0.9,
+        "total": 1,
+        "pathological": 1,
+        "conventional": 0
+      }
+    ]
+  },
+  "dev": {
+    "callable": [
+      {
+        "min_bags": 3,
+        "min_association": 0.5,
+        "total": 44,
+        "pathological": 31,
+        "conventional": 13
+      },
+      {
+        "min_bags": 3,
+        "min_association": 0.6,
+        "total": 29,
+        "pathological": 19,
+        "conventional": 10
+      },
+      {
+        "min_bags": 3,
+        "min_association": 0.7,
+        "total": 22,
+        "pathological": 13,
+        "conventional": 9
+      },
+      {
+        "min_bags": 3,
+        "min_association": 0.8,
+        "total": 13,
+        "pathological": 7,
+        "conventional": 6
+      },
+      {
+        "min_bags": 3,
+        "min_association": 0.9,
+        "total": 9,
+        "pathological": 5,
+        "conventional": 4
+      },
+      {
+        "min_bags": 4,
+        "min_association": 0.5,
+        "total": 33,
+        "pathological": 23,
+        "conventional": 10
+      },
+      {
+        "min_bags": 4,
+        "min_association": 0.6,
+        "total": 23,
+        "pathological": 16,
+        "conventional": 7
+      },
+      {
+        "min_bags": 4,
+        "min_association": 0.7,
+        "total": 19,
+        "pathological": 12,
+        "conventional": 7
+      },
+      {
+        "min_bags": 4,
+        "min_association": 0.8,
+        "total": 11,
+        "pathological": 6,
+        "conventional": 5
+      },
+      {
+        "min_bags": 4,
+        "min_association": 0.9,
+        "total": 7,
+        "pathological": 4,
+        "conventional": 3
+      },
+      {
+        "min_bags": 5,
+        "min_association": 0.5,
+        "total": 24,
+        "pathological": 14,
+        "conventional": 10
+      },
+      {
+        "min_bags": 5,
+        "min_association": 0.6,
+        "total": 17,
+        "pathological": 10,
+        "conventional": 7
+      },
+      {
+        "min_bags": 5,
+        "min_association": 0.7,
+        "total": 16,
+        "pathological": 9,
+        "conventional": 7
+      },
+      {
+        "min_bags": 5,
+        "min_association": 0.8,
+        "total": 9,
+        "pathological": 4,
+        "conventional": 5
+      },
+      {
+        "min_bags": 5,
+        "min_association": 0.9,
+        "total": 5,
+        "pathological": 2,
+        "conventional": 3
+      },
+      {
+        "min_bags": 6,
+        "min_association": 0.5,
+        "total": 20,
+        "pathological": 11,
+        "conventional": 9
+      },
+      {
+        "min_bags": 6,
+        "min_association": 0.6,
+        "total": 14,
+        "pathological": 8,
+        "conventional": 6
+      },
+      {
+        "min_bags": 6,
+        "min_association": 0.7,
+        "total": 14,
+        "pathological": 8,
+        "conventional": 6
+      },
+      {
+        "min_bags": 6,
+        "min_association": 0.8,
+        "total": 7,
+        "pathological": 3,
+        "conventional": 4
+      },
+      {
+        "min_bags": 6,
+        "min_association": 0.9,
+        "total": 4,
+        "pathological": 2,
+        "conventional": 2
+      },
+      {
+        "min_bags": 8,
+        "min_association": 0.5,
+        "total": 18,
+        "pathological": 10,
+        "conventional": 8
+      },
+      {
+        "min_bags": 8,
+        "min_association": 0.6,
+        "total": 12,
+        "pathological": 7,
+        "conventional": 5
+      },
+      {
+        "min_bags": 8,
+        "min_association": 0.7,
+        "total": 12,
+        "pathological": 7,
+        "conventional": 5
+      },
+      {
+        "min_bags": 8,
+        "min_association": 0.8,
+        "total": 6,
+        "pathological": 2,
+        "conventional": 4
+      },
+      {
+        "min_bags": 8,
+        "min_association": 0.9,
+        "total": 3,
+        "pathological": 1,
+        "conventional": 2
+      },
+      {
+        "min_bags": 10,
+        "min_association": 0.5,
+        "total": 17,
+        "pathological": 9,
+        "conventional": 8
+      },
+      {
+        "min_bags": 10,
+        "min_association": 0.6,
+        "total": 11,
+        "pathological": 6,
+        "conventional": 5
+      },
+      {
+        "min_bags": 10,
+        "min_association": 0.7,
+        "total": 11,
+        "pathological": 6,
+        "conventional": 5
+      },
+      {
+        "min_bags": 10,
+        "min_association": 0.8,
+        "total": 5,
+        "pathological": 1,
+        "conventional": 4
+      },
+      {
+        "min_bags": 10,
+        "min_association": 0.9,
+        "total": 2,
+        "pathological": 0,
+        "conventional": 2
+      }
+    ],
+    "file": [
+      {
+        "min_bags": 3,
+        "min_association": 0.5,
+        "total": 90,
+        "pathological": 81,
+        "conventional": 9
+      },
+      {
+        "min_bags": 3,
+        "min_association": 0.6,
+        "total": 71,
+        "pathological": 55,
+        "conventional": 16
+      },
+      {
+        "min_bags": 3,
+        "min_association": 0.7,
+        "total": 42,
+        "pathological": 16,
+        "conventional": 26
+      },
+      {
+        "min_bags": 3,
+        "min_association": 0.8,
+        "total": 28,
+        "pathological": 9,
+        "conventional": 19
+      },
+      {
+        "min_bags": 3,
+        "min_association": 0.9,
+        "total": 19,
+        "pathological": 3,
+        "conventional": 16
+      },
+      {
+        "min_bags": 4,
+        "min_association": 0.5,
+        "total": 59,
+        "pathological": 55,
+        "conventional": 4
+      },
+      {
+        "min_bags": 4,
+        "min_association": 0.6,
+        "total": 45,
+        "pathological": 37,
+        "conventional": 8
+      },
+      {
+        "min_bags": 4,
+        "min_association": 0.7,
+        "total": 37,
+        "pathological": 13,
+        "conventional": 24
+      },
+      {
+        "min_bags": 4,
+        "min_association": 0.8,
+        "total": 25,
+        "pathological": 8,
+        "conventional": 17
+      },
+      {
+        "min_bags": 4,
+        "min_association": 0.9,
+        "total": 16,
+        "pathological": 2,
+        "conventional": 14
+      },
+      {
+        "min_bags": 5,
+        "min_association": 0.5,
+        "total": 42,
+        "pathological": 40,
+        "conventional": 2
+      },
+      {
+        "min_bags": 5,
+        "min_association": 0.6,
+        "total": 38,
+        "pathological": 34,
+        "conventional": 4
+      },
+      {
+        "min_bags": 5,
+        "min_association": 0.7,
+        "total": 36,
+        "pathological": 13,
+        "conventional": 23
+      },
+      {
+        "min_bags": 5,
+        "min_association": 0.8,
+        "total": 25,
+        "pathological": 8,
+        "conventional": 17
+      },
+      {
+        "min_bags": 5,
+        "min_association": 0.9,
+        "total": 16,
+        "pathological": 2,
+        "conventional": 14
+      },
+      {
+        "min_bags": 6,
+        "min_association": 0.5,
+        "total": 40,
+        "pathological": 39,
+        "conventional": 1
+      },
+      {
+        "min_bags": 6,
+        "min_association": 0.6,
+        "total": 37,
+        "pathological": 33,
+        "conventional": 4
+      },
+      {
+        "min_bags": 6,
+        "min_association": 0.7,
+        "total": 36,
+        "pathological": 13,
+        "conventional": 23
+      },
+      {
+        "min_bags": 6,
+        "min_association": 0.8,
+        "total": 24,
+        "pathological": 8,
+        "conventional": 16
+      },
+      {
+        "min_bags": 6,
+        "min_association": 0.9,
+        "total": 15,
+        "pathological": 2,
+        "conventional": 13
+      },
+      {
+        "min_bags": 8,
+        "min_association": 0.5,
+        "total": 33,
+        "pathological": 33,
+        "conventional": 0
+      },
+      {
+        "min_bags": 8,
+        "min_association": 0.6,
+        "total": 34,
+        "pathological": 32,
+        "conventional": 2
+      },
+      {
+        "min_bags": 8,
+        "min_association": 0.7,
+        "total": 33,
+        "pathological": 12,
+        "conventional": 21
+      },
+      {
+        "min_bags": 8,
+        "min_association": 0.8,
+        "total": 23,
+        "pathological": 8,
+        "conventional": 15
+      },
+      {
+        "min_bags": 8,
+        "min_association": 0.9,
+        "total": 15,
+        "pathological": 2,
+        "conventional": 13
+      },
+      {
+        "min_bags": 10,
+        "min_association": 0.5,
+        "total": 22,
+        "pathological": 22,
+        "conventional": 0
+      },
+      {
+        "min_bags": 10,
+        "min_association": 0.6,
+        "total": 26,
+        "pathological": 22,
+        "conventional": 4
+      },
+      {
+        "min_bags": 10,
+        "min_association": 0.7,
+        "total": 30,
+        "pathological": 9,
+        "conventional": 21
+      },
+      {
+        "min_bags": 10,
+        "min_association": 0.8,
+        "total": 20,
+        "pathological": 5,
+        "conventional": 15
+      },
+      {
+        "min_bags": 10,
+        "min_association": 0.9,
+        "total": 12,
+        "pathological": 1,
+        "conventional": 11
+      }
+    ]
+  }
+}

@@ -22,7 +22,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop._structural.sibling_calls import sibling_call_redundancy_kernel
+from slop.structural.sibling_calls import sibling_call_redundancy_kernel
 from slop.models import RuleConfig, RuleResult, SlopConfig, Violation
 
 

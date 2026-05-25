@@ -9,7 +9,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop.config.models import RuleConfig, SlopConfig
+from slop.linter.rule_config import RuleConfig
+from slop.config import Config
 from slop.tree.tree import Tree
 
 
@@ -25,14 +26,14 @@ def _lexicon(root: Path):
     return t.lexicon
 
 
-from slop.lexicon.rules.verbosity import run_verbosity
-from slop.lexicon.rules.cowards import run_cowards
-from slop.lexicon.rules.tautology import run_tautology
-from slop.lexicon.rules.hammers import run_hammers
+from slop.lexicon.metrics.verbosity import run_verbosity
+from slop.lexicon.metrics.cowards import run_cowards
+from slop.lexicon.metrics.tautology import run_tautology
+from slop.lexicon.metrics.hammers import run_hammers
 
 
-def _slop() -> SlopConfig:
-    return SlopConfig(rules={}, languages=["python"])
+def _slop() -> Config:
+    return Config(rules={}, languages=["python"])
 
 
 def _rc(**params) -> RuleConfig:

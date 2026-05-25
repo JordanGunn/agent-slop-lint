@@ -1,10 +1,11 @@
-"""Tests for ``structural.types.hidden_mutators`` (parameter mutation detection)."""
+"""Tests for ``types.hidden_mutators`` (parameter mutation detection)."""
 from __future__ import annotations
 
 from pathlib import Path
 
-from slop.config.models import RuleConfig, SlopConfig
-from slop.structure.rules.hidden_mutators import run_hidden_mutators
+from slop.linter.rule_config import RuleConfig
+from slop.config import Config
+from slop.structure.metrics.hidden_mutators import run_hidden_mutators
 from slop.tree.tree import Tree
 
 
@@ -15,13 +16,17 @@ def _structure(root: Path):
 
 
 def _rc(**overrides) -> RuleConfig:
-    params = {"require_type_annotation": True, "min_mutations": 1}
+    min_mutations = overrides.pop("min_mutations", 1)
+    params: dict = {
+        "thresholds": {"function": min_mutations},
+        "require_type_annotation": True,
+    }
     params.update(overrides)
     return RuleConfig(enabled=True, severity="warning", params=params)
 
 
-def _sc(tmp_path: Path) -> SlopConfig:
-    return SlopConfig(root=str(tmp_path))
+def _sc(tmp_path: Path) -> Config:
+    return Config(root=str(tmp_path))
 
 
 _OUT_PARAM_TYPED = """\
@@ -143,7 +148,7 @@ def test_rule_fail_typed_mutation(tmp_path: Path):
     assert result.status == "fail"
     assert len(result.violations) >= 1
     v = result.violations[0]
-    assert v.rule == "structural.types.hidden_mutators"
+    assert v.rule == "hidden_mutators"
     assert v.severity == "warning"
     assert "collect_results" in v.message
 

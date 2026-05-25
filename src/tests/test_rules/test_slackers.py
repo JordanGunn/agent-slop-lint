@@ -7,8 +7,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop.config.models import RuleConfig, SlopConfig
-from slop.lexicon.rules.slackers import run_slackers
+from slop.linter.rule_config import RuleConfig
+from slop.config import Config
+from slop.lexicon.metrics.slackers import run_slackers
 from slop.tree.tree import Tree
 
 
@@ -18,8 +19,8 @@ def _lexicon(root: Path):
     return t.lexicon
 
 
-def _slop() -> SlopConfig:
-    return SlopConfig(rules={}, languages=["python"])
+def _slop() -> Config:
+    return Config(rules={}, languages=["python"])
 
 
 def _rc(**params) -> RuleConfig:

@@ -23,7 +23,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop._structural.magic_literals import magic_literals_kernel
+from slop.structural.magic_literals import magic_literals_kernel
 from slop.models import RuleConfig, RuleResult, SlopConfig, Violation
 
 

@@ -1,4 +1,4 @@
-"""Tests for the v2 ``structural.god_module`` rule.
+"""Tests for the v2 ``god_module`` rule.
 
 Exercises ``run_god_module`` end-to-end via the Structure view.
 Verifies the rule emits per-file violations when top-level definition
@@ -10,17 +10,18 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop.config.models import RuleConfig, SlopConfig
-from slop.structure.rules.god_module import run_god_module
+from slop.linter.rule_config import RuleConfig
+from slop.config import Config
+from slop.structure.metrics.god_module import run_god_module
 from slop.tree.tree import Tree
 
 
 def _rc(threshold: int = 20) -> RuleConfig:
-    return RuleConfig(enabled=True, severity="warning", params={"threshold": threshold})
+    return RuleConfig(enabled=True, severity="warning", params={"thresholds": {"module": threshold}})
 
 
-def _sc(tmp_path: Path) -> SlopConfig:
-    return SlopConfig(root=str(tmp_path))
+def _sc(tmp_path: Path) -> Config:
+    return Config(root=str(tmp_path))
 
 
 def _structure(tmp_path: Path):

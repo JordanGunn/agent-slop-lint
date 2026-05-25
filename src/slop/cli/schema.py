@@ -1,7 +1,4 @@
-"""``slop schema`` — print the config-file JSON Schema.
-
-Thin CLI wrapper around ``slop.schemas.config.generate()``.
-"""
+"""``slop schema`` — print the config-file JSON Schema."""
 from __future__ import annotations
 
 import json
@@ -9,12 +6,17 @@ import json
 
 def add_parser(subparsers) -> None:
     """Register the ``schema`` subcommand."""
-    subparsers.add_parser("schema", help="Print config schema as JSON")
+    parser = subparsers.add_parser("schema", help="Print config schema as JSON")
+    parser.add_argument(
+        "--version",
+        default=None,
+        help="Schema version to print (default: latest)",
+    )
 
 
-def cmd_schema() -> int:
+def cmd_schema(version: str | None = None) -> int:
     """Run ``slop schema``."""
-    from slop.schemas.config import generate
+    from slop.config import schema
 
-    print(json.dumps(generate(), indent=2))
+    print(json.dumps(schema.load(version or schema.LATEST), indent=2))
     return 0

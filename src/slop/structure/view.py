@@ -248,6 +248,31 @@ class Structure:
             if c.parent == class_scope.qualname and c.kind == CallableKind.METHOD:
                 yield c
 
+    def class_vocabularies(self) -> dict[str, set[str]]:
+        """Return ``{class_qualname: set of method-name tokens}``.
+
+        For each class-like scope, collect the snake/Camel-split lowercased
+        token set of every method whose ``parent`` qualname matches the
+        scope. Consumed by the class-ownership packet filter — a packet
+        whose tokens are entirely covered by some class's vocabulary is
+        a *conventional* packet (the class is the abstraction the
+        vocabulary expresses) rather than a *pathological* one (drift).
+        """
+        from slop.lexicon.view import Lexicon
+
+        out: dict[str, set[str]] = {}
+        class_qualnames = {s.qualname for s in self.classes()}
+        for c in self.callables():
+            if c.parent not in class_qualnames:
+                continue
+            simple = c.qualname.rsplit(".", 1)[-1]
+            if not simple or simple.startswith("<"):
+                continue
+            bag = out.setdefault(c.parent, set())
+            for t in Lexicon.split_tokens(simple):
+                bag.add(t.lower())
+        return out
+
     def superclasses_of(self, class_scope: Scope) -> list[str]:
         """Extract parent-class names declared on ``class_scope``.
 
@@ -275,6 +300,20 @@ class Structure:
         total = 0
         for m in self.methods_of(class_scope):
             total += self.cyclomatic(m)
+        return total
+
+    def weighted_cognitive(self, class_scope: Scope) -> int:
+        """Class-scope sum of cognitive complexity (CK-style aggregation, Campbell 2018)."""
+        total = 0
+        for m in self.methods_of(class_scope):
+            total += self.cognitive(m)
+        return total
+
+    def weighted_combinatorial(self, class_scope: Scope) -> int:
+        """Class-scope sum of NPath (CK-style aggregation, Nejmeh 1988)."""
+        total = 0
+        for m in self.methods_of(class_scope):
+            total += self.combinatorial(m)
         return total
 
     def coupling(self, class_scope: Scope, known_classes: frozenset[str]) -> int:
@@ -387,7 +426,7 @@ class Structure:
         """
         from pathlib import Path as _Path
 
-        from slop.structure._hotspots import compute_hotspots
+        from slop.structure.hotspots import compute_hotspots
 
         return compute_hotspots(
             self, _Path(root),
@@ -423,7 +462,7 @@ class Structure:
         """
         from pathlib import Path as _Path
 
-        from slop.structure._orphans import compute_orphans
+        from slop.structure.orphans import compute_orphans
 
         return compute_orphans(
             self, _Path(root),
@@ -442,7 +481,7 @@ class Structure:
         Returns a ``list[Import]``. Files whose grammar declares no
         ``import_queries()`` contribute nothing.
         """
-        from slop.structure._imports import extract_imports
+        from slop.structure.imports import extract_imports
 
         return extract_imports(self._parses)
 
@@ -464,7 +503,7 @@ class Structure:
         """
         from pathlib import Path as _Path
 
-        from slop.structure._packages import compute_packages
+        from slop.structure.packages import compute_packages
 
         return compute_packages(self, _Path(root))
 
@@ -476,7 +515,7 @@ class Structure:
         with per-event detail; the rule layer threshold-checks the
         mutation count.
         """
-        from slop.structure._hidden_mutators import compute_hidden_mutators
+        from slop.structure.hidden_mutators import compute_hidden_mutators
 
         return compute_hidden_mutators(
             self, require_type_annotation=require_type_annotation,
@@ -494,7 +533,7 @@ class Structure:
         Returns ``list[SentinelParameter]``. The rule layer applies
         ``max_cardinality`` thresholds.
         """
-        from slop.structure._sentinels import compute_sentinels
+        from slop.structure.sentinels import compute_sentinels
 
         return compute_sentinels(
             self, require_str_annotation=require_str_annotation,
@@ -513,7 +552,7 @@ class Structure:
         (JSDoc isn't in the AST; C/C++ encode types in declarations
         not annotation nodes; Ruby is dynamically typed).
         """
-        from slop.structure._annotations import extract_annotations
+        from slop.structure.annotations import extract_annotations
 
         return extract_annotations(self)
 
@@ -526,7 +565,7 @@ class Structure:
         per-grammar trivial callees plus universal noise (length < 3,
         dunder names). Returns a frozenset.
         """
-        from slop.structure._redundancy import callees_of
+        from slop.structure.redundancy import callees_of
 
         return callees_of(self, callable_record)
 
@@ -542,7 +581,7 @@ class Structure:
         emits a ``RedundancyPair`` per pair whose ``|shared| >= min_shared``
         AND whose ``score >= min_score``.
         """
-        from slop.structure._redundancy import compute_redundancy
+        from slop.structure.redundancy import compute_redundancy
 
         return compute_redundancy(
             self, min_shared=min_shared, min_score=min_score,
@@ -562,7 +601,7 @@ class Structure:
         the total number of callables analyzed, and the corpus-level
         clone fraction (cloned callables / total callables).
         """
-        from slop.structure._clones import compute_clones
+        from slop.structure.clones import compute_clones
 
         return compute_clones(self, min_leaf_nodes=min_leaf_nodes)
 
@@ -576,7 +615,7 @@ class Structure:
         independent reasoning, testing, or extraction of any module in
         the loop.
         """
-        from slop.structure._imports import detect_cycles
+        from slop.structure.imports import detect_cycles
 
         return detect_cycles(self.dependency_graph())
 
@@ -591,7 +630,7 @@ class Structure:
         Returns a ``DependencyGraph`` with ``efferent`` (outbound) and
         ``afferent`` (inbound) adjacency maps.
         """
-        from slop.structure._imports import build_dependency_graph, extract_imports
+        from slop.structure.imports import build_dependency_graph, extract_imports
 
         return build_dependency_graph(self._parses, extract_imports(self._parses))
 

@@ -14,13 +14,77 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
-from slop._compat import (
-    canonical_rule_name,
-    collect_prefix_overrides,
-    format_deprecation_block,
-    migrate_legacy_rule_tables,
-)
-from slop.config.models import RuleConfig, SlopConfig, WaiverConfig
+from slop.config.models import Config, Waiver
+from slop.linter.rule_config import RuleConfig
+
+# ---------------------------------------------------------------------------
+# TOML structure handling
+# ---------------------------------------------------------------------------
+
+_PREFIX_PROPAGATABLE_KEYS: tuple[str, ...] = ("enabled", "severity")
+
+
+def _flatten_canonical_tables(
+    raw_rules: dict, canonical_keys: set[str],
+) -> dict[str, dict]:
+    """Collapse the TOML-nested rule tree into flat dotted keys.
+
+    TOML parses ``[rules.hotspots]`` as
+    ``raw["rules"]["hotspots"] = {...}`` and ``[rules.class.coupling]``
+    as ``raw["rules"]["class"]["coupling"] = {...}``. This walks the
+    nested dict and emits each known canonical category back as a flat
+    ``"hotspots" -> {...}`` mapping so the merge step can work
+    uniformly. Unknown nested paths are ignored.
+    """
+    flat: dict[str, dict] = {}
+
+    def _walk(node, path: tuple[str, ...]) -> None:
+        if not isinstance(node, dict):
+            return
+        dotted = ".".join(path) if path else ""
+        if dotted in canonical_keys:
+            flat[dotted] = node
+            return
+        for key, value in node.items():
+            _walk(value, path + (key,))
+
+    _walk(raw_rules, ())
+    return flat
+
+
+def _collect_prefix_overrides(
+    raw_rules: dict, canonical_keys: set[str],
+) -> dict[str, dict]:
+    """Collect intermediate prefix tables that propagate to nested rules.
+
+    A prefix table sits at a non-canonical dotted path (``class``,
+    ``complexity``) and contains scalar ``enabled`` or ``severity``
+    values. Those values propagate to every canonical category whose
+    dotted name starts with the prefix, letting users disable a whole
+    suite (``[rules.class] enabled = false``) or downgrade an entire
+    group's severity in one place.
+    """
+    overrides: dict[str, dict] = {}
+
+    def _walk(node, path: tuple[str, ...]) -> None:
+        if not isinstance(node, dict):
+            return
+        dotted = ".".join(path) if path else ""
+        if dotted in canonical_keys:
+            return
+        if path:
+            scalars = {
+                k: node[k]
+                for k in _PREFIX_PROPAGATABLE_KEYS
+                if k in node and not isinstance(node[k], dict)
+            }
+            if scalars:
+                overrides[dotted] = scalars
+        for key, value in node.items():
+            _walk(value, path + (key,))
+
+    _walk(raw_rules, ())
+    return overrides
 
 # ---------------------------------------------------------------------------
 # TOML loading (stdlib on 3.11+, tomli on 3.10)
@@ -41,113 +105,132 @@ else:
 # Built-in defaults
 # ---------------------------------------------------------------------------
 
+
 DEFAULT_RULE_CONFIGS: dict[str, dict[str, Any]] = {
-    "structural.complexity": {
+    # --- complexity family (multi-scope, scope-first design) ---
+    # Each rule supports multiple scopes via per-scope thresholds. A
+    # missing scope key in `thresholds` = rule skips that scope.
+    "complexity.cyclomatic": {
         "enabled": True,
         "severity": "error",
-        "cyclomatic_threshold": 10,
-        "cognitive_threshold": 15,
-        "combinatorial_threshold": 400,
+        "thresholds": {"function": 10, "class": 40},
     },
-    "structural.class.complexity": {
+    "complexity.cognitive": {
         "enabled": True,
         "severity": "error",
-        "threshold": 40,
+        # Class-scope threshold is slop calibration (no published value
+        # for the aggregated form; Campbell 2018 only defined function).
+        "thresholds": {"function": 15, "class": 60},
     },
-    "structural.class.coupling": {
+    "complexity.combinatorial": {
         "enabled": True,
         "severity": "error",
-        "threshold": 8,
+        # Class-scope threshold is slop calibration (Nejmeh 1988 only
+        # defined function-scope NPath).
+        "thresholds": {"function": 400, "class": 1600},
     },
-    "structural.class.inheritance.depth": {
+    "complexity.volume": {
         "enabled": True,
         "severity": "error",
-        "threshold": 4,
+        # Class-scope threshold is slop calibration (Halstead 1977
+        # defined function-scope V; sum is additive, so aggregation is
+        # mathematically defensible but no published threshold).
+        "thresholds": {"function": 1500, "class": 6000},
     },
-    "structural.class.inheritance.children": {
+    "complexity.density": {
         "enabled": True,
         "severity": "error",
-        "threshold": 10,
+        # Function-scope only — Halstead D is a density ratio and
+        # non-additive across methods. No class-scope variant.
+        "thresholds": {"function": 30},
     },
-    "structural.hotspots": {
+    # --- CK class metrics ---
+    "coupling": {
+        "enabled": True,
+        "severity": "error",
+        "thresholds": {"class": 8},
+    },
+    "inheritance.depth": {
+        "enabled": True,
+        "severity": "error",
+        "thresholds": {"class": 4},
+    },
+    "inheritance.children": {
+        "enabled": True,
+        "severity": "error",
+        "thresholds": {"class": 10},
+    },
+    # --- Standalone scope-determined rules ---
+    "magic_literals": {
+        "enabled": True,
+        "severity": "warning",
+        "thresholds": {"function": 3},
+    },
+    "god_module": {
+        "enabled": True,
+        "severity": "warning",
+        "thresholds": {"module": 20},
+    },
+    "escape_hatches": {
+        "enabled": True,
+        "severity": "warning",
+        "thresholds": {"module": 0.30},
+        "min_annotations": 5,
+    },
+    "hidden_mutators": {
+        "enabled": True,
+        "severity": "warning",
+        "thresholds": {"function": 1},
+        "require_type_annotation": True,
+    },
+    "sentinels": {
+        "enabled": True,
+        "severity": "warning",
+        "thresholds": {"parameter": 8},
+        "require_str_annotation": True,
+    },
+    "rigidity": {
+        "enabled": True,
+        "severity": "warning",
+        "thresholds": {"package": 0.7},
+        "languages": [],
+    },
+    "uselessness": {
+        "enabled": True,
+        "severity": "warning",
+        "thresholds": {"package": 0.7},
+        "languages": [],
+    },
+    # --- Cross-cutting (graph or whole-repo; exempt from scope prefix) ---
+    "hotspots": {
         "enabled": True,
         "severity": "error",
         "since": "14 days ago",
         "min_commits": 2,
         "fail_on_quadrant": ["hotspot"],
     },
-    "structural.packages.rigidity": {
-        "enabled": True,
-        "severity": "warning",
-        "languages": [],
-        "threshold": 0.7,
-    },
-    "structural.packages.uselessness": {
-        "enabled": True,
-        "severity": "warning",
-        "languages": [],
-        "threshold": 0.7,
-    },
-    "structural.deps": {
+    "deps": {
         "enabled": True,
         "severity": "error",
         "fail_on_cycles": True,
     },
-    "structural.redundancy": {
+    "orphans": {
+        "enabled": False,
+        "severity": "warning",
+        "min_confidence": "high",
+    },
+    "redundancy": {
         "enabled": True,
         "severity": "warning",
         "min_shared": 3,
         "min_score": 0.5,
     },
-    "structural.types.sentinels": {
-        "enabled": True,
-        "severity": "warning",
-        "max_cardinality": 8,
-        "require_str_annotation": True,
-    },
-    "structural.types.hidden_mutators": {
-        "enabled": True,
-        "severity": "warning",
-        "require_type_annotation": True,
-        "min_mutations": 1,
-    },
-    "structural.types.escape_hatches": {
-        "enabled": True,
-        "severity": "warning",
-        "threshold": 0.30,
-        "min_annotations": 5,
-    },
-    "structural.duplication": {
+    "duplication": {
         "enabled": True,
         "severity": "warning",
         "threshold": 0.05,
         "min_leaf_nodes": 10,
         "min_cluster_size": 2,
-    },
-    "structural.god_module": {
-        "enabled": True,
-        "severity": "warning",
-        "threshold": 20,
-    },
-    "structural.orphans": {
-        "enabled": False,
-        "severity": "warning",
-        "min_confidence": "high",
-    },
-    "structural.difficulty.volume": {
-        "enabled": True,
-        "severity": "error",
-        "threshold": 1500,
-    },
-    "structural.difficulty.density": {
-        "enabled": True,
-        "severity": "error",
-        "threshold": 30,
-    },
-    "structural.magic_literals": {
-        "enabled": True,
-        "severity": "warning",
-        "threshold": 3,
     },
     "lexical.stutter": {
         "enabled": True,
@@ -225,9 +308,24 @@ def _read_toml(path: Path) -> dict[str, Any]:
 def _merge_rule_config(
     defaults: dict[str, Any], overrides: dict[str, Any]
 ) -> RuleConfig:
-    """Merge a default rule config dict with user overrides into a RuleConfig."""
-    merged = dict(defaults)
-    merged.update(overrides)
+    """Merge a default rule config dict with user overrides into a RuleConfig.
+
+    The nested ``thresholds`` dict is deep-merged so a user override
+    of one scope (e.g., ``thresholds = {class = 50}``) keeps the
+    other scope defaults intact rather than wiping them.
+    """
+    merged: dict[str, Any] = dict(defaults)
+    for k, v in overrides.items():
+        if (
+            k == "thresholds"
+            and isinstance(v, dict)
+            and isinstance(merged.get("thresholds"), dict)
+        ):
+            merged_thresholds = dict(merged["thresholds"])
+            merged_thresholds.update(v)
+            merged["thresholds"] = merged_thresholds
+        else:
+            merged[k] = v
     enabled = merged.pop("enabled", True)
     severity = merged.pop("severity", "error")
     return RuleConfig(enabled=enabled, severity=severity, params=merged)
@@ -235,18 +333,16 @@ def _merge_rule_config(
 
 def _build_rule_configs(
     raw_rules: dict[str, Any],
-) -> tuple[dict[str, RuleConfig], list[str]]:
+) -> dict[str, RuleConfig]:
     """Build RuleConfig dict by merging user config over defaults.
 
-    Translates legacy ``[rules.<category>]`` tables to the canonical
-    taxonomy via ``slop._compat`` and returns any deprecation lines for
-    the caller to surface. Intermediate prefix tables (``[rules.structural]``,
-    ``[rules.structural.class]``) propagate their ``enabled`` / ``severity``
+    Intermediate prefix tables (``[rules.class]``,
+    ``[rules.complexity]``) propagate their ``enabled`` / ``severity``
     scalars to every nested canonical category; more specific tables win.
     """
     canonical_keys = set(DEFAULT_RULE_CONFIGS.keys())
-    migrated, deprecations = migrate_legacy_rule_tables(raw_rules, canonical_keys)
-    prefix_overrides = collect_prefix_overrides(raw_rules, canonical_keys)
+    flat = _flatten_canonical_tables(raw_rules, canonical_keys)
+    prefix_overrides = _collect_prefix_overrides(raw_rules, canonical_keys)
     result: dict[str, RuleConfig] = {}
     for category, defaults in DEFAULT_RULE_CONFIGS.items():
         layered: dict[str, Any] = {}
@@ -256,45 +352,31 @@ def _build_rule_configs(
             override = prefix_overrides.get(ancestor)
             if override:
                 layered.update(override)
-        user_overrides = migrated.get(category, {})
+        user_overrides = flat.get(category, {})
         if isinstance(user_overrides, dict):
             layered.update(user_overrides)
         result[category] = _merge_rule_config(defaults, layered)
-    return result, deprecations
+    return result
 
 
-def _build_waivers(raw_waivers: Any) -> tuple[list[WaiverConfig], list[str]]:
-    """Build and validate top-level waiver configuration.
-
-    Returns the waivers and any deprecation lines describing legacy rule
-    names that were translated to canonical form.
-    """
+def _build_waivers(raw_waivers: Any) -> list:
+    """Build and validate top-level waiver configuration."""
     if raw_waivers is None:
-        return [], []
+        return []
     if not isinstance(raw_waivers, list):
         raise ValueError("waivers must be an array of tables")
 
-    waivers: list[WaiverConfig] = []
-    deprecations: list[str] = []
+    waivers: list = []
     seen_ids: set[str] = set()
     for i, raw in enumerate(raw_waivers, start=1):
-        waiver, dep = _build_waiver(raw, i, seen_ids)
-        waivers.append(waiver)
-        if dep is not None:
-            deprecations.append(dep)
-    return waivers, deprecations
+        waivers.append(_build_waiver(raw, i, seen_ids))
+    return waivers
 
 
 def _build_waiver(
-    raw: Any, index: int, seen_ids: set[str]
-) -> tuple[WaiverConfig, str | None]:
-    """Build one waiver from a TOML table.
-
-    If the waiver's ``rule`` field is a legacy name (no glob), it is
-    translated to the canonical form and a deprecation line is returned.
-    Glob patterns are passed through unchanged because rule patterns can
-    legitimately be wildcards (e.g. ``structural.*``).
-    """
+    raw: Any, index: int, seen_ids: set[str],
+):
+    """Build one waiver from a TOML table."""
     if not isinstance(raw, dict):
         raise ValueError(f"waiver #{index} must be a table")
 
@@ -303,25 +385,14 @@ def _build_waiver(
         raise ValueError(f"duplicate waiver id: {waiver_id}")
     seen_ids.add(waiver_id)
 
-    rule = _required_string(raw, "rule", f"waiver {waiver_id}")
-    deprecation: str | None = None
-    if not any(c in rule for c in ("*", "?", "[")):
-        canonical, was_legacy = canonical_rule_name(rule)
-        if was_legacy:
-            deprecation = (
-                f"  waiver {waiver_id}: rule = \"{rule}\" -> \"{canonical}\""
-            )
-            rule = canonical
-
-    waiver = WaiverConfig(
+    return Waiver(
         id=waiver_id,
         path=_required_string(raw, "path", f"waiver {waiver_id}"),
-        rule=rule,
+        rule=_required_string(raw, "rule", f"waiver {waiver_id}"),
         reason=_required_string(raw, "reason", f"waiver {waiver_id}"),
         allow_up_to=_optional_number(raw, "allow_up_to", f"waiver {waiver_id}"),
         expires=_optional_iso_date(raw, "expires", f"waiver {waiver_id}"),
     )
-    return waiver, deprecation
 
 
 def _required_string(raw: dict[str, Any], key: str, label: str) -> str:
@@ -428,41 +499,22 @@ def load_config(
     *,
     config_path: str | None = None,
     root: str | None = None,
-) -> SlopConfig:
-    """Load slop configuration from TOML files with fallback to defaults.
-
-    Discovery walks upward from ``root`` (or CWD) looking for ``.slop.toml``
-    or ``pyproject.toml`` with a ``[tool.slop]`` table — matching the
-    convention used by ruff, mypy, etc. Relative ``root`` paths in a
-    discovered config are resolved relative to the config file's directory;
-    explicit ``--config`` paths are resolved relative to CWD.
-
-    Args:
-        config_path: Explicit config file path (highest priority, no walk).
-        root: Starting directory for the upward walk. If None, uses CWD.
-
-    Returns:
-        Merged SlopConfig with ``config_path`` populated when a config was
-        discovered (or None when falling back to defaults).
-    """
+):
+    """Load slop configuration from TOML files with fallback to defaults."""
     discovered_config, raw = _read_raw_config(config_path, root)
 
     raw_root = raw.get("root")
     languages = raw.get("languages", [])
     exclude = raw.get("exclude", [])
-    waivers, waiver_deprecations = _build_waivers(raw.get("waivers"))
+    waivers = _build_waivers(raw.get("waivers"))
     config_root = _resolve_config_root(raw_root, root, discovered_config)
 
     raw_rules = raw.get("rules", {})
     if not isinstance(raw_rules, dict):
         raw_rules = {}
-    rule_configs, rule_deprecations = _build_rule_configs(raw_rules)
+    rule_configs = _build_rule_configs(raw_rules)
 
-    deprecations = rule_deprecations + waiver_deprecations
-    if deprecations:
-        print(format_deprecation_block(deprecations), file=sys.stderr)
-
-    return SlopConfig(
+    return Config(
         root=config_root,
         languages=languages,
         exclude=exclude,
@@ -471,243 +523,3 @@ def load_config(
         config_path=discovered_config,
     )
 
-
-PROFILES: dict[str, dict[str, str | int | bool | list[str]]] = {
-    "default": {
-        "cyclomatic_threshold": 10,
-        "cognitive_threshold": 15,
-        "weighted_threshold": 40,
-        "volume_threshold": 1500,
-        "difficulty_threshold": 30,
-        "combinatorial_threshold": 400,
-        "hotspots_since": "14 days ago",
-        "hotspots_min_commits": 2,
-        "hotspots_fail_on_quadrant": ["hotspot"],
-        "max_distance": 0.7,
-        "packages_severity": "warning",
-        "orphans_enabled": False,
-        "coupling_threshold": 8,
-        "inheritance_depth_threshold": 4,
-        "inheritance_children_threshold": 10,
-    },
-    "lax": {
-        "cyclomatic_threshold": 20,
-        "cognitive_threshold": 25,
-        "weighted_threshold": 80,
-        "volume_threshold": 3000,
-        "difficulty_threshold": 50,
-        "combinatorial_threshold": 1000,
-        "hotspots_since": "90 days ago",
-        "hotspots_min_commits": 3,
-        "hotspots_fail_on_quadrant": ["hotspot"],
-        "max_distance": 0.85,
-        "packages_severity": "warning",
-        "orphans_enabled": False,
-        "coupling_threshold": 15,
-        "inheritance_depth_threshold": 6,
-        "inheritance_children_threshold": 20,
-    },
-    "strict": {
-        "cyclomatic_threshold": 6,
-        "cognitive_threshold": 10,
-        "weighted_threshold": 30,
-        "volume_threshold": 500,
-        "difficulty_threshold": 20,
-        "combinatorial_threshold": 100,
-        "hotspots_since": "7 days ago",
-        "hotspots_min_commits": 1,
-        "hotspots_fail_on_quadrant": ["hotspot", "churning_simple"],
-        "max_distance": 0.5,
-        "packages_severity": "error",
-        "orphans_enabled": True,
-        "coupling_threshold": 5,
-        "inheritance_depth_threshold": 3,
-        "inheritance_children_threshold": 7,
-    },
-}
-
-
-def generate_default_config(profile: str = "default") -> str:
-    """Generate a .slop.toml config string for the given profile.
-
-    Valid profiles: ``default``, ``lax``, ``strict``.
-    """
-    if profile not in PROFILES:
-        raise ValueError(f"Unknown profile '{profile}'. Valid: {', '.join(sorted(PROFILES))}")
-    profile_cfg = PROFILES[profile]
-    quadrants = profile_cfg["hotspots_fail_on_quadrant"]
-    quadrant_list = ", ".join(f'"{quadrant}"' for quadrant in quadrants)
-    orphans_enabled = "true" if profile_cfg["orphans_enabled"] else "false"
-    return f'''\
-# slop — agentic code quality linter
-# https://github.com/JordanGunn/agent-slop-lint
-# Profile: {profile}
-
-# Root directory (default: ".")
-root = "."
-
-# Languages to analyze (default: auto-detect all supported)
-# Supported: python, javascript, typescript, go, rust, java, c_sharp
-# languages = ["python", "typescript"]
-
-# Global file exclusions (applied to all rules)
-# exclude = ["**/test_*", "**/vendor/**"]
-
-# Scoped waivers keep exceptional findings visible without weakening global
-# thresholds. Prefer a local allow_up_to ceiling over an unbounded waiver.
-# [[waivers]]
-# id = "parser-npath"
-# path = "src/parser/**"
-# rule = "structural.complexity.combinatorial"
-# allow_up_to = 1200
-# reason = "Parser branch shape mirrors grammar alternatives."
-# expires = "2026-09-01"
-
-[rules.structural.complexity]
-enabled = true
-cyclomatic_threshold = {profile_cfg["cyclomatic_threshold"]}       # fail if any function CCX > this
-cognitive_threshold = {profile_cfg["cognitive_threshold"]}        # fail if any function CogC > this
-combinatorial_threshold = {profile_cfg["combinatorial_threshold"]}   # fail if any function NPath > this (Nejmeh 1988)
-severity = "error"
-
-[rules.structural.class.complexity]
-enabled = true
-threshold = {profile_cfg["weighted_threshold"]}              # fail if any class WMC exceeds this
-severity = "error"
-
-[rules.structural.class.coupling]
-enabled = true
-threshold = {profile_cfg["coupling_threshold"]}
-severity = "error"
-
-[rules.structural.class.inheritance.depth]
-enabled = true
-threshold = {profile_cfg["inheritance_depth_threshold"]}
-severity = "error"
-
-[rules.structural.class.inheritance.children]
-enabled = true
-threshold = {profile_cfg["inheritance_children_threshold"]}
-severity = "error"
-
-[rules.structural.hotspots]
-enabled = true
-since = "{profile_cfg["hotspots_since"]}"
-min_commits = {profile_cfg["hotspots_min_commits"]}
-fail_on_quadrant = [{quadrant_list}]
-severity = "error"
-
-[rules.structural.packages.rigidity]
-enabled = true
-# languages = ["python"]        # optional: restrict to a subset of slop's supported languages
-threshold = {profile_cfg["max_distance"]}    # flag pain-zone packages whose D' exceeds this
-severity = "{profile_cfg["packages_severity"]}"
-
-[rules.structural.packages.uselessness]
-enabled = true
-threshold = {profile_cfg["max_distance"]}    # flag uselessness-zone packages whose D' exceeds this
-severity = "{profile_cfg["packages_severity"]}"
-
-[rules.structural.deps]
-enabled = true
-fail_on_cycles = true
-severity = "error"
-
-[rules.structural.redundancy]
-enabled = true
-min_shared = 3      # minimum shared non-trivial callees between two sibling functions
-min_score = 0.5     # minimum overlap ratio (shared / max callee count)
-severity = "warning"
-
-[rules.structural.types.sentinels]
-enabled = true
-max_cardinality = 8   # flag sentinel str params with ≤ 8 distinct call-site values
-require_str_annotation = true
-severity = "warning"
-
-[rules.structural.types.hidden_mutators]
-enabled = true
-require_type_annotation = true   # only flag params with explicit collection types
-min_mutations = 1
-severity = "warning"
-
-[rules.structural.types.escape_hatches]
-enabled = true
-threshold = 0.30    # flag files where > 30% of annotations use escape-hatch types
-min_annotations = 5
-severity = "warning"
-
-[rules.structural.duplication]
-enabled = true
-threshold = 0.05    # flag when > 5% of functions are Type-2 clones
-min_leaf_nodes = 10 # ignore trivially short functions
-min_cluster_size = 2
-severity = "warning"
-
-[rules.structural.god_module]
-enabled = true
-threshold = 20      # flag files with more than this many top-level definitions
-severity = "warning"
-
-[rules.structural.orphans]
-enabled = {orphans_enabled}
-min_confidence = "high"
-severity = "warning"
-
-[rules.structural.difficulty.volume]
-enabled = true
-threshold = {profile_cfg["volume_threshold"]}         # fail if any function Halstead V exceeds this
-severity = "error"
-
-[rules.structural.difficulty.density]
-enabled = true
-threshold = {profile_cfg["difficulty_threshold"]}        # fail if any function Halstead D (operand-reuse density) exceeds this
-severity = "error"
-
-[rules.structural.magic_literals]
-enabled = true
-threshold = 3       # flag functions with > 3 distinct non-trivial numeric literals
-severity = "warning"
-
-[rules.lexical.stutter]
-enabled = true
-min_overlap_tokens = 2     # flag names repeating >= N tokens from any enclosing scope
-check_packages = true
-check_modules = true
-check_classes = true
-check_functions = true
-severity = "warning"
-
-[rules.lexical.verbosity]
-enabled = true
-max_tokens = 3             # flag function/class names with more tokens than this
-check_classes = true
-severity = "warning"
-
-[rules.lexical.cowards]
-enabled = true
-min_stem_tokens = 1
-severity = "warning"
-
-[rules.lexical.hammers]
-enabled = true
-severity = "warning"
-# terms = [...]            # see docs/rules/lexical/hammers.md for per-word config
-
-[rules.lexical.tautology]
-enabled = true
-severity = "warning"
-
-[rules.lexical.sprawl]
-enabled = true
-min_alphabet = 3
-min_concept_extent = 2
-min_concept_intent = 2
-severity = "warning"
-
-[rules.lexical.imposters]
-enabled = true
-min_cluster = 3
-exempt_names = ["self", "cls"]
-severity = "warning"
-'''

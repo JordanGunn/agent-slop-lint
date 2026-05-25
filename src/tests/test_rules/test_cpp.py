@@ -12,14 +12,16 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop.config.models import RuleConfig, SlopConfig
-from slop.structure.rules.escape_hatches import run_escape_hatches
-from slop.structure.rules.clone_density import run_clone_density
-from slop.structure.rules.complexity import run_cognitive, run_cyclomatic
-from slop.structure.rules.dependencies import run_cycles
-from slop.structure.rules.combinatorial import run_combinatorial
-from slop.structure.rules.god_module import run_god_module
-from slop.structure.rules.hidden_mutators import run_hidden_mutators
+from slop.linter.rule_config import RuleConfig
+from slop.config import Config
+from slop.structure.metrics.escape_hatches import run_escape_hatches
+from slop.structure.metrics.clone_density import run_clone_density
+from slop.structure.metrics.cognitive import run_cognitive
+from slop.structure.metrics.cyclomatic import run_cyclomatic
+from slop.structure.metrics.dependencies import run_cycles
+from slop.structure.metrics.combinatorial import run_combinatorial
+from slop.structure.metrics.god_module import run_god_module
+from slop.structure.metrics.hidden_mutators import run_hidden_mutators
 from slop.tree.tree import Tree
 
 
@@ -33,18 +35,21 @@ def _lexicon(root: Path):
     t = Tree(root)
     t.scan()
     return t.lexicon
-from slop.structure.rules.redundancy import run_redundancy
-from slop.structure.rules.sentinels import run_sentinels
-from slop.lexicon.rules.stutter import run_stutter
-from slop.lexicon.rules.verbosity import run_verbosity
+from slop.structure.metrics.redundancy import run_redundancy
+from slop.structure.metrics.sentinels import run_sentinels
+from slop.lexicon.metrics.stutter import run_stutter
+from slop.lexicon.metrics.verbosity import run_verbosity
 
 
-def _slop_config() -> SlopConfig:
-    return SlopConfig(rules={}, languages=["cpp"])
+def _slop_config() -> Config:
+    return Config(rules={}, languages=["cpp"])
 
 
-def _rule_config(**overrides) -> RuleConfig:
-    return RuleConfig(enabled=True, severity="error", params=overrides)
+def _rule_config(scope: str = "function", **overrides) -> RuleConfig:
+    threshold = overrides.pop("threshold", 0)
+    params: dict = {"thresholds": {scope: threshold}}
+    params.update(overrides)
+    return RuleConfig(enabled=True, severity="error", params=params)
 
 
 # ---------------------------------------------------------------------------
@@ -61,7 +66,7 @@ def test_cpp_in_class_method_extracts_field_identifier_name(tmp_path: Path):
         "    int legs() const { return 4; }\n"
         "};\n"
     )
-    result = run_cyclomatic(_structure(tmp_path), _rule_config(cyclomatic_threshold=0),
+    result = run_cyclomatic(_structure(tmp_path), _rule_config(threshold=0),
                             _slop_config())
     names = {v.symbol for v in result.violations}
     assert "speak" in names
@@ -75,7 +80,7 @@ def test_cpp_out_of_line_method_extracts_qualified_name(tmp_path: Path):
         "void Animal::speak() { return; }\n"
         "int Animal::legs() const { return 4; }\n"
     )
-    result = run_cyclomatic(_structure(tmp_path), _rule_config(cyclomatic_threshold=0),
+    result = run_cyclomatic(_structure(tmp_path), _rule_config(threshold=0),
                             _slop_config())
     names = {v.symbol for v in result.violations}
     assert "speak" in names
@@ -90,7 +95,7 @@ def test_cpp_operator_overload_extracts_operator_symbol(tmp_path: Path):
         "    Vec operator+(const Vec& r) const { return Vec(); }\n"
         "};\n"
     )
-    result = run_cyclomatic(_structure(tmp_path), _rule_config(cyclomatic_threshold=0),
+    result = run_cyclomatic(_structure(tmp_path), _rule_config(threshold=0),
                             _slop_config())
     names = {v.symbol for v in result.violations}
     assert "==" in names
@@ -104,7 +109,7 @@ def test_cpp_destructor_extracts_tilde_prefix(tmp_path: Path):
         "    ~Shape() { cleanup(); }\n"
         "};\n"
     )
-    result = run_cyclomatic(_structure(tmp_path), _rule_config(cyclomatic_threshold=0),
+    result = run_cyclomatic(_structure(tmp_path), _rule_config(threshold=0),
                             _slop_config())
     names = {v.symbol for v in result.violations}
     assert "~Shape" in names
@@ -117,7 +122,7 @@ def test_cpp_lambda_treated_as_anonymous(tmp_path: Path):
         "    add(1, 2);\n"
         "}\n"
     )
-    result = run_cyclomatic(_structure(tmp_path), _rule_config(cyclomatic_threshold=0),
+    result = run_cyclomatic(_structure(tmp_path), _rule_config(threshold=0),
                             _slop_config())
     names = {v.symbol for v in result.violations}
     assert "<lambda>" in names
@@ -133,7 +138,7 @@ def test_cpp_template_function_detected(tmp_path: Path):
         "    return c;\n"
         "}\n"
     )
-    result = run_cyclomatic(_structure(tmp_path), _rule_config(cyclomatic_threshold=2),
+    result = run_cyclomatic(_structure(tmp_path), _rule_config(threshold=2),
                             _slop_config())
     assert result.status == "fail"
     assert any(v.symbol == "pick" for v in result.violations)
@@ -155,7 +160,7 @@ def test_cpp_cyclomatic_counts_range_for_and_try(tmp_path: Path):
         "    return total;\n"
         "}\n"
     )
-    result = run_cyclomatic(_structure(tmp_path), _rule_config(cyclomatic_threshold=2),
+    result = run_cyclomatic(_structure(tmp_path), _rule_config(threshold=2),
                             _slop_config())
     assert result.status == "fail"
     assert any(v.symbol == "process" for v in result.violations)
@@ -169,7 +174,7 @@ def test_cpp_cognitive_runs_without_error(tmp_path: Path):
         "    return 1;\n"
         "}\n"
     )
-    result = run_cognitive(_structure(tmp_path), _rule_config(cognitive_threshold=99),
+    result = run_cognitive(_structure(tmp_path), _rule_config(threshold=99),
                            _slop_config())
     assert result.status == "pass"
 
@@ -191,8 +196,8 @@ def test_cpp_npath_counts_range_for(tmp_path: Path):
     # to confirm it counts.
     tree = Tree(tmp_path); tree.scan()
     result = run_combinatorial(
-        tree.structure, _rule_config(combinatorial_threshold=99),
-        SlopConfig(root=str(tmp_path), languages=["cpp"]),
+        tree.structure, _rule_config(threshold=99),
+        Config(root=str(tmp_path), languages=["cpp"]),
     )
     assert result.status == "pass"
 
@@ -210,8 +215,8 @@ def test_cpp_npath_counts_switch_cases(tmp_path: Path):
     )
     tree = Tree(tmp_path); tree.scan()
     result = run_combinatorial(
-        tree.structure, _rule_config(combinatorial_threshold=3),
-        SlopConfig(root=str(tmp_path), languages=["cpp"]),
+        tree.structure, _rule_config(threshold=3),
+        Config(root=str(tmp_path), languages=["cpp"]),
     )
     assert result.status == "fail"
 
@@ -260,7 +265,7 @@ def test_cpp_god_module_counts_top_level_definitions(tmp_path: Path):
     body.append("template <typename T> T id(T v) { return v; }")
     (tmp_path / "many.cpp").write_text("\n".join(body) + "\n")
 
-    result = run_god_module(_structure(tmp_path), _rule_config(threshold=10), _slop_config())
+    result = run_god_module(_structure(tmp_path), _rule_config(scope="module", threshold=10), _slop_config())
     assert result.status == "fail"
     assert any("many.cpp" in v.file for v in result.violations)
 
@@ -292,9 +297,7 @@ def test_cpp_void_star_flagged_as_escape_hatch(tmp_path: Path):
     )
     t = Tree(tmp_path)
     t.scan()
-    result = run_escape_hatches(
-        t.structure,
-        _rule_config(threshold=0.30, min_annotations=2),
+    result = run_escape_hatches(t.structure, _rule_config(scope="module", threshold=0.30, min_annotations=2),
         _slop_config(),
     )
     assert result.status == "fail"
@@ -333,7 +336,7 @@ def test_cpp_string_sentinel_flagged(tmp_path: Path):
         "int connect(const char *host, int port) { return port; }\n"
     )
     t = Tree(tmp_path); t.scan()
-    result = run_sentinels(t.structure, _rule_config(), _slop_config())
+    result = run_sentinels(t.structure, _rule_config(scope="parameter", threshold=8), _slop_config())
     flagged = {(v.symbol, v.message) for v in result.violations}
     assert any("mode" in str(msg) for _, msg in flagged), flagged
 

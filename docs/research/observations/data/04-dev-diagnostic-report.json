@@ -1,0 +1,3146 @@
+{
+  "corpus": {
+    "files": 114,
+    "callables": 749,
+    "distinct_tokens": 513
+  },
+  "thresholds": {
+    "exclude_tokens": [
+      "a",
+      "an",
+      "and",
+      "are",
+      "as",
+      "at",
+      "but",
+      "by",
+      "f",
+      "for",
+      "id",
+      "if",
+      "in",
+      "index",
+      "is",
+      "key",
+      "left",
+      "length",
+      "next",
+      "of",
+      "on",
+      "or",
+      "p",
+      "pos",
+      "result",
+      "start",
+      "str",
+      "the",
+      "to",
+      "with",
+      "x"
+    ]
+  },
+  "distributions": {
+    "token_occurrence_count": {
+      "name": "token_occurrence_count",
+      "n": 513,
+      "mean": 5.3255,
+      "median": 2,
+      "p90": 13,
+      "max": 149,
+      "histogram": [
+        {
+          "lo": 1.0,
+          "hi": 2.0,
+          "count": 198
+        },
+        {
+          "lo": 2.0,
+          "hi": 4.0,
+          "count": 147
+        },
+        {
+          "lo": 4.0,
+          "hi": 8.0,
+          "count": 85
+        },
+        {
+          "lo": 8.0,
+          "hi": 16.0,
+          "count": 53
+        },
+        {
+          "lo": 16.0,
+          "hi": 32.0,
+          "count": 16
+        },
+        {
+          "lo": 32.0,
+          "hi": 64.0,
+          "count": 9
+        },
+        {
+          "lo": 64.0,
+          "hi": 128.0,
+          "count": 4
+        },
+        {
+          "lo": 128.0,
+          "hi": 256.0,
+          "count": 1
+        }
+      ]
+    },
+    "token_file_spread": {
+      "name": "token_file_spread",
+      "n": 513,
+      "mean": 3.3119,
+      "median": 2,
+      "p90": 10,
+      "max": 31,
+      "histogram": [
+        {
+          "lo": 1.0,
+          "hi": 2.0,
+          "count": 255
+        },
+        {
+          "lo": 2.0,
+          "hi": 4.0,
+          "count": 149
+        },
+        {
+          "lo": 4.0,
+          "hi": 8.0,
+          "count": 48
+        },
+        {
+          "lo": 8.0,
+          "hi": 16.0,
+          "count": 46
+        },
+        {
+          "lo": 16.0,
+          "hi": 32.0,
+          "count": 15
+        }
+      ]
+    },
+    "packet_size_callable_scope": {
+      "name": "packet_size_callable_scope",
+      "n": 16,
+      "mean": 2.25,
+      "median": 2.0,
+      "p90": 3,
+      "max": 3,
+      "histogram": [
+        {
+          "lo": 2.0,
+          "hi": 2.1,
+          "count": 12
+        },
+        {
+          "lo": 2.1,
+          "hi": 2.2,
+          "count": 0
+        },
+        {
+          "lo": 2.2,
+          "hi": 2.3,
+          "count": 0
+        },
+        {
+          "lo": 2.3,
+          "hi": 2.4,
+          "count": 0
+        },
+        {
+          "lo": 2.4,
+          "hi": 2.5,
+          "count": 0
+        },
+        {
+          "lo": 2.5,
+          "hi": 2.6,
+          "count": 0
+        },
+        {
+          "lo": 2.6,
+          "hi": 2.7,
+          "count": 0
+        },
+        {
+          "lo": 2.7,
+          "hi": 2.8,
+          "count": 0
+        },
+        {
+          "lo": 2.8,
+          "hi": 2.9,
+          "count": 0
+        },
+        {
+          "lo": 2.9,
+          "hi": 3,
+          "count": 4
+        }
+      ]
+    },
+    "packet_size_file_scope": {
+      "name": "packet_size_file_scope",
+      "n": 36,
+      "mean": 13.1667,
+      "median": 11.0,
+      "p90": 25,
+      "max": 30,
+      "histogram": [
+        {
+          "lo": 2.0,
+          "hi": 4.8,
+          "count": 10
+        },
+        {
+          "lo": 4.8,
+          "hi": 7.6,
+          "count": 3
+        },
+        {
+          "lo": 7.6,
+          "hi": 10.399999999999999,
+          "count": 4
+        },
+        {
+          "lo": 10.399999999999999,
+          "hi": 13.2,
+          "count": 3
+        },
+        {
+          "lo": 13.2,
+          "hi": 16.0,
+          "count": 2
+        },
+        {
+          "lo": 16.0,
+          "hi": 18.799999999999997,
+          "count": 0
+        },
+        {
+          "lo": 18.799999999999997,
+          "hi": 21.599999999999998,
+          "count": 4
+        },
+        {
+          "lo": 21.599999999999998,
+          "hi": 24.4,
+          "count": 5
+        },
+        {
+          "lo": 24.4,
+          "hi": 27.2,
+          "count": 4
+        },
+        {
+          "lo": 27.2,
+          "hi": 30,
+          "count": 1
+        }
+      ]
+    }
+  },
+  "packets": {
+    "thresholds": {
+      "min_bags": 5,
+      "min_association": 0.7
+    },
+    "callable_scope": {
+      "total": 16,
+      "packets": [
+        [
+          "add",
+          "parser",
+          "subparsers"
+        ],
+        [
+          "config",
+          "run",
+          "slop"
+        ],
+        [
+          "exclude",
+          "include",
+          "parameters"
+        ],
+        [
+          "hidden",
+          "mutators",
+          "require"
+        ],
+        [
+          "boolean",
+          "op"
+        ],
+        [
+          "callees",
+          "trivial"
+        ],
+        [
+          "compensating",
+          "decisions"
+        ],
+        [
+          "config",
+          "slop"
+        ],
+        [
+          "escape",
+          "hatch"
+        ],
+        [
+          "hidden",
+          "mutators"
+        ],
+        [
+          "literal",
+          "numeric"
+        ],
+        [
+          "mutators",
+          "require"
+        ],
+        [
+          "npath",
+          "vocab"
+        ],
+        [
+          "run",
+          "slop"
+        ],
+        [
+          "since",
+          "until"
+        ],
+        [
+          "stringly",
+          "typed"
+        ]
+      ],
+      "pathological": [
+        [
+          "add",
+          "parser",
+          "subparsers"
+        ],
+        [
+          "config",
+          "run",
+          "slop"
+        ],
+        [
+          "exclude",
+          "include",
+          "parameters"
+        ],
+        [
+          "hidden",
+          "mutators",
+          "require"
+        ],
+        [
+          "config",
+          "slop"
+        ],
+        [
+          "mutators",
+          "require"
+        ],
+        [
+          "npath",
+          "vocab"
+        ],
+        [
+          "run",
+          "slop"
+        ],
+        [
+          "since",
+          "until"
+        ]
+      ],
+      "conventional": [
+        {
+          "packet": [
+            "boolean",
+            "op"
+          ],
+          "class": "base.Language"
+        },
+        {
+          "packet": [
+            "callees",
+            "trivial"
+          ],
+          "class": "base.Language"
+        },
+        {
+          "packet": [
+            "compensating",
+            "decisions"
+          ],
+          "class": "base.Language"
+        },
+        {
+          "packet": [
+            "escape",
+            "hatch"
+          ],
+          "class": "base.Language"
+        },
+        {
+          "packet": [
+            "hidden",
+            "mutators"
+          ],
+          "class": "base.Language"
+        },
+        {
+          "packet": [
+            "literal",
+            "numeric"
+          ],
+          "class": "base.Language"
+        },
+        {
+          "packet": [
+            "stringly",
+            "typed"
+          ],
+          "class": "base.Language"
+        }
+      ]
+    },
+    "file_scope": {
+      "total": 36,
+      "packets": [
+        [
+          "abstract",
+          "annotation",
+          "block",
+          "body",
+          "boolean",
+          "callable",
+          "case",
+          "classes",
+          "compensating",
+          "decision",
+          "decisions",
+          "else",
+          "escape",
+          "extract",
+          "hatch",
+          "import",
+          "literal",
+          "loop",
+          "nesting",
+          "nodes",
+          "numeric",
+          "op",
+          "operand",
+          "operator",
+          "operators",
+          "queries",
+          "switch",
+          "try",
+          "type",
+          "types"
+        ],
+        [
+          "abstract",
+          "block",
+          "body",
+          "boolean",
+          "case",
+          "classes",
+          "compensating",
+          "decision",
+          "decisions",
+          "else",
+          "escape",
+          "extract",
+          "hatch",
+          "import",
+          "literal",
+          "loop",
+          "nesting",
+          "numeric",
+          "op",
+          "operand",
+          "operator",
+          "operators",
+          "queries",
+          "switch",
+          "try",
+          "types"
+        ],
+        [
+          "abstract",
+          "block",
+          "boolean",
+          "case",
+          "catch",
+          "classes",
+          "compensating",
+          "decision",
+          "decisions",
+          "else",
+          "escape",
+          "extract",
+          "hatch",
+          "import",
+          "literal",
+          "loop",
+          "nesting",
+          "numeric",
+          "op",
+          "operand",
+          "operator",
+          "operators",
+          "queries",
+          "switch",
+          "try",
+          "types"
+        ],
+        [
+          "abstract",
+          "boolean",
+          "case",
+          "catch",
+          "classes",
+          "compensating",
+          "decision",
+          "decisions",
+          "else",
+          "escape",
+          "fn",
+          "hatch",
+          "import",
+          "literal",
+          "loop",
+          "nesting",
+          "numeric",
+          "op",
+          "operand",
+          "operator",
+          "operators",
+          "queries",
+          "superclasses",
+          "switch",
+          "try"
+        ],
+        [
+          "block",
+          "body",
+          "boolean",
+          "callable",
+          "case",
+          "compensating",
+          "content",
+          "decision",
+          "decisions",
+          "else",
+          "extract",
+          "import",
+          "literal",
+          "loop",
+          "nesting",
+          "nodes",
+          "numeric",
+          "op",
+          "operand",
+          "operator",
+          "operators",
+          "queries",
+          "switch",
+          "type",
+          "types"
+        ],
+        [
+          "abstract",
+          "annotation",
+          "block",
+          "boolean",
+          "case",
+          "compensating",
+          "decision",
+          "decisions",
+          "else",
+          "escape",
+          "extract",
+          "hatch",
+          "import",
+          "literal",
+          "loop",
+          "nesting",
+          "numeric",
+          "op",
+          "operand",
+          "operator",
+          "operators",
+          "queries",
+          "switch",
+          "types"
+        ],
+        [
+          "abstract",
+          "block",
+          "boolean",
+          "case",
+          "classes",
+          "compensating",
+          "decision",
+          "decisions",
+          "else",
+          "escape",
+          "extract",
+          "hatch",
+          "import",
+          "literal",
+          "loop",
+          "nesting",
+          "numeric",
+          "op",
+          "operand",
+          "operator",
+          "operators",
+          "queries",
+          "switch",
+          "types"
+        ],
+        [
+          "abstract",
+          "block",
+          "boolean",
+          "case",
+          "compensating",
+          "decision",
+          "decisions",
+          "else",
+          "escape",
+          "extract",
+          "hatch",
+          "import",
+          "literal",
+          "loop",
+          "nesting",
+          "nodes",
+          "numeric",
+          "op",
+          "operand",
+          "operator",
+          "operators",
+          "queries",
+          "switch",
+          "types"
+        ],
+        [
+          "abstract",
+          "block",
+          "boolean",
+          "case",
+          "compensating",
+          "decision",
+          "decisions",
+          "else",
+          "escape",
+          "extract",
+          "hatch",
+          "import",
+          "literal",
+          "loop",
+          "nesting",
+          "numeric",
+          "op",
+          "operand",
+          "operator",
+          "operators",
+          "queries",
+          "switch",
+          "types"
+        ],
+        [
+          "abstract",
+          "block",
+          "boolean",
+          "case",
+          "classes",
+          "compensating",
+          "decision",
+          "decisions",
+          "else",
+          "extract",
+          "import",
+          "literal",
+          "loop",
+          "nesting",
+          "numeric",
+          "op",
+          "operand",
+          "operator",
+          "operators",
+          "queries",
+          "switch",
+          "types"
+        ],
+        [
+          "abstract",
+          "boolean",
+          "case",
+          "catch",
+          "compensating",
+          "decision",
+          "decisions",
+          "else",
+          "escape",
+          "hatch",
+          "import",
+          "literal",
+          "loop",
+          "nesting",
+          "numeric",
+          "op",
+          "operand",
+          "operator",
+          "operators",
+          "queries",
+          "try"
+        ],
+        [
+          "block",
+          "boolean",
+          "case",
+          "compensating",
+          "decision",
+          "decisions",
+          "else",
+          "import",
+          "literal",
+          "loop",
+          "nesting",
+          "nodes",
+          "numeric",
+          "op",
+          "operand",
+          "operator",
+          "operators",
+          "queries",
+          "switch",
+          "types"
+        ],
+        [
+          "abstract",
+          "boolean",
+          "case",
+          "compensating",
+          "decision",
+          "decisions",
+          "else",
+          "escape",
+          "hatch",
+          "import",
+          "literal",
+          "loop",
+          "nesting",
+          "numeric",
+          "op",
+          "operand",
+          "operator",
+          "operators",
+          "queries"
+        ],
+        [
+          "boolean",
+          "case",
+          "compensating",
+          "decision",
+          "decisions",
+          "else",
+          "extract",
+          "import",
+          "literal",
+          "loop",
+          "nesting",
+          "numeric",
+          "op",
+          "operand",
+          "operator",
+          "operators",
+          "queries",
+          "switch",
+          "types"
+        ],
+        [
+          "abstract",
+          "boolean",
+          "catch",
+          "compensating",
+          "decision",
+          "decisions",
+          "else",
+          "hatch",
+          "nesting",
+          "op",
+          "operators",
+          "queries",
+          "superclasses",
+          "try"
+        ],
+        [
+          "annotation",
+          "block",
+          "callable",
+          "compensating",
+          "content",
+          "decision",
+          "decisions",
+          "nesting",
+          "node",
+          "nodes",
+          "numeric",
+          "op",
+          "type",
+          "types"
+        ],
+        [
+          "abstract",
+          "boolean",
+          "case",
+          "classes",
+          "compensating",
+          "decision",
+          "decisions",
+          "else",
+          "nesting",
+          "op",
+          "operators",
+          "queries",
+          "switch"
+        ],
+        [
+          "annotation",
+          "callable",
+          "compensating",
+          "decision",
+          "decisions",
+          "nesting",
+          "nodes",
+          "op",
+          "text",
+          "type",
+          "types"
+        ],
+        [
+          "callable",
+          "compensating",
+          "content",
+          "decision",
+          "decisions",
+          "nesting",
+          "nodes",
+          "op",
+          "scope",
+          "type",
+          "types"
+        ],
+        [
+          "annotation",
+          "compensating",
+          "decision",
+          "decisions",
+          "literal",
+          "nesting",
+          "nodes",
+          "op",
+          "text",
+          "type"
+        ],
+        [
+          "abstract",
+          "boolean",
+          "catch",
+          "else",
+          "hatch",
+          "queries",
+          "superclasses",
+          "try"
+        ],
+        [
+          "body",
+          "compensating",
+          "decision",
+          "decisions",
+          "nesting",
+          "op",
+          "operators",
+          "types"
+        ],
+        [
+          "call",
+          "callee",
+          "callees",
+          "fn",
+          "params",
+          "stringly",
+          "trivial",
+          "typed"
+        ],
+        [
+          "callable",
+          "content",
+          "node",
+          "nodes",
+          "text",
+          "types"
+        ],
+        [
+          "callee",
+          "callees",
+          "params",
+          "stringly",
+          "trivial",
+          "typed"
+        ],
+        [
+          "abstract",
+          "fn",
+          "mutators",
+          "params",
+          "require"
+        ],
+        [
+          "abstract",
+          "catch",
+          "superclasses",
+          "try"
+        ],
+        [
+          "add",
+          "cmd",
+          "parser",
+          "subparsers"
+        ],
+        [
+          "annotation",
+          "content",
+          "text",
+          "type"
+        ],
+        [
+          "config",
+          "rule",
+          "run",
+          "slop"
+        ],
+        [
+          "fn",
+          "hidden",
+          "mutators",
+          "require"
+        ],
+        [
+          "content",
+          "node",
+          "nodes"
+        ],
+        [
+          "fn",
+          "mutators",
+          "require"
+        ],
+        [
+          "call",
+          "params"
+        ],
+        [
+          "callable",
+          "scope"
+        ],
+        [
+          "hidden",
+          "mutators"
+        ]
+      ],
+      "pathological": [
+        [
+          "abstract",
+          "boolean",
+          "case",
+          "catch",
+          "classes",
+          "compensating",
+          "decision",
+          "decisions",
+          "else",
+          "escape",
+          "fn",
+          "hatch",
+          "import",
+          "literal",
+          "loop",
+          "nesting",
+          "numeric",
+          "op",
+          "operand",
+          "operator",
+          "operators",
+          "queries",
+          "superclasses",
+          "switch",
+          "try"
+        ],
+        [
+          "block",
+          "body",
+          "boolean",
+          "callable",
+          "case",
+          "compensating",
+          "content",
+          "decision",
+          "decisions",
+          "else",
+          "extract",
+          "import",
+          "literal",
+          "loop",
+          "nesting",
+          "nodes",
+          "numeric",
+          "op",
+          "operand",
+          "operator",
+          "operators",
+          "queries",
+          "switch",
+          "type",
+          "types"
+        ],
+        [
+          "annotation",
+          "block",
+          "callable",
+          "compensating",
+          "content",
+          "decision",
+          "decisions",
+          "nesting",
+          "node",
+          "nodes",
+          "numeric",
+          "op",
+          "type",
+          "types"
+        ],
+        [
+          "callable",
+          "compensating",
+          "content",
+          "decision",
+          "decisions",
+          "nesting",
+          "nodes",
+          "op",
+          "scope",
+          "type",
+          "types"
+        ],
+        [
+          "call",
+          "callee",
+          "callees",
+          "fn",
+          "params",
+          "stringly",
+          "trivial",
+          "typed"
+        ],
+        [
+          "callable",
+          "content",
+          "node",
+          "nodes",
+          "text",
+          "types"
+        ],
+        [
+          "abstract",
+          "fn",
+          "mutators",
+          "params",
+          "require"
+        ],
+        [
+          "add",
+          "cmd",
+          "parser",
+          "subparsers"
+        ],
+        [
+          "annotation",
+          "content",
+          "text",
+          "type"
+        ],
+        [
+          "config",
+          "rule",
+          "run",
+          "slop"
+        ],
+        [
+          "fn",
+          "hidden",
+          "mutators",
+          "require"
+        ],
+        [
+          "content",
+          "node",
+          "nodes"
+        ],
+        [
+          "fn",
+          "mutators",
+          "require"
+        ]
+      ],
+      "conventional": [
+        {
+          "packet": [
+            "abstract",
+            "annotation",
+            "block",
+            "body",
+            "boolean",
+            "callable",
+            "case",
+            "classes",
+            "compensating",
+            "decision",
+            "decisions",
+            "else",
+            "escape",
+            "extract",
+            "hatch",
+            "import",
+            "literal",
+            "loop",
+            "nesting",
+            "nodes",
+            "numeric",
+            "op",
+            "operand",
+            "operator",
+            "operators",
+            "queries",
+            "switch",
+            "try",
+            "type",
+            "types"
+          ],
+          "class": "cpp.Cpp"
+        },
+        {
+          "packet": [
+            "abstract",
+            "block",
+            "body",
+            "boolean",
+            "case",
+            "classes",
+            "compensating",
+            "decision",
+            "decisions",
+            "else",
+            "escape",
+            "extract",
+            "hatch",
+            "import",
+            "literal",
+            "loop",
+            "nesting",
+            "numeric",
+            "op",
+            "operand",
+            "operator",
+            "operators",
+            "queries",
+            "switch",
+            "try",
+            "types"
+          ],
+          "class": "cpp.Cpp"
+        },
+        {
+          "packet": [
+            "abstract",
+            "block",
+            "boolean",
+            "case",
+            "catch",
+            "classes",
+            "compensating",
+            "decision",
+            "decisions",
+            "else",
+            "escape",
+            "extract",
+            "hatch",
+            "import",
+            "literal",
+            "loop",
+            "nesting",
+            "numeric",
+            "op",
+            "operand",
+            "operator",
+            "operators",
+            "queries",
+            "switch",
+            "try",
+            "types"
+          ],
+          "class": "cpp.Cpp"
+        },
+        {
+          "packet": [
+            "abstract",
+            "annotation",
+            "block",
+            "boolean",
+            "case",
+            "compensating",
+            "decision",
+            "decisions",
+            "else",
+            "escape",
+            "extract",
+            "hatch",
+            "import",
+            "literal",
+            "loop",
+            "nesting",
+            "numeric",
+            "op",
+            "operand",
+            "operator",
+            "operators",
+            "queries",
+            "switch",
+            "types"
+          ],
+          "class": "base.Language"
+        },
+        {
+          "packet": [
+            "abstract",
+            "block",
+            "boolean",
+            "case",
+            "classes",
+            "compensating",
+            "decision",
+            "decisions",
+            "else",
+            "escape",
+            "extract",
+            "hatch",
+            "import",
+            "literal",
+            "loop",
+            "nesting",
+            "numeric",
+            "op",
+            "operand",
+            "operator",
+            "operators",
+            "queries",
+            "switch",
+            "types"
+          ],
+          "class": "cpp.Cpp"
+        },
+        {
+          "packet": [
+            "abstract",
+            "block",
+            "boolean",
+            "case",
+            "compensating",
+            "decision",
+            "decisions",
+            "else",
+            "escape",
+            "extract",
+            "hatch",
+            "import",
+            "literal",
+            "loop",
+            "nesting",
+            "nodes",
+            "numeric",
+            "op",
+            "operand",
+            "operator",
+            "operators",
+            "queries",
+            "switch",
+            "types"
+          ],
+          "class": "base.Language"
+        },
+        {
+          "packet": [
+            "abstract",
+            "block",
+            "boolean",
+            "case",
+            "compensating",
+            "decision",
+            "decisions",
+            "else",
+            "escape",
+            "extract",
+            "hatch",
+            "import",
+            "literal",
+            "loop",
+            "nesting",
+            "numeric",
+            "op",
+            "operand",
+            "operator",
+            "operators",
+            "queries",
+            "switch",
+            "types"
+          ],
+          "class": "base.Language"
+        },
+        {
+          "packet": [
+            "abstract",
+            "block",
+            "boolean",
+            "case",
+            "classes",
+            "compensating",
+            "decision",
+            "decisions",
+            "else",
+            "extract",
+            "import",
+            "literal",
+            "loop",
+            "nesting",
+            "numeric",
+            "op",
+            "operand",
+            "operator",
+            "operators",
+            "queries",
+            "switch",
+            "types"
+          ],
+          "class": "cpp.Cpp"
+        },
+        {
+          "packet": [
+            "abstract",
+            "boolean",
+            "case",
+            "catch",
+            "compensating",
+            "decision",
+            "decisions",
+            "else",
+            "escape",
+            "hatch",
+            "import",
+            "literal",
+            "loop",
+            "nesting",
+            "numeric",
+            "op",
+            "operand",
+            "operator",
+            "operators",
+            "queries",
+            "try"
+          ],
+          "class": "base.Language"
+        },
+        {
+          "packet": [
+            "block",
+            "boolean",
+            "case",
+            "compensating",
+            "decision",
+            "decisions",
+            "else",
+            "import",
+            "literal",
+            "loop",
+            "nesting",
+            "nodes",
+            "numeric",
+            "op",
+            "operand",
+            "operator",
+            "operators",
+            "queries",
+            "switch",
+            "types"
+          ],
+          "class": "base.Language"
+        },
+        {
+          "packet": [
+            "abstract",
+            "boolean",
+            "case",
+            "compensating",
+            "decision",
+            "decisions",
+            "else",
+            "escape",
+            "hatch",
+            "import",
+            "literal",
+            "loop",
+            "nesting",
+            "numeric",
+            "op",
+            "operand",
+            "operator",
+            "operators",
+            "queries"
+          ],
+          "class": "base.Language"
+        },
+        {
+          "packet": [
+            "boolean",
+            "case",
+            "compensating",
+            "decision",
+            "decisions",
+            "else",
+            "extract",
+            "import",
+            "literal",
+            "loop",
+            "nesting",
+            "numeric",
+            "op",
+            "operand",
+            "operator",
+            "operators",
+            "queries",
+            "switch",
+            "types"
+          ],
+          "class": "base.Language"
+        },
+        {
+          "packet": [
+            "abstract",
+            "boolean",
+            "catch",
+            "compensating",
+            "decision",
+            "decisions",
+            "else",
+            "hatch",
+            "nesting",
+            "op",
+            "operators",
+            "queries",
+            "superclasses",
+            "try"
+          ],
+          "class": "base.Language"
+        },
+        {
+          "packet": [
+            "abstract",
+            "boolean",
+            "case",
+            "classes",
+            "compensating",
+            "decision",
+            "decisions",
+            "else",
+            "nesting",
+            "op",
+            "operators",
+            "queries",
+            "switch"
+          ],
+          "class": "cpp.Cpp"
+        },
+        {
+          "packet": [
+            "annotation",
+            "callable",
+            "compensating",
+            "decision",
+            "decisions",
+            "nesting",
+            "nodes",
+            "op",
+            "text",
+            "type",
+            "types"
+          ],
+          "class": "base.Language"
+        },
+        {
+          "packet": [
+            "annotation",
+            "compensating",
+            "decision",
+            "decisions",
+            "literal",
+            "nesting",
+            "nodes",
+            "op",
+            "text",
+            "type"
+          ],
+          "class": "base.Language"
+        },
+        {
+          "packet": [
+            "abstract",
+            "boolean",
+            "catch",
+            "else",
+            "hatch",
+            "queries",
+            "superclasses",
+            "try"
+          ],
+          "class": "base.Language"
+        },
+        {
+          "packet": [
+            "body",
+            "compensating",
+            "decision",
+            "decisions",
+            "nesting",
+            "op",
+            "operators",
+            "types"
+          ],
+          "class": "base.Language"
+        },
+        {
+          "packet": [
+            "callee",
+            "callees",
+            "params",
+            "stringly",
+            "trivial",
+            "typed"
+          ],
+          "class": "base.Language"
+        },
+        {
+          "packet": [
+            "abstract",
+            "catch",
+            "superclasses",
+            "try"
+          ],
+          "class": "base.Language"
+        },
+        {
+          "packet": [
+            "call",
+            "params"
+          ],
+          "class": "base.Language"
+        },
+        {
+          "packet": [
+            "callable",
+            "scope"
+          ],
+          "class": "base.Language"
+        },
+        {
+          "packet": [
+            "hidden",
+            "mutators"
+          ],
+          "class": "base.Language"
+        }
+      ]
+    }
+  },
+  "violations_by_scope": {
+    "file": [
+      {
+        "rule": "lexical.stutter",
+        "key": "cli/check.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "cli/doctor.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "cli/init.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "cli/install/cmd.py",
+        "count": 3
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "cli/install/hook.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "cli/install/skill.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "cli/rules.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "cli/schema.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "config/loader.py",
+        "count": 3
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "config/models.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "language/grammars/c.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "language/grammars/cpp.py",
+        "count": 2
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "language/grammars/csharp.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "language/grammars/go.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "language/grammars/javascript.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "language/grammars/julia.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "language/grammars/python.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "language/grammars/ruby.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "language/grammars/rust.py",
+        "count": 2
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "language/grammars/typescript.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "lexicon/affix.py",
+        "count": 5
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "lexicon/diagnostics.py",
+        "count": 3
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "lexicon/rules/stutter.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "lexicon/view.py",
+        "count": 3
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "linter/dispatch.py",
+        "count": 7
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "preflight.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structure/git.py",
+        "count": 4
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structure/hidden_mutators.py",
+        "count": 2
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structure/hotspots.py",
+        "count": 3
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structure/imports.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structure/orphans.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structure/rules/class_metrics.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structure/rules/clone_density.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structure/rules/escape_hatches.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structure/rules/god_module.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structure/rules/hidden_mutators.py",
+        "count": 2
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structure/rules/magic_literals.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structure/view.py",
+        "count": 8
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "tree/tree.py",
+        "count": 5
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "language/base.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "language/grammars/c.py",
+        "count": 2
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "language/grammars/cpp.py",
+        "count": 3
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "language/grammars/csharp.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "language/grammars/go.py",
+        "count": 2
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "language/grammars/java.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "language/grammars/javascript.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "language/grammars/julia.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "language/grammars/python.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "language/grammars/rust.py",
+        "count": 2
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "language/grammars/typescript.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "lexicon/affix.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "lexicon/diagnostics.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "lexicon/filters.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structure/git.py",
+        "count": 2
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structure/hotspots.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structure/imports.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structure/sentinels.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structure/view.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.cowards",
+        "key": "lexicon/affix.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.cowards",
+        "key": "linter/linter.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.hammers",
+        "key": "cli/common.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.hammers",
+        "key": "language/ast/wrapper.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.hammers",
+        "key": "lexicon/affix.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.tautology",
+        "key": "structure/imports.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.sprawl",
+        "key": "language/base.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.sprawl",
+        "key": "structure/rules/class_metrics.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.sprawl",
+        "key": "structure/rules/combinatorial.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.sprawl",
+        "key": "structure/rules/redundancy.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.sprawl",
+        "key": "structure/rules/sentinels.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.sprawl",
+        "key": "structure/view.py",
+        "count": 15
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "cli/check.py",
+        "count": 2
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "cli/color.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "cli/install/cmd.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "config/loader.py",
+        "count": 2
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "language/base.py",
+        "count": 2
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "language/grammars/c.py",
+        "count": 4
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "language/grammars/javascript.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "lexicon/diagnostics.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "lexicon/rules/confusion.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "lexicon/rules/cowards.py",
+        "count": 2
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "lexicon/rules/sprawl.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "lexicon/rules/stutter.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "lexicon/view.py",
+        "count": 2
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "linter/dispatch.py",
+        "count": 2
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "linter/format.py",
+        "count": 3
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "linter/linter.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "structure/annotations.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "structure/git.py",
+        "count": 2
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "structure/imports.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "structure/orphans.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "structure/rules/architecture.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "structure/rules/class_metrics.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "structure/rules/clone_density.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "structure/rules/halstead.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "structure/view.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "cli/check.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "cli/install/cmd.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "config/loader.py",
+        "count": 2
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "language/base.py",
+        "count": 2
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "language/grammars/c.py",
+        "count": 3
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "language/grammars/javascript.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "lexicon/rules/confusion.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "lexicon/rules/cowards.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "lexicon/rules/sprawl.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "linter/dispatch.py",
+        "count": 2
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "linter/linter.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "structure/git.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "structure/imports.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "structure/orphans.py",
+        "count": 1
+      }
+    ],
+    "package": [
+      {
+        "rule": "lexical.stutter",
+        "key": ".",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "cli",
+        "count": 5
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "cli/install",
+        "count": 5
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "config",
+        "count": 4
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "language/grammars",
+        "count": 12
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "lexicon",
+        "count": 11
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "lexicon/rules",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "linter",
+        "count": 7
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structure",
+        "count": 19
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structure/rules",
+        "count": 7
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "tree",
+        "count": 5
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "language",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "language/grammars",
+        "count": 15
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "lexicon",
+        "count": 3
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structure",
+        "count": 6
+      },
+      {
+        "rule": "lexical.cowards",
+        "key": "lexicon",
+        "count": 1
+      },
+      {
+        "rule": "lexical.cowards",
+        "key": "linter",
+        "count": 1
+      },
+      {
+        "rule": "lexical.hammers",
+        "key": "cli",
+        "count": 1
+      },
+      {
+        "rule": "lexical.hammers",
+        "key": "language/ast",
+        "count": 1
+      },
+      {
+        "rule": "lexical.hammers",
+        "key": "lexicon",
+        "count": 1
+      },
+      {
+        "rule": "lexical.tautology",
+        "key": "structure",
+        "count": 1
+      },
+      {
+        "rule": "lexical.sprawl",
+        "key": "language",
+        "count": 1
+      },
+      {
+        "rule": "lexical.sprawl",
+        "key": "structure",
+        "count": 15
+      },
+      {
+        "rule": "lexical.sprawl",
+        "key": "structure/rules",
+        "count": 4
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "cli",
+        "count": 3
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "cli/install",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "config",
+        "count": 2
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "language",
+        "count": 2
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "language/grammars",
+        "count": 5
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "lexicon",
+        "count": 3
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "lexicon/rules",
+        "count": 5
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "linter",
+        "count": 6
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "structure",
+        "count": 6
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "structure/rules",
+        "count": 4
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "cli",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "cli/install",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "config",
+        "count": 2
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "language",
+        "count": 2
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "language/grammars",
+        "count": 4
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "lexicon/rules",
+        "count": 3
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "linter",
+        "count": 3
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "structure",
+        "count": 3
+      }
+    ],
+    "root": [
+      {
+        "rule": "lexical.stutter",
+        "key": "<root>",
+        "count": 77
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "<root>",
+        "count": 25
+      },
+      {
+        "rule": "lexical.cowards",
+        "key": "<root>",
+        "count": 2
+      },
+      {
+        "rule": "lexical.hammers",
+        "key": "<root>",
+        "count": 3
+      },
+      {
+        "rule": "lexical.tautology",
+        "key": "<root>",
+        "count": 1
+      },
+      {
+        "rule": "lexical.sprawl",
+        "key": "<root>",
+        "count": 20
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "<root>",
+        "count": 37
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "<root>",
+        "count": 19
+      }
+    ],
+    "callable": [
+      {
+        "rule": "lexical.stutter",
+        "key": "cli/check.py::add_parser",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "cli/doctor.py::add_parser",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "cli/init.py::add_parser",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "cli/install/cmd.py::add_parser",
+        "count": 3
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "cli/install/hook.py::add_parser",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "cli/install/skill.py::add_parser",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "cli/rules.py::add_parser",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "cli/schema.py::add_parser",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "config/loader.py::DEFAULT_RULE_CONFIGS",
+        "count": 2
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "config/loader.py::RuleConfig",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "config/models.py::RuleConfig",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "language/grammars/c.py::extract_name",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "language/grammars/cpp.py::extract_name",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "language/grammars/cpp.py::trivial_callees",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "language/grammars/csharp.py::SWITCH_BODY",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "language/grammars/go.py::extract_name",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "language/grammars/javascript.py::SWITCH_BODY",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "language/grammars/julia.py::extract_name",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "language/grammars/python.py::resolve_packages",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "language/grammars/ruby.py::extract_name",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "language/grammars/rust.py::impl_target_by_span",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "language/grammars/rust.py::walk_impls",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "language/grammars/typescript.py::SWITCH_BODY",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "lexicon/affix.py::cluster_patterns",
+        "count": 3
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "lexicon/affix.py::items_at_scope",
+        "count": 2
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "lexicon/diagnostics.py::DistributionSummary",
+        "count": 2
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "lexicon/diagnostics.py::as_dict",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "lexicon/rules/stutter.py::split_tokens",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "lexicon/view.py::first_param",
+        "count": 3
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "linter/dispatch.py::RULES_BY_CATEGORY",
+        "count": 2
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "linter/dispatch.py::filter_category",
+        "count": 2
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "linter/dispatch.py::filter_rule",
+        "count": 3
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "preflight.py::required_binaries",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structure/git.py::GitLogResult",
+        "count": 2
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structure/git.py::GitNumstatResult",
+        "count": 2
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structure/hidden_mutators.py::compute_hidden_mutators",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structure/hidden_mutators.py::hidden_mutators",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structure/hotspots.py::HotspotsComputeResult",
+        "count": 3
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structure/imports.py::DependencyGraph",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structure/orphans.py::OrphansComputeResult",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structure/rules/class_metrics.py::inheritance_depth",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structure/rules/clone_density.py::run_clone_density",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structure/rules/escape_hatches.py::run_escape_hatches",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structure/rules/god_module.py::run_god_module",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structure/rules/hidden_mutators.py::hidden_mutators",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structure/rules/hidden_mutators.py::run_hidden_mutators",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structure/rules/magic_literals.py::run_magic_literals",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structure/view.py::build_dependency_graph",
+        "count": 2
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structure/view.py::callees_of",
+        "count": 2
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structure/view.py::compute_hidden_mutators",
+        "count": 2
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structure/view.py::hidden_mutators",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structure/view.py::iter_cases",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "tree/tree.py::CallableKind",
+        "count": 4
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "tree/tree.py::parse_file",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "language/base.py::is_escape_hatch_text",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "language/grammars/c.py::_c_walk_pointer_mutations",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "language/grammars/c.py::is_escape_hatch_text",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "language/grammars/cpp.py::_cpp_walk_pointer_mutations",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "language/grammars/cpp.py::_cpp_walk_reference_mutations",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "language/grammars/cpp.py::is_escape_hatch_text",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "language/grammars/csharp.py::is_escape_hatch_text",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "language/grammars/go.py::_go_receiver_type_name",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "language/grammars/go.py::is_escape_hatch_text",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "language/grammars/java.py::is_escape_hatch_text",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "language/grammars/javascript.py::_ts_parameter_names_with_annotation",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "language/grammars/julia.py::is_escape_hatch_text",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "language/grammars/python.py::is_escape_hatch_text",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "language/grammars/rust.py::_rust_target_type_name",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "language/grammars/rust.py::is_escape_hatch_text",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "language/grammars/typescript.py::is_escape_hatch_text",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "lexicon/affix.py::cluster_patterns_by_alphabet",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "lexicon/diagnostics.py::count_violations_by_scope",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "lexicon/filters.py::split_packets_by_class_ownership",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structure/git.py::_parse_numstat_log_output",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structure/git.py::git_log_file_changes",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structure/hotspots.py::_scope_commits_to_prefix",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structure/imports.py::_module_names_for_path",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structure/sentinels.py::_enrich_with_call_sites",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structure/view.py::_npath_of_flat_body",
+        "count": 1
+      },
+      {
+        "rule": "lexical.cowards",
+        "key": "lexicon/affix.py::token_edit_distance_1",
+        "count": 1
+      },
+      {
+        "rule": "lexical.cowards",
+        "key": "linter/linter.py::_execute_rule_v2",
+        "count": 1
+      },
+      {
+        "rule": "lexical.hammers",
+        "key": "cli/common.py::common",
+        "count": 1
+      },
+      {
+        "rule": "lexical.hammers",
+        "key": "language/ast/wrapper.py::Wrapper",
+        "count": 1
+      },
+      {
+        "rule": "lexical.hammers",
+        "key": "lexicon/affix.py::SprawlData",
+        "count": 1
+      },
+      {
+        "rule": "lexical.tautology",
+        "key": "structure/imports.py::query_str",
+        "count": 1
+      },
+      {
+        "rule": "lexical.sprawl",
+        "key": "language/base.py::concept[2\u00d72]",
+        "count": 1
+      },
+      {
+        "rule": "lexical.sprawl",
+        "key": "structure/rules/class_metrics.py::concept[4\u00d72]",
+        "count": 1
+      },
+      {
+        "rule": "lexical.sprawl",
+        "key": "structure/rules/combinatorial.py::concept[5\u00d72]",
+        "count": 1
+      },
+      {
+        "rule": "lexical.sprawl",
+        "key": "structure/rules/redundancy.py::concept[3\u00d72]",
+        "count": 1
+      },
+      {
+        "rule": "lexical.sprawl",
+        "key": "structure/rules/sentinels.py::concept[2\u00d72]",
+        "count": 1
+      },
+      {
+        "rule": "lexical.sprawl",
+        "key": "structure/view.py::concept[2\u00d72]",
+        "count": 2
+      },
+      {
+        "rule": "lexical.sprawl",
+        "key": "structure/view.py::concept[4\u00d72]",
+        "count": 2
+      },
+      {
+        "rule": "lexical.sprawl",
+        "key": "structure/view.py::orphans",
+        "count": 8
+      },
+      {
+        "rule": "lexical.sprawl",
+        "key": "structure/view.py::packages",
+        "count": 3
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "cli/check.py::args",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "cli/check.py::subparsers",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "cli/color.py::text",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "cli/install/cmd.py::subparsers",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "config/loader.py::raw",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "config/loader.py::raw_rules",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "language/base.py::fn_node",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "language/base.py::parse_result",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "language/grammars/c.py::body",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "language/grammars/c.py::call_node",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "language/grammars/c.py::fn_node",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "language/grammars/c.py::text",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "language/grammars/javascript.py::fn_node",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "lexicon/diagnostics.py::values",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "lexicon/rules/confusion.py::lexicon",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "lexicon/rules/cowards.py::lexicon",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "lexicon/rules/cowards.py::name",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "lexicon/rules/sprawl.py::lexicon",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "lexicon/rules/stutter.py::root_node",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "lexicon/view.py::exclude",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "lexicon/view.py::scope",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "linter/dispatch.py::rule",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "linter/dispatch.py::violation",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "linter/format.py::result",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "linter/format.py::rule_name",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "linter/format.py::rule_pairs",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "linter/linter.py::config",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "structure/annotations.py::structure",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "structure/git.py::cwd",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "structure/git.py::output",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "structure/imports.py::parses",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "structure/orphans.py::text",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "structure/rules/architecture.py::structure",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "structure/rules/class_metrics.py::structure",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "structure/rules/clone_density.py::structure",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "structure/rules/halstead.py::structure",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "structure/view.py::class_scope",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "cli/check.py::subparsers",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "cli/install/cmd.py::subparsers",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "config/loader.py::raw",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "config/loader.py::raw_rules",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "language/base.py::fn_node",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "language/base.py::parse_result",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "language/grammars/c.py::call_node",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "language/grammars/c.py::fn_node",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "language/grammars/c.py::text",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "language/grammars/javascript.py::fn_node",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "lexicon/rules/confusion.py::lexicon",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "lexicon/rules/cowards.py::name",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "lexicon/rules/sprawl.py::lexicon",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "linter/dispatch.py::rule",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "linter/dispatch.py::violation",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "linter/linter.py::config",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "structure/git.py::cwd",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "structure/imports.py::parses",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "structure/orphans.py::text",
+        "count": 1
+      }
+    ]
+  }
+}

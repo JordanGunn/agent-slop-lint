@@ -23,7 +23,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, ClassVar
 
-from slop._ast.treesitter import load_language
+from slop.language.treesitter import load_language
 
 if TYPE_CHECKING:
     from slop.tree.records import Parameter
@@ -296,7 +296,7 @@ class Language(ABC):
     # Per-grammar detection of parameter mutations — functions that
     # silently modify a passed-in collection / pointer / reference.
     # Consumed by ``Structure.hidden_mutators`` which feeds
-    # ``structural.types.hidden_mutators``.
+    # ``types.hidden_mutators``.
 
     @classmethod
     def hidden_mutators(
@@ -325,7 +325,7 @@ class Language(ABC):
     # parameters with sentinel names ("status", "mode", "kind", …)
     # that should be modelled as Literal[] or Enum. Consumed by
     # ``Structure.sentinel_parameters`` which feeds
-    # ``structural.types.sentinels``.
+    # ``types.sentinels``.
 
     @classmethod
     def stringly_typed_params(
@@ -349,7 +349,7 @@ class Language(ABC):
     # Tree-sitter queries that capture type-annotation text + a per-
     # language predicate identifying escape-hatch type names. Consumed
     # by ``Structure.type_annotations`` which feeds
-    # ``structural.types.escape_hatches`` (fraction of annotations
+    # ``types.escape_hatches`` (fraction of annotations
     # using the language's universal escape-hatch type).
 
     @classmethod
@@ -380,7 +380,7 @@ class Language(ABC):
     # Per-language identification of function calls — the node type
     # representing a call expression plus a per-language extractor for
     # the callee name. Consumed by ``Structure.callees_of`` which feeds
-    # ``structural.redundancy`` (sibling-callee overlap detection) and
+    # ``redundancy`` (sibling-callee overlap detection) and
     # any future caller-graph analysis.
 
     @classmethod
@@ -488,7 +488,7 @@ class Language(ABC):
     # ``include_local`` from ``include_system`` or ``require_relative``
     # from ``require``.
     #
-    # See ``slop.structure._imports`` for query execution and module
+    # See ``slop.structure.imports`` for query execution and module
     # resolution. Default is empty — a grammar without an override
     # contributes no import edges to the dependency graph.
 
@@ -540,7 +540,7 @@ class Language(ABC):
         Per-language: Python's ``integer`` / ``float``, Go's
         ``int_literal`` / ``float_literal``, Java's
         ``decimal_integer_literal`` family, etc. Consumed by the
-        ``structural.magic_literals`` rule to find embedded numeric
+        ``magic_literals`` rule to find embedded numeric
         constants inside function bodies. Default empty — grammars
         that don't override contribute 0 magic-literal findings.
         """
@@ -557,7 +557,7 @@ class Language(ABC):
         source text, which is what this set matches against.
 
         Consumed by Halstead vocabulary computations
-        (``structural.difficulty.volume`` and ``.density``). Default
+        (``difficulty.volume`` and ``.density``). Default
         empty — grammars without an override contribute 0 to the
         operator count.
         """

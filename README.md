@@ -15,7 +15,7 @@ $ slop lint
 
 slop 1.0.0 — scanning .
 
-structural.complexity
+complexity
   cyclomatic
     ✗ src/pipeline/ingest.py:44 process_batch — CCX 18 exceeds 10
     ✗ src/pipeline/ingest.py:112 _normalize_rows — CCX 14 exceeds 10
@@ -23,12 +23,12 @@ structural.complexity
     ✗ src/pipeline/ingest.py:44 process_batch — CogC 26 exceeds 15
   3 violations, 142 checked
 
-structural.hotspots (14 days ago, 87 commits)
+hotspots (14 days ago, 87 commits)
   ✗ src/pipeline/transformation.py — CCX=45, growth +367 LOC
   ✗ src/lifecycle/tasks/write.py — CCX=41, growth +556 LOC
   2 violations
 
-structural.duplication
+duplication
   ⚠ . — clone density 7.2% exceeds threshold 5.0% (12 cloned functions across 4 clusters)
   ⚠ src/api/handlers/users.py:88 update_user — function 'update_user' is a Type-2 clone (fingerprint a3b1c4d2f001) — also at: src/api/handlers/orgs.py:74, src/api/handlers/teams.py:81
   2 violations
@@ -62,10 +62,9 @@ slop shells out to `rg`, `fd`, and `git`. Install via your system package manage
 
 ## Rules
 
-slop ships 25 rules across three suites:
+slop ships 25 rules across two families:
 
-- **`structural.*`** — control-flow complexity, CK class metrics, hotspots, package distance, dependency cycles, duplication, god modules, type-discipline rules.
-- **`information.*`** — Halstead volume and difficulty, magic literals, section-divider comments.
+- **Code shape** — every rule name carries an explicit scope prefix: `function.complexity.*` (cyclomatic, cognitive, NPath), `class.complexity.*` (per-class CK aggregations: WMC etc), `class.coupling`, `class.inheritance.*`, `function.difficulty.*` (Halstead V and D), `function.types.hidden_mutators`, `function.magic_literals`, `module.god_module`, `module.types.escape_hatches`, `parameter.types.sentinels`, `package.rigidity` / `package.uselessness` (Martin's distance-from-main-sequence). Cluster/whole-repo families (`lexical.*`, `hotspots`, `orphans`, `deps`, `redundancy`, `duplication`) are exempt from the scope prefix.
 - **`lexical.*`** — identifier verbosity, tersity, and stutter against the enclosing scope.
 
 The full rule index with default thresholds, citations, and per-rule pages lives in [`docs/rules/`](./docs/rules/README.md). For threshold tuning and the `default` / `lax` / `strict` profiles, see the [configuration reference](./docs/CONFIG.md).

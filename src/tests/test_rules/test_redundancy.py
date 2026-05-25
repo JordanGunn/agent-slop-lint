@@ -1,10 +1,11 @@
-"""Tests for ``structural.redundancy`` (sibling-callee overlap)."""
+"""Tests for ``redundancy`` (sibling-callee overlap)."""
 from __future__ import annotations
 
 from pathlib import Path
 
-from slop.config.models import RuleConfig, SlopConfig
-from slop.structure.rules.redundancy import run_redundancy
+from slop.linter.rule_config import RuleConfig
+from slop.config import Config
+from slop.structure.metrics.redundancy import run_redundancy
 from slop.tree.tree import Tree
 
 
@@ -20,8 +21,8 @@ def _rc(**overrides) -> RuleConfig:
     return RuleConfig(enabled=True, severity="warning", params=params)
 
 
-def _sc(tmp_path: Path) -> SlopConfig:
-    return SlopConfig(root=str(tmp_path))
+def _sc(tmp_path: Path) -> Config:
+    return Config(root=str(tmp_path))
 
 
 _HIGH_OVERLAP = """\
@@ -158,7 +159,7 @@ def test_rule_fail_high_overlap(tmp_path: Path):
     assert result.status == "fail"
     assert len(result.violations) >= 1
     v = result.violations[0]
-    assert v.rule == "structural.redundancy"
+    assert v.rule == "redundancy"
     assert v.severity == "warning"
 
 

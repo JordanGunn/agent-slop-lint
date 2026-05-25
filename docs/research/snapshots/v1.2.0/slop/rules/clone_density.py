@@ -20,7 +20,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop._structural.clone_density import clone_density_kernel
+from slop.structural.clone_density import clone_density_kernel
 from slop.models import RuleConfig, RuleResult, SlopConfig, Violation
 
 DEFAULT_THRESHOLD = 0.05

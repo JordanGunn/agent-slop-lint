@@ -1,7 +1,7 @@
 """Hotspots rule — wraps Structure.hotspots (view-native).
 
 Rule:
-  structural.hotspots  — fail when any file lands in a forbidden quadrant
+  hotspots  — fail when any file lands in a forbidden quadrant
                         (default: ``hotspot``) over the configured git
                         log window.
 
@@ -14,7 +14,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop.config.models import RuleConfig, SlopConfig
+from slop.linter.rule_config import RuleConfig
+from slop.config import Config
 from slop.linter.slop import Slop
 from slop.linter.types import RuleResult
 from slop.structure.view import Structure
@@ -23,7 +24,7 @@ from slop.structure.view import Structure
 def run_churn_weighted(
     structure: Structure,
     rule_config: RuleConfig,
-    slop_config: SlopConfig,
+    slop_config: Config,
 ) -> RuleResult:
     """Threshold-check growth-weighted complexity hotspots."""
     since = rule_config.params.get("since", "14 days ago")
@@ -39,7 +40,7 @@ def run_churn_weighted(
         if fh.quadrant not in fail_on_quadrant:
             continue
         violations.append(Slop(
-            rule="structural.hotspots",
+            rule="hotspots",
             file=fh.file,
             line=None,
             symbol=None,
@@ -60,7 +61,7 @@ def run_churn_weighted(
         ))
 
     return RuleResult(
-        rule="structural.hotspots",
+        rule="hotspots",
         status="fail" if violations else "pass",
         violations=violations,
         summary={

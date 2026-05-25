@@ -19,9 +19,10 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
-from slop._ast.treesitter import detect_language, parse_file
-from slop._fs.find import find_kernel
 from slop.language import Language
+from slop.language.treesitter import detect_language
+from slop.tree.find import find_kernel
+from slop.tree.parse import parse_file
 from slop.language.grammars import DEFAULT_GRAMMARS
 from slop.lexicon.view import Lexicon
 from slop.structure.view import Structure

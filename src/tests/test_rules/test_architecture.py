@@ -1,4 +1,4 @@
-"""Tests for ``structural.packages.rigidity`` and ``.uselessness`` (Martin 1994 D').
+"""Tests for ``packages.rigidity`` and ``.uselessness`` (Martin 1994 D').
 
 Verifies per-language abstractness classification via real Tree-built
 fixtures (no kernel stubs — those died with robert.py) plus zone-
@@ -9,14 +9,16 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop.config.models import RuleConfig, SlopConfig
+from slop.linter.rule_config import RuleConfig
+from slop.config import Config
 from slop.structure.records import PackageMetrics
-from slop.structure.rules.architecture import run_rigidity, run_uselessness
+from slop.structure.metrics.rigidity import run_rigidity
+from slop.structure.metrics.uselessness import run_uselessness
 from slop.tree.tree import Tree
 
 
 def _rc(threshold: float = 0.7, languages=None) -> RuleConfig:
-    params: dict = {"threshold": threshold}
+    params: dict = {"thresholds": {"package": threshold}}
     if languages is not None:
         params["languages"] = list(languages)
     return RuleConfig(enabled=True, severity="warning", params=params)
@@ -36,7 +38,7 @@ def _structure(root: Path):
 def test_rigidity_passes_when_clean(tmp_path: Path):
     (tmp_path / "main.py").write_text("def main():\n    pass\n")
     result = run_rigidity(
-        _structure(tmp_path), _rc(), SlopConfig(root=str(tmp_path)),
+        _structure(tmp_path), _rc(), Config(root=str(tmp_path)),
     )
     assert result.status == "pass"
 
@@ -44,7 +46,7 @@ def test_rigidity_passes_when_clean(tmp_path: Path):
 def test_uselessness_passes_when_clean(tmp_path: Path):
     (tmp_path / "main.py").write_text("def main():\n    pass\n")
     result = run_uselessness(
-        _structure(tmp_path), _rc(), SlopConfig(root=str(tmp_path)),
+        _structure(tmp_path), _rc(), Config(root=str(tmp_path)),
     )
     assert result.status == "pass"
 
@@ -81,7 +83,7 @@ def test_rigidity_fires_only_on_pain_zone(tmp_path: Path, monkeypatch):
         _stub_pkg("b.useless", zone="uselessness", distance=0.9),
         _stub_pkg("c.clean", zone="ok", distance=0.1),
     ])
-    result = run_rigidity(s, _rc(), SlopConfig(root=str(tmp_path)))
+    result = run_rigidity(s, _rc(), Config(root=str(tmp_path)))
     assert result.status == "fail"
     assert len(result.violations) == 1
     assert result.violations[0].file == "a.pain"
@@ -96,7 +98,7 @@ def test_uselessness_fires_only_on_uselessness_zone(tmp_path: Path, monkeypatch)
         _stub_pkg("b.useless", zone="uselessness", distance=0.9),
         _stub_pkg("c.clean", zone="ok", distance=0.1),
     ])
-    result = run_uselessness(s, _rc(), SlopConfig(root=str(tmp_path)))
+    result = run_uselessness(s, _rc(), Config(root=str(tmp_path)))
     assert result.status == "fail"
     assert len(result.violations) == 1
     assert result.violations[0].file == "b.useless"
@@ -110,7 +112,7 @@ def test_rigidity_respects_threshold_within_pain_zone(tmp_path: Path, monkeypatc
         _stub_pkg("borderline.pain", zone="pain", distance=0.5),
         _stub_pkg("deep.pain", zone="pain", distance=0.9),
     ])
-    result = run_rigidity(s, _rc(threshold=0.8), SlopConfig(root=str(tmp_path)))
+    result = run_rigidity(s, _rc(threshold=0.8), Config(root=str(tmp_path)))
     assert result.status == "fail"
     assert {v.file for v in result.violations} == {"deep.pain"}
 

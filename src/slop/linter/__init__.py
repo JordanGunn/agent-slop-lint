@@ -9,11 +9,11 @@ Public exports:
   - ``CATEGORIES`` — sorted list of category keys
 
 ``RULE_REGISTRY`` is composed from three substrate-aligned partial
-registries: ``slop.structure.rules.STRUCTURAL_RULES`` (function /
-class / package metrics + information.*), ``slop.lexicon.rules.LEXICAL_RULES``
+registries: ``slop.structure.metrics.STRUCTURAL_RULES`` (function /
+class / package metrics + information.*), ``slop.lexicon.metrics.LEXICAL_RULES``
 (naming-discipline rules), and ``slop.linter.rules.CROSS_CUTTING_RULES``
-(rules that need git churn or whole-tree analysis: ``structural.hotspots``,
-``structural.orphans``).
+(rules that need git churn or whole-tree analysis: ``hotspots``,
+``orphans``).
 
 ``Linter`` itself is intentionally not re-exported: callers do
 ``from slop.linter.linter import Linter`` directly to avoid pulling
@@ -28,12 +28,8 @@ from .types import RuleDefinition
 # The aggregated registries (RULE_REGISTRY / RULES_BY_NAME /
 # RULES_BY_CATEGORY / CATEGORIES + the three per-substrate registries
 # they're composed from) are lazy-loaded via module-level __getattr__.
-# Eager loading would create a cycle: each rules-package __init__ pulls
-# ``legacy_v2_shim`` from ``slop.linter._shim``, which forces evaluation
-# of THIS file; if THIS file eagerly imported the rules packages, the
-# packages would still be mid-init when ``STRUCTURAL_RULES`` etc. were
-# referenced. Lazy access defers the rules import until first use, by
-# which point every rules package has settled.
+# Lazy access defers each rules-package import until first use, keeping
+# this module a lightweight entrypoint.
 
 __all__ = [
     "CATEGORIES",
@@ -59,9 +55,9 @@ def __getattr__(name: str):
         raise AttributeError(name)
     import sys
 
-    from slop.lexicon.rules import LEXICAL_RULES
+    from slop.lexicon.metrics import LEXICAL_RULES
     from slop.linter.rules import CROSS_CUTTING_RULES
-    from slop.structure.rules import STRUCTURAL_RULES
+    from slop.structure.metrics import STRUCTURAL_RULES
 
     rule_registry: list[RuleDefinition] = [
         *STRUCTURAL_RULES, *LEXICAL_RULES, *CROSS_CUTTING_RULES,

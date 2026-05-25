@@ -1,0 +1,2427 @@
+{
+  "corpus": {
+    "files": 78,
+    "callables": 489,
+    "distinct_tokens": 475
+  },
+  "thresholds": {
+    "exclude_tokens": [
+      "a",
+      "an",
+      "and",
+      "are",
+      "as",
+      "at",
+      "but",
+      "by",
+      "f",
+      "for",
+      "id",
+      "if",
+      "in",
+      "index",
+      "is",
+      "key",
+      "left",
+      "length",
+      "next",
+      "of",
+      "on",
+      "or",
+      "p",
+      "pos",
+      "result",
+      "start",
+      "str",
+      "the",
+      "to",
+      "with",
+      "x"
+    ]
+  },
+  "distributions": {
+    "token_occurrence_count": {
+      "name": "token_occurrence_count",
+      "n": 475,
+      "mean": 5.9516,
+      "median": 2,
+      "p90": 12,
+      "max": 144,
+      "histogram": [
+        {
+          "lo": 1.0,
+          "hi": 2.0,
+          "count": 177
+        },
+        {
+          "lo": 2.0,
+          "hi": 4.0,
+          "count": 136
+        },
+        {
+          "lo": 4.0,
+          "hi": 8.0,
+          "count": 81
+        },
+        {
+          "lo": 8.0,
+          "hi": 16.0,
+          "count": 45
+        },
+        {
+          "lo": 16.0,
+          "hi": 32.0,
+          "count": 18
+        },
+        {
+          "lo": 32.0,
+          "hi": 64.0,
+          "count": 13
+        },
+        {
+          "lo": 64.0,
+          "hi": 128.0,
+          "count": 4
+        },
+        {
+          "lo": 128.0,
+          "hi": 256.0,
+          "count": 1
+        }
+      ]
+    },
+    "token_file_spread": {
+      "name": "token_file_spread",
+      "n": 475,
+      "mean": 3.0421,
+      "median": 1,
+      "p90": 6,
+      "max": 58,
+      "histogram": [
+        {
+          "lo": 1.0,
+          "hi": 2.0,
+          "count": 260
+        },
+        {
+          "lo": 2.0,
+          "hi": 4.0,
+          "count": 141
+        },
+        {
+          "lo": 4.0,
+          "hi": 8.0,
+          "count": 37
+        },
+        {
+          "lo": 8.0,
+          "hi": 16.0,
+          "count": 20
+        },
+        {
+          "lo": 16.0,
+          "hi": 32.0,
+          "count": 15
+        },
+        {
+          "lo": 32.0,
+          "hi": 64.0,
+          "count": 2
+        }
+      ]
+    },
+    "packet_size_callable_scope": {
+      "name": "packet_size_callable_scope",
+      "n": 7,
+      "mean": 3.2857,
+      "median": 2,
+      "p90": 6,
+      "max": 7,
+      "histogram": [
+        {
+          "lo": 2.0,
+          "hi": 2.5,
+          "count": 5
+        },
+        {
+          "lo": 2.5,
+          "hi": 3.0,
+          "count": 0
+        },
+        {
+          "lo": 3.0,
+          "hi": 3.5,
+          "count": 0
+        },
+        {
+          "lo": 3.5,
+          "hi": 4.0,
+          "count": 0
+        },
+        {
+          "lo": 4.0,
+          "hi": 4.5,
+          "count": 0
+        },
+        {
+          "lo": 4.5,
+          "hi": 5.0,
+          "count": 0
+        },
+        {
+          "lo": 5.0,
+          "hi": 5.5,
+          "count": 0
+        },
+        {
+          "lo": 5.5,
+          "hi": 6.0,
+          "count": 0
+        },
+        {
+          "lo": 6.0,
+          "hi": 6.5,
+          "count": 1
+        },
+        {
+          "lo": 6.5,
+          "hi": 7,
+          "count": 1
+        }
+      ]
+    },
+    "packet_size_file_scope": {
+      "name": "packet_size_file_scope",
+      "n": 10,
+      "mean": 3.6,
+      "median": 3.5,
+      "p90": 5,
+      "max": 7,
+      "histogram": [
+        {
+          "lo": 2.0,
+          "hi": 2.5,
+          "count": 3
+        },
+        {
+          "lo": 2.5,
+          "hi": 3.0,
+          "count": 0
+        },
+        {
+          "lo": 3.0,
+          "hi": 3.5,
+          "count": 2
+        },
+        {
+          "lo": 3.5,
+          "hi": 4.0,
+          "count": 0
+        },
+        {
+          "lo": 4.0,
+          "hi": 4.5,
+          "count": 3
+        },
+        {
+          "lo": 4.5,
+          "hi": 5.0,
+          "count": 0
+        },
+        {
+          "lo": 5.0,
+          "hi": 5.5,
+          "count": 1
+        },
+        {
+          "lo": 5.5,
+          "hi": 6.0,
+          "count": 0
+        },
+        {
+          "lo": 6.0,
+          "hi": 6.5,
+          "count": 0
+        },
+        {
+          "lo": 6.5,
+          "hi": 7,
+          "count": 1
+        }
+      ]
+    }
+  },
+  "packets": {
+    "thresholds": {
+      "min_bags": 5,
+      "min_association": 0.7
+    },
+    "callable_scope": {
+      "total": 7,
+      "packets": [
+        [
+          "excludes",
+          "globs",
+          "hidden",
+          "ignore",
+          "kernel",
+          "languages",
+          "no"
+        ],
+        [
+          "excludes",
+          "globs",
+          "hidden",
+          "ignore",
+          "kernel",
+          "no"
+        ],
+        [
+          "annotation",
+          "require"
+        ],
+        [
+          "kernel",
+          "languages"
+        ],
+        [
+          "run",
+          "slop"
+        ],
+        [
+          "score",
+          "shared"
+        ],
+        [
+          "since",
+          "until"
+        ]
+      ],
+      "pathological": [
+        {
+          "packet": [
+            "excludes",
+            "globs",
+            "hidden",
+            "ignore",
+            "kernel",
+            "languages",
+            "no"
+          ],
+          "kind": "naming_convention",
+          "confidence": "medium",
+          "advisory": "Tokens ['excludes', 'globs', 'hidden', 'ignore', 'kernel', 'languages', 'no'] co-travel within callable signatures, mixing entity names and parameter names. Likely a registry or wrapper convention (e.g. `run_X(cfg)` returning `Slop`, `add_parser(subparsers)`). Document the convention; consider an ABC or protocol to make it enforceable.",
+          "evidence": {
+            "size": 7,
+            "provenance": "mixed",
+            "scope": "callable",
+            "token_provenance": {
+              "kernel": {
+                "name": 30,
+                "param": 0
+              },
+              "ignore": {
+                "name": 0,
+                "param": 32
+              },
+              "excludes": {
+                "name": 0,
+                "param": 34
+              },
+              "languages": {
+                "name": 1,
+                "param": 24
+              },
+              "hidden": {
+                "name": 0,
+                "param": 32
+              },
+              "globs": {
+                "name": 0,
+                "param": 32
+              },
+              "no": {
+                "name": 1,
+                "param": 33
+              }
+            }
+          }
+        },
+        {
+          "packet": [
+            "excludes",
+            "globs",
+            "hidden",
+            "ignore",
+            "kernel",
+            "no"
+          ],
+          "kind": "naming_convention",
+          "confidence": "medium",
+          "advisory": "Tokens ['excludes', 'globs', 'hidden', 'ignore', 'kernel', 'no'] co-travel within callable signatures, mixing entity names and parameter names. Likely a registry or wrapper convention (e.g. `run_X(cfg)` returning `Slop`, `add_parser(subparsers)`). Document the convention; consider an ABC or protocol to make it enforceable.",
+          "evidence": {
+            "size": 6,
+            "provenance": "mixed",
+            "scope": "callable",
+            "token_provenance": {
+              "ignore": {
+                "name": 0,
+                "param": 32
+              },
+              "no": {
+                "name": 1,
+                "param": 33
+              },
+              "excludes": {
+                "name": 0,
+                "param": 34
+              },
+              "hidden": {
+                "name": 0,
+                "param": 32
+              },
+              "globs": {
+                "name": 0,
+                "param": 32
+              },
+              "kernel": {
+                "name": 30,
+                "param": 0
+              }
+            }
+          }
+        },
+        {
+          "packet": [
+            "annotation",
+            "require"
+          ],
+          "kind": "named_tuple",
+          "confidence": "low",
+          "advisory": "Pair ['annotation', 'require'] travels together as parameters. Consider a named tuple, dataclass, or kwargs-only signature with documentation explaining the pairing.",
+          "evidence": {
+            "size": 2,
+            "provenance": "mostly_param",
+            "scope": "callable",
+            "token_provenance": {
+              "require": {
+                "name": 1,
+                "param": 9
+              },
+              "annotation": {
+                "name": 0,
+                "param": 10
+              }
+            }
+          }
+        },
+        {
+          "packet": [
+            "kernel",
+            "languages"
+          ],
+          "kind": "naming_convention",
+          "confidence": "medium",
+          "advisory": "Tokens ['kernel', 'languages'] co-travel within callable signatures, mixing entity names and parameter names. Likely a registry or wrapper convention (e.g. `run_X(cfg)` returning `Slop`, `add_parser(subparsers)`). Document the convention; consider an ABC or protocol to make it enforceable.",
+          "evidence": {
+            "size": 2,
+            "provenance": "mixed",
+            "scope": "callable",
+            "token_provenance": {
+              "languages": {
+                "name": 1,
+                "param": 24
+              },
+              "kernel": {
+                "name": 30,
+                "param": 0
+              }
+            }
+          }
+        },
+        {
+          "packet": [
+            "run",
+            "slop"
+          ],
+          "kind": "naming_convention",
+          "confidence": "medium",
+          "advisory": "Tokens ['run', 'slop'] co-travel within callable signatures, mixing entity names and parameter names. Likely a registry or wrapper convention (e.g. `run_X(cfg)` returning `Slop`, `add_parser(subparsers)`). Document the convention; consider an ABC or protocol to make it enforceable.",
+          "evidence": {
+            "size": 2,
+            "provenance": "mixed",
+            "scope": "callable",
+            "token_provenance": {
+              "slop": {
+                "name": 1,
+                "param": 33
+              },
+              "run": {
+                "name": 39,
+                "param": 0
+              }
+            }
+          }
+        },
+        {
+          "packet": [
+            "score",
+            "shared"
+          ],
+          "kind": "named_tuple",
+          "confidence": "low",
+          "advisory": "Pair ['score', 'shared'] travels together as parameters. Consider a named tuple, dataclass, or kwargs-only signature with documentation explaining the pairing.",
+          "evidence": {
+            "size": 2,
+            "provenance": "mostly_param",
+            "scope": "callable",
+            "token_provenance": {
+              "score": {
+                "name": 1,
+                "param": 5
+              },
+              "shared": {
+                "name": 0,
+                "param": 5
+              }
+            }
+          }
+        },
+        {
+          "packet": [
+            "since",
+            "until"
+          ],
+          "kind": "named_tuple",
+          "confidence": "low",
+          "advisory": "Pair ['since', 'until'] travels together as parameters. Consider a named tuple, dataclass, or kwargs-only signature with documentation explaining the pairing.",
+          "evidence": {
+            "size": 2,
+            "provenance": "mostly_param",
+            "scope": "callable",
+            "token_provenance": {
+              "until": {
+                "name": 0,
+                "param": 5
+              },
+              "since": {
+                "name": 1,
+                "param": 6
+              }
+            }
+          }
+        }
+      ],
+      "conventional": []
+    },
+    "file_scope": {
+      "total": 10,
+      "packets": [
+        [
+          "excludes",
+          "globs",
+          "hidden",
+          "ignore",
+          "kernel",
+          "languages",
+          "no"
+        ],
+        [
+          "c",
+          "cpp",
+          "function",
+          "functions",
+          "ruby"
+        ],
+        [
+          "c",
+          "cpp",
+          "function",
+          "ruby"
+        ],
+        [
+          "call",
+          "cpp",
+          "function",
+          "ruby"
+        ],
+        [
+          "config",
+          "rule",
+          "run",
+          "slop"
+        ],
+        [
+          "c",
+          "cpp",
+          "function"
+        ],
+        [
+          "method",
+          "metrics",
+          "relative"
+        ],
+        [
+          "call",
+          "ruby"
+        ],
+        [
+          "content",
+          "node"
+        ],
+        [
+          "function",
+          "functions"
+        ]
+      ],
+      "pathological": [
+        {
+          "packet": [
+            "excludes",
+            "globs",
+            "hidden",
+            "ignore",
+            "kernel",
+            "languages",
+            "no"
+          ],
+          "kind": "missing_class",
+          "confidence": "medium",
+          "advisory": "Vocabulary ['excludes', 'globs', 'hidden', 'ignore', 'kernel', 'languages', 'no'] spans both entity names and parameter signatures across multiple files. The shared vocabulary likely indicates a missing class that would unify the declarations and the signatures.",
+          "evidence": {
+            "size": 7,
+            "provenance": "mixed",
+            "scope": "file",
+            "token_provenance": {
+              "ignore": {
+                "name": 0,
+                "param": 32
+              },
+              "no": {
+                "name": 1,
+                "param": 33
+              },
+              "excludes": {
+                "name": 0,
+                "param": 34
+              },
+              "languages": {
+                "name": 1,
+                "param": 24
+              },
+              "hidden": {
+                "name": 0,
+                "param": 32
+              },
+              "globs": {
+                "name": 0,
+                "param": 32
+              },
+              "kernel": {
+                "name": 30,
+                "param": 0
+              }
+            }
+          }
+        },
+        {
+          "packet": [
+            "c",
+            "cpp",
+            "function",
+            "functions",
+            "ruby"
+          ],
+          "kind": "extract_module",
+          "confidence": "medium",
+          "advisory": "5 tokens ['c', 'cpp', 'function', 'functions', 'ruby'] co-travel across files; the majority appear as entity names with some parameter echoes. Likely a missing module around the shared vocabulary.",
+          "evidence": {
+            "size": 5,
+            "provenance": "mostly_name",
+            "scope": "file",
+            "token_provenance": {
+              "functions": {
+                "name": 9,
+                "param": 5
+              },
+              "cpp": {
+                "name": 25,
+                "param": 0
+              },
+              "ruby": {
+                "name": 20,
+                "param": 0
+              },
+              "function": {
+                "name": 34,
+                "param": 2
+              },
+              "c": {
+                "name": 19,
+                "param": 6
+              }
+            }
+          }
+        },
+        {
+          "packet": [
+            "c",
+            "cpp",
+            "function",
+            "ruby"
+          ],
+          "kind": "extract_module",
+          "confidence": "medium",
+          "advisory": "4 tokens ['c', 'cpp', 'function', 'ruby'] co-travel across files; the majority appear as entity names with some parameter echoes. Likely a missing module around the shared vocabulary.",
+          "evidence": {
+            "size": 4,
+            "provenance": "mostly_name",
+            "scope": "file",
+            "token_provenance": {
+              "ruby": {
+                "name": 20,
+                "param": 0
+              },
+              "cpp": {
+                "name": 25,
+                "param": 0
+              },
+              "function": {
+                "name": 34,
+                "param": 2
+              },
+              "c": {
+                "name": 19,
+                "param": 6
+              }
+            }
+          }
+        },
+        {
+          "packet": [
+            "call",
+            "cpp",
+            "function",
+            "ruby"
+          ],
+          "kind": "extract_module",
+          "confidence": "medium",
+          "advisory": "4 tokens ['call', 'cpp', 'function', 'ruby'] co-travel across files; the majority appear as entity names with some parameter echoes. Likely a missing module around the shared vocabulary.",
+          "evidence": {
+            "size": 4,
+            "provenance": "mostly_name",
+            "scope": "file",
+            "token_provenance": {
+              "ruby": {
+                "name": 20,
+                "param": 0
+              },
+              "cpp": {
+                "name": 25,
+                "param": 0
+              },
+              "function": {
+                "name": 34,
+                "param": 2
+              },
+              "call": {
+                "name": 9,
+                "param": 0
+              }
+            }
+          }
+        },
+        {
+          "packet": [
+            "config",
+            "rule",
+            "run",
+            "slop"
+          ],
+          "kind": "missing_class",
+          "confidence": "medium",
+          "advisory": "Vocabulary ['config', 'rule', 'run', 'slop'] spans both entity names and parameter signatures across multiple files. The shared vocabulary likely indicates a missing class that would unify the declarations and the signatures.",
+          "evidence": {
+            "size": 4,
+            "provenance": "mixed",
+            "scope": "file",
+            "token_provenance": {
+              "rule": {
+                "name": 11,
+                "param": 50
+              },
+              "config": {
+                "name": 16,
+                "param": 94
+              },
+              "slop": {
+                "name": 1,
+                "param": 33
+              },
+              "run": {
+                "name": 39,
+                "param": 0
+              }
+            }
+          }
+        },
+        {
+          "packet": [
+            "c",
+            "cpp",
+            "function"
+          ],
+          "kind": "extract_module",
+          "confidence": "medium",
+          "advisory": "3 tokens ['c', 'cpp', 'function'] co-travel across files; the majority appear as entity names with some parameter echoes. Likely a missing module around the shared vocabulary.",
+          "evidence": {
+            "size": 3,
+            "provenance": "mostly_name",
+            "scope": "file",
+            "token_provenance": {
+              "cpp": {
+                "name": 25,
+                "param": 0
+              },
+              "function": {
+                "name": 34,
+                "param": 2
+              },
+              "c": {
+                "name": 19,
+                "param": 6
+              }
+            }
+          }
+        },
+        {
+          "packet": [
+            "method",
+            "metrics",
+            "relative"
+          ],
+          "kind": "extract_module",
+          "confidence": "medium",
+          "advisory": "3 tokens ['method', 'metrics', 'relative'] co-travel across files; the majority appear as entity names with some parameter echoes. Likely a missing module around the shared vocabulary.",
+          "evidence": {
+            "size": 3,
+            "provenance": "mostly_name",
+            "scope": "file",
+            "token_provenance": {
+              "metrics": {
+                "name": 7,
+                "param": 1
+              },
+              "method": {
+                "name": 4,
+                "param": 1
+              },
+              "relative": {
+                "name": 5,
+                "param": 0
+              }
+            }
+          }
+        },
+        {
+          "packet": [
+            "call",
+            "ruby"
+          ],
+          "kind": "review",
+          "confidence": "low",
+          "advisory": "Packet ['call', 'ruby'] (n=2, provenance=all_name, scope=file) does not match a high-confidence corrective-action category. Surface for human review.",
+          "evidence": {
+            "size": 2,
+            "provenance": "all_name",
+            "scope": "file",
+            "token_provenance": {
+              "ruby": {
+                "name": 20,
+                "param": 0
+              },
+              "call": {
+                "name": 9,
+                "param": 0
+              }
+            }
+          }
+        },
+        {
+          "packet": [
+            "content",
+            "node"
+          ],
+          "kind": "named_tuple",
+          "confidence": "low",
+          "advisory": "Pair ['content', 'node'] travels together as parameters. Consider a named tuple, dataclass, or kwargs-only signature with documentation explaining the pairing.",
+          "evidence": {
+            "size": 2,
+            "provenance": "mostly_param",
+            "scope": "file",
+            "token_provenance": {
+              "node": {
+                "name": 16,
+                "param": 128
+              },
+              "content": {
+                "name": 0,
+                "param": 94
+              }
+            }
+          }
+        },
+        {
+          "packet": [
+            "function",
+            "functions"
+          ],
+          "kind": "review",
+          "confidence": "low",
+          "advisory": "Packet ['function', 'functions'] (n=2, provenance=mostly_name, scope=file) does not match a high-confidence corrective-action category. Surface for human review.",
+          "evidence": {
+            "size": 2,
+            "provenance": "mostly_name",
+            "scope": "file",
+            "token_provenance": {
+              "functions": {
+                "name": 9,
+                "param": 5
+              },
+              "function": {
+                "name": 34,
+                "param": 2
+              }
+            }
+          }
+        }
+      ],
+      "conventional": []
+    }
+  },
+  "violations_by_scope": {
+    "file": [
+      {
+        "rule": "lexical.stutter",
+        "key": "ast/query.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "_compat.py",
+        "count": 2
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "compose/git.py",
+        "count": 4
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "lexical/sprawl.py",
+        "count": 5
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structural/any_type_density.py",
+        "count": 6
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structural/ccx.py",
+        "count": 3
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structural/clone_density.py",
+        "count": 3
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structural/deps.py",
+        "count": 10
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structural/god_module.py",
+        "count": 6
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structural/halstead.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structural/local_imports.py",
+        "count": 7
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structural/magic_literals.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structural/npath.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structural/out_parameters.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structural/section_comments.py",
+        "count": 4
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structural/sibling_calls.py",
+        "count": 5
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structural/stringly_typed.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "config.py",
+        "count": 3
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "engine.py",
+        "count": 5
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "models.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "preflight.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "rules/any_type_density.py",
+        "count": 2
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "rules/clone_density.py",
+        "count": 2
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "rules/god_module.py",
+        "count": 2
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "rules/local_imports.py",
+        "count": 4
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "rules/magic_literals.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "rules/out_parameters.py",
+        "count": 2
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "rules/section_comments.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "rules/sibling_calls.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "rules/stringly_typed.py",
+        "count": 2
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "ast/query.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "_compat.py",
+        "count": 4
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "compose/git.py",
+        "count": 2
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "compose/hotspots.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "lexical/_naming.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "lexical/imposters.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "lexical/sprawl.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/any_type_density.py",
+        "count": 3
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/ccx.py",
+        "count": 6
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/ck.py",
+        "count": 3
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/deps.py",
+        "count": 6
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/halstead.py",
+        "count": 6
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/local_imports.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/npath.py",
+        "count": 7
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/out_parameters.py",
+        "count": 4
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/robert.py",
+        "count": 3
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/sibling_calls.py",
+        "count": 2
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/stringly_typed.py",
+        "count": 3
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "rules/any_type_density.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "rules/magic_literals.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "rules/section_comments.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "rules/sibling_calls.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.cowards",
+        "key": "lexical/sprawl.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.cowards",
+        "key": "structural/stringly_typed.py",
+        "count": 2
+      },
+      {
+        "rule": "lexical.hammers",
+        "key": "structural/ck.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.tautology",
+        "key": "ast/query.py",
+        "count": 3
+      },
+      {
+        "rule": "lexical.tautology",
+        "key": "compose/prune.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.tautology",
+        "key": "structural/ccx.py",
+        "count": 3
+      },
+      {
+        "rule": "lexical.tautology",
+        "key": "structural/ck.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.tautology",
+        "key": "structural/halstead.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.tautology",
+        "key": "structural/npath.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.tautology",
+        "key": "structural/robert.py",
+        "count": 2
+      },
+      {
+        "rule": "lexical.sprawl",
+        "key": "lexical/sprawl.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.sprawl",
+        "key": "structural/ccx.py",
+        "count": 3
+      },
+      {
+        "rule": "lexical.sprawl",
+        "key": "structural/npath.py",
+        "count": 11
+      },
+      {
+        "rule": "lexical.sprawl",
+        "key": "structural/robert.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.sprawl",
+        "key": "cli.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.sprawl",
+        "key": "rules/complexity.py",
+        "count": 13
+      },
+      {
+        "rule": "lexical.sprawl",
+        "key": "rules/halstead.py",
+        "count": 11
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "ast/query.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "_compat.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "compose/git.py",
+        "count": 2
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "lexical/_naming.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "structural/ccx.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "structural/clone_density.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "structural/deps.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "structural/out_parameters.py",
+        "count": 2
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "structural/robert.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "structural/sibling_calls.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "structural/stringly_typed.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "util/doctor.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "cli.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "color.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "config.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "engine.py",
+        "count": 2
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "output.py",
+        "count": 3
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "ast/query.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "_compat.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "compose/git.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "structural/ccx.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "structural/clone_density.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "structural/deps.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "util/doctor.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "config.py",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "engine.py",
+        "count": 2
+      }
+    ],
+    "package": [
+      {
+        "rule": "lexical.stutter",
+        "key": ".",
+        "count": 12
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "_ast",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "_compose",
+        "count": 4
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "_lexical",
+        "count": 5
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "_structural",
+        "count": 49
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "rules",
+        "count": 17
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": ".",
+        "count": 4
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "_ast",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "_compose",
+        "count": 3
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "_lexical",
+        "count": 3
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "_structural",
+        "count": 44
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "rules",
+        "count": 4
+      },
+      {
+        "rule": "lexical.cowards",
+        "key": "_lexical",
+        "count": 1
+      },
+      {
+        "rule": "lexical.cowards",
+        "key": "_structural",
+        "count": 2
+      },
+      {
+        "rule": "lexical.hammers",
+        "key": "_structural",
+        "count": 1
+      },
+      {
+        "rule": "lexical.tautology",
+        "key": "_ast",
+        "count": 3
+      },
+      {
+        "rule": "lexical.tautology",
+        "key": "_compose",
+        "count": 1
+      },
+      {
+        "rule": "lexical.tautology",
+        "key": "_structural",
+        "count": 8
+      },
+      {
+        "rule": "lexical.sprawl",
+        "key": ".",
+        "count": 1
+      },
+      {
+        "rule": "lexical.sprawl",
+        "key": "_lexical",
+        "count": 1
+      },
+      {
+        "rule": "lexical.sprawl",
+        "key": "_structural",
+        "count": 15
+      },
+      {
+        "rule": "lexical.sprawl",
+        "key": "rules",
+        "count": 24
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": ".",
+        "count": 9
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "_ast",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "_compose",
+        "count": 2
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "_lexical",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "_structural",
+        "count": 8
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "_util",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": ".",
+        "count": 4
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "_ast",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "_compose",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "_structural",
+        "count": 3
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "_util",
+        "count": 1
+      }
+    ],
+    "root": [
+      {
+        "rule": "lexical.stutter",
+        "key": "<root>",
+        "count": 88
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "<root>",
+        "count": 59
+      },
+      {
+        "rule": "lexical.cowards",
+        "key": "<root>",
+        "count": 3
+      },
+      {
+        "rule": "lexical.hammers",
+        "key": "<root>",
+        "count": 1
+      },
+      {
+        "rule": "lexical.tautology",
+        "key": "<root>",
+        "count": 12
+      },
+      {
+        "rule": "lexical.sprawl",
+        "key": "<root>",
+        "count": 41
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "<root>",
+        "count": 22
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "<root>",
+        "count": 10
+      }
+    ],
+    "callable": [
+      {
+        "rule": "lexical.stutter",
+        "key": "ast/query.py::match_dict",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "_compat.py::legacy_table",
+        "count": 2
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "compose/git.py::GitLogResult",
+        "count": 2
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "compose/git.py::GitNumstatResult",
+        "count": 2
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "lexical/sprawl.py::cluster_patterns",
+        "count": 3
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "lexical/sprawl.py::items_at_scope",
+        "count": 2
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structural/any_type_density.py::AnyTypeDensityEntry",
+        "count": 3
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structural/any_type_density.py::AnyTypeDensityResult",
+        "count": 2
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structural/any_type_density.py::any_type_density_kernel",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structural/ccx.py::FileMetrics",
+        "count": 2
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structural/ccx.py::find_functions",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structural/clone_density.py::CloneDensityResult",
+        "count": 2
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structural/clone_density.py::clone_density_kernel",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structural/deps.py::FileDeps",
+        "count": 2
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structural/deps.py::ImportEdge",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structural/deps.py::file_deps",
+        "count": 7
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structural/god_module.py::GodModuleEntry",
+        "count": 3
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structural/god_module.py::GodModuleResult",
+        "count": 2
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structural/god_module.py::god_module_kernel",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structural/halstead.py::find_functions",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structural/local_imports.py::LocalImportsResult",
+        "count": 2
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structural/local_imports.py::local_imports",
+        "count": 4
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structural/local_imports.py::local_imports_kernel",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structural/magic_literals.py::magic_literals_kernel",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structural/npath.py::find_functions",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structural/out_parameters.py::out_parameters_kernel",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structural/section_comments.py::SectionCommentEntry",
+        "count": 2
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structural/section_comments.py::SectionCommentResult",
+        "count": 2
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structural/sibling_calls.py::SiblingCallResult",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structural/sibling_calls.py::name_node",
+        "count": 4
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "structural/stringly_typed.py::stringly_typed_kernel",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "config.py::DEFAULT_RULE_CONFIGS",
+        "count": 2
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "config.py::RuleConfig",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "engine.py::RULES_BY_CATEGORY",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "engine.py::filter_category",
+        "count": 2
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "engine.py::filter_rule",
+        "count": 2
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "models.py::RuleConfig",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "preflight.py::required_binaries",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "rules/any_type_density.py::any_type_density_kernel",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "rules/any_type_density.py::run_any_type_density",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "rules/clone_density.py::clone_density_kernel",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "rules/clone_density.py::run_clone_density",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "rules/god_module.py::god_module_kernel",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "rules/god_module.py::run_god_module",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "rules/local_imports.py::local_imports",
+        "count": 2
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "rules/local_imports.py::local_imports_kernel",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "rules/local_imports.py::run_local_imports",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "rules/magic_literals.py::magic_literals_kernel",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "rules/out_parameters.py::out_parameters_kernel",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "rules/out_parameters.py::run_out_parameters",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "rules/section_comments.py::section_comment_kernel",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "rules/sibling_calls.py::sibling_call_redundancy_kernel",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "rules/stringly_typed.py::run_stringly_typed",
+        "count": 1
+      },
+      {
+        "rule": "lexical.stutter",
+        "key": "rules/stringly_typed.py::stringly_typed_kernel",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "ast/query.py::_dict_match_to_captures",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "_compat.py::_apply_one_legacy_table",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "_compat.py::_is_leaf_legacy_table",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "_compat.py::_migrate_v110_stutter_subrules",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "_compat.py::migrate_legacy_rule_tables",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "compose/git.py::_parse_numstat_log_output",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "compose/git.py::git_log_file_changes",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "compose/hotspots.py::_scope_commits_to_prefix",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "lexical/_naming.py::_extract_c_or_cpp_name",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "lexical/imposters.py::_recursive_first_param_findings",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "lexical/sprawl.py::_cluster_patterns_by_alphabet",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/any_type_density.py::AnyTypeDensityEntry",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/any_type_density.py::AnyTypeDensityResult",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/any_type_density.py::any_type_density_kernel",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/ccx.py::_c_find_function_identifier",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/ccx.py::_cpp_find_function_identifier",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/ccx.py::_default_is_function_node",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/ccx.py::_julia_is_function_node",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/ccx.py::_ruby_find_method_name",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/ccx.py::_ruby_is_function_node",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/ck.py::_aggregate_ruby_open_classes",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/ck.py::_collect_cpp_outofline_methods",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/ck.py::_extract_go_receiver_type",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/deps.py::_append_go_import_edge",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/deps.py::_extract_go_imports_text",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/deps.py::_is_go_import_block_end",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/deps.py::_is_go_import_block_start",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/deps.py::_module_names_for_path",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/deps.py::_sort_and_cap_file_deps",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/halstead.py::_c_find_function_identifier",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/halstead.py::_cpp_find_function_identifier",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/halstead.py::_default_is_function_node",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/halstead.py::_julia_is_function_node",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/halstead.py::_ruby_find_method_name",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/halstead.py::_ruby_is_function_node",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/local_imports.py::_ruby_is_require_call",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/npath.py::_c_find_function_identifier",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/npath.py::_cpp_find_function_identifier",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/npath.py::_default_is_function_node",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/npath.py::_julia_is_function_node",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/npath.py::_npath_of_flat_body",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/npath.py::_ruby_find_method_name",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/npath.py::_ruby_is_function_node",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/out_parameters.py::_c_extract_pointer_params",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/out_parameters.py::_c_lhs_mutates_param",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/out_parameters.py::_cpp_extract_mutable_params",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/out_parameters.py::_cpp_lhs_mutates_param",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/robert.py::_is_go_main_package",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/robert.py::_split_classes_by_abstract_modifier",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/robert.py::_split_cpp_classes_by_abstract",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/sibling_calls.py::_fn_name_from_node",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/sibling_calls.py::sibling_call_redundancy_kernel",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/stringly_typed.py::_cpp_fn_name_local",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/stringly_typed.py::_enrich_with_call_sites",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "structural/stringly_typed.py::_ruby_fn_name_local",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "rules/any_type_density.py::run_any_type_density",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "rules/magic_literals.py::run_magic_literal_density",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "rules/section_comments.py::run_section_comment_density",
+        "count": 1
+      },
+      {
+        "rule": "lexical.verbosity",
+        "key": "rules/sibling_calls.py::run_sibling_call_redundancy",
+        "count": 1
+      },
+      {
+        "rule": "lexical.cowards",
+        "key": "lexical/sprawl.py::_token_edit_distance_1",
+        "count": 1
+      },
+      {
+        "rule": "lexical.cowards",
+        "key": "structural/stringly_typed.py::_cpp_fn_name_local",
+        "count": 1
+      },
+      {
+        "rule": "lexical.cowards",
+        "key": "structural/stringly_typed.py::_ruby_fn_name_local",
+        "count": 1
+      },
+      {
+        "rule": "lexical.hammers",
+        "key": "structural/ck.py::_ClassInfo",
+        "count": 1
+      },
+      {
+        "rule": "lexical.tautology",
+        "key": "ast/query.py::match_dict",
+        "count": 1
+      },
+      {
+        "rule": "lexical.tautology",
+        "key": "ast/query.py::query_str",
+        "count": 2
+      },
+      {
+        "rule": "lexical.tautology",
+        "key": "compose/prune.py::file_str",
+        "count": 1
+      },
+      {
+        "rule": "lexical.tautology",
+        "key": "structural/ccx.py::file_path",
+        "count": 3
+      },
+      {
+        "rule": "lexical.tautology",
+        "key": "structural/ck.py::file_path",
+        "count": 1
+      },
+      {
+        "rule": "lexical.tautology",
+        "key": "structural/halstead.py::file_path",
+        "count": 1
+      },
+      {
+        "rule": "lexical.tautology",
+        "key": "structural/npath.py::file_path",
+        "count": 1
+      },
+      {
+        "rule": "lexical.tautology",
+        "key": "structural/robert.py::query_str",
+        "count": 2
+      },
+      {
+        "rule": "lexical.sprawl",
+        "key": "lexical/sprawl.py::concept[3\u00d72]",
+        "count": 1
+      },
+      {
+        "rule": "lexical.sprawl",
+        "key": "structural/ccx.py::concept[3\u00d72]",
+        "count": 2
+      },
+      {
+        "rule": "lexical.sprawl",
+        "key": "structural/ccx.py::concept[3\u00d73]",
+        "count": 1
+      },
+      {
+        "rule": "lexical.sprawl",
+        "key": "structural/npath.py::npath",
+        "count": 11
+      },
+      {
+        "rule": "lexical.sprawl",
+        "key": "structural/robert.py::concept[2\u00d72]",
+        "count": 1
+      },
+      {
+        "rule": "lexical.sprawl",
+        "key": "cli.py::concept[2\u00d72]",
+        "count": 1
+      },
+      {
+        "rule": "lexical.sprawl",
+        "key": "rules/complexity.py::ccx",
+        "count": 11
+      },
+      {
+        "rule": "lexical.sprawl",
+        "key": "rules/complexity.py::concept[13\u00d72]",
+        "count": 1
+      },
+      {
+        "rule": "lexical.sprawl",
+        "key": "rules/complexity.py::concept[2\u00d73]",
+        "count": 1
+      },
+      {
+        "rule": "lexical.sprawl",
+        "key": "rules/halstead.py::halstead",
+        "count": 11
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "ast/query.py::files",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "_compat.py::raw_rules",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "compose/git.py::cwd",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "compose/git.py::output",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "lexical/_naming.py::name",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "structural/ccx.py::functions",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "structural/clone_density.py::root_node",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "structural/deps.py::file_paths",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "structural/out_parameters.py::body_node",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "structural/out_parameters.py::fn_node",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "structural/robert.py::pkg_files",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "structural/sibling_calls.py::body",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "structural/stringly_typed.py::fn_node",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "util/doctor.py::name",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "cli.py::args",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "color.py::text",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "config.py::raw",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "engine.py::config",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "engine.py::violation",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "output.py::result",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "output.py::rule_name",
+        "count": 1
+      },
+      {
+        "rule": "lexical.imposters",
+        "key": "output.py::rule_pairs",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "ast/query.py::files",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "_compat.py::raw_rules",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "compose/git.py::cwd",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "structural/ccx.py::functions",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "structural/clone_density.py::root_node",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "structural/deps.py::file_paths",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "util/doctor.py::name",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "config.py::raw",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "engine.py::config",
+        "count": 1
+      },
+      {
+        "rule": "lexical.slackers",
+        "key": "engine.py::violation",
+        "count": 1
+      }
+    ]
+  }
+}

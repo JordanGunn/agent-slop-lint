@@ -10,32 +10,34 @@ from __future__ import annotations
 from pathlib import Path
 
 from slop import __version__
-from slop.config.models import RuleConfig, SlopConfig
+from slop.linter.rule_config import RuleConfig
+from slop.config import Config
 from slop.linter.types import RuleDefinition, RuleResult
 from slop.tree.tree import Tree
 
-from ._dispatch import apply_waivers, overall_status, select_rules
-from ._shim import legacy_v2_shim  # re-exported for convenience
+from .dispatch import apply_waivers, overall_status, select_rules
 from .result import Result
 
-__all__ = ["Linter", "legacy_v2_shim"]
+__all__ = ["Linter"]
 
 
 def _execute_rule_v2(
     rule_def: RuleDefinition,
     tree: Tree,
     rc: RuleConfig,
-    config: SlopConfig,
+    config: Config,
 ) -> RuleResult:
     """Dispatch one rule to its runner.
 
-    Picks the view by category prefix: ``Structure`` for
-    ``structural.*``, ``Lexicon`` otherwise.
+    Picks the view by category prefix: ``Lexicon`` for ``lexical.*``,
+    ``Structure`` for everything else (complexity, class, packages,
+    types, difficulty, deps, redundancy, duplication, god_module,
+    magic_literals, hotspots, orphans).
     """
     view = (
-        tree.structure
-        if rule_def.category.startswith("structural.")
-        else tree.lexicon
+        tree.lexicon
+        if rule_def.category.startswith("lexical.")
+        else tree.structure
     )
     try:
         result = rule_def.run(view, rc, config)
@@ -53,7 +55,7 @@ def _execute_rule_v2(
 class Linter:
     """Entry-point class — composes Tree, owns the rule loop."""
 
-    def __init__(self, config: SlopConfig) -> None:
+    def __init__(self, config: Config) -> None:
         self.config = config
         self.tree = Tree(
             Path(config.root).expanduser().resolve(),

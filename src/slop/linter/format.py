@@ -202,12 +202,13 @@ def _render_violations(
     shown = violations[:max_violations]
     for v in shown:
         marker = red("\u2717") if v.severity == "error" else yellow("\u26a0")
+        scope_tag = dim(f"[{v.scope}] ") if v.scope else ""
         loc = v.file
         if v.line:
             loc += f":{v.line}"
         if v.symbol:
             loc += f" {v.symbol}"
-        lines.append(f"{indent}{marker} {loc} \u2014 {v.message}")
+        lines.append(f"{indent}{marker} {scope_tag}{loc} \u2014 {v.message}")
 
     remaining = len(violations) - len(shown)
     if remaining > 0:
@@ -358,6 +359,7 @@ def to_dict(result: Result) -> dict:
         for v in rr.violations:
             violations_out.append({
                 "rule": v.rule,
+                "scope": v.scope,
                 "file": v.file,
                 "line": v.line,
                 "symbol": v.symbol,
@@ -371,6 +373,7 @@ def to_dict(result: Result) -> dict:
         for v in rr.waived_violations:
             waived_out.append({
                 "rule": v.rule,
+                "scope": v.scope,
                 "file": v.file,
                 "line": v.line,
                 "symbol": v.symbol,

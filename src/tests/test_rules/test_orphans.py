@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop.config.models import RuleConfig, SlopConfig
+from slop.linter.rule_config import RuleConfig
+from slop.config import Config
 from slop.linter.rules.orphans import run_orphans
 from slop.tree.tree import Tree
 
@@ -21,8 +22,8 @@ def _rc(min_confidence: str = "high") -> RuleConfig:
     )
 
 
-def _sc(root: Path) -> SlopConfig:
-    return SlopConfig(root=str(root))
+def _sc(root: Path) -> Config:
+    return Config(root=str(root))
 
 
 def test_unreferenced_function_flagged_at_medium_confidence(tmp_path: Path):

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop._lexical.cowards import (
+from slop.lexical.cowards import (
     DEFAULT_ALPHA_SUFFIXES,
     cowards_kernel,
 )

@@ -18,7 +18,14 @@ from typing import Any
 
 @dataclass
 class Slop:
-    """A finding emitted by a rule."""
+    """A finding emitted by a rule.
+
+    The ``scope`` field declares the emission unit (``function``, ``class``,
+    ``module``, ``parameter``, ``package``) — first-class since the
+    scope-as-first-class refactor. ``None`` is reserved for cross-cutting
+    rules whose emission unit doesn't map to a single scope (cycles, hotspot
+    files, orphan symbols).
+    """
 
     rule: str
     file: str
@@ -30,3 +37,4 @@ class Slop:
     threshold: float | int | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
     suggestion: str | None = None
+    scope: str | None = None

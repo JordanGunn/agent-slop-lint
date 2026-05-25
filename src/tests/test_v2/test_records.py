@@ -24,8 +24,8 @@ class TestParameter:
         assert p.annotation is None
 
     def test_with_annotation(self):
-        p = Parameter(name="cfg", position=1, annotation="SlopConfig")
-        assert p.annotation == "SlopConfig"
+        p = Parameter(name="cfg", position=1, annotation="Config")
+        assert p.annotation == "Config"
 
 
 class TestScope:

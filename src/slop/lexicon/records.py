@@ -24,3 +24,29 @@ class NamedEntity:
     line: int
     language: str
     tokens: tuple[str, ...]
+
+
+@dataclass
+class FirstParameterCluster:
+    """A group of callables sharing a first parameter, with profile signals.
+
+    Consumed by lexical rules that reason about implicit receivers
+    (imposters, slackers, confusion). The cluster is reported at the
+    narrowest scope where it coheres; ``verdict`` + ``profile_label``
+    classify what the cluster ACTUALLY does (missing class vs
+    strategy family vs infrastructure plumbing).
+    """
+
+    parameter_name: str
+    parameter_types: set[str]
+    members: list[tuple[str, str, int]]   # (function_name, file_rel, line)
+    verdict: str                           # "strong" | "weak" | "false_positive"
+    advisory: str
+    scope: str
+    scope_kind: str                        # "file" | "package" | "root"
+    body_jaccard_mean: float = 0.0
+    mean_receiver_calls: float = 0.0
+    modal_overlap_mean: float = 0.0
+    profile_label: str = "unknown"
+    # "missing_class" | "strategy_family" | "heterogeneous"
+    # | "infrastructure" | "false_positive" | "unknown"
