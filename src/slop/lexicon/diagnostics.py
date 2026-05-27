@@ -32,7 +32,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
-from slop.linter.rule_config import RuleConfig
+from slop.linter.rule import Rule
 from slop.config import Config
 from slop.lexicon.view import Lexicon
 from slop.linter.slop import Slop
@@ -96,7 +96,7 @@ def count_violations_by_scope(
     lexicon: Lexicon,
     rule_defs: Iterable[RuleDefinition],
     *,
-    rule_configs: Mapping[str, RuleConfig],
+    rule_configs: Mapping[str, Rule],
     slop_config: Config,
     scope: str = "file",
     root: Path | None = None,
@@ -104,7 +104,7 @@ def count_violations_by_scope(
     """Run each rule once on the whole lexicon; bucket violations by ``scope``.
 
     Each rule definition is executed against the given lexicon view with
-    its configured ``RuleConfig`` (or a default-enabled stand-in if the
+    its configured ``Rule`` (or a default-enabled stand-in if the
     rule is missing from ``rule_configs``). Returned counts span the
     cartesian product of (rules that fired) × (scope keys that received
     findings); empty buckets are omitted.
@@ -118,7 +118,7 @@ def count_violations_by_scope(
     for rule_def in rule_defs:
         rc = rule_configs.get(
             rule_def.name,
-            RuleConfig(enabled=True, severity=rule_def.default_severity, params={}),
+            Rule(enabled=True, severity=rule_def.default_severity, params={}),
         )
         try:
             result = rule_def.run(lexicon, rc, slop_config)
@@ -279,7 +279,7 @@ def emit_diagnostic_report(
     lexicon: Lexicon,
     *,
     rule_defs: Iterable[RuleDefinition] | None = None,
-    rule_configs: Mapping[str, RuleConfig] | None = None,
+    rule_configs: Mapping[str, Rule] | None = None,
     slop_config: Config | None = None,
     root: Path | None = None,
     class_vocabularies: Mapping[str, set[str]] | None = None,
@@ -500,7 +500,7 @@ def violations_with_cells(
     lexicon: Lexicon,
     rule_defs: Iterable[RuleDefinition],
     *,
-    rule_configs: Mapping[str, RuleConfig],
+    rule_configs: Mapping[str, Rule],
     slop_config: Config,
     frequency_threshold: int = 8,
     spread_threshold: int = 5,
@@ -536,7 +536,7 @@ def violations_with_cells(
     for rule_def in rule_defs:
         rc = rule_configs.get(
             rule_def.name,
-            RuleConfig(enabled=True, severity=rule_def.default_severity, params={}),
+            Rule(enabled=True, severity=rule_def.default_severity, params={}),
         )
         try:
             result = rule_def.run(lexicon, rc, slop_config)

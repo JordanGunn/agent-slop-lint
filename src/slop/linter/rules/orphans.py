@@ -15,10 +15,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop.linter.rule_config import RuleConfig
+from slop.linter.rule import Rule
 from slop.config import Config
 from slop.linter.slop import Slop
-from slop.linter.types import RuleResult
+from slop.linter.tags import Tag
+from slop.linter.types import RuleDefinition, RuleResult
 from slop.structure.view import Structure
 
 _CONFIDENCE_ORDER = {"high": 3, "medium": 2, "low": 1}
@@ -26,7 +27,7 @@ _CONFIDENCE_ORDER = {"high": 3, "medium": 2, "low": 1}
 
 def run_orphans(
     structure: Structure,
-    rule_config: RuleConfig,
+    rule_config: Rule,
     slop_config: Config,
 ) -> RuleResult:
     """Report unreferenced symbols at or above a confidence threshold."""
@@ -71,3 +72,13 @@ def run_orphans(
         },
         errors=list(result.errors),
     )
+
+RULE = RuleDefinition(
+    name=Tag.ORPHANS.key,
+    category=Tag.ORPHANS.key,
+    description="Unreferenced symbols (advisory)",
+    default_severity="warning",
+    default_enabled=False,
+    threshold_label="",
+    run=run_orphans,
+)

@@ -11,16 +11,16 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop.linter.rule_config import RuleConfig
+from slop.linter.rule import Rule
 from slop.config import Config
-from slop.structure.metrics.escape_hatches import run_escape_hatches
-from slop.structure.metrics.clone_density import run_clone_density
-from slop.structure.metrics.combinatorial import run_combinatorial
-from slop.structure.metrics.cognitive import run_cognitive
-from slop.structure.metrics.cyclomatic import run_cyclomatic
-from slop.structure.metrics.dependencies import run_cycles
-from slop.structure.metrics.god_module import run_god_module
-from slop.structure.metrics.hidden_mutators import run_hidden_mutators
+from slop.linter.rules.escape_hatches import run_escape_hatches
+from slop.linter.rules.clone_density import run_clone_density
+from slop.linter.rules.combinatorial import run_combinatorial
+from slop.linter.rules.cognitive import run_cognitive
+from slop.linter.rules.cyclomatic import run_cyclomatic
+from slop.linter.rules.dependencies import run_cycles
+from slop.linter.rules.god_module import run_god_module
+from slop.linter.rules.hidden_mutators import run_hidden_mutators
 from slop.tree.tree import Tree
 
 
@@ -34,21 +34,21 @@ def _lexicon(root: Path):
     t = Tree(root)
     t.scan()
     return t.lexicon
-from slop.structure.metrics.redundancy import run_redundancy
-from slop.structure.metrics.sentinels import run_sentinels
-from slop.lexicon.metrics.stutter import run_stutter
-from slop.lexicon.metrics.verbosity import run_verbosity
+from slop.linter.rules.redundancy import run_redundancy
+from slop.linter.rules.sentinels import run_sentinels
+from slop.linter.rules.stutter import run_stutter
+from slop.linter.rules.verbosity import run_verbosity
 
 
 def _slop_config() -> Config:
     return Config(rules={}, languages=["c"])
 
 
-def _rule_config(scope: str = "function", **overrides) -> RuleConfig:
+def _rule_config(scope: str = "function", **overrides) -> Rule:
     threshold = overrides.pop("threshold", 0)
     params: dict = {"thresholds": {scope: threshold}}
     params.update(overrides)
-    return RuleConfig(enabled=True, severity="error", params=params)
+    return Rule(enabled=True, severity="error", params=params)
 
 
 # ---------------------------------------------------------------------------

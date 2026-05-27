@@ -4,7 +4,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from slop.linter.linter import Linter
-from slop.linter.rule_config import RuleConfig
+from slop.linter.rule import Rule
 from slop.config import Config
 
 

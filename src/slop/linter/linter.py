@@ -10,7 +10,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from slop import __version__
-from slop.linter.rule_config import RuleConfig
+from slop.linter.rule import Rule
 from slop.config import Config
 from slop.linter.types import RuleDefinition, RuleResult
 from slop.tree.tree import Tree
@@ -24,7 +24,7 @@ __all__ = ["Linter"]
 def _execute_rule_v2(
     rule_def: RuleDefinition,
     tree: Tree,
-    rc: RuleConfig,
+    rc: Rule,
     config: Config,
 ) -> RuleResult:
     """Dispatch one rule to its runner.

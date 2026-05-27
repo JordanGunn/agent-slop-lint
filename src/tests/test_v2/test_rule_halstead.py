@@ -18,15 +18,15 @@ from __future__ import annotations
 import math
 from pathlib import Path
 
-from slop.linter.rule_config import RuleConfig
+from slop.linter.rule import Rule
 from slop.config import Config
-from slop.structure.metrics.density import run_density
-from slop.structure.metrics.volume import run_volume
+from slop.linter.rules.density import run_density
+from slop.linter.rules.volume import run_volume
 from slop.tree.tree import Tree
 
 
-def _rc(threshold: float) -> RuleConfig:
-    return RuleConfig(enabled=True, severity="error", params={"thresholds": {"function": threshold}})
+def _rc(threshold: float) -> Rule:
+    return Rule(enabled=True, severity="error", params={"thresholds": {"function": threshold}})
 
 
 def _sc(tmp_path: Path) -> Config:

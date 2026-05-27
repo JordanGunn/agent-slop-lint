@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop.linter.rule_config import RuleConfig
+from slop.linter.rule import Rule
 from slop.config import Config
 from slop.tree.tree import Tree
 
@@ -13,8 +13,8 @@ def _structure(root: Path):
     t = Tree(root)
     t.scan()
     return t.structure
-from slop.structure.metrics.cognitive import run_cognitive
-from slop.structure.metrics.cyclomatic import run_cyclomatic
+from slop.linter.rules.cognitive import run_cognitive
+from slop.linter.rules.cyclomatic import run_cyclomatic
 
 # Python source with known complexity values
 _SIMPLE = "def add(a, b):\n    return a + b\n"  # ccx=1, cog=0
@@ -61,14 +61,14 @@ def _default_config() -> Config:
     return Config(rules={})
 
 
-def _rule_config(**overrides) -> RuleConfig:
+def _rule_config(**overrides) -> Rule:
     """Function-scope RuleConfig. ``threshold=X`` wraps into the nested
     ``{thresholds: {function: X}}`` shape the rule body consumes.
     """
     threshold = overrides.pop("threshold", 10)
     params: dict = {"thresholds": {"function": threshold}}
     params.update(overrides)
-    return RuleConfig(enabled=True, severity="error", params=params)
+    return Rule(enabled=True, severity="error", params=params)
 
 
 # ---------------------------------------------------------------------------

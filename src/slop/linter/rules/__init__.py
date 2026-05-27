@@ -1,35 +1,89 @@
-"""Cross-cutting rule registry.
+"""Rule registry — every rule slop ships, flat.
 
-Rules that don't fit a single view: ``hotspots`` needs git
-churn history, and ``orphans`` needs whole-tree reference
-analysis. They live with the linter rather than the structure or
-lexicon view.
+Each rule module owns its own ``RULE: RuleDefinition`` at module bottom.
+This package's job is one line: gather them all into ``RULE_REGISTRY``.
+
+There is no substrate sub-grouping at the directory level — a rule's
+package location does not imply which view it consumes. The rule's
+imports (``from slop.structure.view import Structure`` etc.) are the
+authoritative signal. Substrate grouping was vestigial from the
+retired ``structural.*`` / ``lexical.*`` name prefixes; the rule names
+are bare now (``complexity.cyclomatic``, ``lexical.stutter``,
+``hotspots``) and the layout follows the names.
 """
 from __future__ import annotations
 
-from slop.linter.tags import Tag
 from slop.linter.types import RuleDefinition
 
-from .hotspots import run_churn_weighted
-from .orphans import run_orphans
+from . import (
+    clone_density,
+    cognitive,
+    combinatorial,
+    confusion,
+    coupling,
+    cowards,
+    cyclomatic,
+    density,
+    dependencies,
+    escape_hatches,
+    god_module,
+    hammers,
+    hidden_mutators,
+    hotspots,
+    imposters,
+    inheritance_children,
+    inheritance_depth,
+    magic_literals,
+    orphans,
+    redundancy,
+    rigidity,
+    sentinels,
+    slackers,
+    sprawl,
+    stutter,
+    tautology,
+    uselessness,
+    verbosity,
+    volume,
+)
 
-CROSS_CUTTING_RULES: list[RuleDefinition] = [
-    RuleDefinition(
-        name=Tag.HOTSPOTS.key,
-        category=Tag.HOTSPOTS.key,
-        description="Churn × complexity per file (Tornhill 2015)",
-        default_severity="error",
-        default_enabled=True,
-        threshold_label="14d window",
-        run=run_churn_weighted,
-    ),
-    RuleDefinition(
-        name=Tag.ORPHANS.key,
-        category=Tag.ORPHANS.key,
-        description="Unreferenced symbols (advisory)",
-        default_severity="warning",
-        default_enabled=False,
-        threshold_label="",
-        run=run_orphans,
-    ),
+RULE_REGISTRY: list[RuleDefinition] = [
+    # complexity family (multi-scope)
+    cyclomatic.RULE,
+    cognitive.RULE,
+    combinatorial.RULE,
+    volume.RULE,
+    density.RULE,
+    # CK class metrics
+    coupling.RULE,
+    inheritance_depth.RULE,
+    inheritance_children.RULE,
+    # function-scope standalone
+    hidden_mutators.RULE,
+    magic_literals.RULE,
+    # module-scope standalone
+    god_module.RULE,
+    escape_hatches.RULE,
+    # parameter-scope standalone
+    sentinels.RULE,
+    # package-scope standalone
+    rigidity.RULE,
+    uselessness.RULE,
+    # graph / whole-tree (no scope)
+    dependencies.RULE,
+    redundancy.RULE,
+    clone_density.RULE,
+    # lexical (naming discipline over Lexicon view)
+    stutter.RULE,
+    verbosity.RULE,
+    cowards.RULE,
+    hammers.RULE,
+    tautology.RULE,
+    sprawl.RULE,
+    imposters.RULE,
+    slackers.RULE,
+    confusion.RULE,
+    # cross-cutting (need git churn or whole-repo ripgrep)
+    hotspots.RULE,
+    orphans.RULE,
 ]

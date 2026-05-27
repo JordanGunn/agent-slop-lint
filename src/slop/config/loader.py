@@ -14,8 +14,8 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
-from slop.config.models import Config, Waiver
-from slop.linter.rule_config import RuleConfig
+from slop.config.config import Config, Waiver
+from slop.linter.rule import Rule
 
 # ---------------------------------------------------------------------------
 # TOML structure handling
@@ -307,8 +307,8 @@ def _read_toml(path: Path) -> dict[str, Any]:
 
 def _merge_rule_config(
     defaults: dict[str, Any], overrides: dict[str, Any]
-) -> RuleConfig:
-    """Merge a default rule config dict with user overrides into a RuleConfig.
+) -> Rule:
+    """Merge a default rule config dict with user overrides into a Rule.
 
     The nested ``thresholds`` dict is deep-merged so a user override
     of one scope (e.g., ``thresholds = {class = 50}``) keeps the
@@ -328,13 +328,13 @@ def _merge_rule_config(
             merged[k] = v
     enabled = merged.pop("enabled", True)
     severity = merged.pop("severity", "error")
-    return RuleConfig(enabled=enabled, severity=severity, params=merged)
+    return Rule(enabled=enabled, severity=severity, params=merged)
 
 
 def _build_rule_configs(
     raw_rules: dict[str, Any],
-) -> dict[str, RuleConfig]:
-    """Build RuleConfig dict by merging user config over defaults.
+) -> dict[str, Rule]:
+    """Build Rule dict by merging user config over defaults.
 
     Intermediate prefix tables (``[rules.class]``,
     ``[rules.complexity]``) propagate their ``enabled`` / ``severity``
@@ -343,7 +343,7 @@ def _build_rule_configs(
     canonical_keys = set(DEFAULT_RULE_CONFIGS.keys())
     flat = _flatten_canonical_tables(raw_rules, canonical_keys)
     prefix_overrides = _collect_prefix_overrides(raw_rules, canonical_keys)
-    result: dict[str, RuleConfig] = {}
+    result: dict[str, Rule] = {}
     for category, defaults in DEFAULT_RULE_CONFIGS.items():
         layered: dict[str, Any] = {}
         parts = category.split(".")

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop.linter.rule_config import RuleConfig
+from slop.linter.rule import Rule
 from slop.config import Config
 from slop.tree.tree import Tree
 
@@ -26,18 +26,18 @@ def _lexicon(root: Path):
     return t.lexicon
 
 
-from slop.lexicon.metrics.verbosity import run_verbosity
-from slop.lexicon.metrics.cowards import run_cowards
-from slop.lexicon.metrics.tautology import run_tautology
-from slop.lexicon.metrics.hammers import run_hammers
+from slop.linter.rules.verbosity import run_verbosity
+from slop.linter.rules.cowards import run_cowards
+from slop.linter.rules.tautology import run_tautology
+from slop.linter.rules.hammers import run_hammers
 
 
 def _slop() -> Config:
     return Config(rules={}, languages=["python"])
 
 
-def _rc(**params) -> RuleConfig:
-    return RuleConfig(enabled=True, severity="warning", params=params)
+def _rc(**params) -> Rule:
+    return Rule(enabled=True, severity="warning", params=params)
 
 
 # ---------------------------------------------------------------------------

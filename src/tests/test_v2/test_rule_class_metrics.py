@@ -19,28 +19,28 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop.linter.rule_config import RuleConfig
+from slop.linter.rule import Rule
 from slop.config import Config
-from slop.structure.metrics.coupling import run_coupling
-from slop.structure.metrics.inheritance_children import run_inheritance_children
-from slop.structure.metrics.inheritance_depth import run_inheritance_depth
-from slop.structure.metrics.cyclomatic import run_cyclomatic
+from slop.linter.rules.coupling import run_coupling
+from slop.linter.rules.inheritance_children import run_inheritance_children
+from slop.linter.rules.inheritance_depth import run_inheritance_depth
+from slop.linter.rules.cyclomatic import run_cyclomatic
 from slop.tree.tree import Tree
 
 
-def _rc(threshold: int) -> RuleConfig:
+def _rc(threshold: int) -> Rule:
     """Class-scope RuleConfig for CK metrics (coupling, inheritance.*)."""
-    return RuleConfig(
+    return Rule(
         enabled=True, severity="error",
         params={"thresholds": {"class": threshold}},
     )
 
 
-def _rc_wmc(class_threshold: int) -> RuleConfig:
+def _rc_wmc(class_threshold: int) -> Rule:
     """RuleConfig that exercises only the class scope of run_cyclomatic
     (WMC). function scope is omitted so the rule skips function findings.
     """
-    return RuleConfig(
+    return Rule(
         enabled=True, severity="error",
         params={"thresholds": {"class": class_threshold}},
     )

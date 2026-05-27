@@ -49,31 +49,42 @@ slop/                       <- repo root (docs, LICENSE, NOTICE, README, .slop.t
         records.py          Scope, Callable, Occurrence, Parameter, ParseResult (frozen dataclasses)
         _parse.py           parse_file (tree-sitter parser wrapper)
         _find.py            find_kernel (fd file-discovery wrapper)
-      structure/            Structure view + structural rules
-        view.py             Structure(tree, lang): callables(), scopes(), cyclomatic(), …
-        rules/__init__.py   STRUCTURAL_RULES (per-rule run_X functions)
-        rules/*.py          complexity, npath, halstead, class_metrics, packages, etc.
-        _grep.py            ripgrep wrapper (used by _orphans)
+      structure/            Structure view + view-internal helpers
+        view.py             Structure(tree, lang): callables(), scopes(), cyclomatic(), redundancy(), … (thin facade for non-trivial metrics)
+        records.py          RedundancyPair, etc. — public records emitted by view methods
+        _annotations.py     Annotation/escape-hatch density compute
+        _clones.py          Type-2 clone detection compute
+        _hidden_mutators.py Hidden-mutator parameter detection compute
+        _hotspots.py        Churn × complexity compute (Tornhill 2015)
+        _imports.py         Import-graph + dependency-cycle compute
+        _orphans.py         Whole-tree orphan symbol detection compute
+        _packages.py        Robert C. Martin package-level (rigidity / uselessness) compute
+        _redundancy.py      Sibling-callee overlap compute
+        _sentinels.py       String sentinel detection compute
         _git.py             git log --numstat wrapper (used by _hotspots)
-      lexicon/              Lexicon view + lexical rules
-        view.py             Lexicon: tokens, named_entities, first_param_clusters, …
+        _grep.py            ripgrep wrapper (used by _orphans)
+      lexicon/              Lexicon view + view-internal helpers + public utility modules
+        view.py             Lexicon: tokens, named_entities, first_param_clusters, … (thin facade for non-trivial methods)
         records.py          NamedEntity, FirstParameterCluster
-        _affix.py           Token-Levenshtein + alphabet clustering + FCA + Lexeme + UNIVERSAL_NOISE
-        _profile.py         Multi-signal cluster classifier (body Jaccard, receiver-call density)
-        rules/__init__.py   LEXICAL_RULES (stutter, verbosity, cowards, hammers, tautology, sprawl, imposters, slackers, confusion)
-      linter/               Linter, Result, Slop, dispatch, format, cross-cutting rules
+        affix.py            Public: Token-Levenshtein + alphabet clustering + FCA + Lexeme + UNIVERSAL_NOISE — imported directly by rules and tests
+        actions.py          Public: action-name vocabulary primitives
+        filters.py          Public: token-filter primitives
+        _profile.py         Multi-signal cluster classifier (body Jaccard, receiver-call density) — view-internal
+        diagnostics.py      Research-grade cell/cluster diagnostics (not yet productionised)
+      linter/               Linter, Result, Slop, dispatch, format, rule registry
         linter.py           Linter(config).run() — main entry point
-        _dispatch.py        select_rules, apply_waivers, overall_status, execute_rule
+        dispatch.py         select_rules, apply_waivers, overall_status, execute_rule
         result.py           Result dataclass; .json() returns dict, .pretty() returns str
         slop.py             Slop finding type
         types.py            RuleResult, RuleDefinition, RuleRunner
         format.py           Human / quiet / dict formatters (delegated to by Result)
-        __init__.py         Aggregates STRUCTURAL_RULES + LEXICAL_RULES + CROSS_CUTTING_RULES
-                              → RULE_REGISTRY, RULES_BY_NAME, RULES_BY_CATEGORY, CATEGORIES
-        rules/__init__.py   CROSS_CUTTING_RULES (hotspots, orphans)
-        rule_config.py      Per-rule RuleConfig dataclass — rule-domain (config files populate it; semantics belong here)
-        severity.py         Severity enum — rule-domain
+        rule_config.py      Per-rule RuleConfig dataclass
+        severity.py         Severity enum
         tags.py             Rule namespace vocabulary (Tag) + Scope enum
+        __init__.py         Lazy-loads RULE_REGISTRY / RULES_BY_NAME / RULES_BY_CATEGORY / CATEGORIES from .rules
+        rules/__init__.py   Single flat RULE_REGISTRY built from every rule module's RULE constant
+        rules/*.py          One rule per file: complexity.cyclomatic, lexical.stutter, hotspots, etc. (29 rules total)
+        rules/_*.py         Rule-internal shared helpers (_complexity_dispatch, _class_index, _architecture, _halstead)
       preflight.py          System-binary dep check (fd, rg, git)
       _doctor.py            Doctor primitives used by preflight + cli/doctor
       _subprocess.py        run_tool / which subprocess wrappers (used by _grep, _git, _find, _doctor)
@@ -121,11 +132,11 @@ uv run slop check complexity --root /path/to/code
 
 ## Adding a new rule
 
-The v2.0 rule signature is `(view, rule_config, slop_config) -> RuleResult` where `view` is a `Structure` or `Lexicon` instance.
+The rule signature is `(view, rule_config, slop_config) -> RuleResult` where `view` is a `Structure` or `Lexicon` instance.
 
-1. Decide the substrate: structural metric → `slop/structure/rules/`; lexical/naming → `slop/lexicon/rules/`; cross-cutting (needs git history or whole-tree analysis) → `slop/linter/rules/`.
-2. Create `<substrate>/rules/<name>.py` with `run_<rule>(view, rule_config, slop_config) -> RuleResult`. Grow a view method on `Structure` / `Lexicon` for any reusable compute; small rule-specific helpers can live in the rule module.
-3. Append a `RuleDefinition` to `STRUCTURAL_RULES` / `LEXICAL_RULES` / `CROSS_CUTTING_RULES` in the substrate's `rules/__init__.py`. (Aggregation at `slop.linter.RULE_REGISTRY` is automatic.)
+1. Create `slop/linter/rules/<name>.py` with `run_<rule>(view, rule_config, slop_config) -> RuleResult`. Grow a view method on `Structure` / `Lexicon` for any reusable measurement compute; small rule-specific helpers can live in the rule module or in a `slop/linter/rules/_<helper>.py`.
+2. Define `RULE: RuleDefinition = RuleDefinition(...)` at module bottom.
+3. Add the module to the imports and the `RULE_REGISTRY` list in `slop/linter/rules/__init__.py`.
 4. Add default config in `slop/config/loader.py` (`DEFAULT_RULE_CONFIGS`).
 5. Add to the generated config template in `slop/cli/_templates.py` (`generate_default_config`).
 6. Write tests in `src/tests/test_rules/test_<name>.py` (integration) and/or `src/tests/test_v2/test_<view>.py` (view-method unit tests).
@@ -135,7 +146,9 @@ Rules emit `Slop` (the finding type, importable from `slop.linter`) for threshol
 ## Key design decisions
 
 - **Substrate-aligned packages, not tool-substrate.** Discovery and metric logic is split by responsibility (`tree` parses, `structure`/`lexicon` view, `linter` dispatches), not by the underlying tool. Each substrate owns its private infrastructure modules (`_parse`, `_find`, `_grep`, `_git`, etc.). The original kernel tree is Apache-2.0; see `src/slop/KERNELS_LICENSE` and the repo-root `NOTICE`.
-- **Per-substrate rule registries, aggregated at the linter.** `slop.structure.rules.STRUCTURAL_RULES`, `slop.lexicon.rules.LEXICAL_RULES`, and `slop.linter.rules.CROSS_CUTTING_RULES` each own their substrate's rules; `slop.linter.RULE_REGISTRY` concatenates them. No central `slop.rules` module.
+- **Metric vs. rule, structural separation.** A *metric* is the measurement (`Structure.cyclomatic()`, `Lexicon.first_param_clusters()`) — it lives as a method on the view. A *rule* is the threshold check + Slop emission that consumes that metric — it lives in `slop/linter/rules/`. The substrate package contains views; the linter package contains rules. The two are distinct concerns at the package level.
+- **One flat rule registry.** All rules live in `slop/linter/rules/` regardless of which view they consume; `slop/linter/rules/__init__.py` builds a single `RULE_REGISTRY` from each module's `RULE` constant. Directory grouping by substrate was vestigial from the retired `structural.*` / `lexical.*` name prefixes — without those prefixes, the substrate grouping encodes nothing the rule's imports don't already say.
+- **Three layers, not duplication: rule → view method → algorithm helper.** A rule (`slop/linter/rules/<name>.py`) handles threshold check + Slop emission. A view method (`Structure.<name>()` / `Lexicon.<name>()`) is the substrate's public API for the measurement. An algorithm helper (`slop/<substrate>/_<name>.py`) holds the actual compute. Inline-vs-extract threshold: if the algorithm fits in roughly 30 LOC with no auxiliary helper functions, inline it on the view (`cyclomatic`, `cognitive`); otherwise extract to a `_<name>.py` and have the view method delegate (`redundancy`, `hotspots`, `clones`). The leading underscore marks substrate-internal — it should not be imported outside the substrate package. Public utility modules in a substrate (`slop/lexicon/affix.py`, `slop/lexicon/actions.py`, `slop/lexicon/filters.py`) do not get an underscore because they are deliberately consumed by external callers (rules, tests).
 - **`cmd.py` convention.** Every CLI sub-package's root command lives in `<pkg>/cmd.py` (e.g. `slop/cli/cmd.py`, `slop/cli/install/cmd.py`).
 - **`Result.json()` returns a dict; `Result.pretty()` returns a string.** Both delegate to `slop.linter.format`. The CLI does `json.dumps(result.json(), indent=2)` at the output boundary.
 - **Config discovery walks upward** from CWD for `.slop.toml` or `pyproject.toml` with `[tool.slop]`. A pyproject without `[tool.slop]` is skipped, so sub-project pyproject files (like `src/pyproject.toml` in this repo) don't mask a repo-root `.slop.toml`.

@@ -7,10 +7,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop.linter.rule_config import RuleConfig
+from slop.linter.rule import Rule
 from slop.config import Config
-from slop.lexicon.metrics.imposters import run_imposters
-from slop.lexicon.metrics.sprawl import run_sprawl
+from slop.linter.rules.imposters import run_imposters
+from slop.linter.rules.sprawl import run_sprawl
 from slop.tree.tree import Tree
 
 
@@ -29,8 +29,8 @@ def _slop_config(root: Path | None = None) -> Config:
     )
 
 
-def _rule_config(**overrides) -> RuleConfig:
-    return RuleConfig(enabled=True, severity="warning", params=overrides)
+def _rule_config(**overrides) -> Rule:
+    return Rule(enabled=True, severity="warning", params=overrides)
 
 
 # ---------------------------------------------------------------------------

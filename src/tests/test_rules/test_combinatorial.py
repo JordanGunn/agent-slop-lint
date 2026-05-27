@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop.linter.rule_config import RuleConfig
+from slop.linter.rule import Rule
 from slop.config import Config
-from slop.structure.metrics.combinatorial import run_combinatorial
+from slop.linter.rules.combinatorial import run_combinatorial
 from slop.tree.tree import Tree
 
 _LINEAR = "def f(x):\n    y = x + 1\n    return y\n"  # NPath=1
@@ -40,11 +40,11 @@ def _slop_config(tmp_path: Path) -> Config:
     return Config(root=str(tmp_path), rules={})
 
 
-def _rule_config(**overrides) -> RuleConfig:
+def _rule_config(**overrides) -> Rule:
     threshold = overrides.pop("threshold", 400)
     params: dict = {"thresholds": {"function": threshold}}
     params.update(overrides)
-    return RuleConfig(enabled=True, severity="error", params=params)
+    return Rule(enabled=True, severity="error", params=params)
 
 
 def test_combinatorial_passes_on_linear_function(tmp_path: Path) -> None:

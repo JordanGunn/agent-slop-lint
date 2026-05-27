@@ -5,7 +5,7 @@
 for filtering and ranking. Use ``.label()`` to convert a member to its
 lowercase string form (``"off"``, ``"info"``, ``"warning"``, ``"error"``)
 when serializing to JSON or comparing against string-typed fields on
-``Slop`` / ``RuleConfig`` (those remain ``str`` for TOML round-tripping
+``Slop`` / ``Rule`` (those remain ``str`` for TOML round-tripping
 and historic call-site shape).
 """
 from __future__ import annotations

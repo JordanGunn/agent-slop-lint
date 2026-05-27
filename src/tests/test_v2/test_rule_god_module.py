@@ -10,14 +10,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop.linter.rule_config import RuleConfig
+from slop.linter.rule import Rule
 from slop.config import Config
-from slop.structure.metrics.god_module import run_god_module
+from slop.linter.rules.god_module import run_god_module
 from slop.tree.tree import Tree
 
 
-def _rc(threshold: int = 20) -> RuleConfig:
-    return RuleConfig(enabled=True, severity="warning", params={"thresholds": {"module": threshold}})
+def _rc(threshold: int = 20) -> Rule:
+    return Rule(enabled=True, severity="warning", params={"thresholds": {"module": threshold}})
 
 
 def _sc(tmp_path: Path) -> Config:

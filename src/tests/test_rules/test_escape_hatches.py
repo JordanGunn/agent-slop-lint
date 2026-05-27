@@ -3,9 +3,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop.linter.rule_config import RuleConfig
+from slop.linter.rule import Rule
 from slop.config import Config
-from slop.structure.metrics.escape_hatches import run_escape_hatches
+from slop.linter.rules.escape_hatches import run_escape_hatches
 from slop.tree.tree import Tree
 
 
@@ -15,14 +15,14 @@ def _structure(root: Path):
     return t.structure
 
 
-def _rc(**overrides) -> RuleConfig:
+def _rc(**overrides) -> Rule:
     threshold = overrides.pop("threshold", 0.30)
     params: dict = {
         "thresholds": {"module": threshold},
         "min_annotations": 2,
     }
     params.update(overrides)
-    return RuleConfig(enabled=True, severity="warning", params=params)
+    return Rule(enabled=True, severity="warning", params=params)
 
 
 def _sc(tmp_path: Path) -> Config:

@@ -11,9 +11,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop.linter.rule_config import RuleConfig
+from slop.linter.rule import Rule
 from slop.config import Config
-from slop.lexicon.metrics.stutter import run_stutter
+from slop.linter.rules.stutter import run_stutter
 from slop.tree.tree import Tree
 
 
@@ -24,10 +24,10 @@ def _lexicon(root):
 
 
 
-def _rc(**params) -> RuleConfig:
+def _rc(**params) -> Rule:
     base = {"min_overlap_tokens": 2}
     base.update(params)
-    return RuleConfig(enabled=True, severity="warning", params=base)
+    return Rule(enabled=True, severity="warning", params=base)
 
 
 # ---------------------------------------------------------------------------

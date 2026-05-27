@@ -14,16 +14,17 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop.linter.rule_config import RuleConfig
+from slop.linter.rule import Rule
 from slop.config import Config
 from slop.linter.slop import Slop
-from slop.linter.types import RuleResult
+from slop.linter.tags import Tag
+from slop.linter.types import RuleDefinition, RuleResult
 from slop.structure.view import Structure
 
 
 def run_churn_weighted(
     structure: Structure,
-    rule_config: RuleConfig,
+    rule_config: Rule,
     slop_config: Config,
 ) -> RuleResult:
     """Threshold-check growth-weighted complexity hotspots."""
@@ -73,3 +74,13 @@ def run_churn_weighted(
         },
         errors=list(result.errors),
     )
+
+RULE = RuleDefinition(
+    name=Tag.HOTSPOTS.key,
+    category=Tag.HOTSPOTS.key,
+    description="Churn × complexity per file (Tornhill 2015)",
+    default_severity="error",
+    default_enabled=True,
+    threshold_label="14d window",
+    run=run_churn_weighted,
+)

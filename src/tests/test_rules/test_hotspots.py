@@ -6,7 +6,7 @@ import os
 import subprocess
 from pathlib import Path
 
-from slop.linter.rule_config import RuleConfig
+from slop.linter.rule import Rule
 from slop.config import Config
 from slop.linter.rules.hotspots import run_churn_weighted
 from slop.tree.tree import Tree
@@ -58,7 +58,7 @@ def test_hotspot_violation_when_complex_and_churned(tmp_path: Path):
     fillers2 = {f"filler{i}.py": f"def g{i}():\n    return {i}\n" for i in range(8)}
     _commit(repo, fillers2, "fillers-2", "2026-03-05T00:00:00+00:00")
 
-    rc = RuleConfig(enabled=True, severity="error", params={
+    rc = Rule(enabled=True, severity="error", params={
         "since": "all", "min_commits": 2, "fail_on_quadrant": ["hotspot"],
     })
     result = run_churn_weighted(_structure(repo), rc, Config(root=str(repo)))
@@ -71,7 +71,7 @@ def test_hotspot_pass_when_no_hotspots(tmp_path: Path):
     repo = _init_repo(tmp_path / "repo")
     _commit(repo, {"a.py": "def f():\n    pass\n"}, "c1", "2026-03-01T00:00:00+00:00")
     _commit(repo, {"a.py": "def f():\n    return 1\n"}, "c2", "2026-03-02T00:00:00+00:00")
-    rc = RuleConfig(enabled=True, severity="error", params={
+    rc = Rule(enabled=True, severity="error", params={
         "since": "all", "min_commits": 2, "fail_on_quadrant": ["hotspot"],
     })
     result = run_churn_weighted(_structure(repo), rc, Config(root=str(repo)))
@@ -82,7 +82,7 @@ def test_hotspot_pass_when_no_hotspots(tmp_path: Path):
 def test_hotspot_summary_includes_window(tmp_path: Path):
     repo = _init_repo(tmp_path / "repo")
     _commit(repo, {"a.py": "x = 1\n"}, "c1", "2026-03-01T00:00:00+00:00")
-    rc = RuleConfig(enabled=True, severity="error", params={
+    rc = Rule(enabled=True, severity="error", params={
         "since": "90 days ago", "min_commits": 1, "fail_on_quadrant": ["hotspot"],
     })
     result = run_churn_weighted(_structure(repo), rc, Config(root=str(repo)))

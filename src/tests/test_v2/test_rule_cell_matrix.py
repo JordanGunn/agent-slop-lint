@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop.linter.rule_config import RuleConfig
+from slop.linter.rule import Rule
 from slop.config import Config
 from slop.lexicon.affix import UNIVERSAL_NOISE
 from slop.lexicon.diagnostics import (
@@ -12,7 +12,9 @@ from slop.lexicon.diagnostics import (
     tabulate_rule_cell_matrix,
     violations_with_cells,
 )
-from slop.linter import LEXICAL_RULES
+from slop.linter import RULE_REGISTRY
+
+LEXICAL_RULES = [r for r in RULE_REGISTRY if r.name.startswith("lexical.")]
 from slop.tree.tree import Tree
 
 

@@ -10,14 +10,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop.linter.rule_config import RuleConfig
+from slop.linter.rule import Rule
 from slop.config import Config
-from slop.structure.metrics.magic_literals import run_magic_literals
+from slop.linter.rules.magic_literals import run_magic_literals
 from slop.tree.tree import Tree
 
 
-def _rc(threshold: int = 3) -> RuleConfig:
-    return RuleConfig(enabled=True, severity="warning", params={"thresholds": {"function": threshold}})
+def _rc(threshold: int = 3) -> Rule:
+    return Rule(enabled=True, severity="warning", params={"thresholds": {"function": threshold}})
 
 
 def _sc(tmp_path: Path) -> Config:

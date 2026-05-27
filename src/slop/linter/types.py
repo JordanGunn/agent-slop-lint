@@ -22,7 +22,7 @@ class RuleResult:
 
 # Type alias for rule run functions.
 RuleRunner = Callable[..., RuleResult]
-"""(view: Structure | Lexicon, rule_config: RuleConfig, slop_config: Config) -> RuleResult"""
+"""(view: Structure | Lexicon, rule_config: Rule, slop_config: Config) -> RuleResult"""
 
 
 @dataclass(frozen=True)

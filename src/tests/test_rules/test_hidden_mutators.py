@@ -3,9 +3,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop.linter.rule_config import RuleConfig
+from slop.linter.rule import Rule
 from slop.config import Config
-from slop.structure.metrics.hidden_mutators import run_hidden_mutators
+from slop.linter.rules.hidden_mutators import run_hidden_mutators
 from slop.tree.tree import Tree
 
 
@@ -15,14 +15,14 @@ def _structure(root: Path):
     return t.structure
 
 
-def _rc(**overrides) -> RuleConfig:
+def _rc(**overrides) -> Rule:
     min_mutations = overrides.pop("min_mutations", 1)
     params: dict = {
         "thresholds": {"function": min_mutations},
         "require_type_annotation": True,
     }
     params.update(overrides)
-    return RuleConfig(enabled=True, severity="warning", params=params)
+    return Rule(enabled=True, severity="warning", params=params)
 
 
 def _sc(tmp_path: Path) -> Config:

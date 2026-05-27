@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop.linter.rule_config import RuleConfig
+from slop.linter.rule import Rule
 from slop.config import Config
 from slop.linter.rules.orphans import run_orphans
 from slop.tree.tree import Tree
@@ -15,8 +15,8 @@ def _structure(root: Path):
     return tree.structure
 
 
-def _rc(min_confidence: str = "high") -> RuleConfig:
-    return RuleConfig(
+def _rc(min_confidence: str = "high") -> Rule:
+    return Rule(
         enabled=True, severity="warning",
         params={"min_confidence": min_confidence},
     )

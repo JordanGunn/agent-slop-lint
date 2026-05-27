@@ -13,11 +13,11 @@ import pytest
 
 from pathlib import Path
 
-from slop.linter.rule_config import RuleConfig
+from slop.linter.rule import Rule
 from slop.config import Config
-from slop.structure.metrics.combinatorial import run_combinatorial
-from slop.structure.metrics.cyclomatic import run_cyclomatic
-from slop.structure.metrics.dependencies import run_cycles
+from slop.linter.rules.combinatorial import run_combinatorial
+from slop.linter.rules.cyclomatic import run_cyclomatic
+from slop.linter.rules.dependencies import run_cycles
 from slop.tree.tree import Tree
 
 
@@ -55,11 +55,11 @@ def _slop_config() -> Config:
     return Config(rules={}, languages=["julia"])
 
 
-def _rule_config(**overrides) -> RuleConfig:
+def _rule_config(**overrides) -> Rule:
     threshold = overrides.pop("threshold", 0)
     params: dict = {"thresholds": {"function": threshold}}
     params.update(overrides)
-    return RuleConfig(enabled=True, severity="error", params=params)
+    return Rule(enabled=True, severity="error", params=params)
 
 
 def test_julia_cyclomatic_flags_branchy_function(tmp_path: Path):

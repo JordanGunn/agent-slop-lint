@@ -7,9 +7,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop.linter.rule_config import RuleConfig
+from slop.linter.rule import Rule
 from slop.config import Config
-from slop.lexicon.metrics.slackers import run_slackers
+from slop.linter.rules.slackers import run_slackers
 from slop.tree.tree import Tree
 
 
@@ -23,8 +23,8 @@ def _slop() -> Config:
     return Config(rules={}, languages=["python"])
 
 
-def _rc(**params) -> RuleConfig:
-    return RuleConfig(enabled=True, severity="warning", params=params)
+def _rc(**params) -> Rule:
+    return Rule(enabled=True, severity="warning", params=params)
 
 
 def test_slackers_flags_unaligned_real_cluster(tmp_path: Path):

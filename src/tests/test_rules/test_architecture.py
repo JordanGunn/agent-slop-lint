@@ -9,19 +9,19 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop.linter.rule_config import RuleConfig
+from slop.linter.rule import Rule
 from slop.config import Config
 from slop.structure.records import PackageMetrics
-from slop.structure.metrics.rigidity import run_rigidity
-from slop.structure.metrics.uselessness import run_uselessness
+from slop.linter.rules.rigidity import run_rigidity
+from slop.linter.rules.uselessness import run_uselessness
 from slop.tree.tree import Tree
 
 
-def _rc(threshold: float = 0.7, languages=None) -> RuleConfig:
+def _rc(threshold: float = 0.7, languages=None) -> Rule:
     params: dict = {"thresholds": {"package": threshold}}
     if languages is not None:
         params["languages"] = list(languages)
-    return RuleConfig(enabled=True, severity="warning", params=params)
+    return Rule(enabled=True, severity="warning", params=params)
 
 
 def _structure(root: Path):

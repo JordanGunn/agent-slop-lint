@@ -863,7 +863,7 @@ class Lexicon:
         None, falls back to the longest common prefix across observed
         callable paths.
         """
-        from slop.lexicon.profile import classify_cluster, profile_cluster
+        from slop.lexicon._profile import classify_cluster, profile_cluster
         from slop.lexicon.records import FirstParameterCluster
 
         # Build _FuncEntry-equivalent records for the clustering walk.

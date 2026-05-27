@@ -3,9 +3,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from slop.linter.rule_config import RuleConfig
+from slop.linter.rule import Rule
 from slop.config import Config
-from slop.structure.metrics.dependencies import run_cycles
+from slop.linter.rules.dependencies import run_cycles
 from slop.tree.tree import Tree
 
 
@@ -15,8 +15,8 @@ def _structure(root: Path):
     return t.structure
 
 
-def _rc(*, fail_on_cycles: bool = True, severity: str = "error") -> RuleConfig:
-    return RuleConfig(enabled=True, severity=severity, params={"fail_on_cycles": fail_on_cycles})
+def _rc(*, fail_on_cycles: bool = True, severity: str = "error") -> Rule:
+    return Rule(enabled=True, severity=severity, params={"fail_on_cycles": fail_on_cycles})
 
 
 def test_deps_clean_when_no_cycles(tmp_path: Path):
