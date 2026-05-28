@@ -318,6 +318,13 @@ def _scan_tree(
             stack.append((child, next_scope_stack))
 
 
+_FRAMEWORK_TOKENS: frozenset[str] = frozenset({
+    # tokens whose stutter is usually framework-imposed (argparse, etc.)
+    # rather than naming sloppiness
+    "parser", "args", "argv",
+})
+
+
 def run_stutter(
     lexicon: Lexicon,
     rule_config: Rule,
@@ -327,6 +334,15 @@ def run_stutter(
     min_overlap = int(rule_config.params.get("min_overlap_tokens", 2))
     severity = rule_config.severity
     levels = _levels_from_config(rule_config)
+
+    # Distribution signal: token file-spread. Used to classify each
+    # stutter as scope-leak (high-spread overlap tokens) vs local
+    # restatement (low-spread, name re-stating the immediate scope).
+    from slop.lexicon.affix import UNIVERSAL_NOISE
+    spread_map = {
+        t: len(files)
+        for t, files in lexicon.token_locations(exclude=UNIVERSAL_NOISE).items()
+    }
 
     findings: list[dict[str, Any]] = []
     files_searched = 0
@@ -358,6 +374,33 @@ def run_stutter(
     violations: list[Slop] = []
     for f in findings:
         kind = "name" if f["is_entity_name"] else "identifier"
+        overlap_spreads = [spread_map.get(t.lower(), 0) for t in f["overlap"]]
+        max_overlap_spread = max(overlap_spreads) if overlap_spreads else 0
+        mean_overlap_spread = (
+            sum(overlap_spreads) / len(overlap_spreads)
+            if overlap_spreads else 0.0
+        )
+        is_framework = any(t.lower() in _FRAMEWORK_TOKENS for t in f["overlap"])
+
+        if is_framework:
+            advice = (
+                "framework-imposed naming (e.g., argparse/CLI) — the "
+                "stutter is structural, not a naming choice."
+            )
+        elif mean_overlap_spread >= 5.0:
+            advice = (
+                f"shared tokens are widely spread (mean {mean_overlap_spread:.0f} "
+                f"files) — the {f['scope_level']} scope is leaking across "
+                f"the codebase. Narrow the scope or rename the identifier."
+            )
+        else:
+            advice = (
+                f"shared tokens are local (mean spread "
+                f"{mean_overlap_spread:.0f}) — the {f['scope_level']} "
+                f"scope is restating its own name in the identifier. "
+                f"Drop the redundant tokens from the inner name."
+            )
+
         violations.append(Slop(
             rule="lexical.stutter",
             file=f["file"],
@@ -366,7 +409,7 @@ def run_stutter(
             message=(
                 f"{kind} `{f['identifier']}` stutters with "
                 f"enclosing {f['scope_level']} `{f['scope_name']}` — "
-                f"shared tokens {f['overlap']}"
+                f"shared tokens {f['overlap']}. {advice}"
             ),
             severity=severity,
             value=len(f["overlap"]),
@@ -378,6 +421,9 @@ def run_stutter(
                 "tokens": f["tokens"],
                 "is_entity_name": f["is_entity_name"],
                 "language": f["language"],
+                "mean_overlap_spread": round(mean_overlap_spread, 1),
+                "max_overlap_spread": max_overlap_spread,
+                "is_framework": is_framework,
             },
         ))
 

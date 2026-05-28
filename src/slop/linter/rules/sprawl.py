@@ -62,6 +62,19 @@ def _collect_function_lexemes(
     return items
 
 
+def _dispatch_family_names(lexicon: Lexicon, root: Path, exempt_names: frozenset[str]) -> frozenset[str]:
+    """Names of functions belonging to an imposters dispatch_family cluster."""
+    clusters = lexicon.first_param_clusters(
+        min_cluster=3, exempt_names=exempt_names, root=root,
+    )
+    names: set[str] = set()
+    for c in clusters:
+        if c.profile_label == "dispatch_family":
+            for name, _file, _line in c.members:
+                names.add(name)
+    return frozenset(names)
+
+
 def run_sprawl(
     lexicon: Lexicon, rule_config: Rule, slop_config: Config,
 ) -> RuleResult:
@@ -74,6 +87,9 @@ def run_sprawl(
 
     items = _collect_function_lexemes(lexicon, root)
     result = sprawl_over(items, min_alphabet=min_alphabet)
+    dispatch_names = _dispatch_family_names(
+        lexicon, root, frozenset(rule_config.params.get("exempt_names", ["self", "cls"])),
+    )
 
     violations: list[Slop] = []
 
@@ -89,6 +105,29 @@ def run_sprawl(
                         break
             if anchor_file:
                 break
+        child_members = set()
+        for cluster in result.clusters:
+            for pattern in cluster.patterns:
+                if child in pattern.variants:
+                    for name, _, _ in pattern.variants[child]:
+                        child_members.add(name)
+        in_dispatch = bool(child_members & dispatch_names)
+
+        if in_dispatch:
+            advice = (
+                f"The shared operations reflect a dispatch/plugin "
+                f"pattern — the naming overlap is structural, not a "
+                f"missing type hierarchy. Consider extracting shared "
+                f"logic into a helper rather than introducing a class."
+            )
+        else:
+            advice = (
+                f"Candidate refactor: introduce class "
+                f"`{parent.capitalize()}` and `class "
+                f"{child.capitalize()}({parent.capitalize()})` to make "
+                f"the inheritance explicit."
+            )
+
         violations.append(Slop(
             rule="lexical.sprawl",
             file=anchor_file or "<aggregate>",
@@ -97,16 +136,14 @@ def run_sprawl(
             message=(
                 f"`{child}` inherits from `{parent}` (every operation "
                 f"`{parent}` overrides is also overridden by `{child}`, "
-                f"plus more). Candidate refactor: introduce class "
-                f"`{parent.capitalize()}` and `class "
-                f"{child.capitalize()}({parent.capitalize()})` to make "
-                f"the inheritance explicit."
+                f"plus more). {advice}"
             ),
             severity=severity,
             metadata={
                 "kind": "inheritance_pair",
                 "parent": parent,
                 "child": child,
+                "in_dispatch_family": in_dispatch,
             },
         ))
 

@@ -112,6 +112,12 @@ def run_imposters(
             rc=cluster.mean_receiver_calls,
             bj=cluster.body_jaccard_mean,
         )
+        if cluster.is_isolate and cluster.file_spread > 0:
+            message += (
+                f" `{cluster.parameter_name}` is a packet-isolate token "
+                f"(spread across {cluster.file_spread} files, bonds with "
+                f"no specific partner)."
+            )
         violations.append(Slop(
             rule="lexical.imposters",
             file=anchor_file,
@@ -132,6 +138,8 @@ def run_imposters(
                     for n, f, l in cluster.members
                 ],
                 "parameter_types": sorted(cluster.parameter_types),
+                "is_isolate": cluster.is_isolate,
+                "file_spread": cluster.file_spread,
             },
         ))
 

@@ -47,6 +47,8 @@ class FirstParameterCluster:
     body_jaccard_mean: float = 0.0
     mean_receiver_calls: float = 0.0
     modal_overlap_mean: float = 0.0
+    is_isolate: bool = False
+    file_spread: int = 0
     profile_label: str = "unknown"
-    # "missing_class" | "strategy_family" | "heterogeneous"
-    # | "infrastructure" | "false_positive" | "unknown"
+    # "missing_class" | "dispatch_family" | "strategy_family"
+    # | "heterogeneous" | "infrastructure" | "false_positive" | "unknown"

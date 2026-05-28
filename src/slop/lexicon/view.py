@@ -858,10 +858,25 @@ class Lexicon:
         """
         from slop.lexicon._profile import classify_cluster, profile_cluster
         from slop.lexicon.records import FirstParameterCluster
+        from slop.lexicon.affix import UNIVERSAL_NOISE
 
         # Build _FuncEntry-equivalent records for the clustering walk.
         # We use lightweight tuples instead of dedicated record types.
         from pathlib import Path
+
+        # Distribution signals for the classifier: packet isolates
+        # (frequent tokens that don't co-occur with partners) and
+        # per-token file spread.
+        isolate_tokens = frozenset(
+            t for t, _ in self.packet_isolates(
+                min_bags=3, min_association=0.7,
+                min_frequency=3, exclude=UNIVERSAL_NOISE,
+            )
+        )
+        spread_map = {
+            t: len(files)
+            for t, files in self.token_locations(exclude=UNIVERSAL_NOISE).items()
+        }
 
         if root is None:
             # Best-effort: derive from common prefix.
@@ -951,7 +966,11 @@ class Lexicon:
                         continue
 
                 types = {m[5] for m in members if m[5]}
-                verdict, advisory = classify_cluster(pname, types, exempt_names)
+                verdict, advisory = classify_cluster(
+                    pname, types, exempt_names,
+                    isolate_tokens=isolate_tokens,
+                    spread=spread_map,
+                )
                 scope_str, scope_kind = scope_label(prefix)
                 findings.append(
                     FirstParameterCluster(
@@ -974,7 +993,11 @@ class Lexicon:
         # power the rule's profile_label-aware advisories.
         for cluster in findings:
             bodies = self.bodies_for_cluster(cluster)
-            profile_cluster(cluster, bodies)
+            profile_cluster(
+                cluster, bodies,
+                isolate_tokens=isolate_tokens,
+                spread=spread_map,
+            )
 
         return findings
 

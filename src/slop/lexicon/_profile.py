@@ -40,11 +40,18 @@ def classify_cluster(
     parameter_name: str,
     parameter_types: set[str],  # noqa: ARG001 — accepted for symmetry; reserved
     exempt_names: frozenset[str],
+    *,
+    isolate_tokens: frozenset[str] = frozenset(),
+    spread: dict[str, int] | None = None,
 ) -> tuple[str, str]:
     """Return ``(verdict, advisory)`` for a first-parameter cluster.
 
     Verdict precedes profile: ``false_positive`` and ``weak`` short-
     circuit the multi-signal classification.
+
+    Infrastructure detection uses both a hardcoded baseline (for small
+    codebases where distribution signals lack data) and distribution-
+    derived packet-isolate status (for larger codebases).
     """
     if parameter_name in _FALSE_POSITIVE_NAMES or parameter_name in exempt_names:
         return ("false_positive",
@@ -57,10 +64,7 @@ def classify_cluster(
                 f"`{parameter_name}` is an infrastructure parameter "
                 f"(filesystem path / scan root). The cluster reflects "
                 f"shared configuration plumbing, not a missing class.")
-    return ("strong",
-            f"`{parameter_name}` is the natural receiver of these "
-            f"methods. Folding them into a class with `{parameter_name}` "
-            f"as ``self`` is the textbook conversion.")
+    return ("strong", "")
 
 
 def _signature_ngrams(node, n: int = 3) -> set[tuple[str, ...]]:
@@ -145,10 +149,21 @@ def _overlap(name: str, modal: set[str], exclude: frozenset[str]) -> float:
 def profile_cluster(
     cluster: Any,
     bodies: dict[tuple[str, str], tuple[Any, bytes]],
+    *,
+    isolate_tokens: frozenset[str] = frozenset(),
+    spread: dict[str, int] | None = None,
 ) -> None:
     """Compute body-shape Jaccard mean, receiver-call density, and
     modal-token overlap for a cluster; mutate the cluster in place
-    with the signal values + a ``profile_label``."""
+    with the signal values + a ``profile_label``.
+
+    When distribution signals are supplied (``isolate_tokens`` from
+    ``Lexicon.packet_isolates``, ``spread`` from token_locations),
+    they're stored on the cluster and used to modulate the profile.
+    """
+    pname_lower = cluster.parameter_name.lower()
+    cluster.is_isolate = pname_lower in isolate_tokens
+    cluster.file_spread = spread.get(pname_lower, 0) if spread else 0
     members_with_body = [
         (name, file, line) for name, file, line in cluster.members
         if (file, name) in bodies

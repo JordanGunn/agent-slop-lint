@@ -28,6 +28,19 @@ if TYPE_CHECKING:
 
 _REAL_PROFILES = frozenset({"missing_class", "heterogeneous"})
 
+_PROFILE_ADVICE = {
+    "missing_class": (
+        "The cluster is real; the names refuse to admit it. Consider a "
+        "naming template (e.g., `verb_{param}` or `{param}_attribute`) "
+        "to make the family relationship visible."
+    ),
+    "heterogeneous": (
+        "The cluster is structurally mixed — some members may not belong. "
+        "Review whether the low-coverage members are helpers that should "
+        "be renamed or relocated before applying a naming template."
+    ),
+}
+
 
 from slop.linter.rules._roots import derive_root as _derive_root
 
@@ -80,6 +93,9 @@ def run_slackers(
         member_names = ", ".join(f"`{n}`" for n, _, _ in cluster.members[:5])
         if len(cluster.members) > 5:
             member_names += f" (+{len(cluster.members) - 5})"
+        advice = _PROFILE_ADVICE.get(
+            cluster.profile_label, _PROFILE_ADVICE["heterogeneous"]
+        ).format(param=cluster.parameter_name)
         violations.append(Slop(
             rule="lexical.slackers",
             file=anchor_file,
@@ -89,11 +105,7 @@ def run_slackers(
                 f"{len(cluster.members)} functions {scope_phrase} share "
                 f"`{cluster.parameter_name}` as first parameter but the "
                 f"names don't align ({coverage:.0%} fit any common "
-                f"template). Members: {member_names}. The cluster is "
-                f"real; the names refuse to admit it. Consider a naming "
-                f"template (e.g., `verb_{cluster.parameter_name}` or "
-                f"`{cluster.parameter_name}_attribute`) to make the "
-                f"family relationship visible."
+                f"template). Members: {member_names}. {advice}"
             ),
             severity=severity,
             value=round(coverage, 3),
