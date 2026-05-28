@@ -169,6 +169,22 @@ def run_hammers(
     by_word: dict[str, HammerTerm] = {t.word.lower(): t for t in terms}
     root = Path(slop_config.root).expanduser().resolve() if slop_config.root else None
 
+    # Distribution signals for hammer-pervasiveness context. A banlist
+    # match is more urgent when the hammer token is high-spread and
+    # isolate (appears everywhere but bonds with no specific partner —
+    # the hammer has been institutionalized).
+    from slop.lexicon.affix import UNIVERSAL_NOISE
+    spread_map = {
+        t: len(files)
+        for t, files in lexicon.token_locations(exclude=UNIVERSAL_NOISE).items()
+    }
+    isolate_tokens = frozenset(
+        t for t, _ in lexicon.packet_isolates(
+            min_bags=3, min_association=0.7,
+            min_frequency=3, exclude=UNIVERSAL_NOISE,
+        )
+    )
+
     def _relfile(p: str) -> str:
         if root is None:
             return p
@@ -176,6 +192,20 @@ def run_hammers(
             return str(Path(p).relative_to(root))
         except ValueError:
             return p
+
+    def _pervasiveness_note(word: str) -> str:
+        token = word.lower()
+        spread = spread_map.get(token, 0)
+        is_isolate = token in isolate_tokens
+        if spread >= 5 and is_isolate:
+            return (
+                f" The token appears in {spread} files and bonds with "
+                f"no specific partner — the hammer has been "
+                f"institutionalized across the codebase."
+            )
+        if spread >= 5:
+            return f" The token appears in {spread} files."
+        return ""
 
     violations: list[Slop] = []
     items_analyzed = 0
@@ -188,6 +218,7 @@ def run_hammers(
         if hit is None:
             continue
         word, pos, severity = hit
+        token_lower = word.lower()
         violations.append(Slop(
             rule="lexical.hammers",
             file=rel,
@@ -195,7 +226,8 @@ def run_hammers(
             symbol=entity.name,
             message=(
                 f"{entity.kind} `{entity.name}` matches hammer-word "
-                f"`{word}` ({pos}); the term carries no semantic content"
+                f"`{word}` ({pos}); the term carries no semantic content."
+                f"{_pervasiveness_note(word)}"
             ),
             severity=severity,
             metadata={
@@ -203,6 +235,8 @@ def run_hammers(
                 "matched_position": pos,
                 "kind": entity.kind,
                 "language": entity.language,
+                "token_spread": spread_map.get(token_lower, 0),
+                "is_isolate": token_lower in isolate_tokens,
             },
         ))
 
@@ -219,6 +253,7 @@ def run_hammers(
         if hit is None:
             continue
         word, severity = hit
+        token_lower = word.lower()
         violations.append(Slop(
             rule="lexical.hammers",
             file=rel,
@@ -226,7 +261,8 @@ def run_hammers(
             symbol=stem,
             message=(
                 f"module `{stem}` matches hammer-word `{word}` (module_name); "
-                f"the term carries no semantic content"
+                f"the term carries no semantic content."
+                f"{_pervasiveness_note(word)}"
             ),
             severity=severity,
             metadata={
@@ -234,6 +270,8 @@ def run_hammers(
                 "matched_position": "module_name",
                 "kind": "module",
                 "language": lexicon._language_by_path.get(str(file_path), "<unknown>"),
+                "token_spread": spread_map.get(token_lower, 0),
+                "is_isolate": token_lower in isolate_tokens,
             },
         ))
 

@@ -165,6 +165,38 @@ def run_sprawl(
                 break
         entity_list = ", ".join(f"`{e}`" for e in sorted(concept.extent))
         op_list = ", ".join(f"`{o}`" for o in sorted(concept.intent))
+
+        # Distribution check: are the extent words part of function names
+        # that belong to a dispatch family? If so, the concept is a
+        # dispatch artifact, not a missing type.
+        extent_in_dispatch = False
+        for cluster in result.clusters:
+            for pattern in cluster.patterns:
+                for entity in concept.extent:
+                    if entity in pattern.variants:
+                        for name, _, _ in pattern.variants[entity]:
+                            if name in dispatch_names:
+                                extent_in_dispatch = True
+                                break
+                    if extent_in_dispatch:
+                        break
+                if extent_in_dispatch:
+                    break
+            if extent_in_dispatch:
+                break
+
+        if extent_in_dispatch:
+            concept_advice = (
+                "These functions belong to a dispatch/plugin family — "
+                "the shared operations reflect a registry pattern, not a "
+                "missing type. Verify the dispatch is intentional."
+            )
+        else:
+            concept_advice = (
+                "The alphabet is acting as an undeclared type; "
+                "consider modeling its members as a class."
+            )
+
         violations.append(Slop(
             rule="lexical.sprawl",
             file=anchor_file or "<aggregate>",
@@ -173,8 +205,7 @@ def run_sprawl(
             message=(
                 f"Sprawl: {len(concept.extent)} entities "
                 f"({entity_list}) share {len(concept.intent)} operations "
-                f"({op_list}). The alphabet is acting as an undeclared "
-                f"type; consider modeling its members as a class."
+                f"({op_list}). {concept_advice}"
             ),
             severity=severity,
             metadata={
@@ -183,6 +214,7 @@ def run_sprawl(
                 "intent": sorted(concept.intent),
                 "scope": concept.scope,
                 "scope_kind": concept.scope_kind,
+                "in_dispatch_family": extent_in_dispatch,
             },
         ))
 

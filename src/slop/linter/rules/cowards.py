@@ -65,6 +65,20 @@ def _classify(
     return None
 
 
+def _stem_of(name: str) -> str | None:
+    """Return the un-suffixed stem of a disambiguated name, or None."""
+    stripped = name.strip("_")
+    for pattern in _NUMERIC_PATTERNS:
+        m = pattern.match(stripped)
+        if m is not None:
+            return m.group("stem")
+    if "_" in stripped:
+        stem, last = stripped.rsplit("_", 1)
+        if last.lower() in DEFAULT_ALPHA_SUFFIXES:
+            return stem
+    return None
+
+
 def run_cowards(
     lexicon: Lexicon, rule_config: Rule, slop_config: Config,
 ) -> RuleResult:
@@ -79,11 +93,20 @@ def run_cowards(
     severity = rule_config.severity
     root = Path(slop_config.root).expanduser().resolve() if slop_config.root else None
 
-    violations: list[Slop] = []
-    functions_checked = 0
+    # Collect all function names first — used to detect the smoking-gun
+    # case where both `foo` and `foo_v2` coexist (provenance collapse,
+    # not in-progress migration).
+    all_function_names: set[str] = set()
+    function_entities = []
     for entity in lexicon.named_entities():
         if entity.kind != "function":
             continue
+        all_function_names.add(entity.name)
+        function_entities.append(entity)
+
+    violations: list[Slop] = []
+    functions_checked = 0
+    for entity in function_entities:
         functions_checked += 1
         hit = _classify(entity.name, alpha_suffixes, min_stem_tokens)
         if hit is None:
@@ -95,21 +118,39 @@ def run_cowards(
                 file = str(Path(entity.file).relative_to(root))
             except ValueError:
                 pass
+
+        # Distribution check: does the un-suffixed stem also exist?
+        stem = _stem_of(entity.name)
+        stem_exists = bool(stem and stem in all_function_names)
+        if stem_exists:
+            advice = (
+                f"The un-suffixed stem `{stem}` also exists in the "
+                f"codebase — two versions coexist. Pick one or name "
+                f"what actually differs."
+            )
+        else:
+            advice = (
+                f"In-progress migration or deliberate suffix — verify "
+                f"whether the previous version should be removed."
+            )
+
         violations.append(Slop(
             rule="lexical.cowards",
             file=file,
             line=entity.line,
             symbol=entity.name,
             message=(
-                f"function `{entity.name}` ends in disambiguator `{suffix}` "
-                f"({kind}); the codebase couldn't commit — either pick one "
-                f"or describe what differs"
+                f"function `{entity.name}` ends in disambiguator "
+                f"`{suffix}` ({kind}); the codebase couldn't commit. "
+                f"{advice}"
             ),
             severity=severity,
             metadata={
                 "suffix": suffix,
                 "kind": kind,
                 "language": entity.language,
+                "stem_exists": stem_exists,
+                "stem": stem,
             },
         ))
 
