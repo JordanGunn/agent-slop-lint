@@ -426,9 +426,9 @@ class Structure:
         """
         from pathlib import Path as _Path
 
-        from slop.structure._hotspots import compute as compute_hotspots
+        from slop.structure import _hotspots
 
-        return compute_hotspots(
+        return _hotspots.compute(
             self, _Path(root),
             since=since, until=until,
             min_commits=min_commits,
@@ -462,9 +462,9 @@ class Structure:
         """
         from pathlib import Path as _Path
 
-        from slop.structure._orphans import compute as compute_orphans
+        from slop.structure import _orphans
 
-        return compute_orphans(
+        return _orphans.compute(
             self, _Path(root),
             min_name_length=min_name_length, max_refs=max_refs,
         )
@@ -515,9 +515,9 @@ class Structure:
         with per-event detail; the rule layer threshold-checks the
         mutation count.
         """
-        from slop.structure._hidden_mutators import compute as compute_hidden_mutators
+        from slop.structure import _hidden_mutators
 
-        return compute_hidden_mutators(
+        return _hidden_mutators.compute(
             self, require_type_annotation=require_type_annotation,
         )
 
