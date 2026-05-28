@@ -34,19 +34,19 @@ def _setup(tmp_path: Path):
 
 class TestViolationsWithCells:
     def test_emits_one_record_per_violation(self, tmp_path: Path):
-        # Two cowards-rule fires (functions ending in _v1, _v2).
+        # Two verbosity-rule fires (long function names).
         _write(tmp_path, "a.py",
-               "def process_v1(): pass\n"
-               "def process_v2(): pass\n")
+               "def process_alpha_beta_gamma_delta(): pass\n"
+               "def process_alpha_beta_gamma_epsilon(): pass\n")
         t, sc = _setup(tmp_path)
         records = violations_with_cells(
             t.lexicon, LEXICAL_RULES,
             rule_configs={}, slop_config=sc,
             frequency_threshold=2, spread_threshold=1,
         )
-        cowards = [r for r in records if r.rule == "lexical.cowards"]
-        assert len(cowards) == 2
-        assert all(r.cell != "" for r in cowards)
+        verbosity = [r for r in records if r.rule == "lexical.verbosity"]
+        assert len(verbosity) == 2
+        assert all(r.cell != "" for r in verbosity)
 
     def test_cell_assignment_from_symbol_tokens(self, tmp_path: Path):
         # Construct a corpus where `pdf` lands in plane C (spread):
@@ -65,15 +65,15 @@ class TestViolationsWithCells:
         assert all(len(r.tokens) > 0 for r in verbosity_records)
 
     def test_record_carries_full_provenance(self, tmp_path: Path):
-        _write(tmp_path, "a.py", "def process_v1(): pass\n")
+        _write(tmp_path, "a.py", "def process_alpha_beta_gamma_delta(): pass\n")
         t, sc = _setup(tmp_path)
         records = violations_with_cells(
             t.lexicon, LEXICAL_RULES,
             rule_configs={}, slop_config=sc,
         )
-        rec = next(r for r in records if r.rule == "lexical.cowards")
+        rec = next(r for r in records if r.rule == "lexical.verbosity")
         # ViolationCell carries enough fields to find the violation in source
-        assert rec.symbol == "process_v1"
+        assert rec.symbol == "process_alpha_beta_gamma_delta"
         assert rec.file.endswith("a.py")
         assert rec.severity in ("info", "warning", "error")
         assert "process" in rec.tokens
@@ -87,7 +87,7 @@ class TestViolationsWithCells:
             rule_configs={}, slop_config=sc,
         )
         # No lexical violations on a single trivial function.
-        assert all(r.rule != "lexical.cowards" for r in records)
+        assert all(r.rule != "lexical.verbosity" for r in records)
 
 
 class TestCellPriority:

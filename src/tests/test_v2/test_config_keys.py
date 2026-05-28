@@ -98,9 +98,7 @@ class TestTagMetricLeaves:
     def test_lexical_leaves(self):
         assert Tag.STUTTER == "stutter"
         assert Tag.VERBOSITY == "verbosity"
-        assert Tag.COWARDS == "cowards"
         assert Tag.HAMMERS == "hammers"
-        assert Tag.TAUTOLOGY == "tautology"
         assert Tag.SPRAWL == "sprawl"
         assert Tag.IMPOSTERS == "imposters"
         assert Tag.SLACKERS == "slackers"
@@ -124,8 +122,8 @@ class TestTagGroupings:
 
     def test_lexical_group(self):
         assert Tag.lexical() == frozenset({
-            Tag.STUTTER, Tag.VERBOSITY, Tag.COWARDS, Tag.HAMMERS,
-            Tag.TAUTOLOGY, Tag.SPRAWL, Tag.IMPOSTERS, Tag.SLACKERS,
+            Tag.STUTTER, Tag.VERBOSITY, Tag.HAMMERS,
+            Tag.SPRAWL, Tag.IMPOSTERS, Tag.SLACKERS,
             Tag.CONFUSION,
         })
 
@@ -218,14 +216,8 @@ class TestLexicalLeaves:
     def test_verbosity(self):
         assert Tag.VERBOSITY.key == "lexical.verbosity"
 
-    def test_cowards(self):
-        assert Tag.COWARDS.key == "lexical.cowards"
-
     def test_hammers(self):
         assert Tag.HAMMERS.key == "lexical.hammers"
-
-    def test_tautology(self):
-        assert Tag.TAUTOLOGY.key == "lexical.tautology"
 
     def test_sprawl(self):
         assert Tag.SPRAWL.key == "lexical.sprawl"

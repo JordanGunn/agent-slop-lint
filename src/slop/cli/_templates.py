@@ -258,19 +258,10 @@ max_tokens = 3             # flag function/class names with more tokens than thi
 check_classes = true
 severity = "warning"
 
-[rules.lexical.cowards]
-enabled = true
-min_stem_tokens = 1
-severity = "warning"
-
 [rules.lexical.hammers]
 enabled = true
 severity = "warning"
 # terms = [...]            # see docs/rules/lexical/hammers.md for per-word config
-
-[rules.lexical.tautology]
-enabled = true
-severity = "warning"
 
 [rules.lexical.sprawl]
 enabled = true

@@ -64,9 +64,7 @@ class Tag(StrEnum):
     CHILDREN = "children"
     STUTTER = "stutter"
     VERBOSITY = "verbosity"
-    COWARDS = "cowards"
     HAMMERS = "hammers"
-    TAUTOLOGY = "tautology"
     SPRAWL = "sprawl"
     IMPOSTERS = "imposters"
     SLACKERS = "slackers"
@@ -133,13 +131,11 @@ class Tag(StrEnum):
 
     @classmethod
     def lexical(cls) -> frozenset[str]:
-        """The nine lexical rule tags, for composition into the full rule keys."""
+        """The seven lexical rule tags, for composition into the full rule keys."""
         tags = {
             cls.STUTTER,
             cls.VERBOSITY,
-            cls.COWARDS,
             cls.HAMMERS,
-            cls.TAUTOLOGY,
             cls.SPRAWL,
             cls.IMPOSTERS,
             cls.SLACKERS,

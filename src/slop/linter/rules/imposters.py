@@ -118,6 +118,12 @@ def run_imposters(
                 f"(spread across {cluster.file_spread} files, bonds with "
                 f"no specific partner)."
             )
+        if cluster.scope_hapax_ratio >= 0.5:
+            message += (
+                f" Scope hapax_ratio is {cluster.scope_hapax_ratio:.2f} — "
+                f"vocabulary in the enclosing scope is fragmenting; the "
+                f"cluster sits in a broader naming-coherence problem."
+            )
         violations.append(Slop(
             rule="lexical.imposters",
             file=anchor_file,
@@ -140,6 +146,7 @@ def run_imposters(
                 "parameter_types": sorted(cluster.parameter_types),
                 "is_isolate": cluster.is_isolate,
                 "file_spread": cluster.file_spread,
+                "scope_hapax_ratio": round(cluster.scope_hapax_ratio, 3),
             },
         ))
 

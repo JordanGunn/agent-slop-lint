@@ -152,18 +152,21 @@ def profile_cluster(
     *,
     isolate_tokens: frozenset[str] = frozenset(),
     spread: dict[str, int] | None = None,
+    scope_hapax: float = 0.0,
 ) -> None:
     """Compute body-shape Jaccard mean, receiver-call density, and
     modal-token overlap for a cluster; mutate the cluster in place
     with the signal values + a ``profile_label``.
 
     When distribution signals are supplied (``isolate_tokens`` from
-    ``Lexicon.packet_isolates``, ``spread`` from token_locations),
-    they're stored on the cluster and used to modulate the profile.
+    ``Lexicon.packet_isolates``, ``spread`` from token_locations,
+    ``scope_hapax`` per-scope hapax_ratio), they're stored on the
+    cluster and used to modulate the profile.
     """
     pname_lower = cluster.parameter_name.lower()
     cluster.is_isolate = pname_lower in isolate_tokens
     cluster.file_spread = spread.get(pname_lower, 0) if spread else 0
+    cluster.scope_hapax_ratio = scope_hapax
     members_with_body = [
         (name, file, line) for name, file, line in cluster.members
         if (file, name) in bodies

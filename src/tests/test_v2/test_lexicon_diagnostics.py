@@ -107,13 +107,13 @@ class TestDistributionSummary:
 
 class TestCountViolationsByScope:
     def _corpus(self, tmp_path: Path) -> Tree:
-        # Create a corpus that fires lexical.cowards (v1 suffix) and
-        # lexical.verbosity (long names) so multiple rules participate.
+        # Create a corpus that fires lexical.verbosity (long names) so
+        # the diagnostics layer has rule findings to bucket.
         _write(tmp_path, "pkg_a/x.py",
-               "def process_data_v1(): pass\n"
+               "def process_alpha_beta_gamma_delta(): pass\n"
                "def parse_request_handler_helper(): pass\n")
         _write(tmp_path, "pkg_b/y.py",
-               "def render_v2(): pass\n")
+               "def render_alpha_beta_gamma_epsilon(): pass\n")
         t = Tree(tmp_path)
         t.scan()
         return t
@@ -126,9 +126,7 @@ class TestCountViolationsByScope:
             t.lexicon, LEXICAL_RULES, rule_configs=cfgs, slop_config=sc,
             scope="file", root=tmp_path,
         )
-        # Both files contain coward findings (_v1 / _v2 suffix). Verify
-        # at least one count per file shows up.
-        files = {c.key for c in counts if c.rule == "lexical.cowards"}
+        files = {c.key for c in counts if c.rule == "lexical.verbosity"}
         assert "pkg_a/x.py" in files
         assert "pkg_b/y.py" in files
 
@@ -151,7 +149,7 @@ class TestCountViolationsByScope:
             t.lexicon, LEXICAL_RULES, rule_configs=cfgs, slop_config=sc,
             scope="package", root=tmp_path,
         )
-        pkgs = {c.key for c in counts if c.rule == "lexical.cowards"}
+        pkgs = {c.key for c in counts if c.rule == "lexical.verbosity"}
         assert "pkg_a" in pkgs
         assert "pkg_b" in pkgs
 

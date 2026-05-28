@@ -13,9 +13,8 @@ class NamedEntity:
     """One named callable or class-like scope, token-split.
 
     Consumed by lexical rules that reason about entity names
-    (verbosity, stutter, cowards, hammers, tautology). ``tokens`` is
-    the snake/Camel-split word list; the rule applies its own
-    threshold logic on top.
+    (verbosity, stutter, hammers). ``tokens`` is the snake/Camel-split
+    word list; the rule applies its own threshold logic on top.
     """
 
     name: str
@@ -49,6 +48,7 @@ class FirstParameterCluster:
     modal_overlap_mean: float = 0.0
     is_isolate: bool = False
     file_spread: int = 0
+    scope_hapax_ratio: float = 0.0
     profile_label: str = "unknown"
     # "missing_class" | "dispatch_family" | "strategy_family"
     # | "heterogeneous" | "infrastructure" | "false_positive" | "unknown"

@@ -2,7 +2,7 @@
 
 A ``Lexicon`` is a windowed view over the identifier-token bag
 extracted from the parsed corpus. Lexical rules (sprawl, slackers,
-imposters, confusion, hammers, stutter, cowards, tautology, verbosity)
+imposters, confusion, hammers, stutter, verbosity)
 depend on this surface; they do not see the AST tree shape.
 
 The view owns metric computations. Rules call methods like
@@ -785,8 +785,8 @@ class Lexicon:
         ``INTERFACE``, ``STRUCT``, ``TRAIT``). The ``kind`` field is
         ``"function"`` for callables, ``"class"`` for scopes.
 
-        Consumed by entity-name rules (verbosity, stutter, cowards,
-        hammers, tautology). Filters declared via ``where`` /
+        Consumed by entity-name rules (verbosity, stutter, hammers).
+        Filters declared via ``where`` /
         ``under`` apply.
         """
         from slop.lexicon.records import NamedEntity
@@ -991,12 +991,34 @@ class Lexicon:
         # Enrich each cluster with multi-signal profile (body Jaccard,
         # receiver-call density, modal-token overlap). The signals
         # power the rule's profile_label-aware advisories.
+        # Per-cluster hapax_ratio: cached by scope to avoid recomputation.
+        hapax_by_scope: dict[str, float] = {}
+
+        def _scope_hapax(cluster: Any) -> float:
+            scope_key = f"{cluster.scope_kind}:{cluster.scope}"
+            if scope_key in hapax_by_scope:
+                return hapax_by_scope[scope_key]
+            if cluster.scope_kind == "file":
+                scoped = self._restricted(
+                    lambda rec, sc=cluster.scope: str(rec.path).endswith(sc),
+                )
+            elif cluster.scope_kind == "package":
+                scoped = self._restricted(
+                    lambda rec, sc=cluster.scope: sc in str(rec.path),
+                )
+            else:
+                scoped = self
+            ratio = scoped.hapax_ratio(exclude=UNIVERSAL_NOISE)
+            hapax_by_scope[scope_key] = ratio
+            return ratio
+
         for cluster in findings:
             bodies = self.bodies_for_cluster(cluster)
             profile_cluster(
                 cluster, bodies,
                 isolate_tokens=isolate_tokens,
                 spread=spread_map,
+                scope_hapax=_scope_hapax(cluster),
             )
 
         return findings

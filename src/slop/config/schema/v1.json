@@ -427,32 +427,7 @@
             }
           }
         },
-        "lexical.cowards": {
-          "type": "object",
-          "properties": {
-            "enabled": {
-              "default": true
-            },
-            "severity": {
-              "default": "warning"
-            },
-            "min_stem_tokens": {
-              "default": 1
-            }
-          }
-        },
         "lexical.hammers": {
-          "type": "object",
-          "properties": {
-            "enabled": {
-              "default": true
-            },
-            "severity": {
-              "default": "warning"
-            }
-          }
-        },
-        "lexical.tautology": {
           "type": "object",
           "properties": {
             "enabled": {

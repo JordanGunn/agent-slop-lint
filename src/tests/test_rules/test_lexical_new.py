@@ -1,9 +1,7 @@
-"""Tests for the six v1.1.0 lexical rules.
+"""Tests for the v1.1.0 lexical rules.
 
 - lexical.verbosity
-- lexical.cowards
 - lexical.hammers
-- lexical.tautology
 """
 from __future__ import annotations
 
@@ -27,8 +25,6 @@ def _lexicon(root: Path):
 
 
 from slop.linter.rules.verbosity import run_verbosity
-from slop.linter.rules.cowards import run_cowards
-from slop.linter.rules.tautology import run_tautology
 from slop.linter.rules.hammers import run_hammers
 
 
@@ -81,45 +77,6 @@ def test_name_verbosity_check_classes_off(tmp_path: Path):
     )
     result = run_verbosity(_lexicon(tmp_path), _rc(check_classes=False), _slop())
     assert result.status == "pass"
-
-
-# ---------------------------------------------------------------------------
-# lexical.cowards
-# ---------------------------------------------------------------------------
-
-
-def test_numbered_variants_flags_numeric_suffix(tmp_path: Path):
-    (tmp_path / "f.py").write_text(
-        "def attempt_1(): pass\n"
-        "def attempt_2(): pass\n"
-        "def normal(): pass\n"
-    )
-    result = run_cowards(_lexicon(tmp_path), _rc(), _slop())
-    flagged = {v.symbol for v in result.violations}
-    assert "attempt_1" in flagged
-    assert "attempt_2" in flagged
-    assert "normal" not in flagged
-
-
-def test_numbered_variants_flags_alphabetic_suffix(tmp_path: Path):
-    (tmp_path / "f.py").write_text(
-        "def parse_old(): pass\n"
-        "def parse_new(): pass\n"
-        "def fetch_local(): pass\n"
-    )
-    result = run_cowards(_lexicon(tmp_path), _rc(), _slop())
-    flagged = {v.symbol for v in result.violations}
-    assert "parse_old" in flagged
-    assert "parse_new" in flagged
-    assert "fetch_local" in flagged
-
-
-def test_numbered_variants_skips_short_stems(tmp_path: Path):
-    """Single-char stems (a1, x2) are loop vars / array indices."""
-    (tmp_path / "f.py").write_text("def a1(): pass\n")
-    result = run_cowards(_lexicon(tmp_path), _rc(min_stem_tokens=2), _slop())
-    flagged = {v.symbol for v in result.violations}
-    assert "a1" not in flagged
 
 
 # ---------------------------------------------------------------------------
@@ -177,48 +134,5 @@ def test_weasel_words_custom_terms(tmp_path: Path):
     flagged = {v.symbol for v in result.violations}
     assert "FooFrobnicator" in flagged
 
-
-# ---------------------------------------------------------------------------
-# lexical.tautology
-# ---------------------------------------------------------------------------
-
-
-def test_type_tag_suffixes_flags_dict(tmp_path: Path):
-    (tmp_path / "f.py").write_text(
-        "def a(result_dict: dict[str, int]) -> None: ...\n"
-    )
-    result = run_tautology(_lexicon(tmp_path), _rc(), _slop())
-    flagged = {v.symbol for v in result.violations}
-    assert "result_dict" in flagged
-
-
-def test_type_tag_suffixes_flags_path(tmp_path: Path):
-    (tmp_path / "f.py").write_text(
-        "from pathlib import Path\n"
-        "def x(config_path: Path) -> None: ...\n"
-    )
-    result = run_tautology(_lexicon(tmp_path), _rc(), _slop())
-    flagged = {v.symbol for v in result.violations}
-    assert "config_path" in flagged
-
-
-def test_type_tag_suffixes_skips_legitimate_domain_term(tmp_path: Path):
-    """`username: str` — `name` isn't a type-tag suffix in our list."""
-    (tmp_path / "f.py").write_text(
-        "def a(username: str) -> None: ...\n"
-    )
-    result = run_tautology(_lexicon(tmp_path), _rc(), _slop())
-    flagged = {v.symbol for v in result.violations}
-    assert "username" not in flagged
-
-
-def test_type_tag_suffixes_skips_unmatched_annotation(tmp_path: Path):
-    """`item_dict: list[Foo]` — suffix doesn't match annotation type."""
-    (tmp_path / "f.py").write_text(
-        "def a(item_dict: list) -> None: ...\n"
-    )
-    result = run_tautology(_lexicon(tmp_path), _rc(), _slop())
-    flagged = {v.symbol for v in result.violations}
-    assert "item_dict" not in flagged
 
 

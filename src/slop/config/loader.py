@@ -247,16 +247,7 @@ DEFAULT_RULE_CONFIGS: dict[str, dict[str, Any]] = {
         "max_tokens": 3,
         "check_classes": True,
     },
-    "lexical.cowards": {
-        "enabled": True,
-        "severity": "warning",
-        "min_stem_tokens": 1,
-    },
     "lexical.hammers": {
-        "enabled": True,
-        "severity": "warning",
-    },
-    "lexical.tautology": {
         "enabled": True,
         "severity": "warning",
     },
