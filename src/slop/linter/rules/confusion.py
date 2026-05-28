@@ -116,6 +116,11 @@ def run(
     )
     raw_exempt = rule_config.params.get("exempt_names", ["self", "cls"])
     exempt_names = frozenset(raw_exempt) if raw_exempt else frozenset()
+    # Cross-cluster Jaccard at or below this counts as "genuinely
+    # disjoint concerns" — the only regime where a deterministic split
+    # is safe. Above it, the module may be a cohesive layered pipeline,
+    # so the rule degrades to REVIEW_INTENT (see project_confusion_topology).
+    max_disjoint_jaccard = float(rule_config.params.get("max_disjoint_jaccard", 0.05))
     severity = rule_config.severity
     root = _derive_root(lexicon, slop_config)
 
@@ -162,38 +167,68 @@ def run(
         line = first_cluster.members[0][2] if first_cluster.members else 1
         cross_cohesion = _cross_cluster_jaccard(substantive)
 
-        # Discriminator: when the module name itself is a single
-        # concept-noun (e.g., "diagnostics.py", "loader.py"), it's a
-        # thematic umbrella for whatever lives under it — the clusters
-        # belong as siblings under that umbrella as a subpackage.
-        # Multi-token module names already encode specificity, so a
-        # flat sibling split is the natural shape there.
         module_stem = Path(file).stem.lstrip("_")
         stem_tokens = [t for t in split_tokens(module_stem) if t.lower() not in UNIVERSAL_NOISE]
         is_concept_noun = len(stem_tokens) == 1 and len(stem_tokens[0]) >= 4
 
-        if is_concept_noun or cross_cohesion >= 0.15:
-            action = Action.EXTRACT_SUBPACKAGE
-            prescription = (
-                f"Extract `{file}` into a `{module_stem}/` subpackage. "
-                f"The file holds {len(substantive)} substantive receiver "
-                f"clusters ({cluster_summary}). The module name "
-                f"`{module_stem}` is a concept-noun acting as a "
-                f"thematic umbrella — the clusters belong as sibling "
-                f"modules under that namespace. Dotref will shorten "
-                f"the leaf names (`{module_stem}.X.method()` instead "
-                f"of `verbose_method_name`)."
-            )
+        # Cohesion gates the prescription confidence. Near-zero cross-
+        # cluster vocabulary overlap means the clusters are genuinely
+        # disjoint concerns — safe to prescribe a deterministic split.
+        # Moderate overlap is ambiguous: it could be a layered pipeline
+        # (clusters are abstraction layers that share vocabulary and call
+        # each other) rather than a grab-bag. We can't tell the two apart
+        # with vocabulary alone — that needs call-graph topology (chain vs
+        # star), which is future work. So moderate overlap degrades to
+        # REVIEW_INTENT rather than a wrong deterministic prescription
+        # that could send an agent in refactor circles.
+        if cross_cohesion <= max_disjoint_jaccard:
+            # Confident split. Concept-noun chooses the split SHAPE
+            # (subpackage under a thematic umbrella vs flat siblings) —
+            # it no longer decides WHETHER to split.
+            if is_concept_noun:
+                action = Action.EXTRACT_SUBPACKAGE
+                prescription = (
+                    f"Extract `{file}` into a `{module_stem}/` subpackage. "
+                    f"The file holds {len(substantive)} substantive "
+                    f"receiver clusters ({cluster_summary}) with disjoint "
+                    f"vocabularies (Jaccard {cross_cohesion:.2f}) — genuinely "
+                    f"separate concerns. The module name `{module_stem}` is "
+                    f"a concept-noun acting as a thematic umbrella; the "
+                    f"clusters belong as sibling modules under that "
+                    f"namespace. Dotref will shorten the leaf names."
+                )
+            else:
+                action = Action.SPLIT_MODULE
+                prescription = (
+                    f"Split `{file}` into sibling modules along receiver "
+                    f"boundaries. The file holds {len(substantive)} "
+                    f"substantive receiver clusters ({cluster_summary}) "
+                    f"with disjoint vocabularies (Jaccard "
+                    f"{cross_cohesion:.2f}) — unrelated concerns sharing a "
+                    f"namespace by accident."
+                )
         else:
-            action = Action.SPLIT_MODULE
+            # Ambiguous: moderate vocabulary overlap. Could be a cohesive
+            # layered pipeline. Surface for judgment; don't prescribe.
+            action = Action.REVIEW_INTENT
             prescription = (
-                f"Split `{file}` into sibling modules along receiver "
-                f"boundaries. The file holds {len(substantive)} "
-                f"substantive receiver clusters ({cluster_summary}) "
-                f"with low cross-cluster vocabulary overlap "
-                f"(Jaccard {cross_cohesion:.2f}) — unrelated concerns "
-                f"sharing a namespace by accident."
+                f"Review whether `{file}` is a cohesive pipeline or a "
+                f"grab-bag. It holds {len(substantive)} receiver clusters "
+                f"({cluster_summary}) with moderate cross-cluster "
+                f"vocabulary overlap (Jaccard {cross_cohesion:.2f}). "
+                f"Moderate overlap is ambiguous: if the clusters are "
+                f"abstraction layers that call each other (a pipeline), "
+                f"leave it; if they're independent concerns that merely "
+                f"share some vocabulary, split along receiver boundaries."
             )
+
+        # Confident-split findings carry real confidence; ambiguous
+        # (REVIEW_INTENT) findings are surfaced low so they sort below
+        # actionable prescriptions.
+        if action is Action.REVIEW_INTENT:
+            confidence = 0.4
+        else:
+            confidence = 0.7 if len(substantive) >= 3 else 0.6
 
         violations.append(Slop(
             rule=_RULE,
@@ -204,15 +239,14 @@ def run(
                 f"`{file}` holds {n_functions} functions clustering on "
                 f"{len(substantive)} substantive receivers "
                 f"({cluster_summary}). Cross-cluster vocabulary Jaccard "
-                f"is {cross_cohesion:.2f}. The file is doing the work of "
-                f"multiple cohesive units; split along receiver boundaries."
+                f"is {cross_cohesion:.2f}."
             ),
             severity=severity,
             value=len(substantive),
             threshold=min_substantive_clusters,
             action=action,
             prescription=prescription,
-            confidence=0.7 if len(substantive) >= 3 else 0.6,
+            confidence=confidence,
             metadata={
                 "function_count": n_functions,
                 "clusters": [

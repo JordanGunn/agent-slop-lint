@@ -522,6 +522,9 @@
             "min_strong_receivers": {
               "default": 2
             },
+            "max_disjoint_jaccard": {
+              "default": 0.05
+            },
             "exempt_names": {
               "default": [
                 "self",

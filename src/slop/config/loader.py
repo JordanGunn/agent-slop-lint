@@ -278,6 +278,7 @@ DEFAULT_RULE_CONFIGS: dict[str, dict[str, Any]] = {
         "min_clusters": 2,
         "min_cluster_size": 3,
         "min_strong_receivers": 2,
+        "max_disjoint_jaccard": 0.05,
         "exempt_names": ["self", "cls"],
     },
     "runts": {
