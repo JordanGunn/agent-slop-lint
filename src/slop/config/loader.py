@@ -16,6 +16,7 @@ from typing import Any
 
 from slop.config.config import Config, Waiver
 from slop.linter.rule import Rule
+from slop.linter.tags import Tag
 
 # ---------------------------------------------------------------------------
 # TOML structure handling
@@ -110,26 +111,26 @@ DEFAULT_RULE_CONFIGS: dict[str, dict[str, Any]] = {
     # --- complexity family (multi-scope, scope-first design) ---
     # Each rule supports multiple scopes via per-scope thresholds. A
     # missing scope key in `thresholds` = rule skips that scope.
-    "complexity.cyclomatic": {
+    Tag.CYCLOMATIC.key: {
         "enabled": True,
         "severity": "error",
         "thresholds": {"function": 10, "class": 40},
     },
-    "complexity.cognitive": {
+    Tag.COGNITIVE.key: {
         "enabled": True,
         "severity": "error",
         # Class-scope threshold is slop calibration (no published value
         # for the aggregated form; Campbell 2018 only defined function).
         "thresholds": {"function": 15, "class": 60},
     },
-    "complexity.combinatorial": {
+    Tag.COMBINATORIAL.key: {
         "enabled": True,
         "severity": "error",
         # Class-scope threshold is slop calibration (Nejmeh 1988 only
         # defined function-scope NPath).
         "thresholds": {"function": 400, "class": 1600},
     },
-    "complexity.volume": {
+    Tag.VOLUME.key: {
         "enabled": True,
         "severity": "error",
         # Class-scope threshold is slop calibration (Halstead 1977
@@ -137,7 +138,7 @@ DEFAULT_RULE_CONFIGS: dict[str, dict[str, Any]] = {
         # mathematically defensible but no published threshold).
         "thresholds": {"function": 1500, "class": 6000},
     },
-    "complexity.density": {
+    Tag.DENSITY.key: {
         "enabled": True,
         "severity": "error",
         # Function-scope only — Halstead D is a density ratio and
@@ -145,94 +146,94 @@ DEFAULT_RULE_CONFIGS: dict[str, dict[str, Any]] = {
         "thresholds": {"function": 30},
     },
     # --- CK class metrics ---
-    "coupling": {
+    Tag.COUPLING.key: {
         "enabled": True,
         "severity": "error",
         "thresholds": {"class": 8},
     },
-    "inheritance.depth": {
+    Tag.DEPTH.key: {
         "enabled": True,
         "severity": "error",
         "thresholds": {"class": 4},
     },
-    "inheritance.children": {
+    Tag.CHILDREN.key: {
         "enabled": True,
         "severity": "error",
         "thresholds": {"class": 10},
     },
     # --- Standalone scope-determined rules ---
-    "magic_literals": {
+    Tag.MAGIC_LITERALS.key: {
         "enabled": True,
         "severity": "warning",
         "thresholds": {"function": 3},
     },
-    "god_module": {
+    Tag.GOD_MODULE.key: {
         "enabled": True,
         "severity": "warning",
         "thresholds": {"module": 20},
     },
-    "escape_hatches": {
+    Tag.ESCAPE_HATCHES.key: {
         "enabled": True,
         "severity": "warning",
         "thresholds": {"module": 0.30},
         "min_annotations": 5,
     },
-    "hidden_mutators": {
+    Tag.HIDDEN_MUTATORS.key: {
         "enabled": True,
         "severity": "warning",
         "thresholds": {"function": 1},
         "require_type_annotation": True,
     },
-    "sentinels": {
+    Tag.SENTINELS.key: {
         "enabled": True,
         "severity": "warning",
         "thresholds": {"parameter": 8},
         "require_str_annotation": True,
     },
-    "rigidity": {
+    Tag.RIGIDITY.key: {
         "enabled": True,
         "severity": "warning",
         "thresholds": {"package": 0.7},
         "languages": [],
     },
-    "uselessness": {
+    Tag.USELESSNESS.key: {
         "enabled": True,
         "severity": "warning",
         "thresholds": {"package": 0.7},
         "languages": [],
     },
     # --- Cross-cutting (graph or whole-repo; exempt from scope prefix) ---
-    "hotspots": {
+    Tag.HOTSPOTS.key: {
         "enabled": True,
         "severity": "error",
         "since": "14 days ago",
         "min_commits": 2,
         "fail_on_quadrant": ["hotspot"],
     },
-    "deps": {
+    Tag.DEPS.key: {
         "enabled": True,
         "severity": "error",
         "fail_on_cycles": True,
     },
-    "orphans": {
+    Tag.ORPHANS.key: {
         "enabled": False,
         "severity": "warning",
         "min_confidence": "high",
     },
-    "redundancy": {
+    Tag.REDUNDANCY.key: {
         "enabled": True,
         "severity": "warning",
         "min_shared": 3,
         "min_score": 0.5,
     },
-    "duplication": {
+    Tag.DUPLICATION.key: {
         "enabled": True,
         "severity": "warning",
         "threshold": 0.05,
         "min_leaf_nodes": 10,
         "min_cluster_size": 2,
     },
-    "lexical.stutter": {
+    Tag.STUTTER.key: {
         "enabled": True,
         "severity": "warning",
         "min_overlap_tokens": 2,
@@ -241,37 +242,37 @@ DEFAULT_RULE_CONFIGS: dict[str, dict[str, Any]] = {
         "check_classes": True,
         "check_functions": True,
     },
-    "lexical.verbosity": {
+    Tag.VERBOSITY.key: {
         "enabled": True,
         "severity": "warning",
         "max_tokens": 3,
         "check_classes": True,
     },
-    "lexical.hammers": {
+    Tag.HAMMERS.key: {
         "enabled": True,
         "severity": "warning",
     },
-    "lexical.sprawl": {
+    Tag.SPRAWL.key: {
         "enabled": True,
         "severity": "warning",
         "min_alphabet": 3,
         "min_concept_extent": 2,
         "min_concept_intent": 2,
     },
-    "lexical.imposters": {
+    Tag.IMPOSTERS.key: {
         "enabled": True,
         "severity": "warning",
         "min_cluster": 3,
         "exempt_names": ["self", "cls"],
     },
-    "lexical.slackers": {
+    Tag.SLACKERS.key: {
         "enabled": True,
         "severity": "warning",
         "min_cluster": 3,
         "exempt_names": ["self", "cls"],
         "max_coverage": 0.30,
     },
-    "lexical.confusion": {
+    Tag.CONFUSION.key: {
         "enabled": True,
         "severity": "warning",
         "min_functions": 5,
@@ -281,12 +282,12 @@ DEFAULT_RULE_CONFIGS: dict[str, dict[str, Any]] = {
         "max_disjoint_jaccard": 0.05,
         "exempt_names": ["self", "cls"],
     },
-    "runts": {
+    Tag.RUNTS.key: {
         "enabled": True,
         "severity": "warning",
         "max_init_lines": 5,
     },
-    "changelings": {
+    Tag.CHANGELINGS.key: {
         "enabled": True,
         "severity": "warning",
         "min_occurrences": 1,
