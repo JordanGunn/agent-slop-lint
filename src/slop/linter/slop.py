@@ -28,6 +28,7 @@ class Action(StrEnum):
     EXTRACT_CONSTANT = "extract-shared-constant"
     SPLIT_MODULE = "split-module"
     EXTRACT_SUBPACKAGE = "extract-subpackage"
+    FLATTEN_PACKAGE = "flatten-package"
     NARROW_SCOPE = "narrow-scope-or-rename"
     DROP_REDUNDANT_TOKENS = "drop-redundant-tokens"
     RENAME_BY_TEMPLATE = "rename-by-template"

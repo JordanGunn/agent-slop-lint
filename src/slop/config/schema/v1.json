@@ -529,6 +529,20 @@
               ]
             }
           }
+        },
+        "runts": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "default": true
+            },
+            "severity": {
+              "default": "warning"
+            },
+            "max_init_lines": {
+              "default": 5
+            }
+          }
         }
       }
     }

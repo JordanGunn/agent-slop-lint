@@ -280,6 +280,11 @@ DEFAULT_RULE_CONFIGS: dict[str, dict[str, Any]] = {
         "min_strong_receivers": 2,
         "exempt_names": ["self", "cls"],
     },
+    "runts": {
+        "enabled": True,
+        "severity": "warning",
+        "max_init_lines": 5,
+    },
 }
 
 

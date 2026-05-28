@@ -36,6 +36,7 @@ from . import (
     orphans,
     redundancy,
     rigidity,
+    runts,
     sentinels,
     slackers,
     sprawl,
@@ -79,6 +80,7 @@ RULE_REGISTRY: list[RuleDefinition] = [
     imposters.RULE,
     slackers.RULE,
     confusion.RULE,
+    runts.RULE,
     # cross-cutting (need git churn or whole-repo ripgrep)
     hotspots.RULE,
     orphans.RULE,
