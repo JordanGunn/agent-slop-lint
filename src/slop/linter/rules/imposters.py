@@ -54,19 +54,22 @@ def _action_for_cluster(cluster) -> tuple[Action, str, float]:
     n = len(cluster.members)
 
     if cluster.profile_label == "missing_class":
-        # Third-party receiver heuristic: an isolate token that's also
-        # the parameter type's name (subparsers, parser) — extract a
-        # helper function instead of wrapping the third-party object.
-        if cluster.is_isolate and cluster.file_spread <= 10:
+        # Tiny near-clone clusters (small + very high cohesion) are
+        # framework boilerplate — each member calls a few methods on a
+        # framework-provided receiver (argparse subparsers, tree-sitter
+        # cursors, FastAPI routers). Class extraction wraps the third-
+        # party object; a helper function deduplicates without wrapping.
+        if n <= 5 and cluster.body_jaccard_mean >= 0.7:
             prescription = (
-                f"Extract a `register_{param}(...)` helper or similar — "
-                f"{n} functions share `{param}` as a receiver with strong "
-                f"cohesion (Jaccard {cluster.body_jaccard_mean:.2f}). The "
-                f"parameter looks framework-imposed; a helper function is "
-                f"safer than wrapping it in a class."
+                f"Extract a `register_{param}(...)` helper function. "
+                f"{n} functions share `{param}` as receiver with near-"
+                f"clone cohesion (Jaccard "
+                f"{cluster.body_jaccard_mean:.2f}). Bodies are nearly "
+                f"identical — framework boilerplate. A helper "
+                f"deduplicates without wrapping the underlying receiver "
+                f"type."
             )
-            confidence = 0.7 if cluster.body_jaccard_mean >= 0.7 else 0.55
-            return (Action.EXTRACT_HELPER, prescription, confidence)
+            return (Action.EXTRACT_HELPER, prescription, 0.75)
         # Otherwise: clean class extraction.
         prescription = (
             f"Extract a class with `{param}` as `self`. {n} functions "
