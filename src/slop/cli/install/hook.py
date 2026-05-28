@@ -17,8 +17,9 @@ slop lint --output quiet
 
 def add_parser(subparsers) -> None:
     """Register the ``install hook`` target."""
-    parser = subparsers.add_parser(
-        "hook",
+    from slop.cli.common import register_subcommand
+    parser = register_subcommand(
+        subparsers, "hook",
         help="Install or remove a git pre-commit hook that runs slop",
         description="Install a git pre-commit hook that runs slop lint before each commit.",
     )

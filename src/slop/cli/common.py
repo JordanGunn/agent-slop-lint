@@ -17,6 +17,17 @@ from slop.linter.linter import Linter
 from slop.preflight import MissingBinary, check_required_binaries
 
 
+def register_subcommand(
+    subparsers, name: str, *, help: str, description: str,
+) -> argparse.ArgumentParser:
+    """Register a subcommand with the standard help/description signature.
+
+    Collapses the boilerplate ``subparsers.add_parser(name, help=..., description=...)``
+    pattern repeated across CLI command modules.
+    """
+    return subparsers.add_parser(name, help=help, description=description)
+
+
 def add_common_args(parser: argparse.ArgumentParser) -> None:
     """Common run-flags shared by ``lint`` and ``check``."""
     parser.add_argument(

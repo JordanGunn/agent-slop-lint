@@ -8,8 +8,9 @@ from pathlib import Path
 
 def add_parser(subparsers) -> None:
     """Register the ``install skill`` target."""
-    parser = subparsers.add_parser(
-        "skill",
+    from slop.cli.common import register_subcommand
+    parser = register_subcommand(
+        subparsers, "skill",
         help="Install the slop agent skill into a directory",
         description="Copy the bundled slop agent skill files into the target directory.",
     )

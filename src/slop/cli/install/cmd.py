@@ -14,8 +14,9 @@ from . import hook, skill
 
 def add_parser(subparsers) -> None:
     """Register the ``install`` subcommand with nested install targets."""
-    install_parser = subparsers.add_parser(
-        "install",
+    from slop.cli.common import register_subcommand
+    install_parser = register_subcommand(
+        subparsers, "install",
         help="Install slop integrations (hook, skill)",
         description="Install slop integrations into the local repository or filesystem.",
     )

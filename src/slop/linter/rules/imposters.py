@@ -54,6 +54,24 @@ def _action_for_cluster(cluster) -> tuple[Action, str, float]:
     n = len(cluster.members)
 
     if cluster.profile_label == "missing_class":
+        # Polymorphic dispatch heuristic: when a missing_class cluster
+        # is at package scope with members spread across many files,
+        # the functions are almost certainly already methods on
+        # different classes (typical ABC + concrete-class hierarchy).
+        # The shared parameter name reflects polymorphic dispatch, not
+        # a missing class to extract.
+        if cluster.scope_kind == "package":
+            distinct_files = len({m[1] for m in cluster.members})
+            if distinct_files >= 3:
+                prescription = (
+                    f"Polymorphic dispatch across {distinct_files} files. "
+                    f"{n} functions share `{param}` as receiver, but the "
+                    f"cluster spans the `{cluster.scope}` package — these "
+                    f"are likely overrides of a common method on different "
+                    f"classes (ABC hierarchy). Verify the abstraction is "
+                    f"correctly named; don't introduce a new class."
+                )
+                return (Action.REVIEW_INTENT, prescription, 0.6)
         # Tiny near-clone clusters (small + very high cohesion) are
         # framework boilerplate — each member calls a few methods on a
         # framework-provided receiver (argparse subparsers, tree-sitter
