@@ -75,14 +75,6 @@ class Cpp(MultiPurpose):
         return frozenset({Wrapper.TEMPLATE_DECLARATION})
 
     @classmethod
-    def if_nodes(cls) -> frozenset[str]:
-        return frozenset({Conditional.IF_STATEMENT})
-
-    @classmethod
-    def else_nodes(cls) -> frozenset[str]:
-        return frozenset({Conditional.ELSE_CLAUSE})
-
-    @classmethod
     def loop_nodes(cls) -> frozenset[str]:
         return frozenset({
             Loop.FOR_STATEMENT, Loop.FOR_RANGE_LOOP,
@@ -96,14 +88,6 @@ class Cpp(MultiPurpose):
     @classmethod
     def case_nodes(cls) -> frozenset[str]:
         return frozenset({Switch.CASE_STATEMENT})
-
-    @classmethod
-    def try_nodes(cls) -> frozenset[str]:
-        return frozenset({Catch.TRY_STATEMENT})
-
-    @classmethod
-    def catch_nodes(cls) -> frozenset[str]:
-        return frozenset({Catch.CATCH_CLAUSE})
 
     @classmethod
     def block_types(cls) -> frozenset[str]:

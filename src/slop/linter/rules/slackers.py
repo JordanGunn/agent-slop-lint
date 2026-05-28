@@ -12,8 +12,6 @@ fails to communicate.
 """
 from __future__ import annotations
 
-import os
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 from slop.linter.rule import Rule
@@ -31,20 +29,7 @@ if TYPE_CHECKING:
 _REAL_PROFILES = frozenset({"missing_class", "heterogeneous"})
 
 
-def _derive_root(lexicon: Lexicon, slop_config: Config) -> Path:
-    """Choose the search root.
-
-    Always prefer the longest common directory across the lexicon's
-    parsed files. Falls back to slop_config.root when the lexicon is
-    empty.
-    """
-    paths = [p.path for p in lexicon._parses]  # noqa: SLF001
-    if paths:
-        common = Path(os.path.commonpath([str(p) for p in paths]))
-        return common.parent if common.is_file() else common
-    if slop_config.root:
-        return Path(slop_config.root).expanduser().resolve()
-    return Path.cwd()
+from slop.linter.rules._roots import derive_root as _derive_root
 
 
 def run_slackers(

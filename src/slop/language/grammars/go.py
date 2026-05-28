@@ -85,12 +85,12 @@ class Go(MultiPurpose):
         return frozenset({"&&", "||"})
 
     @classmethod
-    def if_nodes(cls) -> frozenset[str]:
-        return frozenset({Conditional.IF_STATEMENT})
+    def try_nodes(cls) -> frozenset[str]:
+        return frozenset()
 
     @classmethod
-    def else_nodes(cls) -> frozenset[str]:
-        return frozenset({Conditional.ELSE_CLAUSE})
+    def catch_nodes(cls) -> frozenset[str]:
+        return frozenset()
 
     @classmethod
     def loop_nodes(cls) -> frozenset[str]:

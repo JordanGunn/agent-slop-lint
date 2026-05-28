@@ -57,12 +57,11 @@ class CSharp(ObjectOriented):
     def boolean_op_operators(cls) -> frozenset[str] | None:
         return frozenset({"&&", "||"})
 
-    @classmethod
-    def if_nodes(cls) -> frozenset[str]:
-        return frozenset({Conditional.IF_STATEMENT})
-
     # else_nodes intentionally empty — C# emits `else` as a bare
     # keyword child of if_statement; see bare_else_keyword.
+    @classmethod
+    def else_nodes(cls) -> frozenset[str]:
+        return frozenset()
 
     @classmethod
     def loop_nodes(cls) -> frozenset[str]:
@@ -78,14 +77,6 @@ class CSharp(ObjectOriented):
     @classmethod
     def case_nodes(cls) -> frozenset[str]:
         return frozenset({Switch.SWITCH_SECTION})
-
-    @classmethod
-    def try_nodes(cls) -> frozenset[str]:
-        return frozenset({Catch.TRY_STATEMENT})
-
-    @classmethod
-    def catch_nodes(cls) -> frozenset[str]:
-        return frozenset({Catch.CATCH_CLAUSE})
 
     @classmethod
     def block_types(cls) -> frozenset[str]:

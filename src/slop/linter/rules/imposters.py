@@ -37,19 +37,7 @@ if TYPE_CHECKING:
     from slop.lexicon.view import Lexicon
 
 
-def _derive_root(lexicon: Lexicon, slop_config: Config) -> Path:
-    """Prefer slop_config.root when explicitly set; otherwise fall back
-    to the longest common directory across the lexicon's parses."""
-    if slop_config.root and slop_config.root != ".":
-        return Path(slop_config.root).expanduser().resolve()
-    import os
-    paths = [p.path for p in lexicon._parses]  # noqa: SLF001
-    if paths:
-        common = Path(os.path.commonpath([str(p) for p in paths]))
-        return common.parent if common.is_file() else common
-    if slop_config.root:
-        return Path(slop_config.root).expanduser().resolve()
-    return Path.cwd()
+from slop.linter.rules._roots import derive_root as _derive_root
 
 
 _PROFILE_MESSAGES = {
@@ -58,6 +46,14 @@ _PROFILE_MESSAGES = {
         "parameter; receiver-call density {rc:.1f} per member, "
         "body cohesion {bj:.2f}. Members actively treat `{param}` "
         "as a receiver — extract a class with `{param}` as ``self``."
+    ),
+    "dispatch_family": (
+        "{n} functions {scope_phrase} share `{param}` as first "
+        "parameter; receiver-call density {rc:.1f} per member, but "
+        "body cohesion is {bj:.2f} (low). Members call methods on "
+        "`{param}` independently — this is a plugin/dispatch family, "
+        "not a missing class. Look for subsets that share internal "
+        "logic and could be grouped."
     ),
     "strategy_family": (
         "{n} functions {scope_phrase} share `{param}` as first "

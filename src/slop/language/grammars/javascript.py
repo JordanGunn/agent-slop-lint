@@ -76,14 +76,6 @@ class JavaScript(MultiPurpose):
         return frozenset({"&&", "||", "??"})
 
     @classmethod
-    def if_nodes(cls) -> frozenset[str]:
-        return frozenset({Conditional.IF_STATEMENT})
-
-    @classmethod
-    def else_nodes(cls) -> frozenset[str]:
-        return frozenset({Conditional.ELSE_CLAUSE})
-
-    @classmethod
     def loop_nodes(cls) -> frozenset[str]:
         return frozenset({
             Loop.FOR_STATEMENT, Loop.FOR_IN_STATEMENT, Loop.FOR_OF_STATEMENT,
@@ -97,14 +89,6 @@ class JavaScript(MultiPurpose):
     @classmethod
     def case_nodes(cls) -> frozenset[str]:
         return frozenset({Switch.SWITCH_CASE})
-
-    @classmethod
-    def try_nodes(cls) -> frozenset[str]:
-        return frozenset({Catch.TRY_STATEMENT})
-
-    @classmethod
-    def catch_nodes(cls) -> frozenset[str]:
-        return frozenset({Catch.CATCH_CLAUSE})
 
     @classmethod
     def block_types(cls) -> frozenset[str]:

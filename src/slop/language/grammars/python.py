@@ -62,16 +62,8 @@ class Python(MultiPurpose):
     # boolean_operator node always counts (and/or).
 
     @classmethod
-    def if_nodes(cls) -> frozenset[str]:
-        return frozenset({Conditional.IF_STATEMENT})
-
-    @classmethod
     def elif_nodes(cls) -> frozenset[str]:
         return frozenset({Conditional.ELIF_CLAUSE})
-
-    @classmethod
-    def else_nodes(cls) -> frozenset[str]:
-        return frozenset({Conditional.ELSE_CLAUSE})
 
     @classmethod
     def loop_nodes(cls) -> frozenset[str]:
@@ -84,10 +76,6 @@ class Python(MultiPurpose):
     @classmethod
     def case_nodes(cls) -> frozenset[str]:
         return frozenset({Switch.CASE_CLAUSE})
-
-    @classmethod
-    def try_nodes(cls) -> frozenset[str]:
-        return frozenset({Catch.TRY_STATEMENT})
 
     @classmethod
     def catch_nodes(cls) -> frozenset[str]:

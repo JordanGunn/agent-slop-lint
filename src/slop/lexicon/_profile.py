@@ -202,7 +202,9 @@ def profile_cluster(
         cluster.profile_label = "infrastructure"
     elif cluster.body_jaccard_mean >= 0.7 and cluster.mean_receiver_calls < 0.5:
         cluster.profile_label = "strategy_family"
-    elif cluster.mean_receiver_calls >= 1.0:
+    elif cluster.mean_receiver_calls >= 1.0 and cluster.body_jaccard_mean >= 0.4:
         cluster.profile_label = "missing_class"
+    elif cluster.mean_receiver_calls >= 1.0:
+        cluster.profile_label = "dispatch_family"
     else:
         cluster.profile_label = "heterogeneous"

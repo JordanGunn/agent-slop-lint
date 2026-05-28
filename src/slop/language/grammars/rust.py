@@ -73,8 +73,12 @@ class Rust(MultiPurpose):
         return frozenset({Conditional.IF_EXPRESSION})
 
     @classmethod
-    def else_nodes(cls) -> frozenset[str]:
-        return frozenset({Conditional.ELSE_CLAUSE})
+    def try_nodes(cls) -> frozenset[str]:
+        return frozenset()
+
+    @classmethod
+    def catch_nodes(cls) -> frozenset[str]:
+        return frozenset()
 
     @classmethod
     def loop_nodes(cls) -> frozenset[str]:

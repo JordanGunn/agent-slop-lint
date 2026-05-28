@@ -23,6 +23,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, ClassVar
 
+from slop.language.ast import Catch, Conditional
 from slop.language.treesitter import load_language
 
 if TYPE_CHECKING:
@@ -181,7 +182,7 @@ class Language(ABC):
     @classmethod
     def if_nodes(cls) -> frozenset[str]:
         """Tree-sitter node types for ``if`` conditionals (the wrapper)."""
-        return frozenset()
+        return frozenset({Conditional.IF_STATEMENT})
 
     @classmethod
     def elif_nodes(cls) -> frozenset[str]:
@@ -197,10 +198,10 @@ class Language(ABC):
     def else_nodes(cls) -> frozenset[str]:
         """Tree-sitter node types for an ``else`` clause wrapper.
 
-        Empty in grammars without an else-wrapper node (C# — see
-        ``bare_else_keyword``).
+        Override to ``frozenset()`` in grammars without an else-wrapper
+        node (C# — see ``bare_else_keyword``).
         """
-        return frozenset()
+        return frozenset({Conditional.ELSE_CLAUSE})
 
     @classmethod
     def loop_nodes(cls) -> frozenset[str]:
@@ -230,12 +231,12 @@ class Language(ABC):
     @classmethod
     def try_nodes(cls) -> frozenset[str]:
         """Tree-sitter node types for exception-protected blocks (try / begin)."""
-        return frozenset()
+        return frozenset({Catch.TRY_STATEMENT})
 
     @classmethod
     def catch_nodes(cls) -> frozenset[str]:
         """Tree-sitter node types for exception-handler clauses (catch / except / rescue)."""
-        return frozenset()
+        return frozenset({Catch.CATCH_CLAUSE})
 
     @classmethod
     def body_field(cls) -> str:

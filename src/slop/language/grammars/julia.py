@@ -52,28 +52,12 @@ class Julia(Procedural):
         return frozenset({"&&", "||"})
 
     @classmethod
-    def if_nodes(cls) -> frozenset[str]:
-        return frozenset({Conditional.IF_STATEMENT})
-
-    @classmethod
     def elif_nodes(cls) -> frozenset[str]:
         return frozenset({Conditional.ELSEIF_CLAUSE})
 
     @classmethod
-    def else_nodes(cls) -> frozenset[str]:
-        return frozenset({Conditional.ELSE_CLAUSE})
-
-    @classmethod
     def loop_nodes(cls) -> frozenset[str]:
         return frozenset({Loop.FOR_STATEMENT, Loop.WHILE_STATEMENT})
-
-    @classmethod
-    def try_nodes(cls) -> frozenset[str]:
-        return frozenset({Catch.TRY_STATEMENT})
-
-    @classmethod
-    def catch_nodes(cls) -> frozenset[str]:
-        return frozenset({Catch.CATCH_CLAUSE})
 
     @classmethod
     def body_field(cls) -> str:
