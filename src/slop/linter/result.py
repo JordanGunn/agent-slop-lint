@@ -33,8 +33,8 @@ class Result:
         The CLI's ``--output json`` mode serialises this with
         ``json.dumps()`` at the output boundary.
         """
-        from .format import to_dict
-        return to_dict(self)
+        from slop.linter import format
+        return format.as_dict(self)
 
     def pretty(self, *, verbose: bool = True, max_violations: int | None = None) -> str:
         """Human-readable terminal output.
@@ -42,8 +42,8 @@ class Result:
         ``verbose=True`` returns the full per-category block.
         ``verbose=False`` returns the one-line summary.
         """
-        from .format import DEFAULT_MAX_VIOLATIONS, format_human, format_quiet
+        from slop.linter import format
         if not verbose:
-            return format_quiet(self)
-        cap = max_violations if max_violations is not None else DEFAULT_MAX_VIOLATIONS
-        return format_human(self, max_violations=cap)
+            return format.quiet(self)
+        cap = max_violations if max_violations is not None else format.DEFAULT_MAX_VIOLATIONS
+        return format.human(self, max_violations=cap)

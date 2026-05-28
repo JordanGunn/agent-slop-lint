@@ -8,7 +8,11 @@ from slop.cli.color import set_color
 from slop.linter.result import Result
 from slop.linter.types import RuleResult
 from slop.linter.slop import Slop
-from slop.linter.format import _plural, format_human, format_quiet, to_dict
+from slop.linter import format
+from slop.linter.format.render import _plural
+format_human = format.human
+format_quiet = format.quiet
+to_dict = format.as_dict
 
 # Disable color for predictable test output
 set_color(False)

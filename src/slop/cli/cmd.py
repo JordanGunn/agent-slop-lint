@@ -15,8 +15,9 @@ import argparse
 from slop import __version__
 from slop.cli.color import set_color
 
+from slop.linter import format as _format
 from . import check, doctor, init, rules, schema
-from .common import DEFAULT_MAX_VIOLATIONS, add_common_args, load_and_run
+from .common import add_common_args, load_and_run
 from .install import cmd as install_cmd
 
 
@@ -86,7 +87,7 @@ def main(argv: list[str] | None = None) -> int:
         args.root = None
         args.config_path = None
         args.output = "human"
-        args.max_violations = DEFAULT_MAX_VIOLATIONS
+        args.max_violations = _format.DEFAULT_MAX_VIOLATIONS
         args.no_color = False
 
     dispatch = {

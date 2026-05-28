@@ -1,6 +1,9 @@
-"""Output formatters for slop.
+"""Human-readable render helpers for the format subpackage.
 
-Supports human-readable (default), quiet (summary only), and JSON output.
+Companion to ``format.__init__`` which exposes the three public output
+surfaces: ``human``, ``quiet``, ``as_dict``. This module holds the
+rendering machinery that builds the human-readable output — category
+grouping, finding rendering, summary aggregation, footer composition.
 """
 
 from __future__ import annotations
@@ -48,7 +51,7 @@ def _plural(n: int, singular: str, plural: str | None = None) -> str:
 # ---------------------------------------------------------------------------
 
 
-def format_human(result: Result, *, max_violations: int = DEFAULT_MAX_VIOLATIONS) -> str:
+def human(result: Result, *, max_violations: int = DEFAULT_MAX_VIOLATIONS) -> str:
     """Format a Result as human-readable terminal output."""
     lines: list[str] = []
     display = result.display_root or result.root
@@ -116,36 +119,30 @@ def _render_category_findings(
 ) -> list[str]:
     """Render failing findings first, then waived findings."""
     lines: list[str] = []
-    for rule_name, rr in _rules_with_violations(rule_pairs):
+    for rule_name, rr in _rules_where(rule_pairs, "violations"):
         lines.extend(_render_violations(
             rule_name, rr.violations, has_multiple_rules, max_violations,
         ))
-    for rule_name, rr in _rules_with_waivers(rule_pairs):
+    for rule_name, rr in _rules_where(rule_pairs, "waived_violations"):
         lines.extend(_render_waived(
             rule_name, rr.waived_violations, has_multiple_rules, max_violations,
         ))
     return lines
 
 
-def _rules_with_violations(
+def _rules_where(
     rule_pairs: list[tuple[str, RuleResult]],
+    attr: str,
 ) -> list[tuple[str, RuleResult]]:
-    """Return non-skipped rule results with failing violations."""
+    """Return non-skipped rule results whose ``attr`` attribute is truthy.
+
+    ``attr`` is one of ``"violations"`` or ``"waived_violations"`` — the
+    two finding-list fields callers want to iterate over.
+    """
     return [
         (rule_name, rr)
         for rule_name, rr in rule_pairs
-        if rr.status != "skip" and rr.violations
-    ]
-
-
-def _rules_with_waivers(
-    rule_pairs: list[tuple[str, RuleResult]],
-) -> list[tuple[str, RuleResult]]:
-    """Return non-skipped rule results with waived findings."""
-    return [
-        (rule_name, rr)
-        for rule_name, rr in rule_pairs
-        if rr.status != "skip" and rr.waived_violations
+        if rr.status != "skip" and getattr(rr, attr)
     ]
 
 
@@ -318,80 +315,3 @@ def _format_footer(result: Result) -> str:
     return " | ".join(parts) + f" | {status}"
 
 
-# ---------------------------------------------------------------------------
-# Quiet mode (summary only)
-# ---------------------------------------------------------------------------
-
-
-def format_quiet(result: Result) -> str:
-    """One-line summary output."""
-    return _format_footer(result)
-
-
-# ---------------------------------------------------------------------------
-# JSON
-# ---------------------------------------------------------------------------
-
-
-def to_dict(result: Result) -> dict:
-    """Format a Result as a JSON-serialisable dict.
-
-    Returned by ``Result.json()``. The CLI's ``--output json`` mode
-    serialises with ``json.dumps()`` at the output boundary.
-    """
-    output: dict = {
-        "version": result.version,
-        "root": result.root,
-        "languages": result.languages,
-        "rules": {},
-        "summary": {
-            "rules_checked": result.rules_checked,
-            "rules_skipped": result.rules_skipped,
-            "violation_count": result.slop_count,
-            "advisory_count": result.advisory_count,
-            "waived_count": result.waived_count,
-            "result": result.verdict,
-        },
-    }
-
-    for rule_name, rr in result.rule_results.items():
-        violations_out = []
-        for v in rr.violations:
-            violations_out.append({
-                "rule": v.rule,
-                "scope": v.scope,
-                "file": v.file,
-                "line": v.line,
-                "symbol": v.symbol,
-                "message": v.message,
-                "severity": v.severity,
-                "value": v.value,
-                "threshold": v.threshold,
-                "action": str(v.action) if v.action else None,
-                "prescription": v.prescription,
-                "confidence": v.confidence,
-                "metadata": v.metadata,
-            })
-        waived_out = []
-        for v in rr.waived_violations:
-            waived_out.append({
-                "rule": v.rule,
-                "scope": v.scope,
-                "file": v.file,
-                "line": v.line,
-                "symbol": v.symbol,
-                "message": v.message,
-                "severity": v.severity,
-                "value": v.value,
-                "threshold": v.threshold,
-                "metadata": v.metadata,
-            })
-        output["rules"][rule_name] = {
-            "status": rr.status,
-            "violations": violations_out,
-            "waived_violations": waived_out,
-            "summary": rr.summary,
-            "errors": rr.errors,
-        }
-
-    return output

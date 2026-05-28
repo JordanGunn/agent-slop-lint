@@ -12,7 +12,7 @@ import json
 
 from slop.cli.color import bold, dim, red
 from slop.config.loader import load_config
-from slop.linter.format import DEFAULT_MAX_VIOLATIONS
+from slop.linter import format as _format
 from slop.linter.linter import Linter
 from slop.preflight import MissingBinary, check_required_binaries
 
@@ -43,8 +43,8 @@ def add_common_args(parser: argparse.ArgumentParser) -> None:
         help="Output format (default: human)",
     )
     parser.add_argument(
-        "--max-violations", type=int, default=DEFAULT_MAX_VIOLATIONS, metavar="N",
-        help=f"Max violations shown per rule (default: {DEFAULT_MAX_VIOLATIONS}, 0 = unlimited)",
+        "--max-violations", type=int, default=_format.DEFAULT_MAX_VIOLATIONS, metavar="N",
+        help=f"Max violations shown per rule (default: {_format.DEFAULT_MAX_VIOLATIONS}, 0 = unlimited)",
     )
     parser.add_argument(
         "--no-color", action="store_true",
@@ -74,7 +74,7 @@ def load_and_run(args: argparse.Namespace, **lint_kwargs) -> int:
 
     result = Linter(config).run(display_root=display_root, **lint_kwargs)
 
-    max_v = getattr(args, "max_violations", DEFAULT_MAX_VIOLATIONS)
+    max_v = getattr(args, "max_violations", _format.DEFAULT_MAX_VIOLATIONS)
     if max_v == 0:
         max_v = 999999
 
