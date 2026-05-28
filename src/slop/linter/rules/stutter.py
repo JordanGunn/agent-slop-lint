@@ -111,6 +111,16 @@ def _check_against_scopes(
             continue
         if is_entity_name and scope_name == name:
             continue
+        # Recursive call / self-reference: an identifier inside a function
+        # whose name exactly matches the enclosing function is not a
+        # naming sprawl — it's a recursive call or a same-named method
+        # call (argparse `add_parser`). Skip.
+        if (
+            not is_entity_name
+            and scope_level == "function"
+            and scope_name == name
+        ):
+            continue
         overlap = tokens_lower & scope_tokens
         if len(overlap) >= min_overlap:
             out.append({

@@ -42,13 +42,30 @@ def run_verbosity(
         t for t, _ in lexicon.frequency_head(exclude=UNIVERSAL_NOISE)
     )
 
+    # Language-id prefix detection: tokens like `c`, `go`, `rust` at the
+    # start of a private grammar helper (`_c_walk_pointer_mutations`)
+    # are encoding scope, not content. Discount them from the token count.
+    from slop.language.grammars import LANGUAGE_BY_ID
+    language_id_tokens = frozenset(LANGUAGE_BY_ID.keys())
+
     violations: list[Slop] = []
     analyzed = 0
     for entity in lexicon.named_entities():
         analyzed += 1
         if entity.kind == "class" and not check_classes:
             continue
-        if len(entity.tokens) <= max_tokens:
+
+        # Discount a leading language-id token (`_c_walk_pointer_mutations`
+        # → `walk_pointer_mutations`). The prefix encodes which grammar
+        # class the helper belongs to, not naming content.
+        effective_tokens = list(entity.tokens)
+        if (
+            effective_tokens
+            and effective_tokens[0].lower() in language_id_tokens
+        ):
+            effective_tokens = effective_tokens[1:]
+
+        if len(effective_tokens) <= max_tokens:
             continue
         file = entity.file
         if root is not None:
@@ -57,14 +74,15 @@ def run_verbosity(
             except ValueError:
                 pass
 
-        # Per-token distribution profile.
+        # Per-token distribution profile (over effective tokens — the
+        # language-id prefix is already discounted).
         token_spreads = [
             spread_map.get(t.lower(), 0)
-            for t in entity.tokens
+            for t in effective_tokens
             if t.lower() not in UNIVERSAL_NOISE
         ]
         head_count = sum(
-            1 for t in entity.tokens if t.lower() in head_tokens
+            1 for t in effective_tokens if t.lower() in head_tokens
         )
         max_spread = max(token_spreads) if token_spreads else 0
         mean_spread = (
@@ -75,13 +93,13 @@ def run_verbosity(
         # frequency head. The name is shouldering disambiguation work that
         # the scope should be doing.
         is_scope_leak = (
-            mean_spread >= 5.0 and head_count >= len(entity.tokens) // 2
+            mean_spread >= 5.0 and head_count >= len(effective_tokens) // 2
         )
 
         if is_scope_leak:
             advice = (
                 f"tokens are high-spread (mean spread {mean_spread:.0f} "
-                f"files, {head_count}/{len(entity.tokens)} in frequency "
+                f"files, {head_count}/{len(effective_tokens)} in frequency "
                 f"head) — the scope is too loose, not the name too long. "
                 f"Consider whether `{entity.name}` belongs in a narrower "
                 f"namespace where some of these tokens are implicit."
@@ -99,16 +117,18 @@ def run_verbosity(
             line=entity.line,
             symbol=entity.name,
             message=(
-                f"{entity.kind} '{entity.name}' has {len(entity.tokens)} "
-                f"tokens (threshold {max_tokens}): {list(entity.tokens)}. "
+                f"{entity.kind} '{entity.name}' has "
+                f"{len(effective_tokens)} effective tokens "
+                f"(threshold {max_tokens}): {list(effective_tokens)}. "
                 f"{advice}"
             ),
             severity=severity,
-            value=len(entity.tokens),
+            value=len(effective_tokens),
             threshold=max_tokens,
             metadata={
                 "kind": entity.kind,
                 "tokens": list(entity.tokens),
+                "effective_tokens": list(effective_tokens),
                 "language": entity.language,
                 "mean_token_spread": round(mean_spread, 1),
                 "max_token_spread": max_spread,
