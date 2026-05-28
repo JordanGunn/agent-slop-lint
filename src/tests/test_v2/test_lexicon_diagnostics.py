@@ -1,4 +1,4 @@
-"""Tests for ``slop.lexicon.diagnostics`` — multi-scope counts, histograms, emit."""
+"""Tests for ``slop.lexicon.diagnostic`` — multi-scope counts, histograms, report."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -6,14 +6,14 @@ from pathlib import Path
 from slop.linter.rule import Rule
 from slop.config import Config
 from slop.lexicon.affix import UNIVERSAL_NOISE
-from slop.lexicon.diagnostics import (
-    DistributionSummary,
+from slop.lexicon.diagnostic import (
     HistogramBin,
-    count_violations_by_scope,
-    distribution_summary,
-    emit_diagnostic_report,
+    Summary,
+    count_by_scope,
     histogram_buckets,
     log_buckets,
+    report,
+    summary,
 )
 from slop.linter import RULE_REGISTRY
 
@@ -81,21 +81,21 @@ class TestLogBuckets:
         assert sum(b.count for b in bins) == 2
 
 
-class TestDistributionSummary:
+class TestSummary:
     def test_basic_stats_correct(self):
-        d = distribution_summary([1.0, 2.0, 3.0, 4.0, 5.0], name="x")
+        d = summary([1.0, 2.0, 3.0, 4.0, 5.0], name="x")
         assert d.n == 5
         assert d.mean == 3.0
         assert d.median == 3.0
         assert d.max == 5.0
 
     def test_p90_is_near_top(self):
-        d = distribution_summary([float(i) for i in range(1, 11)], name="x")
+        d = summary([float(i) for i in range(1, 11)], name="x")
         # n=10, p90_idx = int(0.9 * 9) = 8 → value at index 8 = 9.0
         assert d.p90 == 9.0
 
     def test_empty_input_returns_zero_summary(self):
-        d = distribution_summary([], name="x")
+        d = summary([], name="x")
         assert d.n == 0
         assert d.max == 0.0
 
@@ -122,7 +122,7 @@ class TestCountViolationsByScope:
         t = self._corpus(tmp_path)
         cfgs: dict = {}  # default-enabled stand-ins for each rule
         sc = Config(rules={}, languages=["python"], root=str(tmp_path))
-        counts = count_violations_by_scope(
+        counts = count_by_scope(
             t.lexicon, LEXICAL_RULES, rule_configs=cfgs, slop_config=sc,
             scope="file", root=tmp_path,
         )
@@ -134,7 +134,7 @@ class TestCountViolationsByScope:
         t = self._corpus(tmp_path)
         cfgs: dict = {}
         sc = Config(rules={}, languages=["python"], root=str(tmp_path))
-        counts = count_violations_by_scope(
+        counts = count_by_scope(
             t.lexicon, LEXICAL_RULES, rule_configs=cfgs, slop_config=sc,
             scope="root", root=tmp_path,
         )
@@ -145,7 +145,7 @@ class TestCountViolationsByScope:
         t = self._corpus(tmp_path)
         cfgs: dict = {}
         sc = Config(rules={}, languages=["python"], root=str(tmp_path))
-        counts = count_violations_by_scope(
+        counts = count_by_scope(
             t.lexicon, LEXICAL_RULES, rule_configs=cfgs, slop_config=sc,
             scope="package", root=tmp_path,
         )
@@ -167,16 +167,16 @@ class TestEmitDiagnosticReport:
                "def render_pdf(data): pass\n")
         t = Tree(tmp_path)
         t.scan()
-        report = emit_diagnostic_report(
+        r = report(
             t.lexicon, exclude_tokens=UNIVERSAL_NOISE,
         )
-        assert report["corpus"]["files"] == 1
-        assert report["corpus"]["callables"] == 3
-        assert "token_occurrence_count" in report["distributions"]
-        assert "packet_size_callable_scope" in report["distributions"]
-        assert "packets" in report
-        assert "callable_scope" in report["packets"]
-        assert "file_scope" in report["packets"]
+        assert r["corpus"]["files"] == 1
+        assert r["corpus"]["callables"] == 3
+        assert "token_occurrence_count" in r["distributions"]
+        assert "packet_size_callable_scope" in r["distributions"]
+        assert "packets" in r
+        assert "callable_scope" in r["packets"]
+        assert "file_scope" in r["packets"]
 
     def test_with_class_vocabularies_splits_packets(self, tmp_path: Path):
         # Force a packet to fire: a class with method tokens that
@@ -187,36 +187,36 @@ class TestEmitDiagnosticReport:
         t = Tree(tmp_path)
         t.scan()
         vocabs = t.structure.class_vocabularies()
-        report = emit_diagnostic_report(
+        r = report(
             t.lexicon,
             class_vocabularies=vocabs,
             exclude_tokens=UNIVERSAL_NOISE,
             packet_min_bags=5, packet_min_association=0.7,
         )
-        assert "pathological" in report["packets"]["callable_scope"]
-        assert "conventional" in report["packets"]["callable_scope"]
+        assert "pathological" in r["packets"]["callable_scope"]
+        assert "conventional" in r["packets"]["callable_scope"]
         # No classes exist → no conventional packets.
-        assert report["packets"]["callable_scope"]["conventional"] == []
+        assert r["packets"]["callable_scope"]["conventional"] == []
 
     def test_with_rules_emits_violations_section(self, tmp_path: Path):
         _write(tmp_path, "a.py", "def proc_v1(): pass\ndef proc_v2(): pass\n")
         t = Tree(tmp_path)
         t.scan()
         sc = Config(rules={}, languages=["python"], root=str(tmp_path))
-        report = emit_diagnostic_report(
+        r = report(
             t.lexicon, rule_defs=LEXICAL_RULES,
             rule_configs={}, slop_config=sc, root=tmp_path,
         )
-        assert "violations_by_scope" in report
+        assert "violations_by_scope" in r
         for axis in ("file", "package", "root", "callable"):
-            assert axis in report["violations_by_scope"]
+            assert axis in r["violations_by_scope"]
 
     def test_report_is_json_serialisable(self, tmp_path: Path):
         import json
         _write(tmp_path, "a.py", "def parse(): pass\n")
         t = Tree(tmp_path)
         t.scan()
-        report = emit_diagnostic_report(t.lexicon, exclude_tokens=UNIVERSAL_NOISE)
+        r = report(t.lexicon, exclude_tokens=UNIVERSAL_NOISE)
         # Should not raise
-        s = json.dumps(report)
+        s = json.dumps(r)
         assert len(s) > 0

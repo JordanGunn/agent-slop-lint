@@ -6,11 +6,11 @@ from pathlib import Path
 from slop.linter.rule import Rule
 from slop.config import Config
 from slop.lexicon.affix import UNIVERSAL_NOISE
-from slop.lexicon.diagnostics import (
+from slop.lexicon.diagnostic import (
     ViolationCell,
-    format_rule_cell_matrix,
-    tabulate_rule_cell_matrix,
-    violations_with_cells,
+    format_cells,
+    tabulate_cells,
+    with_cells,
 )
 from slop.linter import RULE_REGISTRY
 
@@ -39,7 +39,7 @@ class TestViolationsWithCells:
                "def process_alpha_beta_gamma_delta(): pass\n"
                "def process_alpha_beta_gamma_epsilon(): pass\n")
         t, sc = _setup(tmp_path)
-        records = violations_with_cells(
+        records = with_cells(
             t.lexicon, LEXICAL_RULES,
             rule_configs={}, slop_config=sc,
             frequency_threshold=2, spread_threshold=1,
@@ -55,7 +55,7 @@ class TestViolationsWithCells:
             _write(tmp_path, f"f{i}.py",
                    f"def pdf_extra_long_handler_processor_helper_{i}(): pass\n")
         t, sc = _setup(tmp_path)
-        records = violations_with_cells(
+        records = with_cells(
             t.lexicon, LEXICAL_RULES,
             rule_configs={}, slop_config=sc,
             frequency_threshold=4, spread_threshold=3,
@@ -67,7 +67,7 @@ class TestViolationsWithCells:
     def test_record_carries_full_provenance(self, tmp_path: Path):
         _write(tmp_path, "a.py", "def process_alpha_beta_gamma_delta(): pass\n")
         t, sc = _setup(tmp_path)
-        records = violations_with_cells(
+        records = with_cells(
             t.lexicon, LEXICAL_RULES,
             rule_configs={}, slop_config=sc,
         )
@@ -82,7 +82,7 @@ class TestViolationsWithCells:
         # Clean fixture — should produce zero or minimal violations.
         _write(tmp_path, "a.py", "def f(): pass\n")
         t, sc = _setup(tmp_path)
-        records = violations_with_cells(
+        records = with_cells(
             t.lexicon, LEXICAL_RULES,
             rule_configs={}, slop_config=sc,
         )
@@ -107,7 +107,7 @@ class TestCellPriority:
         # A hypothetical symbol "alpha_pdf" would have one packet-token
         # (alpha) and one spread-token (pdf). Verify the classifier picks
         # the packet cell.
-        from slop.lexicon.diagnostics import _pick_primary_cell
+        from slop.lexicon.diagnostic.violations import _pick_primary_cell
         t, _ = _setup(tmp_path)
         packets = t.lexicon.packets(min_bags=3, min_association=0.7)
         plane_a: set = set()
@@ -132,10 +132,10 @@ class TestTabulateAndFormat:
                "def process_v1(): pass\n"
                "def process_v2(): pass\n")
         t, sc = _setup(tmp_path)
-        records = violations_with_cells(
+        records = with_cells(
             t.lexicon, LEXICAL_RULES, rule_configs={}, slop_config=sc,
         )
-        grid = tabulate_rule_cell_matrix(records)
+        grid = tabulate_cells(records)
         # Every (rule, cell) key should be a tuple of two strings
         assert all(isinstance(k, tuple) and len(k) == 2 for k in grid.keys())
         # Cells should be valid 3-char codes
@@ -148,10 +148,10 @@ class TestTabulateAndFormat:
                "def process_v1(): pass\n"
                "def process_v2(): pass\n")
         t, sc = _setup(tmp_path)
-        records = violations_with_cells(
+        records = with_cells(
             t.lexicon, LEXICAL_RULES, rule_configs={}, slop_config=sc,
         )
-        table = format_rule_cell_matrix(records, LEXICAL_RULES)
+        table = format_cells(records, LEXICAL_RULES)
         # Table contains every cell code in the header
         for cell in ("ABC", "AB-", "A-C", "A--", "-BC", "-B-", "--C", "---"):
             assert cell in table
@@ -163,7 +163,7 @@ class TestTabulateAndFormat:
         import json
         _write(tmp_path, "a.py", "def process_v1(): pass\n")
         t, sc = _setup(tmp_path)
-        records = violations_with_cells(
+        records = with_cells(
             t.lexicon, LEXICAL_RULES, rule_configs={}, slop_config=sc,
         )
         for rec in records:
