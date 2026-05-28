@@ -22,12 +22,38 @@ if TYPE_CHECKING:
 _MODULE_STRIP_CHARS = "\"'<>"
 
 
+_NON_MODULE_LEVEL_PARENTS = frozenset({
+    "function_definition",
+    "decorated_definition",
+})
+
+
+def _is_module_level(node) -> bool:
+    """True if the import node sits at module scope (not local or TYPE_CHECKING-guarded)."""
+    current = node.parent
+    while current is not None:
+        ntype = current.type
+        if ntype in _NON_MODULE_LEVEL_PARENTS:
+            return False
+        if ntype == "if_statement":
+            cond = current.child_by_field_name("condition")
+            if (
+                cond is not None
+                and cond.type == "identifier"
+                and cond.text == b"TYPE_CHECKING"
+            ):
+                return False
+        current = current.parent
+    return True
+
+
 def extract_imports(parses) -> list[Import]:
     """Run each parse's grammar import queries against its root node.
 
     Returns one ``Import`` per ``@module`` capture across all files.
-    Files whose grammar declares no import queries (or whose root node
-    is missing — e.g., parse failed) contribute nothing.
+    Only module-level imports are included — ``TYPE_CHECKING``-guarded
+    and function-local imports are excluded since they do not create
+    runtime dependency edges.
     """
     from slop.language.grammars import LANGUAGE_BY_ID
 
@@ -43,7 +69,9 @@ def extract_imports(parses) -> list[Import]:
             continue
         ts_lang = lang_cls.grammar()
         for query_str, kind in queries:
-            for module, line in _run_query(ts_lang, query_str, p.root_node, p.content):
+            for module, line, node in _run_query(ts_lang, query_str, p.root_node, p.content):
+                if not _is_module_level(node):
+                    continue
                 cleaned = module.strip(_MODULE_STRIP_CHARS)
                 if not cleaned:
                     continue
@@ -52,7 +80,7 @@ def extract_imports(parses) -> list[Import]:
 
 
 def _run_query(ts_lang, query_str: str, root_node, content: bytes):
-    """Execute one query against a pre-parsed root; yield (text, line) per @module capture.
+    """Execute one query against a pre-parsed root; yield (text, line, node) per @module capture.
 
     Handles both the modern (tree-sitter >= 0.25) ``Query`` + ``QueryCursor``
     API and the legacy ``lang.query()`` API.
@@ -64,7 +92,6 @@ def _run_query(ts_lang, query_str: str, root_node, content: bytes):
     if query_cls is not None and cursor_cls is not None:
         query = query_cls(ts_lang, query_str)
         cursor = cursor_cls(query)
-        # ``matches`` returns (pattern_index, captures_dict_or_list) pairs.
         for _idx, captures in cursor.matches(root_node):
             yield from _module_captures(captures, content)
         return
@@ -78,7 +105,7 @@ def _run_query(ts_lang, query_str: str, root_node, content: bytes):
 
 
 def _module_captures(captures, content: bytes):
-    """Yield (text, line) for every capture named ``@module``.
+    """Yield (text, line, node) for every capture named ``@module``.
 
     Tree-sitter's match payload comes back either as a dict
     (``{capture_name: [nodes]}``) or as a list of (capture_name, node)
@@ -87,12 +114,12 @@ def _module_captures(captures, content: bytes):
     if isinstance(captures, dict):
         nodes = captures.get("module", [])
         for node in nodes:
-            yield _node_text(node, content), node.start_point[0] + 1
+            yield _node_text(node, content), node.start_point[0] + 1, node
         return
     # Legacy: list[(name, node)]
     for name, node in captures:
         if name == "module":
-            yield _node_text(node, content), node.start_point[0] + 1
+            yield _node_text(node, content), node.start_point[0] + 1, node
 
 
 def _node_text(node, content: bytes) -> str:

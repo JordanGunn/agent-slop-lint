@@ -11,7 +11,6 @@ from slop.cli.color import bold, dim, green, red, yellow
 from slop.linter.result import Result
 from slop.linter.types import RuleResult
 from slop.linter.slop import Slop
-from slop.linter import RULES_BY_NAME
 
 # Default number of violations shown per sub-rule before "...and N more"
 DEFAULT_MAX_VIOLATIONS = 5
@@ -23,6 +22,7 @@ def _category_for(rule_name: str) -> str:
     Falls back to the rule name itself when the rule isn't registered
     (covers test fixtures that monkey-patch the registry).
     """
+    from slop.linter import RULES_BY_NAME
     rule_def = RULES_BY_NAME.get(rule_name)
     if rule_def is not None:
         return rule_def.category

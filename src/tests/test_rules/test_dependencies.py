@@ -69,6 +69,40 @@ def test_deps_summary_reports_files_analyzed_and_cycles_found(tmp_path: Path):
     assert result.summary["cycles_found"] == 1
 
 
+def test_deps_ignores_type_checking_guarded_imports(tmp_path: Path):
+    (tmp_path / "a.py").write_text(
+        "from typing import TYPE_CHECKING\n"
+        "if TYPE_CHECKING:\n"
+        "    from b import Foo\n"
+    )
+    (tmp_path / "b.py").write_text("from a import something\n")
+    result = run_cycles(_structure(tmp_path), _rc(), Config(root=str(tmp_path)))
+    assert result.status == "pass"
+
+
+def test_deps_ignores_function_local_imports(tmp_path: Path):
+    (tmp_path / "a.py").write_text(
+        "def f():\n"
+        "    from b import helper\n"
+    )
+    (tmp_path / "b.py").write_text("from a import f\n")
+    result = run_cycles(_structure(tmp_path), _rc(), Config(root=str(tmp_path)))
+    assert result.status == "pass"
+
+
+def test_deps_still_detects_real_cycle_alongside_guarded_imports(tmp_path: Path):
+    (tmp_path / "a.py").write_text(
+        "from typing import TYPE_CHECKING\n"
+        "from b import real_dep\n"
+        "if TYPE_CHECKING:\n"
+        "    from b import TypeOnly\n"
+    )
+    (tmp_path / "b.py").write_text("from a import something\n")
+    result = run_cycles(_structure(tmp_path), _rc(), Config(root=str(tmp_path)))
+    assert result.status == "fail"
+    assert len(result.violations) == 1
+
+
 def test_deps_dotted_module_path_preferred_over_same_stem(tmp_path: Path):
     """``import pkg.service`` resolves to pkg/service.py, not to the root service.py.
 

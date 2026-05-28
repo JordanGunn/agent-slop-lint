@@ -38,10 +38,7 @@ from typing import (
 from slop.lexicon.affix import scope_label
 from slop.tree.records import Callable, Occurrence, ParseResult, ScopeKind
 
-import re
-
-_CAMEL_LOWER_UPPER = re.compile(r"([a-z])([A-Z])")
-_CAMEL_UPPER_TITLE = re.compile(r"([A-Z]+)([A-Z][a-z])")
+from slop.lexicon._tokens import split_tokens as _split_tokens
 
 _CLASS_LIKE_SCOPE_KINDS: frozenset[ScopeKind] = frozenset({
     ScopeKind.CLASS, ScopeKind.INTERFACE, ScopeKind.STRUCT, ScopeKind.TRAIT,
@@ -755,14 +752,10 @@ class Lexicon:
         ``my_func`` → ``("my", "func")``; ``processData`` → ``("process", "Data")``;
         ``HTTPClient`` → ``("HTTP", "Client")``; ``__init__`` → ``("init",)``.
 
-        Static — operates on the name string alone. Exposed on Lexicon
-        so rules don't need to reach into ``slop.lexicon.affix``.
+        Static — operates on the name string alone. Delegates to
+        ``slop.lexicon._tokens.split_tokens``.
         """
-        import re
-        cleaned = name.strip("_")
-        cleaned = _CAMEL_LOWER_UPPER.sub(r"\1_\2", cleaned)
-        cleaned = _CAMEL_UPPER_TITLE.sub(r"\1_\2", cleaned)
-        return tuple(p for p in re.split(r"[_\d]+", cleaned) if p)
+        return _split_tokens(name)
 
     def files(self) -> Iterable[Any]:
         """Yield each unique parsed file's path (as ``pathlib.Path``).

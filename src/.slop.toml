@@ -15,7 +15,7 @@ root = "."
 # languages = ["python", "typescript"]
 
 # Global file exclusions (applied to all rules)
-# exclude = ["**/test_*", "**/vendor/**"]
+exclude = ["**/test_*", "**/vendor/**"]
 
 # Scoped waivers keep exceptional findings visible without weakening global
 # thresholds. Prefer a local allow_up_to ceiling over an unbounded waiver.
@@ -207,3 +207,19 @@ min_cluster_size = 3
 min_strong_receivers = 2
 exempt_names = ["self", "cls"]
 severity = "warning"
+
+# ---- Waivers ----------------------------------------------------------------
+
+[[waivers]]
+id = "grammar-abc-coupling"
+path = "slop/language/grammars/*.py"
+rule = "coupling"
+allow_up_to = 12
+reason = "ABC implementation tax — coupling to Language hierarchy is inherent."
+
+[[waivers]]
+id = "tree-core-coupling"
+path = "slop/tree/tree.py"
+rule = "coupling"
+allow_up_to = 9
+reason = "Parse substrate core — Tree couples to tree-sitter and grammar types by design."
