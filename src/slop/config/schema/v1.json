@@ -546,6 +546,23 @@
               "default": 5
             }
           }
+        },
+        "changelings": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "default": true
+            },
+            "severity": {
+              "default": "warning"
+            },
+            "min_occurrences": {
+              "default": 1
+            },
+            "max_occurrences": {
+              "default": 4
+            }
+          }
         }
       }
     }
