@@ -9,7 +9,7 @@ from pathlib import Path
 
 from slop.linter.rule import Rule
 from slop.config import Config
-from slop.linter.rules.god_module import run_god_module
+from slop.linter.rules import god_module
 from slop.tree.tree import Tree
 
 
@@ -33,14 +33,14 @@ def _funcs(n: int) -> str:
 
 def test_rule_pass_below_threshold(tmp_path: Path):
     (tmp_path / "a.py").write_text(_funcs(5))
-    result = run_god_module(_structure(tmp_path), _rc(threshold=10), _sc(tmp_path))
+    result = god_module.run(_structure(tmp_path), _rc(threshold=10), _sc(tmp_path))
     assert result.status == "pass"
     assert result.violations == []
 
 
 def test_rule_fail_above_threshold(tmp_path: Path):
     (tmp_path / "a.py").write_text(_funcs(25))
-    result = run_god_module(_structure(tmp_path), _rc(threshold=20), _sc(tmp_path))
+    result = god_module.run(_structure(tmp_path), _rc(threshold=20), _sc(tmp_path))
     assert result.status == "fail"
     assert len(result.violations) == 1
     v = result.violations[0]
@@ -53,13 +53,13 @@ def test_rule_fail_above_threshold(tmp_path: Path):
 def test_rule_exactly_at_threshold_passes(tmp_path: Path):
     # threshold=N means flag if count > N (strictly greater than).
     (tmp_path / "a.py").write_text(_funcs(20))
-    result = run_god_module(_structure(tmp_path), _rc(threshold=20), _sc(tmp_path))
+    result = god_module.run(_structure(tmp_path), _rc(threshold=20), _sc(tmp_path))
     assert result.status == "pass"
 
 
 def test_rule_summary_counts(tmp_path: Path):
     (tmp_path / "big.py").write_text(_funcs(25))
     (tmp_path / "small.py").write_text(_funcs(5))
-    result = run_god_module(_structure(tmp_path), _rc(threshold=20), _sc(tmp_path))
+    result = god_module.run(_structure(tmp_path), _rc(threshold=20), _sc(tmp_path))
     assert result.summary["violation_count"] == 1
     assert result.summary["files_checked"] >= 2

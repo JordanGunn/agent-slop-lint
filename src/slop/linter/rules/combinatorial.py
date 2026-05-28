@@ -20,7 +20,9 @@ from slop.structure.view import Structure
 from slop.linter.types import RuleDefinition
 
 
-def run_combinatorial(
+_RULE = Tag.COMBINATORIAL.key
+
+def run(
     structure: Structure,
     rule_config: Rule,
     slop_config: Config,
@@ -45,7 +47,7 @@ def run_combinatorial(
                 except ValueError:
                     rel = str(c.path)
                 findings.append((np, Slop(
-                    rule=Tag.COMBINATORIAL.key,
+                    rule=_RULE,
                     file=rel,
                     line=c.line,
                     symbol=c.qualname.split(".")[-1],
@@ -65,7 +67,7 @@ def run_combinatorial(
             agg = sum(structure.weighted_combinatorial(m) for m in members)
             if agg > cls_threshold:
                 slop = _slop(
-                    Tag.COMBINATORIAL.key, canonical, root, severity,
+                    _RULE, canonical, root, severity,
                     agg, cls_threshold,
                     f"Class NPath sum {agg} exceeds {cls_threshold}",
                 )
@@ -76,7 +78,7 @@ def run_combinatorial(
     violations = [s for _, s in findings]
 
     return RuleResult(
-        rule=Tag.COMBINATORIAL.key,
+        rule=_RULE,
         status="fail" if violations else "pass",
         violations=violations,
         summary={
@@ -88,12 +90,12 @@ def run_combinatorial(
     )
 
 RULE = RuleDefinition(
-    name=Tag.COMBINATORIAL.key,
+    name=_RULE,
     category=Tag.COMPLEXITY.key,
     description='NPath: Nejmeh 1988 per function; method-sum per class (slop calibration)',
     default_severity='error',
     default_enabled=True,
     threshold_label='NPath > 400 / Σ > 1600',
-    run=run_combinatorial,
+    run=run,
     scopes=('function', 'class'),
 )

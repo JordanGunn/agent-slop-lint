@@ -11,7 +11,7 @@ from pathlib import Path
 from slop.linter.rule import Rule
 from slop.config import Config
 from slop.structure._clones import _fingerprint
-from slop.linter.rules.clone_density import run_clone_density
+from slop.linter.rules import clone_density as _clone_density_rule
 from slop.tree.tree import Tree
 
 
@@ -138,7 +138,7 @@ def test_clones_returns_sorted_clusters(tmp_path: Path):
 def test_rule_pass_no_clones(tmp_path: Path):
     (tmp_path / "a.py").write_text(_CLONE_A)
     (tmp_path / "b.py").write_text(_DIFFERENT)
-    result = run_clone_density(_structure(tmp_path), _rc(threshold=0.05), _sc(tmp_path))
+    result = _clone_density_rule.run(_structure(tmp_path), _rc(threshold=0.05), _sc(tmp_path))
     assert result.status == "pass"
     assert result.violations == []
 
@@ -146,7 +146,7 @@ def test_rule_pass_no_clones(tmp_path: Path):
 def test_rule_fail_clone_pair(tmp_path: Path):
     (tmp_path / "a.py").write_text(_CLONE_A)
     (tmp_path / "b.py").write_text(_CLONE_B)
-    result = run_clone_density(_structure(tmp_path), _rc(threshold=0.0), _sc(tmp_path))
+    result = _clone_density_rule.run(_structure(tmp_path), _rc(threshold=0.0), _sc(tmp_path))
     assert result.status == "fail"
     assert any(v.rule == "duplication" for v in result.violations)
 
@@ -154,13 +154,13 @@ def test_rule_fail_clone_pair(tmp_path: Path):
 def test_rule_violation_contains_fingerprint(tmp_path: Path):
     (tmp_path / "a.py").write_text(_CLONE_A)
     (tmp_path / "b.py").write_text(_CLONE_B)
-    result = run_clone_density(_structure(tmp_path), _rc(threshold=0.0), _sc(tmp_path))
+    result = _clone_density_rule.run(_structure(tmp_path), _rc(threshold=0.0), _sc(tmp_path))
     fingerprinted = [v for v in result.violations if v.metadata.get("fingerprint")]
     assert fingerprinted
 
 
 def test_rule_summary_keys(tmp_path: Path):
     (tmp_path / "a.py").write_text(_CLONE_A)
-    result = run_clone_density(_structure(tmp_path), _rc(), _sc(tmp_path))
+    result = _clone_density_rule.run(_structure(tmp_path), _rc(), _sc(tmp_path))
     for key in ("functions_analyzed", "clone_clusters", "clone_fraction", "threshold"):
         assert key in result.summary, f"missing key: {key}"

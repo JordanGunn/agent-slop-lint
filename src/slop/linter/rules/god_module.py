@@ -27,6 +27,8 @@ if TYPE_CHECKING:
     from slop.structure.view import Structure
 
 
+_RULE = Tag.GOD_MODULE.key
+
 _TOP_LEVEL_SCOPE_KINDS: frozenset[ScopeKind] = frozenset({
     ScopeKind.FILE, ScopeKind.MODULE, ScopeKind.PACKAGE,
 })
@@ -37,7 +39,7 @@ _CLASS_LIKE_SCOPE_KINDS: frozenset[ScopeKind] = frozenset({
 })
 
 
-def run_god_module(
+def run(
     structure: Structure,
     rule_config: Rule,
     slop_config: Config,
@@ -52,7 +54,7 @@ def run_god_module(
     thresholds = rule_config.params.get("thresholds", {}) or {}
     if "module" not in thresholds:
         return RuleResult(
-            rule=Tag.GOD_MODULE.key, status="pass", violations=[],
+            rule=_RULE, status="pass", violations=[],
             summary={"files_checked": 0, "violation_count": 0},
         )
     threshold: int = int(thresholds.get("module", 20))
@@ -89,7 +91,7 @@ def run_god_module(
             except ValueError:
                 rel = str(path)
             findings.append((count, Slop(
-                rule=Tag.GOD_MODULE.key,
+                rule=_RULE,
                 file=rel,
                 line=None,
                 symbol=None,
@@ -105,7 +107,7 @@ def run_god_module(
     violations = [s for _, s in findings]
 
     return RuleResult(
-        rule=Tag.GOD_MODULE.key,
+        rule=_RULE,
         status="fail" if violations else "pass",
         violations=violations,
         summary={
@@ -115,12 +117,12 @@ def run_god_module(
     )
 
 RULE = RuleDefinition(
-    name=Tag.GOD_MODULE.key,
-    category=Tag.GOD_MODULE.key,
+    name=_RULE,
+    category=_RULE,
     description='Files with too many top-level callable definitions',
     default_severity='warning',
     default_enabled=True,
     threshold_label='> 20',
-    run=run_god_module,
+    run=run,
     scopes=('module',),
 )

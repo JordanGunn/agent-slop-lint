@@ -20,8 +20,8 @@ from pathlib import Path
 
 from slop.linter.rule import Rule
 from slop.config import Config
-from slop.linter.rules.density import run_density
-from slop.linter.rules.volume import run_volume
+from slop.linter.rules import density as _density_rule
+from slop.linter.rules import volume as _volume_rule
 from slop.tree.tree import Tree
 
 
@@ -42,7 +42,7 @@ def _structure(tmp_path: Path):
 class TestVolume:
     def test_empty_function_emits_nothing(self, tmp_path: Path):
         (tmp_path / "a.py").write_text("def f(): pass\n")
-        result = run_volume(_structure(tmp_path), _rc(0), _sc(tmp_path))
+        result = _volume_rule.run(_structure(tmp_path), _rc(0), _sc(tmp_path))
         # `pass` is an operator (length 1, vocab 1) → V = 1 * log2(1) = 0.
         # Threshold = 0, so V > 0 fails. Some tokens may push it above; just
         # confirm the rule runs cleanly.
@@ -64,7 +64,7 @@ class TestVolume:
             "        return a * b + c - d / e\n"
             "    return a + b + c + d + e\n"
         )
-        result = run_volume(_structure(tmp_path), _rc(0), _sc(tmp_path))
+        result = _volume_rule.run(_structure(tmp_path), _rc(0), _sc(tmp_path))
         # Big should rank higher than small in the sorted-desc violations.
         symbols = [v.symbol for v in result.violations]
         assert "g" in symbols
@@ -80,7 +80,7 @@ class TestDensity:
         (tmp_path / "a.py").write_text(
             "def f(a):\n    return a + a * a - a / a + a * a\n"
         )
-        result = run_density(_structure(tmp_path), _rc(0), _sc(tmp_path))
+        result = _density_rule.run(_structure(tmp_path), _rc(0), _sc(tmp_path))
         assert result.status == "fail"
         assert any(v.symbol == "f" for v in result.violations)
 
@@ -106,7 +106,7 @@ class TestMultiLanguageParity:
             "        return a - b / c\n"
             "    return a\n"
         )
-        result = run_volume(_structure(tmp_path), _rc(0), _sc(tmp_path))
+        result = _volume_rule.run(_structure(tmp_path), _rc(0), _sc(tmp_path))
         calc = next(v for v in result.violations if v.symbol == "calc")
         # Hand-computed: n1=7, n2=4, N1=11, N2=11 → V = 22 · log₂(11) ≈ 76.1
         assert math.isclose(calc.value, 22 * math.log2(11), abs_tol=0.1)
@@ -122,7 +122,7 @@ class TestNestedCallableBoundary:
             "        return a + b * a - b / a\n"
             "    return inner\n"
         )
-        result = run_volume(_structure(tmp_path), _rc(0), _sc(tmp_path))
+        result = _volume_rule.run(_structure(tmp_path), _rc(0), _sc(tmp_path))
         symbols = {v.symbol for v in result.violations}
         # Both functions get measured separately (each must appear because
         # threshold=0; the inner function's tokens don't bleed into outer's).
@@ -134,24 +134,24 @@ class TestRuleName:
 
     def test_volume_rule_name(self, tmp_path: Path):
         (tmp_path / "a.py").write_text("def f(a, b): return a + b * a - b\n")
-        result = run_volume(_structure(tmp_path), _rc(0), _sc(tmp_path))
+        result = _volume_rule.run(_structure(tmp_path), _rc(0), _sc(tmp_path))
         assert result.violations[0].rule == "complexity.volume"
 
     def test_density_rule_name(self, tmp_path: Path):
         (tmp_path / "a.py").write_text("def f(a): return a + a * a - a / a + a\n")
-        result = run_density(_structure(tmp_path), _rc(0), _sc(tmp_path))
+        result = _density_rule.run(_structure(tmp_path), _rc(0), _sc(tmp_path))
         assert result.violations[0].rule == "complexity.density"
 
 
 class TestSummaryShape:
     def test_summary_includes_functions_analyzed(self, tmp_path: Path):
         (tmp_path / "a.py").write_text("def f(): pass\ndef g(): pass\n")
-        result = run_volume(_structure(tmp_path), _rc(99999), _sc(tmp_path))
+        result = _volume_rule.run(_structure(tmp_path), _rc(99999), _sc(tmp_path))
         assert result.summary["functions_analyzed"] == 2
 
     def test_summary_includes_violations_key(self, tmp_path: Path):
         (tmp_path / "a.py").write_text("def f(): pass\n")
-        result = run_density(_structure(tmp_path), _rc(15.5), _sc(tmp_path))
+        result = _density_rule.run(_structure(tmp_path), _rc(15.5), _sc(tmp_path))
         assert "violations" in result.summary
         # Under the new shape, per-scope thresholds live on
         # rule_config.params["thresholds"], not on the result summary.

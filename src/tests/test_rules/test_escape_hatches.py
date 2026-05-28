@@ -5,7 +5,7 @@ from pathlib import Path
 
 from slop.linter.rule import Rule
 from slop.config import Config
-from slop.linter.rules.escape_hatches import run_escape_hatches
+from slop.linter.rules import escape_hatches as _escape_hatches_rule
 from slop.tree.tree import Tree
 
 
@@ -142,14 +142,14 @@ def test_view_julia_any(tmp_path: Path):
 
 def test_rule_pass_clean_file(tmp_path: Path):
     (tmp_path / "a.py").write_text(_ANY_CLEAN)
-    result = run_escape_hatches(_structure(tmp_path), _rc(threshold=0.30), _sc(tmp_path))
+    result = _escape_hatches_rule.run(_structure(tmp_path), _rc(threshold=0.30), _sc(tmp_path))
     assert result.status == "pass"
     assert result.violations == []
 
 
 def test_rule_fail_heavy_any(tmp_path: Path):
     (tmp_path / "a.py").write_text(_ANY_HEAVY)
-    result = run_escape_hatches(
+    result = _escape_hatches_rule.run(
         _structure(tmp_path),
         _rc(threshold=0.10, min_annotations=2),
         _sc(tmp_path),
@@ -165,7 +165,7 @@ def test_rule_fail_heavy_any(tmp_path: Path):
 def test_rule_min_annotations_skips_small_files(tmp_path: Path):
     """Files with fewer annotations than min_annotations should be skipped."""
     (tmp_path / "a.py").write_text("from typing import Any\ndef f(x: Any): return x\n")
-    result = run_escape_hatches(
+    result = _escape_hatches_rule.run(
         _structure(tmp_path),
         _rc(threshold=0.0, min_annotations=20),
         _sc(tmp_path),
@@ -175,7 +175,7 @@ def test_rule_min_annotations_skips_small_files(tmp_path: Path):
 
 def test_rule_violation_metadata_keys(tmp_path: Path):
     (tmp_path / "a.py").write_text(_ANY_HEAVY)
-    result = run_escape_hatches(
+    result = _escape_hatches_rule.run(
         _structure(tmp_path),
         _rc(threshold=0.0, min_annotations=1),
         _sc(tmp_path),
@@ -188,6 +188,6 @@ def test_rule_violation_metadata_keys(tmp_path: Path):
 
 def test_rule_summary_keys(tmp_path: Path):
     (tmp_path / "a.py").write_text(_ANY_CLEAN)
-    result = run_escape_hatches(_structure(tmp_path), _rc(), _sc(tmp_path))
+    result = _escape_hatches_rule.run(_structure(tmp_path), _rc(), _sc(tmp_path))
     for key in ("files_scanned", "violations", "threshold"):
         assert key in result.summary, f"missing key: {key}"

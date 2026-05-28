@@ -36,7 +36,9 @@ if TYPE_CHECKING:
     from slop.structure.view import Structure
 
 
-def run_hidden_mutators(
+_RULE = Tag.HIDDEN_MUTATORS.key
+
+def run(
     structure: Structure, rule_config: Rule, slop_config: Config,
 ) -> RuleResult:
     """Flag functions that mutate their parameters in place (function scope)."""
@@ -60,7 +62,7 @@ def run_hidden_mutators(
             mutated = sorted({m.param_name for m in entry.mutations})
             methods = sorted({m.method for m in entry.mutations})
             violations.append(Slop(
-                rule=Tag.HIDDEN_MUTATORS.key,
+                rule=_RULE,
                 file=entry.file,
                 line=entry.line,
                 symbol=entry.function_name,
@@ -84,7 +86,7 @@ def run_hidden_mutators(
             ))
 
     return RuleResult(
-        rule=Tag.HIDDEN_MUTATORS.key,
+        rule=_RULE,
         status="fail" if violations else "pass",
         violations=violations,
         summary={
@@ -95,12 +97,12 @@ def run_hidden_mutators(
     )
 
 RULE = RuleDefinition(
-    name=Tag.HIDDEN_MUTATORS.key,
-    category=Tag.HIDDEN_MUTATORS.key,
+    name=_RULE,
+    category=_RULE,
     description='Functions that mutate collection-typed parameters in place',
     default_severity='warning',
     default_enabled=True,
     threshold_label='any mutation',
-    run=run_hidden_mutators,
+    run=run,
     scopes=('function',),
 )

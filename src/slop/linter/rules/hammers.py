@@ -26,6 +26,8 @@ if TYPE_CHECKING:
     from slop.lexicon.view import Lexicon
 
 
+_RULE = Tag.HAMMERS.key
+
 @dataclass(frozen=True)
 class HammerTerm:
     word: str
@@ -160,7 +162,7 @@ def _check_module_name(
     return None
 
 
-def run_hammers(
+def run(
     lexicon: Lexicon, rule_config: Rule, slop_config: Config,
 ) -> RuleResult:
     """Flag callable / class / module names that match the catchall banlist."""
@@ -315,11 +317,11 @@ def run_hammers(
     )
 
 RULE = RuleDefinition(
-    name=Tag.HAMMERS.key,
-    category=Tag.HAMMERS.key,
+    name=_RULE,
+    category=_RULE,
     description='Catchall vocabulary (Manager, Helper, Util, Spec) — one word for every nail',
     default_severity='warning',
     default_enabled=True,
     threshold_label='banlist match',
-    run=run_hammers,
+    run=run,
 )

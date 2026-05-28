@@ -5,7 +5,7 @@ from pathlib import Path
 
 from slop.linter.rule import Rule
 from slop.config import Config
-from slop.linter.rules.sentinels import run_sentinels
+from slop.linter.rules import sentinels as _sentinels_rule
 from slop.tree.tree import Tree
 
 
@@ -136,7 +136,7 @@ def test_view_collects_call_site_literals(tmp_path: Path):
 
 def test_rule_fail_sentinel_str(tmp_path: Path):
     (tmp_path / "a.py").write_text(_STRINGLY)
-    result = run_sentinels(_structure(tmp_path), _rc(max_cardinality=0), _sc(tmp_path))
+    result = _sentinels_rule.run(_structure(tmp_path), _rc(max_cardinality=0), _sc(tmp_path))
     assert result.status == "fail"
     assert len(result.violations) >= 1
     v = result.violations[0]
@@ -146,13 +146,13 @@ def test_rule_fail_sentinel_str(tmp_path: Path):
 
 def test_rule_pass_non_sentinel(tmp_path: Path):
     (tmp_path / "a.py").write_text(_NON_SENTINEL_STR)
-    result = run_sentinels(_structure(tmp_path), _rc(), _sc(tmp_path))
+    result = _sentinels_rule.run(_structure(tmp_path), _rc(), _sc(tmp_path))
     assert result.status == "pass"
 
 
 def test_rule_violation_metadata_keys(tmp_path: Path):
     (tmp_path / "a.py").write_text(_STRINGLY)
-    result = run_sentinels(_structure(tmp_path), _rc(max_cardinality=0), _sc(tmp_path))
+    result = _sentinels_rule.run(_structure(tmp_path), _rc(max_cardinality=0), _sc(tmp_path))
     if result.violations:
         v = result.violations[0]
         for key in ("param_name", "annotated", "call_site_literals",
@@ -162,6 +162,6 @@ def test_rule_violation_metadata_keys(tmp_path: Path):
 
 def test_rule_summary_keys(tmp_path: Path):
     (tmp_path / "a.py").write_text(_NON_SENTINEL_STR)
-    result = run_sentinels(_structure(tmp_path), _rc(), _sc(tmp_path))
+    result = _sentinels_rule.run(_structure(tmp_path), _rc(), _sc(tmp_path))
     for key in ("candidates_analyzed", "violations", "max_cardinality"):
         assert key in result.summary, f"missing key: {key}"

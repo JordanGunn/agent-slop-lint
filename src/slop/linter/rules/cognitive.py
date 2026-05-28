@@ -20,7 +20,9 @@ if TYPE_CHECKING:
     from slop.structure.view import Structure
 
 
-def run_cognitive(
+_RULE = Tag.COGNITIVE.key
+
+def run(
     structure: Structure,
     rule_config: Rule,
     slop_config: Config,
@@ -28,7 +30,7 @@ def run_cognitive(
     """Cognitive complexity at function scope (Campbell 2018) and class
     scope (sum of method scores — slop calibration)."""
     return _run_complexity_metric(
-        rule_name=Tag.COGNITIVE.key,
+        rule_name=_RULE,
         structure=structure,
         rule_config=rule_config,
         slop_config=slop_config,
@@ -39,12 +41,12 @@ def run_cognitive(
     )
 
 RULE = RuleDefinition(
-    name=Tag.COGNITIVE.key,
+    name=_RULE,
     category=Tag.COMPLEXITY.key,
     description='Cognitive Complexity: Campbell 2018 per function; method-sum per class (slop calibration)',
     default_severity='error',
     default_enabled=True,
     threshold_label='CogC > 15 / Σ > 60',
-    run=run_cognitive,
+    run=run,
     scopes=('function', 'class'),
 )

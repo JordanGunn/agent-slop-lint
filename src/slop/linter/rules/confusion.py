@@ -29,6 +29,8 @@ if TYPE_CHECKING:
 from slop.linter.rules._roots import derive_root as _derive_root
 
 
+_RULE = Tag.CONFUSION.key
+
 def _functions_per_file(lexicon: Lexicon, root: Path) -> dict[str, int]:
     """Count emittable functions per file-relative path."""
     counts: dict[str, int] = {}
@@ -43,7 +45,7 @@ def _functions_per_file(lexicon: Lexicon, root: Path) -> dict[str, int]:
     return counts
 
 
-def run_confusion(
+def run(
     lexicon: Lexicon, rule_config: Rule, slop_config: Config,
 ) -> RuleResult:
     """Flag files that hold multiple distinct strong-receiver clusters."""
@@ -146,11 +148,11 @@ def run_confusion(
     )
 
 RULE = RuleDefinition(
-    name=Tag.CONFUSION.key,
-    category=Tag.CONFUSION.key,
+    name=_RULE,
+    category=_RULE,
     description='File holds multiple distinct strong-receiver clusters (Lanza & Marinescu Extract Class)',
     default_severity='warning',
     default_enabled=True,
     threshold_label='≥ 2 clusters × ≥ 3 members',
-    run=run_confusion,
+    run=run,
 )

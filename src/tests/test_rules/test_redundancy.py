@@ -5,7 +5,7 @@ from pathlib import Path
 
 from slop.linter.rule import Rule
 from slop.config import Config
-from slop.linter.rules.redundancy import run_redundancy
+from slop.linter.rules import redundancy as _redundancy_rule
 from slop.tree.tree import Tree
 
 
@@ -153,7 +153,7 @@ def bold(s):
 
 def test_rule_fail_high_overlap(tmp_path: Path):
     (tmp_path / "a.py").write_text(_HIGH_OVERLAP)
-    result = run_redundancy(
+    result = _redundancy_rule.run(
         _structure(tmp_path), _rc(min_shared=3, min_score=0.4), _sc(tmp_path),
     )
     assert result.status == "fail"
@@ -165,14 +165,14 @@ def test_rule_fail_high_overlap(tmp_path: Path):
 
 def test_rule_pass_no_overlap(tmp_path: Path):
     (tmp_path / "a.py").write_text(_NO_OVERLAP)
-    result = run_redundancy(_structure(tmp_path), _rc(), _sc(tmp_path))
+    result = _redundancy_rule.run(_structure(tmp_path), _rc(), _sc(tmp_path))
     assert result.status == "pass"
     assert result.violations == []
 
 
 def test_rule_violation_metadata_keys(tmp_path: Path):
     (tmp_path / "a.py").write_text(_HIGH_OVERLAP)
-    result = run_redundancy(
+    result = _redundancy_rule.run(
         _structure(tmp_path), _rc(min_shared=2, min_score=0.2), _sc(tmp_path),
     )
     if result.violations:
@@ -183,6 +183,6 @@ def test_rule_violation_metadata_keys(tmp_path: Path):
 
 def test_rule_summary_keys(tmp_path: Path):
     (tmp_path / "a.py").write_text(_NO_OVERLAP)
-    result = run_redundancy(_structure(tmp_path), _rc(), _sc(tmp_path))
+    result = _redundancy_rule.run(_structure(tmp_path), _rc(), _sc(tmp_path))
     for key in ("pair_violations", "min_shared", "min_score"):
         assert key in result.summary, f"missing key: {key}"

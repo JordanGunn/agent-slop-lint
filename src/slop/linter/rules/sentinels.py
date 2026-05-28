@@ -35,7 +35,9 @@ if TYPE_CHECKING:
     from slop.structure.view import Structure
 
 
-def run_sentinels(
+_RULE = Tag.SENTINELS.key
+
+def run(
     structure: Structure, rule_config: Rule, slop_config: Config,
 ) -> RuleResult:
     """Flag functions with stringly-typed sentinel parameters (parameter scope)."""
@@ -43,7 +45,7 @@ def run_sentinels(
     thresholds = rule_config.params.get("thresholds", {}) or {}
     if "parameter" not in thresholds:
         return RuleResult(
-            rule=Tag.SENTINELS.key, status="pass", violations=[],
+            rule=_RULE, status="pass", violations=[],
             summary={"candidates_analyzed": 0, "violations": 0},
         )
     max_cardinality = int(thresholds.get("parameter", 8))
@@ -69,7 +71,7 @@ def run_sentinels(
         else:
             literal_note = "no call sites found (advisory)"
         violations.append(Slop(
-            rule=Tag.SENTINELS.key,
+            rule=_RULE,
             file=entry.file,
             line=entry.param_line,
             symbol=entry.function_name,
@@ -92,7 +94,7 @@ def run_sentinels(
         ))
 
     return RuleResult(
-        rule=Tag.SENTINELS.key,
+        rule=_RULE,
         status="fail" if violations else "pass",
         violations=violations,
         summary={
@@ -103,12 +105,12 @@ def run_sentinels(
     )
 
 RULE = RuleDefinition(
-    name=Tag.SENTINELS.key,
-    category=Tag.SENTINELS.key,
+    name=_RULE,
+    category=_RULE,
     description='Function parameters annotated str with sentinel names (status, mode, kind, …)',
     default_severity='warning',
     default_enabled=True,
     threshold_label='≤ 8 values',
-    run=run_sentinels,
+    run=run,
     scopes=('parameter',),
 )

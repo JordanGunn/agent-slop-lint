@@ -15,14 +15,14 @@ from pathlib import Path
 
 from slop.linter.rule import Rule
 from slop.config import Config
-from slop.linter.rules.escape_hatches import run_escape_hatches
-from slop.linter.rules.clone_density import run_clone_density
-from slop.linter.rules.cognitive import run_cognitive
-from slop.linter.rules.cyclomatic import run_cyclomatic
+from slop.linter.rules import escape_hatches as _escape_hatches_rule
+from slop.linter.rules import clone_density as _clone_density_rule
+from slop.linter.rules import cognitive as _cognitive_rule
+from slop.linter.rules import cyclomatic as _cyclomatic_rule
 from slop.linter.rules.dependencies import run_cycles
-from slop.linter.rules.combinatorial import run_combinatorial
-from slop.linter.rules.god_module import run_god_module
-from slop.linter.rules.hidden_mutators import run_hidden_mutators
+from slop.linter.rules import combinatorial as _combinatorial_rule
+from slop.linter.rules import god_module
+from slop.linter.rules import hidden_mutators as _hidden_mutators_rule
 from slop.tree.tree import Tree
 
 
@@ -36,10 +36,10 @@ def _lexicon(root: Path):
     t = Tree(root)
     t.scan()
     return t.lexicon
-from slop.linter.rules.redundancy import run_redundancy
-from slop.linter.rules.sentinels import run_sentinels
-from slop.linter.rules.stutter import run_stutter
-from slop.linter.rules.verbosity import run_verbosity
+from slop.linter.rules import redundancy as _redundancy_rule
+from slop.linter.rules import sentinels as _sentinels_rule
+from slop.linter.rules import stutter as _stutter_rule
+from slop.linter.rules import verbosity as _verbosity_rule
 
 
 def _slop_config() -> Config:
@@ -63,7 +63,7 @@ def test_ruby_method_name_extracted(tmp_path: Path):
         "def add(a, b)\n  a + b\nend\n"
         "def greet(name)\n  \"hi #{name}\"\nend\n"
     )
-    result = run_cyclomatic(_structure(tmp_path), _rule_config(threshold=0),
+    result = _cyclomatic_rule.run(_structure(tmp_path), _rule_config(threshold=0),
                             _slop_config())
     names = {v.symbol for v in result.violations}
     assert "add" in names
@@ -78,7 +78,7 @@ def test_ruby_singleton_method_name_extracted(tmp_path: Path):
         "  end\n"
         "end\n"
     )
-    result = run_cyclomatic(_structure(tmp_path), _rule_config(threshold=0),
+    result = _cyclomatic_rule.run(_structure(tmp_path), _rule_config(threshold=0),
                             _slop_config())
     names = {v.symbol for v in result.violations}
     assert "create" in names
@@ -94,7 +94,7 @@ def test_ruby_operator_method_name_extracted(tmp_path: Path):
         "  def <=>(other); 0; end\n"
         "end\n"
     )
-    result = run_cyclomatic(_structure(tmp_path), _rule_config(threshold=0),
+    result = _cyclomatic_rule.run(_structure(tmp_path), _rule_config(threshold=0),
                             _slop_config())
     names = {v.symbol for v in result.violations}
     assert "==" in names
@@ -113,7 +113,7 @@ def test_ruby_block_treated_as_anonymous(tmp_path: Path):
         "  end\n"
         "end\n"
     )
-    result = run_cyclomatic(_structure(tmp_path), _rule_config(threshold=0),
+    result = _cyclomatic_rule.run(_structure(tmp_path), _rule_config(threshold=0),
                             _slop_config())
     names = {v.symbol for v in result.violations}
     assert "<lambda>" in names
@@ -125,7 +125,7 @@ def test_ruby_lambda_treated_as_anonymous(tmp_path: Path):
         "add = ->(a, b) { a + b }\n"
         "mul = lambda { |a, b| a * b }\n"
     )
-    result = run_cyclomatic(_structure(tmp_path), _rule_config(threshold=0),
+    result = _cyclomatic_rule.run(_structure(tmp_path), _rule_config(threshold=0),
                             _slop_config())
     names = {v.symbol for v in result.violations}
     assert "<lambda>" in names
@@ -153,7 +153,7 @@ end
 
 def test_ruby_cyclomatic_flags_branchy_function(tmp_path: Path):
     (tmp_path / "c.rb").write_text(_BRANCHY)
-    result = run_cyclomatic(_structure(tmp_path), _rule_config(threshold=4),
+    result = _cyclomatic_rule.run(_structure(tmp_path), _rule_config(threshold=4),
                             _slop_config())
     assert result.status == "fail"
     assert any(v.symbol == "classify" for v in result.violations)
@@ -168,7 +168,7 @@ def test_ruby_if_modifier_postfix_counted(tmp_path: Path):
         "end\n"
     )
     # Lambda's postfix-if and postfix-unless add to the lambda's CCX.
-    result = run_cyclomatic(_structure(tmp_path), _rule_config(threshold=0),
+    result = _cyclomatic_rule.run(_structure(tmp_path), _rule_config(threshold=0),
                             _slop_config())
     # Both blocks should be flagged
     lambda_violations = [v for v in result.violations if v.symbol == "<lambda>"]
@@ -177,7 +177,7 @@ def test_ruby_if_modifier_postfix_counted(tmp_path: Path):
 
 def test_ruby_cognitive_runs(tmp_path: Path):
     (tmp_path / "c.rb").write_text(_BRANCHY)
-    result = run_cognitive(_structure(tmp_path), _rule_config(threshold=99),
+    result = _cognitive_rule.run(_structure(tmp_path), _rule_config(threshold=99),
                            _slop_config())
     assert result.status == "pass"
 
@@ -197,7 +197,7 @@ def test_ruby_npath_multiplies_sequential_postfix_ifs(tmp_path: Path):
         "end\n"
     )
     tree = Tree(tmp_path); tree.scan()
-    result = run_combinatorial(tree.structure, _rule_config(threshold=4), Config(root=str(tmp_path), languages=["ruby"]))
+    result = _combinatorial_rule.run(tree.structure, _rule_config(threshold=4), Config(root=str(tmp_path), languages=["ruby"]))
     assert result.status == "fail"
 
 
@@ -213,7 +213,7 @@ def test_ruby_npath_counts_when_clauses(tmp_path: Path):
         "end\n"
     )
     tree = Tree(tmp_path); tree.scan()
-    result = run_combinatorial(tree.structure, _rule_config(threshold=2), Config(root=str(tmp_path), languages=["ruby"]))
+    result = _combinatorial_rule.run(tree.structure, _rule_config(threshold=2), Config(root=str(tmp_path), languages=["ruby"]))
     assert result.status == "fail"
 
 
@@ -228,7 +228,7 @@ def test_ruby_npath_counts_rescue_clauses(tmp_path: Path):
         "end\n"
     )
     tree = Tree(tmp_path); tree.scan()
-    result = run_combinatorial(tree.structure, _rule_config(threshold=99), Config(root=str(tmp_path), languages=["ruby"]))
+    result = _combinatorial_rule.run(tree.structure, _rule_config(threshold=99), Config(root=str(tmp_path), languages=["ruby"]))
     # Just verify it runs and produces a number; threshold high so pass.
     assert result.status == "pass"
 
@@ -289,7 +289,7 @@ def test_ruby_god_module_counts_top_level(tmp_path: Path):
     body.append("class Big\nend")
     body.append("module Helper\nend")
     (tmp_path / "many.rb").write_text("\n".join(body) + "\n")
-    result = run_god_module(_structure(tmp_path), _rule_config(scope="module", threshold=10),
+    result = god_module.run(_structure(tmp_path), _rule_config(scope="module", threshold=10),
                             _slop_config())
     assert result.status == "fail"
     assert any("many.rb" in v.file for v in result.violations)
@@ -304,7 +304,7 @@ def test_ruby_clone_density_detects_duplicates(tmp_path: Path):
     (tmp_path / "clones.rb").write_text(body)
     t = Tree(tmp_path)
     t.scan()
-    result = run_clone_density(t.structure, _rule_config(threshold=0.10),
+    result = _clone_density_rule.run(t.structure, _rule_config(threshold=0.10),
                                _slop_config())
     assert result.summary.get("functions_analyzed", 0) >= 3
 
@@ -319,7 +319,7 @@ def test_ruby_any_type_density_silent_skip(tmp_path: Path):
     (tmp_path / "x.rb").write_text("def foo(x); x; end\n")
     t = Tree(tmp_path)
     t.scan()
-    result = run_escape_hatches(t.structure, _rule_config(scope="module", threshold=0.30),
+    result = _escape_hatches_rule.run(t.structure, _rule_config(scope="module", threshold=0.30),
                                 _slop_config())
     # Ruby has no annotation node types — no entries, no violations.
     assert result.status == "pass"
@@ -335,7 +335,7 @@ def test_ruby_out_parameters_silent_skip(tmp_path: Path):
         "end\n"
     )
     t = Tree(tmp_path); t.scan()
-    result = run_hidden_mutators(t.structure, _rule_config(), _slop_config())
+    result = _hidden_mutators_rule.run(t.structure, _rule_config(), _slop_config())
     # No registration → no violations
     assert not result.violations
 
@@ -353,7 +353,7 @@ def test_ruby_string_sentinel_param_flagged(tmp_path: Path):
         "end\n"
     )
     t = Tree(tmp_path); t.scan()
-    result = run_sentinels(t.structure, _rule_config(scope="parameter", threshold=8), _slop_config())
+    result = _sentinels_rule.run(t.structure, _rule_config(scope="parameter", threshold=8), _slop_config())
     flagged = {(v.symbol, v.message) for v in result.violations}
     assert any("mode" in str(msg) for _, msg in flagged), flagged
     assert any("kind" in str(msg) for _, msg in flagged), flagged
@@ -371,7 +371,7 @@ def test_ruby_stutter_runs(tmp_path: Path):
         "  parse_buffer + parse_size\n"
         "end\n"
     )
-    result = run_stutter(_lexicon(tmp_path), _rule_config(min_overlap_tokens=1),
+    result = _stutter_rule.run(_lexicon(tmp_path), _rule_config(min_overlap_tokens=1),
                          _slop_config())
     assert result.status in ("pass", "fail")
 
@@ -382,7 +382,7 @@ def test_ruby_verbosity_runs(tmp_path: Path):
         "  a + b\n"
         "end\n"
     )
-    result = run_verbosity(_lexicon(tmp_path), _rule_config(), _slop_config())
+    result = _verbosity_rule.run(_lexicon(tmp_path), _rule_config(), _slop_config())
     assert result.summary.get("entities_analyzed", 0) >= 1
 
 
@@ -410,7 +410,7 @@ def test_ruby_sibling_calls_detect_shared_callees(tmp_path: Path):
     )
     t = Tree(tmp_path)
     t.scan()
-    result = run_redundancy(t.structure, _rule_config(min_shared=3), _slop_config())
+    result = _redundancy_rule.run(t.structure, _rule_config(min_shared=3), _slop_config())
     assert result.status == "fail"
 
 

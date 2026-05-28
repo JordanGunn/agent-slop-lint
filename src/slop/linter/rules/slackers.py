@@ -45,7 +45,9 @@ _PROFILE_ADVICE = {
 from slop.linter.rules._roots import derive_root as _derive_root
 
 
-def run_slackers(
+_RULE = Tag.SLACKERS.key
+
+def run(
     lexicon: Lexicon, rule_config: Rule, slop_config: Config,
 ) -> RuleResult:
     """Flag first-parameter clusters whose member names don't align."""
@@ -156,11 +158,11 @@ def run_slackers(
     )
 
 RULE = RuleDefinition(
-    name=Tag.SLACKERS.key,
-    category=Tag.SLACKERS.key,
+    name=_RULE,
+    category=_RULE,
     description='Sibling functions sharing input but refusing to align by naming template',
     default_severity='warning',
     default_enabled=True,
     threshold_label='< 30% template coverage',
-    run=run_slackers,
+    run=run,
 )

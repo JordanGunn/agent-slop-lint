@@ -19,25 +19,27 @@ if TYPE_CHECKING:
     from slop.structure.view import Structure
 
 
-def run_rigidity(
+_RULE = Tag.RIGIDITY.key
+
+def run(
     structure: Structure, rule_config: Rule, slop_config: Config,
 ) -> RuleResult:
     """Flag Zone-of-Pain packages whose D' exceeds the rigidity threshold."""
     return _run_zone_rule(
         structure, rule_config, slop_config,
-        rule_name=Tag.RIGIDITY.key,
+        rule_name=_RULE,
         zone="pain",
         zone_label="Pain",
         default_threshold=0.7,
     )
 
 RULE = RuleDefinition(
-    name=Tag.RIGIDITY.key,
-    category=Tag.RIGIDITY.key,
+    name=_RULE,
+    category=_RULE,
     description='Zone of Pain — stable + concrete packages (Martin 1994)',
     default_severity='warning',
     default_enabled=True,
     threshold_label="pain & D' > 0.7",
-    run=run_rigidity,
+    run=run,
     scopes=('package',),
 )

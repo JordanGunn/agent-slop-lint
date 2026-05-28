@@ -13,14 +13,14 @@ from pathlib import Path
 
 from slop.linter.rule import Rule
 from slop.config import Config
-from slop.linter.rules.escape_hatches import run_escape_hatches
-from slop.linter.rules.clone_density import run_clone_density
-from slop.linter.rules.combinatorial import run_combinatorial
-from slop.linter.rules.cognitive import run_cognitive
-from slop.linter.rules.cyclomatic import run_cyclomatic
+from slop.linter.rules import escape_hatches as _escape_hatches_rule
+from slop.linter.rules import clone_density as _clone_density_rule
+from slop.linter.rules import combinatorial as _combinatorial_rule
+from slop.linter.rules import cognitive as _cognitive_rule
+from slop.linter.rules import cyclomatic as _cyclomatic_rule
 from slop.linter.rules.dependencies import run_cycles
-from slop.linter.rules.god_module import run_god_module
-from slop.linter.rules.hidden_mutators import run_hidden_mutators
+from slop.linter.rules import god_module
+from slop.linter.rules import hidden_mutators as _hidden_mutators_rule
 from slop.tree.tree import Tree
 
 
@@ -34,10 +34,10 @@ def _lexicon(root: Path):
     t = Tree(root)
     t.scan()
     return t.lexicon
-from slop.linter.rules.redundancy import run_redundancy
-from slop.linter.rules.sentinels import run_sentinels
-from slop.linter.rules.stutter import run_stutter
-from slop.linter.rules.verbosity import run_verbosity
+from slop.linter.rules import redundancy as _redundancy_rule
+from slop.linter.rules import sentinels as _sentinels_rule
+from slop.linter.rules import stutter as _stutter_rule
+from slop.linter.rules import verbosity as _verbosity_rule
 
 
 def _slop_config() -> Config:
@@ -70,12 +70,12 @@ unsigned long long big(void) { return 0; }
 
 def test_c_cyclomatic_extracts_plain_function_name(tmp_path: Path):
     (tmp_path / "names.c").write_text(_NAME_EXTRACTION_C)
-    result = run_cyclomatic(_structure(tmp_path), _rule_config(threshold=99), _slop_config())
+    result = _cyclomatic_rule.run(_structure(tmp_path), _rule_config(threshold=99), _slop_config())
     names = {f.get("symbol") if isinstance(f, dict) else f.symbol for f in result.violations}
     # No violations expected; we instead inspect the kernel via summary
     # — but to verify name extraction, run with threshold=1 to flag every
     # function and check the symbol set.
-    result = run_cyclomatic(_structure(tmp_path), _rule_config(threshold=0), _slop_config())
+    result = _cyclomatic_rule.run(_structure(tmp_path), _rule_config(threshold=0), _slop_config())
     names = {v.symbol for v in result.violations}
     assert "add" in names
     assert "square" in names
@@ -93,7 +93,7 @@ def test_c_typedef_function_pointer_not_treated_as_function(tmp_path: Path):
         "typedef int (*comparator)(int, int);\n"
         "int real_fn(int a, int b) { return a + b; }\n"
     )
-    result = run_cyclomatic(_structure(tmp_path), _rule_config(threshold=0), _slop_config())
+    result = _cyclomatic_rule.run(_structure(tmp_path), _rule_config(threshold=0), _slop_config())
     names = {v.symbol for v in result.violations}
     assert "real_fn" in names
     assert "comparator" not in names
@@ -120,14 +120,14 @@ int classify(int x) {
 
 def test_c_cyclomatic_flags_branchy_function(tmp_path: Path):
     (tmp_path / "branchy.c").write_text(_BRANCHY_C)
-    result = run_cyclomatic(_structure(tmp_path), _rule_config(threshold=4), _slop_config())
+    result = _cyclomatic_rule.run(_structure(tmp_path), _rule_config(threshold=4), _slop_config())
     assert result.status == "fail", result.summary
     assert any(v.symbol == "classify" for v in result.violations)
 
 
 def test_c_cognitive_flags_nested_branchy(tmp_path: Path):
     (tmp_path / "branchy.c").write_text(_BRANCHY_C)
-    result = run_cognitive(_structure(tmp_path), _rule_config(threshold=3), _slop_config())
+    result = _cognitive_rule.run(_structure(tmp_path), _rule_config(threshold=3), _slop_config())
     assert result.status == "fail"
     assert any(v.symbol == "classify" for v in result.violations)
 
@@ -143,7 +143,7 @@ def test_c_cyclomatic_counts_switch_cases(tmp_path: Path):
         "    }\n"
         "}\n"
     )
-    result = run_cyclomatic(_structure(tmp_path), _rule_config(threshold=2), _slop_config())
+    result = _cyclomatic_rule.run(_structure(tmp_path), _rule_config(threshold=2), _slop_config())
     assert result.status == "fail"
     assert any(v.symbol == "sw" for v in result.violations)
 
@@ -165,7 +165,7 @@ def test_c_npath_multiplies_sequential_branches(tmp_path: Path):
         "}\n"
     )
     tree = Tree(tmp_path); tree.scan()
-    result = run_combinatorial(tree.structure, _rule_config(threshold=4), Config(root=str(tmp_path), languages=["c"]))
+    result = _combinatorial_rule.run(tree.structure, _rule_config(threshold=4), Config(root=str(tmp_path), languages=["c"]))
     assert result.status == "fail"
     assert any(v.symbol == "dispatch" for v in result.violations)
 
@@ -187,7 +187,7 @@ def test_c_npath_counts_switch_cases(tmp_path: Path):
         "}\n"
     )
     tree = Tree(tmp_path); tree.scan()
-    result = run_combinatorial(tree.structure, _rule_config(threshold=3), Config(root=str(tmp_path), languages=["c"]))
+    result = _combinatorial_rule.run(tree.structure, _rule_config(threshold=3), Config(root=str(tmp_path), languages=["c"]))
     assert result.status == "fail"
     assert any(v.symbol == "sw" for v in result.violations)
 
@@ -230,7 +230,7 @@ def test_c_god_module_counts_top_level_definitions(tmp_path: Path):
     body.append("typedef int Counter;")
     (tmp_path / "many.c").write_text("\n".join(body) + "\n")
 
-    result = run_god_module(_structure(tmp_path), _rule_config(scope="module", threshold=10), _slop_config())
+    result = god_module.run(_structure(tmp_path), _rule_config(scope="module", threshold=10), _slop_config())
     assert result.status == "fail"
     assert any("many.c" in v.file for v in result.violations)
 
@@ -243,7 +243,7 @@ def test_c_clone_density_detects_duplicates(tmp_path: Path):
     (tmp_path / "clones.c").write_text(body)
     t = Tree(tmp_path)
     t.scan()
-    result = run_clone_density(t.structure, _rule_config(threshold=0.10), _slop_config())
+    result = _clone_density_rule.run(t.structure, _rule_config(threshold=0.10), _slop_config())
     assert result.summary.get("functions_analyzed", 0) >= 4
 
 
@@ -261,7 +261,7 @@ def test_c_void_star_flagged_as_escape_hatch(tmp_path: Path):
     )
     t = Tree(tmp_path)
     t.scan()
-    result = run_escape_hatches(t.structure, _rule_config(scope="module", threshold=0.30, min_annotations=2),
+    result = _escape_hatches_rule.run(t.structure, _rule_config(scope="module", threshold=0.30, min_annotations=2),
         _slop_config(),
     )
     assert result.status == "fail"
@@ -275,7 +275,7 @@ def test_c_pointer_param_mutation_flagged(tmp_path: Path):
         "int read_only(const int *src) { return *src; }\n"
     )
     t = Tree(tmp_path); t.scan()
-    result = run_hidden_mutators(t.structure, _rule_config(), _slop_config())
+    result = _hidden_mutators_rule.run(t.structure, _rule_config(), _slop_config())
     names = {v.symbol for v in result.violations}
     assert "increment" in names
     assert "update" in names
@@ -289,7 +289,7 @@ def test_c_char_star_sentinel_flagged(tmp_path: Path):
         "int connect(const char *host, int port) { (void)host; return port; }\n"
     )
     t = Tree(tmp_path); t.scan()
-    result = run_sentinels(t.structure, _rule_config(scope="parameter", threshold=8), _slop_config())
+    result = _sentinels_rule.run(t.structure, _rule_config(scope="parameter", threshold=8), _slop_config())
     flagged = {(v.symbol, v.message) for v in result.violations}
     # ``mode`` is a sentinel; ``host`` is not.
     assert any("mode" in str(msg) for _, msg in flagged), flagged
@@ -306,7 +306,7 @@ def test_c_stutter_flags_repeated_function_tokens(tmp_path: Path):
         "    return parse_buffer + parse_size;\n"
         "}\n"
     )
-    result = run_stutter(_lexicon(tmp_path), _rule_config(min_overlap_tokens=1), _slop_config())
+    result = _stutter_rule.run(_lexicon(tmp_path), _rule_config(min_overlap_tokens=1), _slop_config())
     # Best-effort assertion: kernel runs and inspects the function.
     assert result.status in ("pass", "fail")
 
@@ -317,7 +317,7 @@ def test_c_verbosity_runs_without_error(tmp_path: Path):
         "    return a + b;\n"
         "}\n"
     )
-    result = run_verbosity(_lexicon(tmp_path), _rule_config(), _slop_config())
+    result = _verbosity_rule.run(_lexicon(tmp_path), _rule_config(), _slop_config())
     assert result.summary.get("entities_analyzed", 0) >= 1
 
 
@@ -345,5 +345,5 @@ def test_c_sibling_calls_detect_shared_callees(tmp_path: Path):
     )
     t = Tree(tmp_path)
     t.scan()
-    result = run_redundancy(t.structure, _rule_config(min_shared=3), _slop_config())
+    result = _redundancy_rule.run(t.structure, _rule_config(min_shared=3), _slop_config())
     assert result.status == "fail"

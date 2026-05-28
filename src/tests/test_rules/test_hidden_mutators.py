@@ -5,7 +5,7 @@ from pathlib import Path
 
 from slop.linter.rule import Rule
 from slop.config import Config
-from slop.linter.rules.hidden_mutators import run_hidden_mutators
+from slop.linter.rules import hidden_mutators as _hidden_mutators_rule
 from slop.tree.tree import Tree
 
 
@@ -137,14 +137,14 @@ def test_view_set_mutation_detected(tmp_path: Path):
 
 def test_rule_pass_no_mutations(tmp_path: Path):
     (tmp_path / "a.py").write_text(_NO_MUTATION)
-    result = run_hidden_mutators(_structure(tmp_path), _rc(), _sc(tmp_path))
+    result = _hidden_mutators_rule.run(_structure(tmp_path), _rc(), _sc(tmp_path))
     assert result.status == "pass"
     assert result.violations == []
 
 
 def test_rule_fail_typed_mutation(tmp_path: Path):
     (tmp_path / "a.py").write_text(_OUT_PARAM_TYPED)
-    result = run_hidden_mutators(_structure(tmp_path), _rc(), _sc(tmp_path))
+    result = _hidden_mutators_rule.run(_structure(tmp_path), _rc(), _sc(tmp_path))
     assert result.status == "fail"
     assert len(result.violations) >= 1
     v = result.violations[0]
@@ -155,7 +155,7 @@ def test_rule_fail_typed_mutation(tmp_path: Path):
 
 def test_rule_violation_metadata_keys(tmp_path: Path):
     (tmp_path / "a.py").write_text(_OUT_PARAM_TYPED)
-    result = run_hidden_mutators(_structure(tmp_path), _rc(), _sc(tmp_path))
+    result = _hidden_mutators_rule.run(_structure(tmp_path), _rc(), _sc(tmp_path))
     assert result.violations
     v = result.violations[0]
     for key in ("language", "mutations", "mutated_params"):
@@ -164,6 +164,6 @@ def test_rule_violation_metadata_keys(tmp_path: Path):
 
 def test_rule_summary_keys(tmp_path: Path):
     (tmp_path / "a.py").write_text(_NO_MUTATION)
-    result = run_hidden_mutators(_structure(tmp_path), _rc(), _sc(tmp_path))
+    result = _hidden_mutators_rule.run(_structure(tmp_path), _rc(), _sc(tmp_path))
     for key in ("callables_analyzed", "violations", "require_type_annotation"):
         assert key in result.summary, f"missing key: {key}"

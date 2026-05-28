@@ -20,7 +20,9 @@ if TYPE_CHECKING:
     from slop.structure.view import Structure
 
 
-def run_inheritance_children(
+_RULE = Tag.CHILDREN.key
+
+def run(
     structure: Structure,
     rule_config: Rule,
     slop_config: Config,
@@ -54,12 +56,12 @@ def run_inheritance_children(
     )
 
 RULE = RuleDefinition(
-    name=Tag.CHILDREN.key,
-    category=Tag.CHILDREN.key,
+    name=_RULE,
+    category=_RULE,
     description='NOC — direct subclass count (CK 1994)',
     default_severity='error',
     default_enabled=True,
     threshold_label='NOC > 10',
-    run=run_inheritance_children,
+    run=run,
     scopes=('class',),
 )

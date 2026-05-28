@@ -21,7 +21,9 @@ if TYPE_CHECKING:
     from slop.structure.view import Structure
 
 
-def run_coupling(
+_RULE = Tag.COUPLING.key
+
+def run(
     structure: Structure,
     rule_config: Rule,
     slop_config: Config,
@@ -56,12 +58,12 @@ def run_coupling(
     )
 
 RULE = RuleDefinition(
-    name=Tag.COUPLING.key,
-    category=Tag.COUPLING.key,
+    name=_RULE,
+    category=_RULE,
     description='CBO — count of classes a given class is coupled to (CK 1994)',
     default_severity='error',
     default_enabled=True,
     threshold_label='CBO > 8',
-    run=run_coupling,
+    run=run,
     scopes=('class',),
 )

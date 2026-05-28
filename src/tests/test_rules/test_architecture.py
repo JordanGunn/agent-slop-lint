@@ -12,8 +12,8 @@ from pathlib import Path
 from slop.linter.rule import Rule
 from slop.config import Config
 from slop.structure.records import PackageMetrics
-from slop.linter.rules.rigidity import run_rigidity
-from slop.linter.rules.uselessness import run_uselessness
+from slop.linter.rules import rigidity as _rigidity_rule
+from slop.linter.rules import uselessness as _uselessness_rule
 from slop.tree.tree import Tree
 
 
@@ -37,7 +37,7 @@ def _structure(root: Path):
 
 def test_rigidity_passes_when_clean(tmp_path: Path):
     (tmp_path / "main.py").write_text("def main():\n    pass\n")
-    result = run_rigidity(
+    result = _rigidity_rule.run(
         _structure(tmp_path), _rc(), Config(root=str(tmp_path)),
     )
     assert result.status == "pass"
@@ -45,7 +45,7 @@ def test_rigidity_passes_when_clean(tmp_path: Path):
 
 def test_uselessness_passes_when_clean(tmp_path: Path):
     (tmp_path / "main.py").write_text("def main():\n    pass\n")
-    result = run_uselessness(
+    result = _uselessness_rule.run(
         _structure(tmp_path), _rc(), Config(root=str(tmp_path)),
     )
     assert result.status == "pass"
@@ -83,7 +83,7 @@ def test_rigidity_fires_only_on_pain_zone(tmp_path: Path, monkeypatch):
         _stub_pkg("b.useless", zone="uselessness", distance=0.9),
         _stub_pkg("c.clean", zone="ok", distance=0.1),
     ])
-    result = run_rigidity(s, _rc(), Config(root=str(tmp_path)))
+    result = _rigidity_rule.run(s, _rc(), Config(root=str(tmp_path)))
     assert result.status == "fail"
     assert len(result.violations) == 1
     assert result.violations[0].file == "a.pain"
@@ -98,7 +98,7 @@ def test_uselessness_fires_only_on_uselessness_zone(tmp_path: Path, monkeypatch)
         _stub_pkg("b.useless", zone="uselessness", distance=0.9),
         _stub_pkg("c.clean", zone="ok", distance=0.1),
     ])
-    result = run_uselessness(s, _rc(), Config(root=str(tmp_path)))
+    result = _uselessness_rule.run(s, _rc(), Config(root=str(tmp_path)))
     assert result.status == "fail"
     assert len(result.violations) == 1
     assert result.violations[0].file == "b.useless"
@@ -112,7 +112,7 @@ def test_rigidity_respects_threshold_within_pain_zone(tmp_path: Path, monkeypatc
         _stub_pkg("borderline.pain", zone="pain", distance=0.5),
         _stub_pkg("deep.pain", zone="pain", distance=0.9),
     ])
-    result = run_rigidity(s, _rc(threshold=0.8), Config(root=str(tmp_path)))
+    result = _rigidity_rule.run(s, _rc(threshold=0.8), Config(root=str(tmp_path)))
     assert result.status == "fail"
     assert {v.file for v in result.violations} == {"deep.pain"}
 

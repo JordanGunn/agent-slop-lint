@@ -22,6 +22,8 @@ from slop.linter.types import RuleDefinition, RuleResult
 from slop.structure.view import Structure
 
 
+_RULE = Tag.HOTSPOTS.key
+
 def run_churn_weighted(
     structure: Structure,
     rule_config: Rule,
@@ -76,8 +78,8 @@ def run_churn_weighted(
     )
 
 RULE = RuleDefinition(
-    name=Tag.HOTSPOTS.key,
-    category=Tag.HOTSPOTS.key,
+    name=_RULE,
+    category=_RULE,
     description="Churn × complexity per file (Tornhill 2015)",
     default_severity="error",
     default_enabled=True,

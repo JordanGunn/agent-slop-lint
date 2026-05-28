@@ -19,7 +19,9 @@ if TYPE_CHECKING:
     from slop.structure.view import Structure
 
 
-def run_cyclomatic(
+_RULE = Tag.CYCLOMATIC.key
+
+def run(
     structure: Structure,
     rule_config: Rule,
     slop_config: Config,
@@ -27,7 +29,7 @@ def run_cyclomatic(
     """Cyclomatic complexity at function scope (McCabe CCN) and class
     scope (WMC = sum of method CCNs, CK 1994)."""
     return _run_complexity_metric(
-        rule_name=Tag.CYCLOMATIC.key,
+        rule_name=_RULE,
         structure=structure,
         rule_config=rule_config,
         slop_config=slop_config,
@@ -38,12 +40,12 @@ def run_cyclomatic(
     )
 
 RULE = RuleDefinition(
-    name=Tag.CYCLOMATIC.key,
+    name=_RULE,
     category=Tag.COMPLEXITY.key,
     description='Cyclomatic Complexity: McCabe CCN per function (1976), WMC per class (CK 1994)',
     default_severity='error',
     default_enabled=True,
     threshold_label='CCN > 10 / WMC > 40',
-    run=run_cyclomatic,
+    run=run,
     scopes=('function', 'class'),
 )

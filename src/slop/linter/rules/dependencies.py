@@ -25,6 +25,8 @@ if TYPE_CHECKING:
     from slop.structure.view import Structure
 
 
+_RULE = Tag.DEPS.key
+
 def run_cycles(
     structure: Structure, rule_config: Rule, slop_config: Config,
 ) -> RuleResult:
@@ -64,8 +66,8 @@ def run_cycles(
     )
 
 RULE = RuleDefinition(
-    name=Tag.DEPS.key,
-    category=Tag.DEPS.key,
+    name=_RULE,
+    category=_RULE,
     description='Dependency cycle detection',
     default_severity='error',
     default_enabled=True,

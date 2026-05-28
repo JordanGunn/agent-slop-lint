@@ -22,7 +22,9 @@ if TYPE_CHECKING:
     from slop.lexicon.view import Lexicon
 
 
-def run_verbosity(
+_RULE = Tag.VERBOSITY.key
+
+def run(
     lexicon: Lexicon, rule_config: Rule, slop_config: Config,
 ) -> RuleResult:
     """Flag named entities whose token-split exceeds the threshold."""
@@ -171,11 +173,11 @@ def run_verbosity(
     )
 
 RULE = RuleDefinition(
-    name=Tag.VERBOSITY.key,
-    category=Tag.VERBOSITY.key,
+    name=_RULE,
+    category=_RULE,
     description='Function/class names with too many word-tokens (missing namespace)',
     default_severity='warning',
     default_enabled=True,
     threshold_label='> 3 tokens',
-    run=run_verbosity,
+    run=run,
 )

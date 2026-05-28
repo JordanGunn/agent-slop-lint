@@ -45,7 +45,9 @@ _TRIVIAL_INTS: frozenset[int] = frozenset({-1, 0, 1, 2})
 _TRIVIAL_FLOATS: frozenset[float] = frozenset({-1.0, 0.0, 0.5, 1.0, 2.0, 100.0})
 
 
-def run_magic_literals(
+_RULE = Tag.MAGIC_LITERALS.key
+
+def run(
     structure: Structure,
     rule_config: Rule,
     slop_config: Config,
@@ -54,7 +56,7 @@ def run_magic_literals(
     thresholds = rule_config.params.get("thresholds", {}) or {}
     if "function" not in thresholds:
         return RuleResult(
-            rule=Tag.MAGIC_LITERALS.key, status="pass", violations=[],
+            rule=_RULE, status="pass", violations=[],
             summary={"functions_analyzed": 0, "violations": 0}, errors=[],
         )
     threshold = int(thresholds.get("function", 3))
@@ -92,7 +94,7 @@ def run_magic_literals(
             except ValueError:
                 rel = str(c.path)
             findings.append((len(non_trivial), Slop(
-                rule=Tag.MAGIC_LITERALS.key,
+                rule=_RULE,
                 file=rel,
                 line=c.line,
                 symbol=c.qualname.split(".")[-1],
@@ -117,7 +119,7 @@ def run_magic_literals(
     violations = [s for _, s in findings]
 
     return RuleResult(
-        rule=Tag.MAGIC_LITERALS.key,
+        rule=_RULE,
         status="fail" if violations else "pass",
         violations=violations,
         summary={
@@ -201,12 +203,12 @@ def _parse_numeric(text: str) -> int | float | None:
             return None
 
 RULE = RuleDefinition(
-    name=Tag.MAGIC_LITERALS.key,
-    category=Tag.MAGIC_LITERALS.key,
+    name=_RULE,
+    category=_RULE,
     description='Distinct non-trivial numeric literals per function (magic numbers)',
     default_severity='warning',
     default_enabled=True,
     threshold_label='> 3',
-    run=run_magic_literals,
+    run=run,
     scopes=('function',),
 )

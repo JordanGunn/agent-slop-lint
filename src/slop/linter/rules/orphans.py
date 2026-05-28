@@ -25,7 +25,9 @@ from slop.structure.view import Structure
 _CONFIDENCE_ORDER = {"high": 3, "medium": 2, "low": 1}
 
 
-def run_orphans(
+_RULE = Tag.ORPHANS.key
+
+def run(
     structure: Structure,
     rule_config: Rule,
     slop_config: Config,
@@ -74,11 +76,11 @@ def run_orphans(
     )
 
 RULE = RuleDefinition(
-    name=Tag.ORPHANS.key,
-    category=Tag.ORPHANS.key,
+    name=_RULE,
+    category=_RULE,
     description="Unreferenced symbols (advisory)",
     default_severity="warning",
     default_enabled=False,
     threshold_label="",
-    run=run_orphans,
+    run=run,
 )

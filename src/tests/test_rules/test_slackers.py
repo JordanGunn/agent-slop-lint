@@ -9,7 +9,7 @@ from pathlib import Path
 
 from slop.linter.rule import Rule
 from slop.config import Config
-from slop.linter.rules.slackers import run_slackers
+from slop.linter.rules import slackers as _slackers_rule
 from slop.tree.tree import Tree
 
 
@@ -42,7 +42,7 @@ def test_slackers_flags_unaligned_real_cluster(tmp_path: Path):
         "def emit_metrics(customer):\n"
         "    return customer.metrics\n"
     )
-    result = run_slackers(_lexicon(tmp_path), _rc(), _slop())
+    result = _slackers_rule.run(_lexicon(tmp_path), _rc(), _slop())
     assert result.status == "fail"
     flagged = {v.symbol for v in result.violations}
     assert "customer" in flagged
@@ -60,7 +60,7 @@ def test_slackers_passes_when_names_align(tmp_path: Path):
         "def format_csv(result):\n"
         "    return result.summary\n"
     )
-    result = run_slackers(_lexicon(tmp_path), _rc(), _slop())
+    result = _slackers_rule.run(_lexicon(tmp_path), _rc(), _slop())
     flagged = {v.symbol for v in result.violations}
     # `format_*` template covers all members → no slacker finding
     assert "result" not in flagged
@@ -75,7 +75,7 @@ def test_slackers_skips_strategy_family(tmp_path: Path):
         "def yellow(text): return f'y:{text}'\n"
         "def blue(text): return f'b:{text}'\n"
     )
-    result = run_slackers(_lexicon(tmp_path), _rc(), _slop())
+    result = _slackers_rule.run(_lexicon(tmp_path), _rc(), _slop())
     flagged = {v.symbol for v in result.violations}
     # strategy_family profile excluded from slackers checks
     assert "text" not in flagged
@@ -96,6 +96,6 @@ def test_slackers_threshold_configurable(tmp_path: Path):
     # With max_coverage=0.30 (default), the cluster has some `calculate_*`
     # template coverage; might fire or not depending. Test that
     # max_coverage=0.0 never fires (no cluster has 0% coverage).
-    result = run_slackers(_lexicon(tmp_path), _rc(max_coverage=0.0), _slop())
+    result = _slackers_rule.run(_lexicon(tmp_path), _rc(max_coverage=0.0), _slop())
     flagged = {v.symbol for v in result.violations}
     assert "customer" not in flagged

@@ -21,7 +21,9 @@ if TYPE_CHECKING:
     from slop.structure.view import Structure
 
 
-def run_density(
+_RULE = Tag.DENSITY.key
+
+def run(
     structure: Structure,
     rule_config: Rule,
     slop_config: Config,
@@ -37,7 +39,7 @@ def run_density(
     fn_threshold = thresholds.get("function")
     if fn_threshold is None:
         return RuleResult(
-            rule=Tag.DENSITY.key,
+            rule=_RULE,
             status="pass",
             violations=[],
             summary={"functions_analyzed": 0, "violations": 0},
@@ -55,7 +57,7 @@ def run_density(
         density = (n1 / 2) * (total_n2 / n2)
         if density > fn_threshold:
             slop = _slop(
-                Tag.DENSITY.key,
+                _RULE,
                 c, root, severity, density, fn_threshold,
                 f"Density {density:.1f} exceeds {fn_threshold:.0f}",
                 {"n1": n1, "n2": n2, "total_n2": total_n2},
@@ -67,7 +69,7 @@ def run_density(
     violations = [s for _, s in findings]
 
     return RuleResult(
-        rule=Tag.DENSITY.key,
+        rule=_RULE,
         status="fail" if violations else "pass",
         violations=violations,
         summary={
@@ -78,12 +80,12 @@ def run_density(
     )
 
 RULE = RuleDefinition(
-    name=Tag.DENSITY.key,
+    name=_RULE,
     category=Tag.COMPLEXITY.key,
     description='Halstead D = (η₁/2)·(N₂/η₂) per function (Halstead 1977). Non-additive — function-scope only.',
     default_severity='error',
     default_enabled=True,
     threshold_label='D > 30',
-    run=run_density,
+    run=run,
     scopes=('function',),
 )

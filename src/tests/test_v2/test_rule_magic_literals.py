@@ -12,7 +12,7 @@ from pathlib import Path
 
 from slop.linter.rule import Rule
 from slop.config import Config
-from slop.linter.rules.magic_literals import run_magic_literals
+from slop.linter.rules import magic_literals as _magic_literals_rule
 from slop.tree.tree import Tree
 
 
@@ -27,7 +27,7 @@ def _sc(tmp_path: Path) -> Config:
 def _run(tmp_path: Path, threshold: int = 3):
     cb = Tree(tmp_path)
     cb.scan()
-    return run_magic_literals(cb.structure, _rc(threshold), _sc(tmp_path))
+    return _magic_literals_rule.run(cb.structure, _rc(threshold), _sc(tmp_path))
 
 
 class TestTrivials:

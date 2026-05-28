@@ -37,6 +37,8 @@ if TYPE_CHECKING:
 from slop.linter.rules._roots import derive_root as _derive_root
 
 
+_RULE = Tag.SPRAWL.key
+
 def _collect_function_lexemes(
     lexicon: Lexicon, root: Path,
 ) -> list[Lexeme]:
@@ -75,7 +77,7 @@ def _dispatch_family_names(lexicon: Lexicon, root: Path, exempt_names: frozenset
     return frozenset(names)
 
 
-def run_sprawl(
+def run(
     lexicon: Lexicon, rule_config: Rule, slop_config: Config,
 ) -> RuleResult:
     """Detect closed-alphabet sprawl in identifier templates."""
@@ -275,11 +277,11 @@ def run_sprawl(
     )
 
 RULE = RuleDefinition(
-    name=Tag.SPRAWL.key,
-    category=Tag.SPRAWL.key,
+    name=_RULE,
+    category=_RULE,
     description='Closed alphabet sprawls across naming templates (Wille 1982 FCA)',
     default_severity='warning',
     default_enabled=True,
     threshold_label='≥ 3 alphabet × ≥ 2 ops',
-    run=run_sprawl,
+    run=run,
 )

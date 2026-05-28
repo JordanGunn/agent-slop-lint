@@ -8,7 +8,7 @@ from pathlib import Path
 
 from slop.linter.rule import Rule
 from slop.config import Config
-from slop.linter.rules.confusion import run_confusion
+from slop.linter.rules import confusion as _confusion_rule
 from slop.tree.tree import Tree
 
 
@@ -48,7 +48,7 @@ def test_confusion_flags_multi_receiver_file(tmp_path: Path):
         "def header_extras(category):\n"
         "    return category.window\n"
     )
-    result = run_confusion(_lexicon(tmp_path), _rc(), _slop())
+    result = _confusion_rule.run(_lexicon(tmp_path), _rc(), _slop())
     assert result.status == "fail"
     flagged = {v.symbol for v in result.violations}
     assert any("output.py" in f for f in flagged)
@@ -66,7 +66,7 @@ def test_confusion_passes_for_single_cluster_file(tmp_path: Path):
         "def render_footer(result):\n"
         "    return result.errors\n"
     )
-    result = run_confusion(_lexicon(tmp_path), _rc(), _slop())
+    result = _confusion_rule.run(_lexicon(tmp_path), _rc(), _slop())
     assert result.status == "pass"
 
 
@@ -78,5 +78,5 @@ def test_confusion_skips_small_file(tmp_path: Path):
         "def fc(result): return result.z\n"
         "def ga(other): return other.a\n"
     )
-    result = run_confusion(_lexicon(tmp_path), _rc(min_functions=10), _slop())
+    result = _confusion_rule.run(_lexicon(tmp_path), _rc(min_functions=10), _slop())
     assert result.status == "pass"

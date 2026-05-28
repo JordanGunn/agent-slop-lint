@@ -40,6 +40,8 @@ if TYPE_CHECKING:
 from slop.linter.rules._roots import derive_root as _derive_root
 
 
+_RULE = Tag.IMPOSTERS.key
+
 def _action_for_cluster(cluster) -> tuple[Action, str, float]:
     """Map a cluster's profile + battery signals to (action, prescription, confidence).
 
@@ -144,7 +146,7 @@ _PROFILE_MESSAGES = {
 }
 
 
-def run_imposters(
+def run(
     lexicon: Lexicon,
     rule_config: Rule,
     slop_config: Config,
@@ -245,11 +247,11 @@ def run_imposters(
     )
 
 RULE = RuleDefinition(
-    name=Tag.IMPOSTERS.key,
-    category=Tag.IMPOSTERS.key,
+    name=_RULE,
+    category=_RULE,
     description='Parameters camouflaged as ordinary deps; missing receiver class',
     default_severity='warning',
     default_enabled=True,
     threshold_label='≥ 3 functions sharing param',
-    run=run_imposters,
+    run=run,
 )

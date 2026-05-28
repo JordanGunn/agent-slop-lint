@@ -19,25 +19,27 @@ if TYPE_CHECKING:
     from slop.structure.view import Structure
 
 
-def run_uselessness(
+_RULE = Tag.USELESSNESS.key
+
+def run(
     structure: Structure, rule_config: Rule, slop_config: Config,
 ) -> RuleResult:
     """Flag Zone-of-Uselessness packages whose D' exceeds the uselessness threshold."""
     return _run_zone_rule(
         structure, rule_config, slop_config,
-        rule_name=Tag.USELESSNESS.key,
+        rule_name=_RULE,
         zone="uselessness",
         zone_label="Uselessness",
         default_threshold=0.7,
     )
 
 RULE = RuleDefinition(
-    name=Tag.USELESSNESS.key,
-    category=Tag.USELESSNESS.key,
+    name=_RULE,
+    category=_RULE,
     description='Zone of Uselessness — unstable + abstract packages (Martin 1994)',
     default_severity='warning',
     default_enabled=True,
     threshold_label="uselessness & D' > 0.7",
-    run=run_uselessness,
+    run=run,
     scopes=('package',),
 )

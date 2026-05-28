@@ -35,7 +35,7 @@ DEFAULT_MIN_CLUSTER_SIZE = 2
 PRECISION = 4
 
 
-def run_clone_density(
+def run(
     structure: Structure, rule_config: Rule, slop_config: Config,
 ) -> RuleResult:
     """Flag codebase-level clone density and individual clone clusters."""
@@ -117,6 +117,6 @@ RULE = RuleDefinition(
     default_severity='warning',
     default_enabled=True,
     threshold_label='> 5%',
-    run=run_clone_density,
+    run=run,
     scopes=(),
 )

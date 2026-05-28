@@ -33,7 +33,9 @@ if TYPE_CHECKING:
     from slop.structure.view import Structure
 
 
-def run_redundancy(
+_RULE = Tag.REDUNDANCY.key
+
+def run(
     structure: Structure, rule_config: Rule, slop_config: Config,
 ) -> RuleResult:
     """Flag sibling top-level callables with overlapping callee sets."""
@@ -87,12 +89,12 @@ def run_redundancy(
     )
 
 RULE = RuleDefinition(
-    name=Tag.REDUNDANCY.key,
-    category=Tag.REDUNDANCY.key,
+    name=_RULE,
+    category=_RULE,
     description='Sibling top-level functions sharing non-trivial callees (refactoring signal)',
     default_severity='warning',
     default_enabled=True,
     threshold_label='≥ 3 shared',
-    run=run_redundancy,
+    run=run,
     scopes=(),
 )

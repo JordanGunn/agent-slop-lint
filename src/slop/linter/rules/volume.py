@@ -23,7 +23,9 @@ if TYPE_CHECKING:
     from slop.structure.view import Structure
 
 
-def run_volume(
+_RULE = Tag.VOLUME.key
+
+def run(
     structure: Structure,
     rule_config: Rule,
     slop_config: Config,
@@ -53,7 +55,7 @@ def run_volume(
         volumes[c.qualname] = volume
         if fn_threshold is not None and volume > fn_threshold:
             findings.append((volume, _slop(
-                Tag.VOLUME.key,
+                _RULE,
                 c, root, severity, volume, fn_threshold,
                 f"Volume {volume:.1f} exceeds {fn_threshold:.0f}",
                 {"n1": n1, "n2": n2, "total_n1": total_n1, "total_n2": total_n2},
@@ -74,7 +76,7 @@ def run_volume(
             agg = sum(volumes.get(m.qualname, 0.0) for m in members)
             if agg > cls_threshold:
                 slop = _class_slop(
-                    Tag.VOLUME.key, canonical, root, severity,
+                    _RULE, canonical, root, severity,
                     agg, cls_threshold,
                     f"Class V sum {agg:.1f} exceeds {cls_threshold:.0f}",
                 )
@@ -85,7 +87,7 @@ def run_volume(
     violations = [s for _, s in findings]
 
     return RuleResult(
-        rule=Tag.VOLUME.key,
+        rule=_RULE,
         status="fail" if violations else "pass",
         violations=violations,
         summary={
@@ -97,12 +99,12 @@ def run_volume(
     )
 
 RULE = RuleDefinition(
-    name=Tag.VOLUME.key,
+    name=_RULE,
     category=Tag.COMPLEXITY.key,
     description='Halstead Volume V = N·log₂η per function (Halstead 1977); method-sum per class (slop calibration)',
     default_severity='error',
     default_enabled=True,
     threshold_label='V > 1500 / Σ > 6000',
-    run=run_volume,
+    run=run,
     scopes=('function', 'class'),
 )

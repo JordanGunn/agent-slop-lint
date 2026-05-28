@@ -9,8 +9,8 @@ from pathlib import Path
 
 from slop.linter.rule import Rule
 from slop.config import Config
-from slop.linter.rules.imposters import run_imposters
-from slop.linter.rules.sprawl import run_sprawl
+from slop.linter.rules import imposters as _imposters_rule
+from slop.linter.rules import sprawl as _sprawl_rule
 from slop.tree.tree import Tree
 
 
@@ -54,7 +54,7 @@ def _java_collect(node): pass
 
 def test_sprawl_detects_language_alphabet(tmp_path: Path):
     (tmp_path / "fixture.py").write_text(_AFFIX_FIXTURE)
-    result = run_sprawl(_lexicon(tmp_path), _rule_config(), _slop_config(tmp_path))
+    result = _sprawl_rule.run(_lexicon(tmp_path), _rule_config(), _slop_config(tmp_path))
     assert result.status == "fail", result.summary
     assert result.summary["clusters_detected"] >= 1
     # Inheritance edges expected: csharp ⊃ javascript? java ⊃ csharp?
@@ -69,7 +69,7 @@ def test_sprawl_quiet_on_unrelated_functions(tmp_path: Path):
         "def parse_input(text): return text.split()\n"
         "def render_output(result): print(result)\n"
     )
-    result = run_sprawl(_lexicon(tmp_path), _rule_config(), _slop_config(tmp_path))
+    result = _sprawl_rule.run(_lexicon(tmp_path), _rule_config(), _slop_config(tmp_path))
     assert result.status == "pass"
     assert not result.violations
 
@@ -80,7 +80,7 @@ def test_sprawl_min_alphabet_threshold(tmp_path: Path):
         "def _python_extract(node): pass\n"
         "def _java_extract(node): pass\n"
     )
-    result = run_sprawl(_lexicon(tmp_path), _rule_config(), _slop_config(tmp_path))
+    result = _sprawl_rule.run(_lexicon(tmp_path), _rule_config(), _slop_config(tmp_path))
     assert result.summary["clusters_detected"] == 0
 
 
@@ -92,7 +92,7 @@ def test_sprawl_lowered_threshold_finds_pair(tmp_path: Path):
         "def _python_walk(node): pass\n"
         "def _java_walk(node): pass\n"
     )
-    result = run_sprawl(
+    result = _sprawl_rule.run(
         _lexicon(tmp_path), _rule_config(min_alphabet=2), _slop_config(tmp_path),
     )
     assert result.summary["clusters_detected"] >= 1
@@ -100,7 +100,7 @@ def test_sprawl_lowered_threshold_finds_pair(tmp_path: Path):
 
 def test_sprawl_violation_metadata(tmp_path: Path):
     (tmp_path / "f.py").write_text(_AFFIX_FIXTURE)
-    result = run_sprawl(_lexicon(tmp_path), _rule_config(), _slop_config(tmp_path))
+    result = _sprawl_rule.run(_lexicon(tmp_path), _rule_config(), _slop_config(tmp_path))
     if result.violations:
         v = result.violations[0]
         assert v.rule == "lexical.sprawl"
@@ -133,7 +133,7 @@ def fetch(url):
 
 def test_imposters_detects_strong_cluster(tmp_path: Path):
     (tmp_path / "f.py").write_text(_FPDRIFT_FIXTURE)
-    result = run_imposters(_lexicon(tmp_path), _rule_config(), _slop_config(tmp_path))
+    result = _imposters_rule.run(_lexicon(tmp_path), _rule_config(), _slop_config(tmp_path))
     assert result.status == "fail"
     assert result.summary["profile_counts"].get("missing_class", 0) >= 1
     flagged = {v.symbol for v in result.violations}
@@ -148,7 +148,7 @@ def test_imposters_skips_self_and_cls(tmp_path: Path):
         "    def c(self): pass\n"
         "    def d(self): pass\n"
     )
-    result = run_imposters(_lexicon(tmp_path), _rule_config(), _slop_config(tmp_path))
+    result = _imposters_rule.run(_lexicon(tmp_path), _rule_config(), _slop_config(tmp_path))
     flagged = {v.symbol for v in result.violations}
     # `self` is exempt, so no violation
     assert "self" not in flagged
@@ -162,7 +162,7 @@ def test_imposters_classifies_node_as_false_positive(tmp_path: Path):
         "def b(node): pass\n"
         "def c(node): pass\n"
     )
-    result = run_imposters(_lexicon(tmp_path), _rule_config(), _slop_config(tmp_path))
+    result = _imposters_rule.run(_lexicon(tmp_path), _rule_config(), _slop_config(tmp_path))
     # No violations because false-positive verdicts don't generate violations
     flagged = {v.symbol for v in result.violations}
     assert "node" not in flagged
@@ -177,7 +177,7 @@ def test_imposters_classifies_root_as_weak(tmp_path: Path):
         "def y(root: Path): pass\n"
         "def z(root: Path): pass\n"
     )
-    result = run_imposters(_lexicon(tmp_path), _rule_config(), _slop_config(tmp_path))
+    result = _imposters_rule.run(_lexicon(tmp_path), _rule_config(), _slop_config(tmp_path))
     flagged = {v.symbol for v in result.violations}
     assert "root" not in flagged  # weak — no violation
     assert result.summary["profile_counts"].get("infrastructure", 0) >= 1
@@ -188,7 +188,7 @@ def test_imposters_min_cluster_threshold(tmp_path: Path):
         "def a(canvas): pass\n"
         "def b(canvas): pass\n"  # only 2 — under default threshold of 3
     )
-    result = run_imposters(_lexicon(tmp_path), _rule_config(), _slop_config(tmp_path))
+    result = _imposters_rule.run(_lexicon(tmp_path), _rule_config(), _slop_config(tmp_path))
     assert result.summary["clusters_detected"] == 0
 
 
@@ -200,7 +200,7 @@ def test_imposters_skips_single_char_params(tmp_path: Path):
         "def c(i): pass\n"
         "def d(i): pass\n"
     )
-    result = run_imposters(_lexicon(tmp_path), _rule_config(), _slop_config(tmp_path))
+    result = _imposters_rule.run(_lexicon(tmp_path), _rule_config(), _slop_config(tmp_path))
     flagged = {v.symbol for v in result.violations}
     assert "i" not in flagged
 
@@ -211,7 +211,7 @@ def test_imposters_custom_exempt_names(tmp_path: Path):
         "def b(canvas): pass\n"
         "def c(canvas): pass\n"
     )
-    result = run_imposters(
+    result = _imposters_rule.run(
         _lexicon(tmp_path),
         _rule_config(exempt_names=["self", "cls", "canvas"]),
         _slop_config(tmp_path),
@@ -232,7 +232,7 @@ def test_imposters_reports_at_file_scope(tmp_path: Path):
         "def transform(canvas, m): pass\n"
         "def serialize(canvas): pass\n"
     )
-    result = run_imposters(_lexicon(tmp_path), _rule_config(), _slop_config(tmp_path))
+    result = _imposters_rule.run(_lexicon(tmp_path), _rule_config(), _slop_config(tmp_path))
     assert result.status == "fail"
     assert any(
         v.metadata.get("scope") == "renderer.py"
@@ -254,7 +254,7 @@ def test_imposters_reports_at_package_scope(tmp_path: Path):
         "def y1(ctx): pass\n"
         "def y2(ctx): pass\n"
     )
-    result = run_imposters(_lexicon(tmp_path), _rule_config(), _slop_config(tmp_path))
+    result = _imposters_rule.run(_lexicon(tmp_path), _rule_config(), _slop_config(tmp_path))
     assert result.status == "fail"
     pkg_clusters = [
         v for v in result.violations
@@ -276,7 +276,7 @@ def test_imposters_drops_cross_package_noise(tmp_path: Path):
             f"def fn{i*2}(name): pass\n"
             f"def fn{i*2+1}(name): pass\n"
         )
-    result = run_imposters(_lexicon(tmp_path), _rule_config(), _slop_config(tmp_path))
+    result = _imposters_rule.run(_lexicon(tmp_path), _rule_config(), _slop_config(tmp_path))
     flagged = {v.symbol for v in result.violations}
     # 8 functions across 4 packages share `name`; coherence check at
     # root scope rejects it (≥ 4 children = noise).
@@ -295,7 +295,7 @@ def test_imposters_narrowest_scope_wins(tmp_path: Path):
         "def x4(canvas): pass\n"
     )
     (pkg / "b.py").write_text("def y1(canvas): pass\n")  # under threshold alone
-    result = run_imposters(_lexicon(tmp_path), _rule_config(), _slop_config(tmp_path))
+    result = _imposters_rule.run(_lexicon(tmp_path), _rule_config(), _slop_config(tmp_path))
     canvas_clusters = [v for v in result.violations if v.symbol == "canvas"]
     assert len(canvas_clusters) == 1, "expected a single canvas cluster"
     assert canvas_clusters[0].metadata["scope"] == "pkg/a.py"
@@ -307,7 +307,7 @@ def test_sprawl_scope_tagged(tmp_path: Path):
     pkg = tmp_path / "kernel"
     pkg.mkdir()
     (pkg / "extract.py").write_text(_AFFIX_FIXTURE)
-    result = run_sprawl(_lexicon(tmp_path), _rule_config(), _slop_config(tmp_path))
+    result = _sprawl_rule.run(_lexicon(tmp_path), _rule_config(), _slop_config(tmp_path))
     if result.violations:
         v = result.violations[0]
         assert "scope" not in v.metadata or v.metadata.get("scope")

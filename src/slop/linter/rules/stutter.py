@@ -72,6 +72,8 @@ _SCOPE_NODES: dict[str, dict[str, frozenset[str]]] = {
 }
 
 
+_RULE = Tag.STUTTER.key
+
 def _levels_from_config(rule_config: Rule) -> frozenset[str]:
     toggle_keys = {
         "package": "check_packages",
@@ -335,7 +337,7 @@ _FRAMEWORK_TOKENS: frozenset[str] = frozenset({
 })
 
 
-def run_stutter(
+def run(
     lexicon: Lexicon,
     rule_config: Rule,
     slop_config: Config,  # noqa: ARG001 — rule contract; discovery is via lexicon
@@ -479,11 +481,11 @@ def run_stutter(
     )
 
 RULE = RuleDefinition(
-    name=Tag.STUTTER.key,
-    category=Tag.STUTTER.key,
+    name=_RULE,
+    category=_RULE,
     description='Names repeating tokens from any enclosing scope (package/module/class/function)',
     default_severity='warning',
     default_enabled=True,
     threshold_label='≥ 2 tokens',
-    run=run_stutter,
+    run=run,
 )

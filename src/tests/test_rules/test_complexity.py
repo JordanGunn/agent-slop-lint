@@ -13,8 +13,8 @@ def _structure(root: Path):
     t = Tree(root)
     t.scan()
     return t.structure
-from slop.linter.rules.cognitive import run_cognitive
-from slop.linter.rules.cyclomatic import run_cyclomatic
+from slop.linter.rules import cognitive as _cognitive_rule
+from slop.linter.rules import cyclomatic as _cyclomatic_rule
 
 # Python source with known complexity values
 _SIMPLE = "def add(a, b):\n    return a + b\n"  # ccx=1, cog=0
@@ -78,14 +78,14 @@ def _rule_config(**overrides) -> Rule:
 
 def test_cyclomatic_pass_when_below_threshold(tmp_path: Path):
     _write_file(tmp_path, _SIMPLE)
-    result = run_cyclomatic(_structure(tmp_path), _rule_config(), _default_config())
+    result = _cyclomatic_rule.run(_structure(tmp_path), _rule_config(), _default_config())
     assert result.status == "pass"
     assert result.violations == []
 
 
 def test_cyclomatic_fail_when_above_threshold(tmp_path: Path):
     _write_file(tmp_path, _COMPLEX)
-    result = run_cyclomatic(_structure(tmp_path), _rule_config(threshold=10), _default_config())
+    result = _cyclomatic_rule.run(_structure(tmp_path), _rule_config(threshold=10), _default_config())
     assert result.status == "fail"
     assert len(result.violations) == 1
     v = result.violations[0]
@@ -97,16 +97,16 @@ def test_cyclomatic_fail_when_above_threshold(tmp_path: Path):
 def test_threshold_is_configurable(tmp_path: Path):
     _write_file(tmp_path, _MODERATE)
     # threshold=5 → ccx=6 should fail
-    result = run_cyclomatic(_structure(tmp_path), _rule_config(threshold=5), _default_config())
+    result = _cyclomatic_rule.run(_structure(tmp_path), _rule_config(threshold=5), _default_config())
     assert result.status == "fail"
     # threshold=10 → ccx=6 should pass
-    result = run_cyclomatic(_structure(tmp_path), _rule_config(threshold=10), _default_config())
+    result = _cyclomatic_rule.run(_structure(tmp_path), _rule_config(threshold=10), _default_config())
     assert result.status == "pass"
 
 
 def test_cyclomatic_violation_has_correct_fields(tmp_path: Path):
     _write_file(tmp_path, _COMPLEX)
-    result = run_cyclomatic(_structure(tmp_path), _rule_config(threshold=10), _default_config())
+    result = _cyclomatic_rule.run(_structure(tmp_path), _rule_config(threshold=10), _default_config())
     v = result.violations[0]
     assert v.file is not None
     assert v.line is not None and v.line > 0
@@ -118,7 +118,7 @@ def test_cyclomatic_violation_has_correct_fields(tmp_path: Path):
 
 def test_cyclomatic_summary_includes_function_count(tmp_path: Path):
     _write_file(tmp_path, _SIMPLE + "\n" + _MODERATE)
-    result = run_cyclomatic(_structure(tmp_path), _rule_config(), _default_config())
+    result = _cyclomatic_rule.run(_structure(tmp_path), _rule_config(), _default_config())
     assert result.summary["functions_checked"] >= 2
 
 
@@ -139,13 +139,13 @@ def deeply_nested(a, b, c):
 
 def test_cognitive_pass_when_below_threshold(tmp_path: Path):
     _write_file(tmp_path, _SIMPLE)
-    result = run_cognitive(_structure(tmp_path), _rule_config(), _default_config())
+    result = _cognitive_rule.run(_structure(tmp_path), _rule_config(), _default_config())
     assert result.status == "pass"
 
 
 def test_cognitive_fail_when_above_threshold(tmp_path: Path):
     _write_file(tmp_path, _NESTED)
-    result = run_cognitive(_structure(tmp_path), _rule_config(threshold=3), _default_config())
+    result = _cognitive_rule.run(_structure(tmp_path), _rule_config(threshold=3), _default_config())
     assert result.status == "fail"
     assert len(result.violations) >= 1
     assert result.violations[0].rule == "complexity.cognitive"
@@ -154,5 +154,5 @@ def test_cognitive_fail_when_above_threshold(tmp_path: Path):
 def test_threshold_configurable(tmp_path: Path):
     _write_file(tmp_path, _NESTED)
     # threshold=100 → should pass
-    result = run_cognitive(_structure(tmp_path), _rule_config(threshold=100), _default_config())
+    result = _cognitive_rule.run(_structure(tmp_path), _rule_config(threshold=100), _default_config())
     assert result.status == "pass"

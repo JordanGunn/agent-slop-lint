@@ -21,7 +21,9 @@ if TYPE_CHECKING:
     from slop.structure.view import Structure
 
 
-def run_inheritance_depth(
+_RULE = Tag.DEPTH.key
+
+def run(
     structure: Structure,
     rule_config: Rule,
     slop_config: Config,
@@ -55,12 +57,12 @@ def run_inheritance_depth(
     )
 
 RULE = RuleDefinition(
-    name=Tag.DEPTH.key,
-    category=Tag.DEPTH.key,
+    name=_RULE,
+    category=_RULE,
     description='DIT — depth of inheritance tree (CK 1994)',
     default_severity='error',
     default_enabled=True,
     threshold_label='DIT > 4',
-    run=run_inheritance_depth,
+    run=run,
     scopes=('class',),
 )

@@ -36,7 +36,9 @@ DEFAULT_MIN_ANNOTATIONS = 5
 PRECISION = 4
 
 
-def run_escape_hatches(
+_RULE = Tag.ESCAPE_HATCHES.key
+
+def run(
     structure: Structure, rule_config: Rule, slop_config: Config,
 ) -> RuleResult:
     """Flag files where too many type annotations use escape-hatch types."""
@@ -44,7 +46,7 @@ def run_escape_hatches(
     thresholds = rule_config.params.get("thresholds", {}) or {}
     if "module" not in thresholds:
         return RuleResult(
-            rule=Tag.ESCAPE_HATCHES.key, status="pass", violations=[],
+            rule=_RULE, status="pass", violations=[],
             summary={"files_scanned": 0, "violations": 0},
         )
     threshold = float(thresholds.get("module", DEFAULT_THRESHOLD))
@@ -79,7 +81,7 @@ def run_escape_hatches(
             continue
         pct = density * 100
         violations.append(Slop(
-            rule=Tag.ESCAPE_HATCHES.key,
+            rule=_RULE,
             file=file,
             line=None,
             symbol=None,
@@ -100,7 +102,7 @@ def run_escape_hatches(
         ))
 
     return RuleResult(
-        rule=Tag.ESCAPE_HATCHES.key,
+        rule=_RULE,
         status="fail" if violations else "pass",
         violations=violations,
         summary={
@@ -111,12 +113,12 @@ def run_escape_hatches(
     )
 
 RULE = RuleDefinition(
-    name=Tag.ESCAPE_HATCHES.key,
-    category=Tag.ESCAPE_HATCHES.key,
+    name=_RULE,
+    category=_RULE,
     description='Fraction of type annotations using escape-hatch types (Any, interface{}, ...)',
     default_severity='warning',
     default_enabled=True,
     threshold_label='> 30%',
-    run=run_escape_hatches,
+    run=run,
     scopes=('module',),
 )
