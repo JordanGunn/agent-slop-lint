@@ -32,7 +32,11 @@ _FALSE_POSITIVE_NAMES: frozenset[str] = frozenset({
     "node", "tree",          # tree-sitter library types
 })
 _INFRASTRUCTURE_NAMES: frozenset[str] = frozenset({
+    # filesystem / scan-root parameters
     "root", "file_path", "path", "fp",
+    # shared filter / option kwargs threaded across method APIs —
+    # these are configuration plumbing, not primary receivers
+    "exclude", "include", "filter", "options", "kwargs", "scope",
 })
 
 
