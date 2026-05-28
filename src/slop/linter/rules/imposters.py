@@ -28,7 +28,7 @@ from typing import TYPE_CHECKING
 
 from slop.linter.rule import Rule
 from slop.config import Config
-from slop.linter.slop import Slop
+from slop.linter.slop import Action, Slop
 from slop.linter.types import RuleResult
 from slop.linter.tags import Tag
 from slop.linter.types import RuleDefinition
@@ -38,6 +38,77 @@ if TYPE_CHECKING:
 
 
 from slop.linter.rules._roots import derive_root as _derive_root
+
+
+def _action_for_cluster(cluster) -> tuple[Action, str, float]:
+    """Map a cluster's profile + battery signals to (action, prescription, confidence).
+
+    The battery dimensions:
+    - profile (receiver_density × body_cohesion)
+    - is_isolate × file_spread (distribution position)
+    - scope_hapax_ratio (vocabulary fragmentation)
+    """
+    param = cluster.parameter_name
+    n = len(cluster.members)
+
+    if cluster.profile_label == "missing_class":
+        # Third-party receiver heuristic: an isolate token that's also
+        # the parameter type's name (subparsers, parser) — extract a
+        # helper function instead of wrapping the third-party object.
+        if cluster.is_isolate and cluster.file_spread <= 10:
+            prescription = (
+                f"Extract a `register_{param}(...)` helper or similar — "
+                f"{n} functions share `{param}` as a receiver with strong "
+                f"cohesion (Jaccard {cluster.body_jaccard_mean:.2f}). The "
+                f"parameter looks framework-imposed; a helper function is "
+                f"safer than wrapping it in a class."
+            )
+            confidence = 0.7 if cluster.body_jaccard_mean >= 0.7 else 0.55
+            return (Action.EXTRACT_HELPER, prescription, confidence)
+        # Otherwise: clean class extraction.
+        prescription = (
+            f"Extract a class with `{param}` as `self`. {n} functions "
+            f"actively call methods on `{param}` (density "
+            f"{cluster.mean_receiver_calls:.1f}) and share structural "
+            f"shape (cohesion {cluster.body_jaccard_mean:.2f}). Scope "
+            f"hapax is {cluster.scope_hapax_ratio:.2f}."
+        )
+        # Confidence boosted by clean scope (low hapax), reduced by
+        # fragmenting scope (high hapax — extract in a fragmenting scope
+        # may not stick).
+        confidence = 0.75 if cluster.scope_hapax_ratio < 0.4 else 0.55
+        return (Action.EXTRACT_CLASS, prescription, confidence)
+
+    if cluster.profile_label == "strategy_family":
+        prescription = (
+            f"Accept as a strategy family or replace with a dispatch "
+            f"table. {n} functions are structural clones operating on "
+            f"`{param}` (cohesion {cluster.body_jaccard_mean:.2f}). Do "
+            f"NOT extract as methods — the polymorphism happens through "
+            f"data, not through `self`."
+        )
+        return (Action.NOTE_PATTERN, prescription, 0.85)
+
+    if cluster.profile_label == "dispatch_family":
+        prescription = (
+            f"Verify the dispatch pattern is intentional. {n} functions "
+            f"call methods on `{param}` independently (density "
+            f"{cluster.mean_receiver_calls:.1f}, cohesion "
+            f"{cluster.body_jaccard_mean:.2f}). This is a registry/"
+            f"plugin family — leave as functions unless subsets share "
+            f"internal logic."
+        )
+        return (Action.REVIEW_INTENT, prescription, 0.6)
+
+    # heterogeneous
+    prescription = (
+        f"Review the cluster's membership. {n} functions share `{param}` "
+        f"but profile is mixed (cohesion {cluster.body_jaccard_mean:.2f}, "
+        f"receiver density {cluster.mean_receiver_calls:.1f}). Some "
+        f"members may be unrelated helpers; relocate them before "
+        f"deciding on a refactor."
+    )
+    return (Action.REVIEW_INTENT, prescription, 0.4)
 
 
 _PROFILE_MESSAGES = {
@@ -124,6 +195,7 @@ def run_imposters(
                 f"vocabulary in the enclosing scope is fragmenting; the "
                 f"cluster sits in a broader naming-coherence problem."
             )
+        action, prescription, confidence = _action_for_cluster(cluster)
         violations.append(Slop(
             rule="lexical.imposters",
             file=anchor_file,
@@ -131,6 +203,9 @@ def run_imposters(
             symbol=cluster.parameter_name,
             message=message,
             severity=severity,
+            action=action,
+            prescription=prescription,
+            confidence=confidence,
             metadata={
                 "profile": cluster.profile_label,
                 "verdict": cluster.verdict,

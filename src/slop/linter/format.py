@@ -367,6 +367,9 @@ def to_dict(result: Result) -> dict:
                 "severity": v.severity,
                 "value": v.value,
                 "threshold": v.threshold,
+                "action": str(v.action) if v.action else None,
+                "prescription": v.prescription,
+                "confidence": v.confidence,
                 "metadata": v.metadata,
             })
         waived_out = []

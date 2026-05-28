@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 from slop.linter.rule import Rule
 from slop.config import Config
 from slop.lexicon.affix import UNIVERSAL_NOISE
-from slop.linter.slop import Slop
+from slop.linter.slop import Action, Slop
 from slop.linter.types import RuleResult
 from slop.linter.tags import Tag
 from slop.linter.types import RuleDefinition
@@ -111,6 +111,25 @@ def run_verbosity(
                 f"a long descriptive name."
             )
 
+        if is_scope_leak:
+            action = Action.NARROW_SCOPE
+            prescription = (
+                f"Move `{entity.name}` into a narrower namespace. "
+                f"Its tokens average {mean_spread:.0f}-file spread and "
+                f"{head_count} are frequency-head tokens — the scope is "
+                f"too loose, the name is shouldering disambiguation work "
+                f"the scope should be doing."
+            )
+            confidence = 0.7
+        else:
+            action = Action.NOTE_PATTERN
+            prescription = (
+                f"Long descriptive name in a locally-scoped context. "
+                f"Consider shortening if the {len(effective_tokens)} tokens "
+                f"include redundant context, or accept as descriptive."
+            )
+            confidence = 0.4
+
         violations.append(Slop(
             rule="lexical.verbosity",
             file=file,
@@ -125,6 +144,9 @@ def run_verbosity(
             severity=severity,
             value=len(effective_tokens),
             threshold=max_tokens,
+            action=action,
+            prescription=prescription,
+            confidence=confidence,
             metadata={
                 "kind": entity.kind,
                 "tokens": list(entity.tokens),

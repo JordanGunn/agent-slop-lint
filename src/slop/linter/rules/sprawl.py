@@ -24,7 +24,7 @@ from typing import TYPE_CHECKING
 from slop.linter.rule import Rule
 from slop.config import Config
 from slop.lexicon.affix import Lexeme, sprawl_over
-from slop.linter.slop import Slop
+from slop.linter.slop import Action, Slop
 from slop.linter.types import RuleResult
 from slop.tree.records import CallableKind
 from slop.linter.tags import Tag
@@ -128,6 +128,23 @@ def run_sprawl(
                 f"the inheritance explicit."
             )
 
+        if in_dispatch:
+            inh_action = Action.REVIEW_INTENT
+            inh_prescription = (
+                f"`{child}` and `{parent}` are functions in a dispatch "
+                f"family — the naming overlap is structural. Extract "
+                f"shared logic into a helper if the bodies converge."
+            )
+            inh_confidence = 0.5
+        else:
+            inh_action = Action.EXTRACT_CLASS
+            inh_prescription = (
+                f"Introduce a class hierarchy: `class "
+                f"{parent.capitalize()}` and `class "
+                f"{child.capitalize()}({parent.capitalize()})`. "
+                f"The naming template already shows the inheritance."
+            )
+            inh_confidence = 0.65
         violations.append(Slop(
             rule="lexical.sprawl",
             file=anchor_file or "<aggregate>",
@@ -139,6 +156,9 @@ def run_sprawl(
                 f"plus more). {advice}"
             ),
             severity=severity,
+            action=inh_action,
+            prescription=inh_prescription,
+            confidence=inh_confidence,
             metadata={
                 "kind": "inheritance_pair",
                 "parent": parent,
@@ -197,6 +217,23 @@ def run_sprawl(
                 "consider modeling its members as a class."
             )
 
+        if extent_in_dispatch:
+            con_action = Action.REVIEW_INTENT
+            con_prescription = (
+                f"Verify the dispatch registry. {len(concept.extent)} "
+                f"entities share {len(concept.intent)} operations; this "
+                f"is a plugin/dispatch pattern, not a missing type."
+            )
+            con_confidence = 0.5
+        else:
+            con_action = Action.EXTRACT_CLASS
+            con_prescription = (
+                f"Model the alphabet as a class: {len(concept.extent)} "
+                f"entities ({entity_list}) share {len(concept.intent)} "
+                f"operations ({op_list}). The recurring template is "
+                f"acting as an undeclared type."
+            )
+            con_confidence = 0.65
         violations.append(Slop(
             rule="lexical.sprawl",
             file=anchor_file or "<aggregate>",
@@ -208,6 +245,9 @@ def run_sprawl(
                 f"({op_list}). {concept_advice}"
             ),
             severity=severity,
+            action=con_action,
+            prescription=con_prescription,
+            confidence=con_confidence,
             metadata={
                 "kind": "concept",
                 "extent": sorted(concept.extent),

@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING
 from slop.linter.rule import Rule
 from slop.config import Config
 from slop.lexicon.affix import UNIVERSAL_NOISE, Lexeme, build_affix_patterns
-from slop.linter.slop import Slop
+from slop.linter.slop import Action, Slop
 from slop.linter.types import RuleResult
 from slop.linter.tags import Tag
 from slop.linter.types import RuleDefinition
@@ -96,6 +96,25 @@ def run_slackers(
         advice = _PROFILE_ADVICE.get(
             cluster.profile_label, _PROFILE_ADVICE["heterogeneous"]
         ).format(param=cluster.parameter_name)
+        if cluster.profile_label == "missing_class":
+            action = Action.RENAME_BY_TEMPLATE
+            prescription = (
+                f"Adopt a naming template for the {len(cluster.members)} "
+                f"functions sharing `{cluster.parameter_name}`. The cluster "
+                f"is real ({coverage:.0%} template coverage). Use "
+                f"`verb_{cluster.parameter_name}` or "
+                f"`{cluster.parameter_name}_attribute`."
+            )
+            confidence = 0.7
+        else:
+            action = Action.REVIEW_INTENT
+            prescription = (
+                f"Review whether the {len(cluster.members)} members of the "
+                f"`{cluster.parameter_name}` cluster all belong. The cluster "
+                f"is structurally mixed; low-coverage members may be helpers "
+                f"that should be relocated."
+            )
+            confidence = 0.4
         violations.append(Slop(
             rule="lexical.slackers",
             file=anchor_file,
@@ -110,6 +129,9 @@ def run_slackers(
             severity=severity,
             value=round(coverage, 3),
             threshold=max_coverage,
+            action=action,
+            prescription=prescription,
+            confidence=confidence,
             metadata={
                 "scope": cluster.scope,
                 "scope_kind": cluster.scope_kind,

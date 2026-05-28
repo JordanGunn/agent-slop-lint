@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING, Any
 
 from slop.linter.rule import Rule
 from slop.config import Config
-from slop.linter.slop import Slop
+from slop.linter.slop import Action, Slop
 from slop.linter.types import RuleResult
 from slop.linter.tags import Tag
 from slop.linter.types import RuleDefinition
@@ -411,6 +411,32 @@ def run_stutter(
                 f"Drop the redundant tokens from the inner name."
             )
 
+        if is_framework:
+            action = Action.ACCEPT_AS_FRAMEWORK
+            prescription = (
+                f"Framework-imposed naming — accept. The stutter exists "
+                f"because the framework dictates the identifier name."
+            )
+            confidence = 0.9
+        elif mean_overlap_spread >= 5.0:
+            action = Action.NARROW_SCOPE
+            prescription = (
+                f"Rename `{f['identifier']}` or narrow the enclosing "
+                f"{f['scope_level']} scope. The shared tokens {f['overlap']} "
+                f"average {mean_overlap_spread:.0f}-file spread, indicating "
+                f"the scope boundary is leaking across the codebase."
+            )
+            confidence = 0.7
+        else:
+            action = Action.DROP_REDUNDANT_TOKENS
+            prescription = (
+                f"Drop the redundant tokens {f['overlap']} from "
+                f"`{f['identifier']}`. The enclosing {f['scope_level']} "
+                f"`{f['scope_name']}` already carries them — the inner "
+                f"name is restating its own scope."
+            )
+            confidence = 0.8
+
         violations.append(Slop(
             rule="lexical.stutter",
             file=f["file"],
@@ -424,6 +450,9 @@ def run_stutter(
             severity=severity,
             value=len(f["overlap"]),
             threshold=min_overlap,
+            action=action,
+            prescription=prescription,
+            confidence=confidence,
             metadata={
                 "scope_name": f["scope_name"],
                 "scope_level": f["scope_level"],

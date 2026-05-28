@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING
 
 from slop.linter.rule import Rule
 from slop.config import Config
-from slop.linter.slop import Slop
+from slop.linter.slop import Action, Slop
 from slop.linter.types import RuleResult
 from slop.tree.records import CallableKind
 from slop.linter.tags import Tag
@@ -97,6 +97,12 @@ def run_confusion(
             f"`{p}` ({n}, {label})" for p, n, label in cluster_tuples
         )
         receivers_repr = ", ".join(f"`{r}`" for r in strong_receivers)
+        prescription = (
+            f"Split `{file}` along receiver boundaries. The file holds "
+            f"{n_functions} functions clustering on {len(file_clusters)} "
+            f"distinct receivers, with {len(strong_receivers)} being "
+            f"strong missing-class candidates ({receivers_repr})."
+        )
         violations.append(Slop(
             rule="lexical.confusion",
             file=file,
@@ -113,6 +119,9 @@ def run_confusion(
             severity=severity,
             value=len(strong_receivers),
             threshold=min_strong_receivers,
+            action=Action.EXTRACT_CLASS,
+            prescription=prescription,
+            confidence=0.7,
             metadata={
                 "function_count": n_functions,
                 "clusters": [

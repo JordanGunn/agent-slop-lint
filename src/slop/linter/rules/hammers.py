@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING
 
 from slop.linter.rule import Rule
 from slop.config import Config
-from slop.linter.slop import Slop
+from slop.linter.slop import Action, Slop
 from slop.linter.types import RuleResult
 from slop.linter.tags import Tag
 from slop.linter.types import RuleDefinition
@@ -219,6 +219,21 @@ def run_hammers(
             continue
         word, pos, severity = hit
         token_lower = word.lower()
+        spread = spread_map.get(token_lower, 0)
+        is_isolate = token_lower in isolate_tokens
+        # Confidence boosted when the hammer is institutionalized
+        # (widely spread + bonds with no specific partner).
+        confidence = 0.85 if (spread >= 5 and is_isolate) else 0.6
+        prescription = (
+            f"Replace `{word}` with a domain-specific term. The "
+            f"{entity.kind} `{entity.name}` uses a catchall noun that "
+            f"carries no responsibility-specific meaning."
+        )
+        if spread >= 5 and is_isolate:
+            prescription += (
+                f" The hammer is institutionalized (spread across "
+                f"{spread} files, bonds with no specific partner)."
+            )
         violations.append(Slop(
             rule="lexical.hammers",
             file=rel,
@@ -230,13 +245,16 @@ def run_hammers(
                 f"{_pervasiveness_note(word)}"
             ),
             severity=severity,
+            action=Action.REPLACE_WITH_DOMAIN_TERM,
+            prescription=prescription,
+            confidence=confidence,
             metadata={
                 "matched_word": word,
                 "matched_position": pos,
                 "kind": entity.kind,
                 "language": entity.language,
-                "token_spread": spread_map.get(token_lower, 0),
-                "is_isolate": token_lower in isolate_tokens,
+                "token_spread": spread,
+                "is_isolate": is_isolate,
             },
         ))
 
@@ -254,6 +272,13 @@ def run_hammers(
             continue
         word, severity = hit
         token_lower = word.lower()
+        spread = spread_map.get(token_lower, 0)
+        is_isolate = token_lower in isolate_tokens
+        confidence = 0.85 if (spread >= 5 and is_isolate) else 0.6
+        prescription = (
+            f"Rename the `{stem}` module to a domain-specific term. "
+            f"The current name carries no responsibility-specific meaning."
+        )
         violations.append(Slop(
             rule="lexical.hammers",
             file=rel,
@@ -265,13 +290,16 @@ def run_hammers(
                 f"{_pervasiveness_note(word)}"
             ),
             severity=severity,
+            action=Action.REPLACE_WITH_DOMAIN_TERM,
+            prescription=prescription,
+            confidence=confidence,
             metadata={
                 "matched_word": word,
                 "matched_position": "module_name",
                 "kind": "module",
                 "language": lexicon._language_by_path.get(str(file_path), "<unknown>"),
-                "token_spread": spread_map.get(token_lower, 0),
-                "is_isolate": token_lower in isolate_tokens,
+                "token_spread": spread,
+                "is_isolate": is_isolate,
             },
         ))
 
