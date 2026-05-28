@@ -12,7 +12,7 @@ from slop.linter.rule import Rule
 from slop.config import Config
 from slop.linter.slop import Slop
 from slop.linter.types import RuleResult
-from slop.linter.rules._class_index import _class_index, _class_threshold, _slop
+from slop.linter.rules.class_index import _class_index, _class_threshold, _slop
 from slop.linter.tags import Tag
 from slop.linter.types import RuleDefinition
 

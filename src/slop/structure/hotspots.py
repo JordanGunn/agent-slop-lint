@@ -17,7 +17,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from slop.structure._git import NumstatCommitRecord, git_log_numstat
+from slop.structure.git import NumstatCommitRecord, git_log_numstat
 from slop.structure.records import FileHotspot
 
 if TYPE_CHECKING:

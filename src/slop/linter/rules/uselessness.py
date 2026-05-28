@@ -12,7 +12,7 @@ from slop.linter.tags import Tag
 from slop.linter.rule import Rule
 from slop.config import Config
 from slop.linter.types import RuleResult
-from slop.linter.rules._architecture import _run_zone_rule
+from slop.linter.rules.architecture import _run_zone_rule
 from slop.linter.types import RuleDefinition
 
 if TYPE_CHECKING:

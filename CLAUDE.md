@@ -15,11 +15,12 @@ slop/                       <- repo root (docs, LICENSE, NOTICE, README, .slop.t
     slop/                   <- the Python package (import slop)
       app.py                Composition root (slop.app:main); delegates to cli.cmd.main
       preflight.py          System-binary dep check (fd, rg, git)
+      doctor.py             Doctor primitives used by preflight + cli/doctor
+      shell.py              run_tool / which subprocess wrappers
       KERNELS_LICENSE       Apache-2.0 attribution for vendored kernels
-      _compat.py            Legacy rule/category name translation (v1.x compat shim)
       cli/                  Argparse + per-command dispatch
         cmd.py              Root parser (lint, check, init, rules, schema, doctor, install)
-        _common.py          Shared lint/check runner
+        common.py           Shared lint/check runner + register_subcommand helper
         check.py            slop check <target>
         init.py             slop init
         rules.py            slop rules
@@ -30,7 +31,7 @@ slop/                       <- repo root (docs, LICENSE, NOTICE, README, .slop.t
           cmd.py            Root of install subcommand
           hook.py           slop install hook
           skill.py          slop install skill
-        _templates.py       `.slop.toml` template emission for `slop init`: PROFILES catalog + generate_default_config()
+        templates.py       `.slop.toml` template emission for `slop init`: PROFILES catalog + generate_default_config()
       config/               Config-file domain (slop.config) — load, validate, model; no scaffold emission
         __init__.py         Public surface: Config, Waiver, load_config, schema
         models.py           Config + Waiver dataclasses
@@ -43,33 +44,33 @@ slop/                       <- repo root (docs, LICENSE, NOTICE, README, .slop.t
           procedural.py,
           multipurpose.py   Paradigm subclasses with paradigm-level defaults
         grammars/           Concrete grammars: python, c, cpp, csharp, go, java, javascript, julia, ruby, rust, typescript
-        _grammars.py        load_language / detect_language (tree-sitter package loader + extension map)
+        treesitter.py       load_language / detect_language (tree-sitter package loader + extension map)
       tree/                 Parse substrate
         tree.py             Tree class: scan(), walk(), records
         records.py          Scope, Callable, Occurrence, Parameter, ParseResult (frozen dataclasses)
-        _parse.py           parse_file (tree-sitter parser wrapper)
-        _find.py            find_kernel (fd file-discovery wrapper)
+        parse.py            parse_file (tree-sitter parser wrapper)
+        find.py             find_kernel (fd file-discovery wrapper)
       structure/            Structure view + view-internal helpers
         view.py             Structure(tree, lang): callables(), scopes(), cyclomatic(), redundancy(), … (thin facade for non-trivial metrics)
         records.py          RedundancyPair, etc. — public records emitted by view methods
-        _annotations.py     Annotation/escape-hatch density compute
-        _clones.py          Type-2 clone detection compute
-        _hidden_mutators.py Hidden-mutator parameter detection compute
-        _hotspots.py        Churn × complexity compute (Tornhill 2015)
-        _imports.py         Import-graph + dependency-cycle compute
-        _orphans.py         Whole-tree orphan symbol detection compute
-        _packages.py        Robert C. Martin package-level (rigidity / uselessness) compute
-        _redundancy.py      Sibling-callee overlap compute
-        _sentinels.py       String sentinel detection compute
-        _git.py             git log --numstat wrapper (used by _hotspots)
-        _grep.py            ripgrep wrapper (used by _orphans)
+        annotations.py     Annotation/escape-hatch density compute
+        clones.py          Type-2 clone detection compute
+        hidden_mutators.py Hidden-mutator parameter detection compute
+        hotspots.py        Churn × complexity compute (Tornhill 2015)
+        imports.py         Import-graph + dependency-cycle compute
+        orphans.py         Whole-tree orphan symbol detection compute
+        packages.py        Robert C. Martin package-level (rigidity / uselessness) compute
+        redundancy.py      Sibling-callee overlap compute
+        sentinels.py       String sentinel detection compute
+        git.py             git log --numstat wrapper (used by hotspots)
+        grep.py            ripgrep wrapper (used by orphans)
       lexicon/              Lexicon view + view-internal helpers + public utility modules
         view.py             Lexicon: tokens, named_entities, first_param_clusters, … (thin facade for non-trivial methods)
         records.py          NamedEntity, FirstParameterCluster
         affix.py            Public: Token-Levenshtein + alphabet clustering + FCA + Lexeme + UNIVERSAL_NOISE — imported directly by rules and tests
         actions.py          Public: action-name vocabulary primitives
         filters.py          Public: token-filter primitives
-        _profile.py         Multi-signal cluster classifier (body Jaccard, receiver-call density) — view-internal
+        profile.py         Multi-signal cluster classifier (body Jaccard, receiver-call density) — view-internal
         diagnostics.py      Research-grade cell/cluster diagnostics (not yet productionised)
       linter/               Linter, Result, Slop, dispatch, format, rule registry
         linter.py           Linter(config).run() — main entry point
@@ -84,18 +85,15 @@ slop/                       <- repo root (docs, LICENSE, NOTICE, README, .slop.t
         __init__.py         Lazy-loads RULE_REGISTRY / RULES_BY_NAME / RULES_BY_CATEGORY / CATEGORIES from .rules
         rules/__init__.py   Single flat RULE_REGISTRY built from every rule module's RULE constant
         rules/*.py          One rule per file: complexity.cyclomatic, lexical.stutter, hotspots, etc. (29 rules total)
-        rules/_*.py         Rule-internal shared helpers (_complexity_dispatch, _class_index, _architecture, _halstead)
-      preflight.py          System-binary dep check (fd, rg, git)
-      _doctor.py            Doctor primitives used by preflight + cli/doctor
-      _subprocess.py        run_tool / which subprocess wrappers (used by _grep, _git, _find, _doctor)
-      _skill/               Bundled skill (SKILL.md + scripts) for `slop install skill`
+        rules/<helper>.py    Rule-internal shared helpers (complexity_dispatch, class_index, architecture, halstead)
+      skill/                Bundled skill (SKILL.md + scripts) for `slop install skill`
     tests/
       test_v2/              New-substrate tests (Tree, Language, Structure, Lexicon, Linter, Result)
       test_rules/           Per-rule integration tests
       test_*.py             Cross-cutting tests (config, output, …)
 ```
 
-Every rule now consumes its substrate's view directly (`Structure` or `Lexicon`); the v1.x legacy-kernel underscore-packages (`_ast`, `_fs`, `_text`, `_compose`, `_structural`, `_lexical`, `_util`) and the `legacy_v2_shim` adapter have all been retired. Infrastructure primitives (tree-sitter wrapper, fd, ripgrep, git, subprocess) live under their substrate's private modules (`tree/_parse.py`, `tree/_find.py`, `structure/_grep.py`, `structure/_git.py`, `_subprocess.py`).
+Every rule consumes its substrate's view directly (`Structure` or `Lexicon`); the v1.x legacy-kernel underscore-packages have all been retired. Infrastructure primitives (tree-sitter wrapper, fd, ripgrep, git, subprocess) live under their substrate's modules (`tree/parse.py`, `tree/find.py`, `structure/grep.py`, `structure/git.py`, root-level `shell.py`).
 
 ## Setup
 
@@ -138,17 +136,17 @@ The rule signature is `(view, rule_config, slop_config) -> RuleResult` where `vi
 2. Define `RULE: RuleDefinition = RuleDefinition(...)` at module bottom.
 3. Add the module to the imports and the `RULE_REGISTRY` list in `slop/linter/rules/__init__.py`.
 4. Add default config in `slop/config/loader.py` (`DEFAULT_RULE_CONFIGS`).
-5. Add to the generated config template in `slop/cli/_templates.py` (`generate_default_config`).
+5. Add to the generated config template in `slop/cli/templates.py` (`generate_default_config`).
 6. Write tests in `src/tests/test_rules/test_<name>.py` (integration) and/or `src/tests/test_v2/test_<view>.py` (view-method unit tests).
 
 Rules emit `Slop` (the finding type, importable from `slop.linter`) for threshold breaches.
 
 ## Key design decisions
 
-- **Substrate-aligned packages, not tool-substrate.** Discovery and metric logic is split by responsibility (`tree` parses, `structure`/`lexicon` view, `linter` dispatches), not by the underlying tool. Each substrate owns its private infrastructure modules (`_parse`, `_find`, `_grep`, `_git`, etc.). The original kernel tree is Apache-2.0; see `src/slop/KERNELS_LICENSE` and the repo-root `NOTICE`.
+- **Substrate-aligned packages, not tool-substrate.** Discovery and metric logic is split by responsibility (`tree` parses, `structure`/`lexicon` view, `linter` dispatches), not by the underlying tool. Each substrate owns its private infrastructure modules (`parse`, `find`, `grep`, `git`, etc.). The original kernel tree is Apache-2.0; see `src/slop/KERNELS_LICENSE` and the repo-root `NOTICE`.
 - **Metric vs. rule, structural separation.** A *metric* is the measurement (`Structure.cyclomatic()`, `Lexicon.first_param_clusters()`) — it lives as a method on the view. A *rule* is the threshold check + Slop emission that consumes that metric — it lives in `slop/linter/rules/`. The substrate package contains views; the linter package contains rules. The two are distinct concerns at the package level.
 - **One flat rule registry.** All rules live in `slop/linter/rules/` regardless of which view they consume; `slop/linter/rules/__init__.py` builds a single `RULE_REGISTRY` from each module's `RULE` constant. Directory grouping by substrate was vestigial from the retired `structural.*` / `lexical.*` name prefixes — without those prefixes, the substrate grouping encodes nothing the rule's imports don't already say.
-- **Three layers, not duplication: rule → view method → algorithm helper.** A rule (`slop/linter/rules/<name>.py`) handles threshold check + Slop emission. A view method (`Structure.<name>()` / `Lexicon.<name>()`) is the substrate's public API for the measurement. An algorithm helper (`slop/<substrate>/_<name>.py`) holds the actual compute. Inline-vs-extract threshold: if the algorithm fits in roughly 30 LOC with no auxiliary helper functions, inline it on the view (`cyclomatic`, `cognitive`); otherwise extract to a `_<name>.py` and have the view method delegate (`redundancy`, `hotspots`, `clones`). The leading underscore marks substrate-internal — it should not be imported outside the substrate package. Public utility modules in a substrate (`slop/lexicon/affix.py`, `slop/lexicon/actions.py`, `slop/lexicon/filters.py`) do not get an underscore because they are deliberately consumed by external callers (rules, tests).
+- **Three layers, not duplication: rule → view method → algorithm helper.** A rule (`slop/linter/rules/<name>.py`) handles threshold check + Slop emission. A view method (`Structure.<name>()` / `Lexicon.<name>()`) is the substrate's public API for the measurement. An algorithm helper (`slop/<substrate>/<name>.py`) holds the actual compute. Inline-vs-extract threshold: if the algorithm fits in roughly 30 LOC with no auxiliary helper functions, inline it on the view (`cyclomatic`, `cognitive`); otherwise extract to a `<name>.py` and have the view method delegate (`redundancy`, `hotspots`, `clones`). Module names are flat (no underscore prefix); private functions inside modules keep their leading underscore to mark intra-module privacy.
 - **`cmd.py` convention.** Every CLI sub-package's root command lives in `<pkg>/cmd.py` (e.g. `slop/cli/cmd.py`, `slop/cli/install/cmd.py`).
 - **`Result.json()` returns a dict; `Result.pretty()` returns a string.** Both delegate to `slop.linter.format`. The CLI does `json.dumps(result.json(), indent=2)` at the output boundary.
 - **Config discovery walks upward** from CWD for `.slop.toml` or `pyproject.toml` with `[tool.slop]`. A pyproject without `[tool.slop]` is skipped, so sub-project pyproject files (like `src/pyproject.toml` in this repo) don't mask a repo-root `.slop.toml`.

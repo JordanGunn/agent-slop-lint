@@ -37,7 +37,7 @@ if TYPE_CHECKING:
     from slop.lexicon.view import Lexicon
 
 
-from slop.linter.rules._roots import derive_root as _derive_root
+from slop.linter.rules.roots import derive_root as _derive_root
 
 
 _RULE = Tag.IMPOSTERS.key

@@ -132,7 +132,7 @@ def _modal_tokens(
     exclude: frozenset[str] = UNIVERSAL_NOISE,
 ) -> set[str]:
     """Top-``k`` tokens across the member names after filtering."""
-    from slop.lexicon._tokens import split_tokens
+    from slop.lexicon.tokens import split_tokens
     c: Counter[str] = Counter()
     for name in member_names:
         for t in split_tokens(name):
@@ -143,7 +143,7 @@ def _modal_tokens(
 
 
 def _overlap(name: str, modal: set[str], exclude: frozenset[str]) -> float:
-    from slop.lexicon._tokens import split_tokens
+    from slop.lexicon.tokens import split_tokens
     my = {t.lower() for t in split_tokens(name) if t.lower() not in exclude}
     if not my:
         return 0.0

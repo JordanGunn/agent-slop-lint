@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from slop.cli._templates import generate_default_config
+from slop.cli.templates import generate_default_config
 from slop.config import Config
 from slop.config.loader import DEFAULT_RULE_CONFIGS, load_config
 

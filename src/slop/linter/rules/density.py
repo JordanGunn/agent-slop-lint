@@ -14,7 +14,7 @@ from slop.linter.rule import Rule
 from slop.config import Config
 from slop.linter.slop import Slop
 from slop.linter.types import RuleResult
-from slop.linter.rules._halstead import _halstead_for, _slop
+from slop.linter.rules.halstead import _halstead_for, _slop
 from slop.linter.types import RuleDefinition
 
 if TYPE_CHECKING:

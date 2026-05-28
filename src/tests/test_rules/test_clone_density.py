@@ -1,7 +1,7 @@
 """Tests for ``duplication`` (Type-2 clone detection).
 
 Covers Structure.clones() unit behaviour, the legacy ``_fingerprint`` /
-``_leaf_types`` helpers (now hosted in ``slop.structure._clones``), and
+``_leaf_types`` helpers (now hosted in ``slop.structure.clones``), and
 the rule wrapper.
 """
 from __future__ import annotations
@@ -10,7 +10,7 @@ from pathlib import Path
 
 from slop.linter.rule import Rule
 from slop.config import Config
-from slop.structure._clones import _fingerprint
+from slop.structure.clones import _fingerprint
 from slop.linter.rules import clone_density as _clone_density_rule
 from slop.tree.tree import Tree
 

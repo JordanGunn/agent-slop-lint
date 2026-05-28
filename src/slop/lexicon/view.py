@@ -38,7 +38,7 @@ from typing import (
 from slop.lexicon.affix import scope_label
 from slop.tree.records import Callable, Occurrence, ParseResult, ScopeKind
 
-from slop.lexicon._tokens import split_tokens as _split_tokens
+from slop.lexicon.tokens import split_tokens as _split_tokens
 
 _CLASS_LIKE_SCOPE_KINDS: frozenset[ScopeKind] = frozenset({
     ScopeKind.CLASS, ScopeKind.INTERFACE, ScopeKind.STRUCT, ScopeKind.TRAIT,
@@ -753,7 +753,7 @@ class Lexicon:
         ``HTTPClient`` → ``("HTTP", "Client")``; ``__init__`` → ``("init",)``.
 
         Static — operates on the name string alone. Delegates to
-        ``slop.lexicon._tokens.split_tokens``.
+        ``slop.lexicon.tokens.split_tokens``.
         """
         return _split_tokens(name)
 
@@ -856,7 +856,7 @@ class Lexicon:
         None, falls back to the longest common prefix across observed
         callable paths.
         """
-        from slop.lexicon._profile import classify_cluster, profile_cluster
+        from slop.lexicon.profile import classify_cluster, profile_cluster
         from slop.lexicon.records import FirstParameterCluster
         from slop.lexicon.affix import UNIVERSAL_NOISE
 

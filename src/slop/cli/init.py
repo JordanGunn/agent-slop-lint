@@ -5,7 +5,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from slop.cli._templates import generate_default_config
+from slop.cli.templates import generate_default_config
 
 
 def add_parser(subparsers) -> None:

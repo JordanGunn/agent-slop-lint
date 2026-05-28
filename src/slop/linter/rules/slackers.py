@@ -42,7 +42,7 @@ _PROFILE_ADVICE = {
 }
 
 
-from slop.linter.rules._roots import derive_root as _derive_root
+from slop.linter.rules.roots import derive_root as _derive_root
 
 
 _RULE = Tag.SLACKERS.key

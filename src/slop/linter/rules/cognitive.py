@@ -13,7 +13,7 @@ from slop.linter.tags import Tag
 from slop.linter.rule import Rule
 from slop.config import Config
 from slop.linter.types import RuleResult
-from slop.linter.rules._complexity_dispatch import _run_complexity_metric
+from slop.linter.rules.complexity_dispatch import _run_complexity_metric
 from slop.linter.types import RuleDefinition
 
 if TYPE_CHECKING:

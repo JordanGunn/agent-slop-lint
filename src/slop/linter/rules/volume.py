@@ -13,8 +13,8 @@ from typing import TYPE_CHECKING, Any
 
 from slop.config import Config
 from slop.linter.rule import Rule
-from slop.linter.rules._class_index import _class_index
-from slop.linter.rules._halstead import _halstead_for, _slop
+from slop.linter.rules.class_index import _class_index
+from slop.linter.rules.halstead import _halstead_for, _slop
 from slop.linter.slop import Slop
 from slop.linter.tags import Tag
 from slop.linter.types import RuleDefinition, RuleResult
@@ -69,7 +69,7 @@ def run(
     if cls_threshold:
         # Reuse the class-scope Slop builder from _class_index for symmetry
         # with the other class-scope rules.
-        from slop.linter.rules._class_index import _slop as _class_slop
+        from slop.linter.rules.class_index import _slop as _class_slop
         groups, _, _, _ = _class_index(structure)
         for canonical, members in groups:
             classes_checked += 1

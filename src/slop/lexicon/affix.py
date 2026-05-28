@@ -63,7 +63,7 @@ class Lexeme:
         file: str | None = None,
         line: int | None = None,
     ) -> "Lexeme":
-        from slop.lexicon._tokens import split_tokens
+        from slop.lexicon.tokens import split_tokens
         toks = split_tokens(text)
         return cls(
             text=text,

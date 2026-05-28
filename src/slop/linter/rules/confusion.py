@@ -24,7 +24,7 @@ from typing import TYPE_CHECKING
 
 from slop.linter.rule import Rule
 from slop.config import Config
-from slop.lexicon._tokens import split_tokens
+from slop.lexicon.tokens import split_tokens
 from slop.lexicon.affix import UNIVERSAL_NOISE
 from slop.linter.slop import Action, Slop
 from slop.linter.types import RuleResult
@@ -36,7 +36,7 @@ if TYPE_CHECKING:
     from slop.lexicon.view import Lexicon
 
 
-from slop.linter.rules._roots import derive_root as _derive_root
+from slop.linter.rules.roots import derive_root as _derive_root
 
 
 _RULE = Tag.CONFUSION.key

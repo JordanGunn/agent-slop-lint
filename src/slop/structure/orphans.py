@@ -20,7 +20,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from slop.structure._grep import grep_kernel
+from slop.structure.grep import grep_kernel
 from slop.structure.records import OrphanCandidate
 from slop.tree.records import CallableKind, ScopeKind
 

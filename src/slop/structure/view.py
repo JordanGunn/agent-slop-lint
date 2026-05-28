@@ -419,16 +419,16 @@ class Structure:
         ``sum_ccx × max(0, loc_delta)``; files that shrank in the
         window keep their raw delta for display but score as zero.
 
-        Returns a ``_hotspots.ComputeResult`` carrying rich
+        Returns a ``hotspots.ComputeResult`` carrying rich
         ``FileHotspot`` records sorted worst-first plus diagnostic
         metadata. The rule layer (``run_churn_weighted``) threshold-
         checks the records into ``Slop`` findings.
         """
         from pathlib import Path as _Path
 
-        from slop.structure import _hotspots
+        from slop.structure import hotspots
 
-        return _hotspots.compute(
+        return hotspots.compute(
             self, _Path(root),
             since=since, until=until,
             min_commits=min_commits,
@@ -457,14 +457,14 @@ class Structure:
         lose a step because reflection and dynamic dispatch can't be
         detected statically.
 
-        Returns an ``_orphans.ComputeResult``. The rule layer
+        Returns an ``orphans.ComputeResult``. The rule layer
         (``run_orphans``) applies a ``min_confidence`` filter.
         """
         from pathlib import Path as _Path
 
-        from slop.structure import _orphans
+        from slop.structure import orphans
 
-        return _orphans.compute(
+        return orphans.compute(
             self, _Path(root),
             min_name_length=min_name_length, max_refs=max_refs,
         )
@@ -481,7 +481,7 @@ class Structure:
         Returns a ``list[Import]``. Files whose grammar declares no
         ``import_queries()`` contribute nothing.
         """
-        from slop.structure._imports import extract_imports
+        from slop.structure.imports import extract_imports
 
         return extract_imports(self._parses)
 
@@ -503,7 +503,7 @@ class Structure:
         """
         from pathlib import Path as _Path
 
-        from slop.structure._packages import compute_packages
+        from slop.structure.packages import compute_packages
 
         return compute_packages(self, _Path(root))
 
@@ -515,9 +515,9 @@ class Structure:
         with per-event detail; the rule layer threshold-checks the
         mutation count.
         """
-        from slop.structure import _hidden_mutators
+        from slop.structure import hidden_mutators
 
-        return _hidden_mutators.compute(
+        return hidden_mutators.compute(
             self, require_type_annotation=require_type_annotation,
         )
 
@@ -533,7 +533,7 @@ class Structure:
         Returns ``list[SentinelParameter]``. The rule layer applies
         ``max_cardinality`` thresholds.
         """
-        from slop.structure._sentinels import compute_sentinels
+        from slop.structure.sentinels import compute_sentinels
 
         return compute_sentinels(
             self, require_str_annotation=require_str_annotation,
@@ -552,7 +552,7 @@ class Structure:
         (JSDoc isn't in the AST; C/C++ encode types in declarations
         not annotation nodes; Ruby is dynamically typed).
         """
-        from slop.structure._annotations import extract_annotations
+        from slop.structure.annotations import extract_annotations
 
         return extract_annotations(self)
 
@@ -565,7 +565,7 @@ class Structure:
         per-grammar trivial callees plus universal noise (length < 3,
         dunder names). Returns a frozenset.
         """
-        from slop.structure._redundancy import callees_of
+        from slop.structure.redundancy import callees_of
 
         return callees_of(self, callable_record)
 
@@ -581,7 +581,7 @@ class Structure:
         emits a ``RedundancyPair`` per pair whose ``|shared| >= min_shared``
         AND whose ``score >= min_score``.
         """
-        from slop.structure._redundancy import compute_redundancy
+        from slop.structure.redundancy import compute_redundancy
 
         return compute_redundancy(
             self, min_shared=min_shared, min_score=min_score,
@@ -601,7 +601,7 @@ class Structure:
         the total number of callables analyzed, and the corpus-level
         clone fraction (cloned callables / total callables).
         """
-        from slop.structure._clones import compute_clones
+        from slop.structure.clones import compute_clones
 
         return compute_clones(self, min_leaf_nodes=min_leaf_nodes)
 
@@ -615,7 +615,7 @@ class Structure:
         independent reasoning, testing, or extraction of any module in
         the loop.
         """
-        from slop.structure._imports import detect_cycles
+        from slop.structure.imports import detect_cycles
 
         return detect_cycles(self.dependency_graph())
 
@@ -630,7 +630,7 @@ class Structure:
         Returns a ``DependencyGraph`` with ``efferent`` (outbound) and
         ``afferent`` (inbound) adjacency maps.
         """
-        from slop.structure._imports import build_dependency_graph, extract_imports
+        from slop.structure.imports import build_dependency_graph, extract_imports
 
         return build_dependency_graph(self._parses, extract_imports(self._parses))
 
