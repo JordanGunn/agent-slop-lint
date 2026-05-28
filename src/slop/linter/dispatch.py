@@ -16,7 +16,7 @@ from slop.linter.types import RuleResult
 from slop.linter.slop import Slop
 
 
-def select_rules(filter_rule, filter_category):
+def select_rules(name, category):
     """Resolve filters to a list of rules to run.
 
     Prefix matching is preserved so ``slop check class``
@@ -26,25 +26,25 @@ def select_rules(filter_rule, filter_category):
     """
     from slop.linter import RULE_REGISTRY  # local import to avoid cycle
 
-    if filter_rule:
-        return _resolve_rule_filter(filter_rule)
-    if filter_category:
-        return _resolve_category_filter(filter_category)
+    if name:
+        return _resolve_rule_filter(name)
+    if category:
+        return _resolve_category_filter(category)
     return list(RULE_REGISTRY)
 
 
-def _resolve_rule_filter(filter_rule: str) -> list:
+def _resolve_rule_filter(name: str) -> list:
     """Resolve a single-rule (or rule-prefix) filter to its rule set."""
     from slop.linter import RULE_REGISTRY, RULES_BY_NAME
 
-    rule_def = RULES_BY_NAME.get(filter_rule)
+    rule_def = RULES_BY_NAME.get(name)
     if rule_def is not None:
         return [rule_def]
-    prefix = filter_rule + "."
+    prefix = name + "."
     matches = [r for r in RULE_REGISTRY if r.name.startswith(prefix)]
     if matches:
         return matches
-    raise KeyError(filter_rule)
+    raise KeyError(name)
 
 
 def _rules_for_category(category: str, seen: set[str]) -> list:
@@ -68,11 +68,11 @@ def _rules_for_category(category: str, seen: set[str]) -> list:
     return matches
 
 
-def _resolve_category_filter(filter_category: str) -> list:
+def _resolve_category_filter(category: str) -> list:
     """Resolve a category filter to its rule set."""
-    matches = _rules_for_category(filter_category, set())
+    matches = _rules_for_category(category, set())
     if not matches:
-        raise KeyError(filter_category)
+        raise KeyError(category)
     return matches
 
 

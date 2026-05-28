@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from slop.structure.view import Structure
 
 
-def compute_hidden_mutators(
+def compute(
     structure: Structure,
     *,
     require_type_annotation: bool = True,

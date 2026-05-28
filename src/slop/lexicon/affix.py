@@ -185,7 +185,7 @@ def build_affix_patterns(
     ]
 
 
-def cluster_patterns_by_alphabet(
+def patterns_by_alphabet(
     patterns: list[AffixPattern],
     min_alphabet: int = 3,
 ) -> list[AffixCluster]:
@@ -217,12 +217,12 @@ def cluster_patterns_by_alphabet(
         grouped.setdefault(find(i), []).append(p)
 
     clusters: list[AffixCluster] = []
-    for cluster_patterns in grouped.values():
-        alphabet = frozenset.union(*(frozenset(p.variants.keys()) for p in cluster_patterns))
+    for patterns in grouped.values():
+        alphabet = frozenset.union(*(frozenset(p.variants.keys()) for p in patterns))
         clusters.append(AffixCluster(
             entity_label=_alphabet_label(alphabet),
             alphabet=alphabet,
-            patterns=cluster_patterns,
+            patterns=patterns,
         ))
     return clusters
 
@@ -289,18 +289,18 @@ def find_inheritance_pairs(
 
 
 def affix_at_scope(
-    items_at_scope: list[Lexeme],
+    items: list[Lexeme],
     scope_path: tuple[str, ...],
     min_alphabet: int,
 ) -> tuple[list[AffixCluster], list[FCAConcept], list[tuple[str, str]]]:
     """Run pattern detection + FCA + inheritance lattice on one scope's items."""
-    if len(items_at_scope) < 2:
+    if len(items) < 2:
         return ([], [], [])
 
     scope_str, scope_kind = scope_label(scope_path)
 
-    patterns = build_affix_patterns(items_at_scope, exclude=UNIVERSAL_NOISE)
-    clusters = cluster_patterns_by_alphabet(patterns, min_alphabet=min_alphabet)
+    patterns = build_affix_patterns(items, exclude=UNIVERSAL_NOISE)
+    clusters = patterns_by_alphabet(patterns, min_alphabet=min_alphabet)
     for c in clusters:
         c.scope = scope_str
         c.scope_kind = scope_kind

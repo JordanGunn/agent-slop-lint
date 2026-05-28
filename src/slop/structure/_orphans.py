@@ -162,19 +162,19 @@ def _enumerate_definitions(structure: Structure) -> list[_Definition]:
 
 
 @dataclass(frozen=True)
-class OrphansComputeResult:
+class ComputeResult:
     candidates: tuple[OrphanCandidate, ...]
     symbols_analyzed: int
     errors: tuple[str, ...]
 
 
-def compute_orphans(
+def compute(
     structure: Structure,
     root: Path,
     *,
     min_name_length: int = 4,
     max_refs: int = 0,
-) -> OrphansComputeResult:
+) -> ComputeResult:
     """Enumerate definitions and flag those with no external references.
 
     Args:
@@ -232,7 +232,7 @@ def compute_orphans(
             caveats=caveats,
         ))
 
-    return OrphansComputeResult(
+    return ComputeResult(
         candidates=tuple(candidates),
         symbols_analyzed=len(definitions),
         errors=tuple(errors),

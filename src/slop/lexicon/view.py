@@ -903,13 +903,13 @@ class Lexicon:
             if c.kind == CallableKind.LAMBDA:
                 continue
             # Skip "self"/"cls" first parameters for methods
-            first_param = None
-            first_type: str | None = None
+            pname: str | None = None
+            ptype: str | None = None
             for p in c.parameters:
                 if p.name in exempt_names:
                     continue
-                first_param = p.name
-                first_type = p.annotation
+                pname = p.name
+                ptype = p.annotation
                 break
             try:
                 rel = c.path.relative_to(root_path)
@@ -921,7 +921,7 @@ class Lexicon:
             # Use simple base-name (without qualname prefix) for member naming —
             # matches the legacy ``ctx.name`` convention.
             simple_name = c.qualname.split(".")[-1]
-            entries.append((simple_name, file_rel, c.line, parts, first_param, first_type))
+            entries.append((simple_name, file_rel, c.line, parts, pname, ptype))
 
         # Hierarchical clustering: mirror the legacy
         # ``_recursive_first_param_findings`` algorithm.
@@ -992,12 +992,12 @@ class Lexicon:
         # receiver-call density, modal-token overlap). The signals
         # power the rule's profile_label-aware advisories.
         # Per-cluster hapax_ratio: cached by scope to avoid recomputation.
-        hapax_by_scope: dict[str, float] = {}
+        cache: dict[str, float] = {}
 
         def _scope_hapax(cluster: Any) -> float:
             scope_key = f"{cluster.scope_kind}:{cluster.scope}"
-            if scope_key in hapax_by_scope:
-                return hapax_by_scope[scope_key]
+            if scope_key in cache:
+                return cache[scope_key]
             if cluster.scope_kind == "file":
                 scoped = self._restricted(
                     lambda rec, sc=cluster.scope: str(rec.path).endswith(sc),
@@ -1009,7 +1009,7 @@ class Lexicon:
             else:
                 scoped = self
             ratio = scoped.hapax_ratio(exclude=UNIVERSAL_NOISE)
-            hapax_by_scope[scope_key] = ratio
+            cache[scope_key] = ratio
             return ratio
 
         for cluster in findings:

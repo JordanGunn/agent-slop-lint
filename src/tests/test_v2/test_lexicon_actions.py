@@ -5,7 +5,7 @@ from pathlib import Path
 
 from slop.lexicon.actions import (
     CorrectiveAction,
-    map_packet_to_action,
+    map_packet,
     map_packets_to_actions,
 )
 from slop.tree.tree import Tree
@@ -30,7 +30,7 @@ class TestExtractDataclass:
                "def f(excludes, hidden, ignore, globs, languages): pass\n"
                "def g(excludes, hidden, ignore, globs, languages): pass\n")
         lex = _lexicon(tmp_path)
-        action = map_packet_to_action(
+        action = map_packet(
             {"excludes", "hidden", "ignore", "globs", "languages"},
             lex, scope="callable",
         )
@@ -46,7 +46,7 @@ class TestNamedTuple:
                "def f(since, until): pass\n"
                "def g(since, until): pass\n")
         lex = _lexicon(tmp_path)
-        action = map_packet_to_action({"since", "until"}, lex, scope="callable")
+        action = map_packet({"since", "until"}, lex, scope="callable")
         assert action.kind == "named_tuple"
         assert action.confidence == "medium"
 
@@ -60,7 +60,7 @@ class TestExtractModule:
         _write(tmp_path, "b.py",
                "def export_pdf_extract(): pass\n")
         lex = _lexicon(tmp_path)
-        action = map_packet_to_action(
+        action = map_packet(
             {"pdf", "extract", "parse"}, lex, scope="file",
         )
         assert action.kind == "extract_module"
@@ -76,7 +76,7 @@ class TestMissingClass:
                "class Customer:\n    pass\n"
                "def parse(customer): pass\n")
         lex = _lexicon(tmp_path)
-        action = map_packet_to_action(
+        action = map_packet(
             {"customer", "parse", "render"}, lex, scope="file",
         )
         assert action.kind == "missing_class"
@@ -91,7 +91,7 @@ class TestNamingConvention:
                "def run_beta(config): pass\n"
                "def run_gamma(config): pass\n")
         lex = _lexicon(tmp_path)
-        action = map_packet_to_action(
+        action = map_packet(
             {"run", "config"}, lex, scope="callable",
         )
         assert action.kind == "naming_convention"
@@ -101,7 +101,7 @@ class TestNamingConvention:
 class TestReviewFallback:
     def test_unmatched_shape_returns_review(self, tmp_path: Path):
         # An empty corpus — provenance is none.
-        action = map_packet_to_action(
+        action = map_packet(
             {"foo", "bar"}, _lexicon(tmp_path), scope="callable",
         )
         assert action.kind == "review"
@@ -129,7 +129,7 @@ class TestCorrectiveActionDict:
         import json
         _write(tmp_path, "a.py", "def f(a, b): pass\ndef g(a, b): pass\n")
         lex = _lexicon(tmp_path)
-        action = map_packet_to_action({"a", "b"}, lex, scope="callable")
+        action = map_packet({"a", "b"}, lex, scope="callable")
         d = action.as_dict()
         s = json.dumps(d)
         assert "packet" in d

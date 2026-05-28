@@ -419,14 +419,14 @@ class Structure:
         ``sum_ccx × max(0, loc_delta)``; files that shrank in the
         window keep their raw delta for display but score as zero.
 
-        Returns a ``HotspotsComputeResult`` carrying rich
+        Returns a ``_hotspots.ComputeResult`` carrying rich
         ``FileHotspot`` records sorted worst-first plus diagnostic
         metadata. The rule layer (``run_churn_weighted``) threshold-
         checks the records into ``Slop`` findings.
         """
         from pathlib import Path as _Path
 
-        from slop.structure._hotspots import compute_hotspots
+        from slop.structure._hotspots import compute as compute_hotspots
 
         return compute_hotspots(
             self, _Path(root),
@@ -457,12 +457,12 @@ class Structure:
         lose a step because reflection and dynamic dispatch can't be
         detected statically.
 
-        Returns an ``OrphansComputeResult``. The rule layer
+        Returns an ``_orphans.ComputeResult``. The rule layer
         (``run_orphans``) applies a ``min_confidence`` filter.
         """
         from pathlib import Path as _Path
 
-        from slop.structure._orphans import compute_orphans
+        from slop.structure._orphans import compute as compute_orphans
 
         return compute_orphans(
             self, _Path(root),
@@ -515,7 +515,7 @@ class Structure:
         with per-event detail; the rule layer threshold-checks the
         mutation count.
         """
-        from slop.structure._hidden_mutators import compute_hidden_mutators
+        from slop.structure._hidden_mutators import compute as compute_hidden_mutators
 
         return compute_hidden_mutators(
             self, require_type_annotation=require_type_annotation,

@@ -154,8 +154,8 @@ def _classify(
 
 
 @dataclass(frozen=True)
-class HotspotsComputeResult:
-    """Output of ``compute_hotspots`` — files + summary metadata."""
+class ComputeResult:
+    """Output of ``compute`` — files + summary metadata."""
     files: tuple[FileHotspot, ...]
     quadrant_counts: dict[str, int]
     window_since: str
@@ -165,7 +165,7 @@ class HotspotsComputeResult:
     errors: tuple[str, ...]
 
 
-def compute_hotspots(
+def compute(
     structure: Structure,
     root: Path,
     *,
@@ -173,7 +173,7 @@ def compute_hotspots(
     until: str | None = None,
     min_commits: int = 2,
     hotspot_percentile: float = 0.75,
-) -> HotspotsComputeResult:
+) -> ComputeResult:
     """Compute per-file growth-weighted complexity hotspots.
 
     Args:
@@ -198,7 +198,7 @@ def compute_hotspots(
         errors.extend(f"git: {e}" for e in git_result.errors)
         if git_result.repo_root is None and git_result.ok:
             errors.append("git: repo_root resolution failed despite ok=True")
-        return HotspotsComputeResult(
+        return ComputeResult(
             files=(), quadrant_counts=_empty_quadrant_counts(),
             window_since=display_since, window_until=display_until,
             total_commits_analyzed=0, files_analyzed=0,
@@ -211,7 +211,7 @@ def compute_hotspots(
         prefix = _subdir_prefix(root, repo_root)
     except ValueError:
         errors.append(f"root {root} is not inside repo_root {repo_root}")
-        return HotspotsComputeResult(
+        return ComputeResult(
             files=(), quadrant_counts=_empty_quadrant_counts(),
             window_since=display_since, window_until=display_until,
             total_commits_analyzed=0, files_analyzed=0,
@@ -282,7 +282,7 @@ def compute_hotspots(
         for r in rows
     )
 
-    return HotspotsComputeResult(
+    return ComputeResult(
         files=files,
         quadrant_counts=quadrant_counts,
         window_since=display_since,

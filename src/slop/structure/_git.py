@@ -48,7 +48,7 @@ class CommitRecord:
 
 
 @dataclass(frozen=True)
-class GitLogResult:
+class LogResult:
     """Result of a git log walk (name-only mode)."""
 
     commits: tuple[CommitRecord, ...]
@@ -83,7 +83,7 @@ class NumstatCommitRecord:
 
 
 @dataclass(frozen=True)
-class GitNumstatResult:
+class NumstatResult:
     """Result of a git log walk (numstat mode)."""
 
     commits: tuple[NumstatCommitRecord, ...]
@@ -348,7 +348,7 @@ def git_log_file_changes(
     include_merges: bool = False,
     paths: list[str] | None = None,
     timeout: float = 300.0,
-) -> GitLogResult:
+) -> LogResult:
     """Walk ``git log --name-only`` and return per-commit file-change records.
 
     Args:
@@ -360,7 +360,7 @@ def git_log_file_changes(
         timeout: Seconds to wait for ``git log`` (default 300).
 
     Returns:
-        :class:`GitLogResult`. ``ok=False`` on operational errors.
+        :class:`LogResult`. ``ok=False`` on operational errors.
 
     Raises:
         ValueError: If any argument begins with ``-``.
@@ -371,13 +371,13 @@ def git_log_file_changes(
     )
 
     if stdout is None:
-        return GitLogResult(
+        return LogResult(
             commits=(), repo_root=repo_root, ok=False,
             is_shallow=is_shallow, errors=tuple(errors),
         )
 
     commits = _parse_log_output(stdout)
-    return GitLogResult(
+    return LogResult(
         commits=tuple(commits), repo_root=repo_root, ok=True,
         is_shallow=is_shallow, errors=tuple(errors),
     )
@@ -391,11 +391,11 @@ def git_log_numstat(
     include_merges: bool = False,
     paths: list[str] | None = None,
     timeout: float = 300.0,
-) -> GitNumstatResult:
+) -> NumstatResult:
     """Walk ``git log --numstat`` and return per-commit per-file line stats.
 
     Same interface as :func:`git_log_file_changes`, but returns
-    :class:`GitNumstatResult` with per-file insertion/deletion counts
+    :class:`NumstatResult` with per-file insertion/deletion counts
     instead of bare file names.
 
     Args:
@@ -407,7 +407,7 @@ def git_log_numstat(
         timeout: Seconds to wait for ``git log`` (default 300).
 
     Returns:
-        :class:`GitNumstatResult`. ``ok=False`` on operational errors.
+        :class:`NumstatResult`. ``ok=False`` on operational errors.
 
     Raises:
         ValueError: If any argument begins with ``-``.
@@ -418,13 +418,13 @@ def git_log_numstat(
     )
 
     if stdout is None:
-        return GitNumstatResult(
+        return NumstatResult(
             commits=(), repo_root=repo_root, ok=False,
             is_shallow=is_shallow, errors=tuple(errors),
         )
 
     commits = _parse_numstat_log_output(stdout)
-    return GitNumstatResult(
+    return NumstatResult(
         commits=tuple(commits), repo_root=repo_root, ok=True,
         is_shallow=is_shallow, errors=tuple(errors),
     )

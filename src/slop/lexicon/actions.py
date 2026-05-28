@@ -131,7 +131,7 @@ def _classify_provenance(token_prov: dict[str, dict[str, int]]) -> str:
     return "none"
 
 
-def map_packet_to_action(
+def map_packet(
     packet: set[str],
     lexicon: Lexicon,
     *,
@@ -275,5 +275,5 @@ def map_packets_to_actions(
     *,
     scope: str = "callable",
 ) -> list[CorrectiveAction]:
-    """Apply ``map_packet_to_action`` to each packet."""
-    return [map_packet_to_action(p, lexicon, scope=scope) for p in packets]
+    """Apply ``map_packet`` to each packet."""
+    return [map_packet(p, lexicon, scope=scope) for p in packets]
