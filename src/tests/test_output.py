@@ -140,7 +140,7 @@ def test_human_zero_files_analyzed_shows_warning_not_clean():
         rules_checked=1, verdict="pass",
     )
     output = format_human(result)
-    assert "no files matched" in output
+    assert "examined 0 units" in output
     assert "\u2713 clean" not in output
 
 
@@ -178,7 +178,7 @@ def test_human_error_status_does_not_render_as_clean():
     )
     output = format_human(result)
     assert "\u2713 clean" not in output
-    assert "no files matched" not in output  # errors take precedence over zero-files
+    assert "examined 0 units" not in output  # errors take precedence over zero-check
 
 
 def test_human_renders_waived_findings_without_failure():

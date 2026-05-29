@@ -32,6 +32,14 @@ class Config:
     rules: dict[str, Rule] = field(default_factory=dict)
     config_path: Path | None = None
 
-    def rule_config(self, category: str) -> Rule:
-        """Get the Rule for a category, falling back to defaults."""
-        return self.rules.get(category, Rule())
+    def rule_config(self, name: str) -> Rule:
+        """Get the ``Rule`` for a rule *name* (e.g. ``complexity.cyclomatic``).
+
+        The ``rules`` dict is keyed by ``RuleDefinition.name``, NOT by
+        category — a rule whose name differs from its category (the
+        ``complexity.*`` family) must be looked up by name or it silently
+        receives the empty-default ``Rule()`` (no thresholds → no-op).
+        Missing names fall back to an empty default so rules absent from
+        the config still run on their own internal defaults.
+        """
+        return self.rules.get(name, Rule())

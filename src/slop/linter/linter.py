@@ -99,7 +99,7 @@ class Linter:
         total_waived = 0
 
         for rule_def in rules_to_run:
-            rc = self.config.rule_config(rule_def.category)
+            rc = self.config.rule_config(rule_def.name)
             if not rc.enabled or rc.severity == "off":
                 rule_results[rule_def.name] = RuleResult(rule=rule_def.name, status="skip")
                 rules_skipped += 1

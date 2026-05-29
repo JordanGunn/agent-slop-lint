@@ -153,14 +153,31 @@ class _CategoryAgg:
     total_violations: int = 0
     total_waived: int = 0
     checked: int = 0
+    ran_rules: int = 0
+    has_count: bool = False
     errors: list[tuple[str, str]] = field(default_factory=list)
     has_error_status: bool = False
 
 
-_CHECKED_KEYS = (
-    "functions_checked", "files_analyzed",
-    "packages_analyzed", "classes_checked",
-)
+# A rule reports how many units it examined via any summary key with one
+# of these suffixes (functions_checked, files_analyzed, candidates_analyzed,
+# …). Convention over allowlist: a hardcoded key list silently drops every
+# new count key — the same source-of-truth drift that hid the complexity
+# no-op. The suffix is the single source of truth.
+_COUNT_SUFFIXES = ("_checked", "_analyzed", "_scanned", "_examined")
+
+
+def _checked_count(summary: dict) -> int | None:
+    """Largest unit-count a rule's summary reports, or None if it reports none.
+
+    ``None`` ("rule never reports a count") is distinct from ``0`` ("rule
+    ran and examined nothing") — the latter is the misconfiguration signal.
+    """
+    counts = [
+        v for k, v in summary.items()
+        if isinstance(v, int) and k.endswith(_COUNT_SUFFIXES)
+    ]
+    return max(counts) if counts else None
 
 
 def _aggregate_category(rule_pairs: list[tuple[str, RuleResult]]) -> _CategoryAgg:
@@ -169,15 +186,17 @@ def _aggregate_category(rule_pairs: list[tuple[str, RuleResult]]) -> _CategoryAg
     for rule_name, rr in rule_pairs:
         if rr.status == "skip":
             continue
+        agg.ran_rules += 1
         agg.total_violations += len(rr.violations)
         agg.total_waived += len(rr.waived_violations)
         if rr.status == "error":
             agg.has_error_status = True
         for err in rr.errors:
             agg.errors.append((rule_name, err))
-        for key in _CHECKED_KEYS:
-            if key in rr.summary:
-                agg.checked = max(agg.checked, rr.summary[key])
+        cnt = _checked_count(rr.summary)
+        if cnt is not None:
+            agg.has_count = True
+            agg.checked = max(agg.checked, cnt)
     return agg
 
 
@@ -259,7 +278,7 @@ def _render_waived(
 
 
 def _category_summary_line(agg: _CategoryAgg) -> str:
-    """Pick the right one-line summary (errors > violations > no-files > clean)."""
+    """Pick the right one-line summary (errors > violations > zero-check > clean)."""
     checked_str = f", {agg.checked} checked" if agg.checked else ""
     if agg.has_error_status or agg.errors:
         cross = red("\u2717")
@@ -271,8 +290,16 @@ def _category_summary_line(agg: _CategoryAgg) -> str:
         return f"  {_plural(agg.total_violations, 'violation')}{suffix}{checked_str}"
     if agg.total_waived > 0:
         return f"  {yellow(_plural(agg.total_waived, 'waived', 'waived'))}{checked_str}"
-    if agg.checked == 0:
-        return f"  {yellow(chr(0x26a0))} no files matched"
+    # A rule that ran and reported a count of 0 examined nothing despite
+    # being enabled \u2014 almost always a wiring/config error (the bug that
+    # hid the complexity family), NOT a clean pass. Make it loud.
+    if agg.ran_rules > 0 and agg.has_count and agg.checked == 0:
+        return (
+            f"  {red(chr(0x2717))} examined 0 units \u2014 "
+            f"enabled but nothing checked (likely misconfiguration)"
+        )
+    # Ran but reported no count key at all \u2014 can't assert it checked
+    # nothing, so don't cry wolf; report clean.
     return f"  {green(chr(0x2713))} clean{checked_str}"
 
 
@@ -291,6 +318,21 @@ def _category_header_extras(rule_pairs: list[tuple[str, RuleResult]]) -> list[st
     return extras
 
 
+def _zero_checked_rules(result: Result) -> list[str]:
+    """Rules that ran (not skipped) yet reported examining 0 units.
+
+    A reported count of exactly 0 is the misconfiguration tell; a rule
+    that reports no count at all is excluded (can't claim it did nothing).
+    """
+    out: list[str] = []
+    for name, rr in result.rule_results.items():
+        if rr.status == "skip":
+            continue
+        if _checked_count(rr.summary) == 0:
+            out.append(name)
+    return out
+
+
 def _format_footer(result: Result) -> str:
     """Format the summary footer line."""
     parts: list[str] = []
@@ -303,6 +345,9 @@ def _format_footer(result: Result) -> str:
     if not parts:
         parts.append(green("no violations"))
     parts.append(_plural(result.rules_checked, "rule") + " checked")
+    zero_checked = _zero_checked_rules(result)
+    if zero_checked:
+        parts.append(red(f"{len(zero_checked)} examined 0 units"))
 
     status = result.verdict.upper()
     if status == "FAIL":
