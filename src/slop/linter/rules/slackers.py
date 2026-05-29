@@ -167,4 +167,5 @@ RULE = RuleDefinition(
     default_enabled=True,
     threshold_label='< 30% template coverage',
     run=run,
+    view="lexicon",
 )

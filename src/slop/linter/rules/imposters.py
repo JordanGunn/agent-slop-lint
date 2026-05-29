@@ -275,4 +275,5 @@ RULE = RuleDefinition(
     default_enabled=True,
     threshold_label='≥ 3 functions sharing param',
     run=run,
+    view="lexicon",
 )

@@ -324,4 +324,5 @@ RULE = RuleDefinition(
     default_enabled=True,
     threshold_label='banlist match',
     run=run,
+    view="lexicon",
 )

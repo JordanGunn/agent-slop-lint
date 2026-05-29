@@ -36,6 +36,11 @@ class RuleDefinition:
     iterates its declared scopes at runtime and consults the per-scope
     threshold under ``rule_config.params['thresholds'][scope]``; missing
     scope key means the rule skips that scope.
+
+    ``view`` names the substrate view the rule consumes (``"structure"``
+    or ``"lexicon"``) — the dispatcher passes ``getattr(tree, view)``.
+    Declared per rule rather than inferred from the category string so
+    view selection isn't coupled to the naming convention.
     """
 
     name: str
@@ -46,3 +51,4 @@ class RuleDefinition:
     threshold_label: str = ""
     run: RuleRunner = field(default=lambda *a, **kw: RuleResult(rule=""))  # type: ignore[assignment]
     scopes: tuple[str, ...] = ()
+    view: str = "structure"

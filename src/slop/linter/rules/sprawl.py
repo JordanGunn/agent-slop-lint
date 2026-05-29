@@ -284,4 +284,5 @@ RULE = RuleDefinition(
     default_enabled=True,
     threshold_label='≥ 3 alphabet × ≥ 2 ops',
     run=run,
+    view="lexicon",
 )

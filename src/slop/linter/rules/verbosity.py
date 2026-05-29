@@ -180,4 +180,5 @@ RULE = RuleDefinition(
     default_enabled=True,
     threshold_label='> 3 tokens',
     run=run,
+    view="lexicon",
 )

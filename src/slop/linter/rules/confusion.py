@@ -290,4 +290,5 @@ RULE = RuleDefinition(
     default_enabled=True,
     threshold_label='≥ 2 disjoint call-islands',
     run=run,
+    view="lexicon",
 )

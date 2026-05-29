@@ -29,16 +29,11 @@ def _execute_rule_v2(
 ) -> RuleResult:
     """Dispatch one rule to its runner.
 
-    Picks the view by category prefix: ``Lexicon`` for ``lexical.*``,
-    ``Structure`` for everything else (complexity, class, packages,
-    types, difficulty, deps, redundancy, duplication, god_module,
-    magic_literals, hotspots, orphans).
+    The view is whichever substrate the rule declares via
+    ``RuleDefinition.view`` (``"lexicon"`` or ``"structure"``) — looked
+    up on the tree by name, not inferred from the category string.
     """
-    view = (
-        tree.lexicon
-        if rule_def.category.startswith("lexical.")
-        else tree.structure
-    )
+    view = getattr(tree, rule_def.view)
     try:
         result = rule_def.run(view, rc, config)
     except Exception as e:
