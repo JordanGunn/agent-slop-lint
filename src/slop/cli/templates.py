@@ -275,4 +275,27 @@ enabled = true
 min_cluster = 3
 exempt_names = ["self", "cls"]
 severity = "warning"
+
+[rules.lexical.slackers]
+enabled = true
+min_cluster = 3
+exempt_names = ["self", "cls"]
+max_coverage = 0.30        # flag clusters with < this fraction fitting a name template
+severity = "warning"
+
+[rules.lexical.confusion]
+enabled = true
+min_functions = 5
+min_islands = 2            # flag files splitting into >= this many disjoint call-islands
+min_shared = 3             # redundancy-pair threshold feeding the island clustering
+min_score = 0.5            # redundancy-pair overlap threshold
+min_island_size = 2
+min_cluster_size = 3       # receiver-cluster corroboration size
+exempt_names = ["self", "cls"]
+severity = "warning"
+
+[rules.runts]
+enabled = true
+max_init_lines = 5         # flag __init__.py files with more than this many code lines
+severity = "warning"
 '''

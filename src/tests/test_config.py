@@ -377,3 +377,40 @@ def test_generate_default_config_is_valid_toml(tmp_path: Path):
     config_file.write_text(content)
     config = load_config(root=str(tmp_path))
     assert config.rule_config("complexity.cyclomatic").params["thresholds"]["function"] == 10
+
+
+def test_generated_template_covers_every_registered_rule():
+    """`slop init` must emit a loader-visible table for EVERY rule.
+
+    Guards two regressions at once: rules silently omitted from the
+    template (slackers/confusion/runts were), and a table form the loader
+    can't resolve (the scope-first `[rules.function.complexity.*]` drift,
+    which mapped to no canonical key and fell back to defaults).
+    """
+    import tomllib
+
+    from slop.config.loader import _flatten_canonical_tables
+    from slop.linter import RULE_REGISTRY
+
+    raw = tomllib.loads(generate_default_config("default"))["rules"]
+    canonical = {rd.name for rd in RULE_REGISTRY}
+    recovered = set(_flatten_canonical_tables(raw, canonical))
+    assert canonical - recovered == set(), (
+        f"template omits or mis-keys: {sorted(canonical - recovered)}"
+    )
+
+
+def test_generated_template_round_trips_to_default_thresholds(tmp_path: Path):
+    """Every rule's per-scope thresholds must survive template -> loader.
+
+    A scope-prefixed table (`[rules.function.complexity.cyclomatic]`)
+    parses fine but resolves to no canonical key, so the rule silently
+    runs on built-in defaults. This asserts the emitted thresholds are
+    actually consumed, not coincidentally equal to defaults.
+    """
+    (tmp_path / ".slop.toml").write_text(generate_default_config("default"))
+    config = load_config(root=str(tmp_path))
+    for name, default in DEFAULT_RULE_CONFIGS.items():
+        want = default.get("thresholds")
+        got = config.rule_config(name).params.get("thresholds")
+        assert want == got, f"{name}: template thresholds {got} != default {want}"

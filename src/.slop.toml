@@ -1,11 +1,6 @@
 # slop — agentic code quality linter
 # https://github.com/JordanGunn/agent-slop-lint
 # Profile: default
-#
-# Every rule name carries an explicit scope prefix matching its emission
-# unit: function.*, class.*, module.*, parameter.*, package.* . Cluster /
-# whole-repo families (lexical.*, hotspots, deps, orphans, redundancy,
-# duplication) are exempt and live at the top level.
 
 # Root directory (default: ".")
 root = "."
@@ -22,103 +17,107 @@ exclude = ["**/test_*", "**/vendor/**"]
 # [[waivers]]
 # id = "parser-npath"
 # path = "src/parser/**"
-# rule = "function.complexity.combinatorial"
+# rule = "complexity.combinatorial"
 # allow_up_to = 1200
 # reason = "Parser branch shape mirrors grammar alternatives."
 # expires = "2026-09-01"
 
-[rules.function.complexity.cyclomatic]
+# Rule names are bare (no scope prefix). Scope is first-class: each rule
+# declares the scopes it supports and emits per-scope findings with a
+# per-scope threshold in the nested `thresholds` dict. Missing scope key
+# in `thresholds` means the rule skips that scope. `slop rules --scope
+# function` lists all rules that emit at function scope.
+
+[rules.complexity.cyclomatic]
 enabled = true
-threshold = 10        # fail if any function CCX exceeds this (McCabe 1976)
+thresholds = { function = 10, class = 40 }
+# function: McCabe CCN per callable (McCabe 1976).
+# class: WMC = sum of method CCNs (Chidamber & Kemerer 1994).
 severity = "error"
 
-[rules.function.complexity.cognitive]
+[rules.complexity.cognitive]
 enabled = true
-threshold = 15        # fail if any function CogC exceeds this (Campbell 2018)
+thresholds = { function = 15, class = 0 }   # class scope opt-in (0 = off): no published threshold for summed CogC
+# function: Cognitive Complexity (Campbell 2018).
+# class: sum of method scores. SLOP CALIBRATION — no published threshold.
 severity = "error"
 
-[rules.function.complexity.combinatorial]
+[rules.complexity.combinatorial]
 enabled = true
-threshold = 400       # fail if any function NPath exceeds this (Nejmeh 1988)
+thresholds = { function = 400, class = 0 }  # class scope opt-in (0 = off): no published threshold for summed NPath
+# function: NPath (Nejmeh 1988).
+# class: sum of method NPaths. SLOP CALIBRATION — no published threshold.
 severity = "error"
 
-[rules.class.complexity.cyclomatic]
+[rules.complexity.volume]
 enabled = true
-threshold = 40        # WMC: per-class sum of method CCX (CK 1994). Set to 0 to disable.
+thresholds = { function = 1500, class = 6000 }
+# function: Halstead V = N·log₂η (Halstead 1977).
+# class: sum of method V (additive). SLOP CALIBRATION — no published threshold.
 severity = "error"
 
-[rules.class.complexity.cognitive]
+[rules.complexity.density]
 enabled = true
-threshold = 0         # off by default (opt-in). Set > 0 to enable per-class CogC sum.
+thresholds = { function = 30 }
+# Halstead D = (η₁/2)·(N₂/η₂). Function-scope only — D is a density
+# ratio, not additive across methods.
 severity = "error"
 
-[rules.class.complexity.combinatorial]
+[rules.coupling]
 enabled = true
-threshold = 0         # off by default (opt-in). Set > 0 to enable per-class NPath sum.
+thresholds = { class = 8 }
+# CBO at class scope (Chidamber & Kemerer 1994).
 severity = "error"
 
-[rules.class.coupling]
+[rules.inheritance.depth]
 enabled = true
-threshold = 8
+thresholds = { class = 4 }
+# DIT at class scope (Chidamber & Kemerer 1994).
 severity = "error"
 
-[rules.class.inheritance.depth]
+[rules.inheritance.children]
 enabled = true
-threshold = 4
+thresholds = { class = 10 }
+# NOC at class scope (Chidamber & Kemerer 1994).
 severity = "error"
 
-[rules.class.inheritance.children]
+[rules.hidden_mutators]
 enabled = true
-threshold = 10
-severity = "error"
-
-[rules.function.difficulty.volume]
-enabled = true
-threshold = 1500      # fail if any function Halstead V exceeds this
-severity = "error"
-
-[rules.function.difficulty.density]
-enabled = true
-threshold = 30        # fail if any function Halstead D (operand-reuse density) exceeds this
-severity = "error"
-
-[rules.function.types.hidden_mutators]
-enabled = true
+thresholds = { function = 1 }
 require_type_annotation = true   # only flag params with explicit collection types
-min_mutations = 1
 severity = "warning"
 
-[rules.function.magic_literals]
+[rules.magic_literals]
 enabled = true
-threshold = 3         # flag functions with > 3 distinct non-trivial numeric literals
+thresholds = { function = 3 }
 severity = "warning"
 
-[rules.module.god_module]
+[rules.god_module]
 enabled = true
-threshold = 20        # flag files with more than this many top-level definitions
+thresholds = { module = 20 }
 severity = "warning"
 
-[rules.module.types.escape_hatches]
+[rules.escape_hatches]
 enabled = true
-threshold = 0.30      # flag files where > 30% of annotations use escape-hatch types
+thresholds = { module = 0.30 }
 min_annotations = 5
 severity = "warning"
 
-[rules.parameter.types.sentinels]
+[rules.sentinels]
 enabled = true
-max_cardinality = 8   # flag sentinel str params with ≤ 8 distinct call-site values
+thresholds = { parameter = 8 }
 require_str_annotation = true
 severity = "warning"
 
-[rules.package.rigidity]
+[rules.rigidity]
 enabled = true
-# languages = ["python"]        # optional: restrict to a subset of slop's supported languages
-threshold = 0.7       # flag pain-zone packages whose D' exceeds this
+thresholds = { package = 0.7 }
+# languages = ["python"]        # optional: restrict to a subset
 severity = "warning"
 
-[rules.package.uselessness]
+[rules.uselessness]
 enabled = true
-threshold = 0.7       # flag uselessness-zone packages whose D' exceeds this
+thresholds = { package = 0.7 }
 severity = "warning"
 
 [rules.hotspots]
@@ -140,14 +139,14 @@ severity = "warning"
 
 [rules.redundancy]
 enabled = true
-min_shared = 3        # minimum shared non-trivial callees between two sibling functions
-min_score = 0.5       # minimum overlap ratio (shared / max callee count)
+min_shared = 3      # minimum shared non-trivial callees between two sibling functions
+min_score = 0.5     # minimum overlap ratio (shared / max callee count)
 severity = "warning"
 
 [rules.duplication]
 enabled = true
-threshold = 0.05      # flag when > 5% of functions are Type-2 clones
-min_leaf_nodes = 10   # ignore trivially short functions
+threshold = 0.05    # flag when > 5% of functions are Type-2 clones
+min_leaf_nodes = 10 # ignore trivially short functions
 min_cluster_size = 2
 severity = "warning"
 
@@ -169,6 +168,7 @@ severity = "warning"
 [rules.lexical.hammers]
 enabled = true
 severity = "warning"
+# terms = [...]            # see docs/rules/lexical/hammers.md for per-word config
 
 [rules.lexical.sprawl]
 enabled = true
@@ -187,25 +187,24 @@ severity = "warning"
 enabled = true
 min_cluster = 3
 exempt_names = ["self", "cls"]
-max_coverage = 0.30
+max_coverage = 0.30        # flag clusters with < this fraction fitting a name template
 severity = "warning"
 
 [rules.lexical.confusion]
 enabled = true
 min_functions = 5
-min_islands = 2          # flag files splitting into >= this many disjoint call-islands
-min_shared = 3           # redundancy-pair threshold feeding the island clustering
-min_score = 0.5          # redundancy-pair overlap threshold
+min_islands = 2            # flag files splitting into >= this many disjoint call-islands
+min_shared = 3             # redundancy-pair threshold feeding the island clustering
+min_score = 0.5            # redundancy-pair overlap threshold
 min_island_size = 2
-min_cluster_size = 3     # receiver-cluster corroboration size
+min_cluster_size = 3       # receiver-cluster corroboration size
 exempt_names = ["self", "cls"]
 severity = "warning"
 
 [rules.runts]
 enabled = true
-max_init_lines = 5
+max_init_lines = 5         # flag __init__.py files with more than this many code lines
 severity = "warning"
-
 
 # ---- Waivers ----------------------------------------------------------------
 
