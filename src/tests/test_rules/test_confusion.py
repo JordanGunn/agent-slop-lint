@@ -1,6 +1,8 @@
-"""Tests for lexical.confusion (v1.2.0).
+"""Tests for lexical.confusion (v1.2.0+).
 
-File-level Extract Class detection per Lanza & Marinescu (2006).
+Grab-bag detection via disjoint call-islands: a file whose top-level
+functions partition into >= 2 connected components of shared-callee
+redundancy. Supersedes the earlier first-parameter-receiver model.
 """
 from __future__ import annotations
 
@@ -26,57 +28,56 @@ def _rc(**params) -> Rule:
     return Rule(enabled=True, severity="warning", params=params)
 
 
-def test_confusion_flags_multi_receiver_file(tmp_path: Path):
-    """File with two distinct strong-receiver clusters fires."""
+def test_confusion_flags_two_call_islands(tmp_path: Path):
+    """File whose functions form two disjoint call-islands fires."""
     (tmp_path / "output.py").write_text(
-        # 5 functions clustering on `result` with receiver-call use
-        "def format_human(result):\n"
-        "    return result.summary\n"
-        "def format_quiet(result):\n"
-        "    return result.summary\n"
-        "def format_json(result):\n"
-        "    return result.violations\n"
-        "def render_footer(result):\n"
-        "    return result.errors\n"
-        "def aggregate_metrics(result):\n"
-        "    return result.metrics\n"
-        # 3 functions clustering on `category` with receiver-call use
-        "def render_category(category):\n"
-        "    return category.name\n"
-        "def aggregate_category(category):\n"
-        "    return category.violations\n"
-        "def header_extras(category):\n"
-        "    return category.window\n"
+        # Island A: three functions sharing {alpha_load, alpha_parse, alpha_emit}
+        "def handle_first(x):\n"
+        "    alpha_load(x); alpha_parse(x); alpha_emit(x)\n"
+        "def handle_second(x):\n"
+        "    alpha_load(x); alpha_parse(x); alpha_emit(x)\n"
+        "def handle_third(x):\n"
+        "    alpha_load(x); alpha_parse(x); alpha_emit(x)\n"
+        # Island B: two functions sharing {beta_open, beta_read, beta_close}
+        "def serve_first(y):\n"
+        "    beta_open(y); beta_read(y); beta_close(y)\n"
+        "def serve_second(y):\n"
+        "    beta_open(y); beta_read(y); beta_close(y)\n"
     )
     result = _confusion_rule.run(_lexicon(tmp_path), _rc(), _slop())
     assert result.status == "fail"
-    flagged = {v.symbol for v in result.violations}
-    assert any("output.py" in f for f in flagged)
+    assert len(result.violations) == 1
+    v = result.violations[0]
+    assert v.symbol is not None and "output.py" in v.symbol
+    # advisory, not a deterministic split
+    assert v.action is not None and v.action.value == "review-intent"
+    # two islands recorded as boundaries
+    islands = v.metadata["islands"]
+    assert len(islands) == 2
+    members = {name for isl in islands for name in isl}
+    assert {"handle_first", "serve_first"} <= members
 
 
-def test_confusion_passes_for_single_cluster_file(tmp_path: Path):
-    """File with one cluster (regardless of size) doesn't fire."""
+def test_confusion_passes_for_single_island(tmp_path: Path):
+    """File with one cohesive call-island (one cluster) doesn't fire."""
     (tmp_path / "renderer.py").write_text(
-        "def format_human(result):\n"
-        "    return result.summary\n"
-        "def format_quiet(result):\n"
-        "    return result.summary\n"
-        "def format_json(result):\n"
-        "    return result.violations\n"
-        "def render_footer(result):\n"
-        "    return result.errors\n"
+        "def fmt_a(r):\n    shared_one(r); shared_two(r); shared_three(r)\n"
+        "def fmt_b(r):\n    shared_one(r); shared_two(r); shared_three(r)\n"
+        "def fmt_c(r):\n    shared_one(r); shared_two(r); shared_three(r)\n"
+        "def fmt_d(r):\n    shared_one(r); shared_two(r); shared_three(r)\n"
+        "def fmt_e(r):\n    shared_one(r); shared_two(r); shared_three(r)\n"
     )
     result = _confusion_rule.run(_lexicon(tmp_path), _rc(), _slop())
     assert result.status == "pass"
 
 
 def test_confusion_skips_small_file(tmp_path: Path):
-    """File below min_functions threshold doesn't fire even with multiple clusters."""
+    """Two islands below min_functions don't fire."""
     (tmp_path / "tiny.py").write_text(
-        "def fa(result): return result.x\n"
-        "def fb(result): return result.y\n"
-        "def fc(result): return result.z\n"
-        "def ga(other): return other.a\n"
+        "def fa(x):\n    aa_one(x); aa_two(x); aa_three(x)\n"
+        "def fb(x):\n    aa_one(x); aa_two(x); aa_three(x)\n"
+        "def ga(y):\n    bb_one(y); bb_two(y); bb_three(y)\n"
+        "def gb(y):\n    bb_one(y); bb_two(y); bb_three(y)\n"
     )
     result = _confusion_rule.run(_lexicon(tmp_path), _rc(min_functions=10), _slop())
     assert result.status == "pass"

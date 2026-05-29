@@ -587,6 +587,51 @@ class Structure:
             self, min_shared=min_shared, min_score=min_score,
         )
 
+    def redundancy_clusters(
+        self, *, min_shared: int = 3, min_score: float = 0.5,
+    ) -> dict[str, list[frozenset[str]]]:
+        """Per-file disjoint clusters of redundant sibling functions.
+
+        Groups ``redundant_siblings`` pairs into connected components
+        (union-find) per file. Each cluster is a set of function names
+        that transitively share callees — a cohesive call-island. A file
+        with **two or more disjoint clusters** holds multiple independent
+        cohesive units: the coordinator-over-islands (grab-bag) topology
+        that the confusion rule consumes.
+
+        Returns ``{file: [frozenset(member_names), ...]}`` — only files
+        with at least one cluster appear.
+        """
+        pairs = self.redundant_siblings(min_shared=min_shared, min_score=min_score)
+        by_file: dict[str, list] = {}
+        for p in pairs:
+            by_file.setdefault(p.file, []).append(p)
+
+        clustered: dict[str, list[frozenset[str]]] = {}
+        for file, file_pairs in by_file.items():
+            parent: dict[str, str] = {}
+
+            def find(x: str, parent=parent) -> str:
+                parent.setdefault(x, x)
+                while parent[x] != x:
+                    parent[x] = parent[parent[x]]
+                    x = parent[x]
+                return x
+
+            for p in file_pairs:
+                ra, rb = find(p.fn_a), find(p.fn_b)
+                if ra != rb:
+                    parent[ra] = rb
+
+            groups: dict[str, set[str]] = {}
+            for p in file_pairs:
+                root = find(p.fn_a)
+                members = groups.setdefault(root, set())
+                members.add(p.fn_a)
+                members.add(p.fn_b)
+            clustered[file] = [frozenset(m) for m in groups.values()]
+        return clustered
+
     def clones(self, *, min_leaf_nodes: int = 10):
         """Type-2 clone clusters — callables sharing an AST leaf-type fingerprint.
 

@@ -193,10 +193,11 @@ severity = "warning"
 [rules.lexical.confusion]
 enabled = true
 min_functions = 5
-min_clusters = 2
-min_cluster_size = 3
-min_strong_receivers = 2
-max_disjoint_jaccard = 0.05
+min_islands = 2          # flag files splitting into >= this many disjoint call-islands
+min_shared = 3           # redundancy-pair threshold feeding the island clustering
+min_score = 0.5          # redundancy-pair overlap threshold
+min_island_size = 2
+min_cluster_size = 3     # receiver-cluster corroboration size
 exempt_names = ["self", "cls"]
 severity = "warning"
 

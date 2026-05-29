@@ -513,17 +513,20 @@
             "min_functions": {
               "default": 5
             },
-            "min_clusters": {
+            "min_islands": {
+              "default": 2
+            },
+            "min_shared": {
+              "default": 3
+            },
+            "min_score": {
+              "default": 0.5
+            },
+            "min_island_size": {
               "default": 2
             },
             "min_cluster_size": {
               "default": 3
-            },
-            "min_strong_receivers": {
-              "default": 2
-            },
-            "max_disjoint_jaccard": {
-              "default": 0.05
             },
             "exempt_names": {
               "default": [

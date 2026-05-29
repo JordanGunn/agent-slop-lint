@@ -1,21 +1,31 @@
-"""lexical.confusion — file holds multiple distinct cohesive units.
+"""lexical.confusion — file holds multiple independent cohesive units.
 
-A file is "confused" when it contains multiple substantive first-
-parameter clusters sharing a namespace. The file is doing the work
-of multiple cohesive units; the canonical refactor is to split it
-along receiver boundaries.
+A file is "confused" when its top-level functions partition into two or
+more **disjoint call-islands**: groups that transitively share callees
+within the group but not across groups. That is the coordinator-over-
+islands (grab-bag) topology — the file is doing the work of several
+cohesive units that merely share a namespace.
 
-Two corrective actions, discriminated by cross-cluster cohesion
-(Jaccard over member-name token sets):
+Detection (the primary signal) is structural, not lexical: it consumes
+``Structure.redundancy_clusters`` — per-file connected components of the
+``redundancy`` rule's sibling-callee pairs. Two disjoint clusters = two
+call-islands. This supersedes the earlier first-parameter-receiver +
+vocabulary-Jaccard heuristic, which was a weak proxy (see
+project_grabbag_battery / project_confusion_topology). The receiver
+clusters are kept only as *corroboration* that raises confidence.
 
-- ``EXTRACT_SUBPACKAGE`` — clusters share a thematic concept
-  (high cross-cluster token overlap), suggesting the file's modules
-  belong as siblings under a shared namespace.
-- ``SPLIT_MODULE`` — clusters are unrelated concerns (low cross-
-  cluster token overlap), the file is a true grab-bag.
+Verdict is deliberately advisory. Detecting ≥2 call-islands proves the
+file is partitionable; it does NOT prove the file *should* be split — a
+coordinated pipeline (one function bridging the islands) and a true
+grab-bag (disconnected islands) look identical at the cluster level. That
+discriminator needs full intra-file call topology, which redundancy
+clusters (a sparse pair-projection) don't carry. So the rule emits
+``REVIEW_INTENT`` with the island boundaries attached and lets the agent
+judge, rather than prescribing a split that might fragment a cohesive
+pipeline.
 
-Adapts Lanza & Marinescu's (2006) detection-strategy framework from
-OO classes to module-level free-function code.
+Adapts Lanza & Marinescu's (2006) detection-strategy framework from OO
+classes to module-level free-function code.
 """
 from __future__ import annotations
 
@@ -41,10 +51,9 @@ from slop.linter.rules.roots import derive_root as _derive_root
 
 _RULE = Tag.CONFUSION.key
 
-# Cluster profiles that count as "substantive" for confusion detection.
-# A cluster is substantive when it represents a real cohesive unit.
-# Excluded: false_positive (exempt names), infrastructure (plumbing
-# threaded through unrelated functions — not a separate concern).
+# Receiver-cluster profiles that count as substantive corroboration. A
+# cluster is substantive when it represents a real cohesive unit, not
+# exempt-name plumbing or infrastructure threaded through the file.
 _SUBSTANTIVE_PROFILES = frozenset({
     "missing_class", "dispatch_family", "strategy_family",
     "heterogeneous",
@@ -65,10 +74,23 @@ def _functions_per_file(lexicon: Lexicon, root: Path) -> dict[str, int]:
     return counts
 
 
-def _cluster_token_set(cluster) -> set[str]:
-    """Union of lowercased name-tokens across a cluster's members."""
+def _name_line_index(lexicon: Lexicon, root: Path) -> dict[tuple[str, str], int]:
+    """Map ``(rel_file, simple_name) -> line`` for finding anchors."""
+    index: dict[tuple[str, str], int] = {}
+    for c in lexicon.callables():
+        try:
+            rel = str(c.path.relative_to(root))
+        except ValueError:
+            rel = str(c.path)
+        simple = c.qualname.rsplit(".", 1)[-1]
+        index.setdefault((rel, simple), c.line)
+    return index
+
+
+def _name_tokens(names: frozenset[str]) -> set[str]:
+    """Union of lowercased name-tokens across a set of function names."""
     out: set[str] = set()
-    for name, _file, _line in cluster.members:
+    for name in names:
         for t in split_tokens(name):
             tl = t.lower()
             if tl not in UNIVERSAL_NOISE:
@@ -76,15 +98,17 @@ def _cluster_token_set(cluster) -> set[str]:
     return out
 
 
-def _cross_cluster_jaccard(file_clusters: list) -> float:
-    """Mean pairwise Jaccard over cluster token sets.
+def _cross_island_jaccard(islands: list[frozenset[str]]) -> float:
+    """Mean pairwise Jaccard over island name-token sets.
 
-    High mean = clusters share vocabulary = thematic siblings (subpackage).
-    Low mean = clusters use disjoint vocabulary = unrelated concerns (split).
+    Low overlap = islands name disjoint concerns (grab-bag-leaning).
+    High overlap = islands share vocabulary (pipeline-phase-leaning).
+    Informational only — it does NOT switch the verdict (see module
+    docstring on why detecting islands ≠ should-split).
     """
-    if len(file_clusters) < 2:
+    if len(islands) < 2:
         return 0.0
-    token_sets = [_cluster_token_set(c) for c in file_clusters]
+    token_sets = [_name_tokens(i) for i in islands]
     pairs: list[float] = []
     for i in range(len(token_sets)):
         for j in range(i + 1, len(token_sets)):
@@ -101,159 +125,124 @@ def _cross_cluster_jaccard(file_clusters: list) -> float:
 def run(
     lexicon: Lexicon, rule_config: Rule, slop_config: Config,
 ) -> RuleResult:
-    """Flag files that hold multiple substantive receiver clusters."""
+    """Flag files whose functions split into ≥2 disjoint call-islands."""
     min_functions = int(rule_config.params.get("min_functions", 5))
-    min_clusters = int(rule_config.params.get("min_clusters", 2))
+    min_islands = int(rule_config.params.get("min_islands", 2))
+    min_shared = int(rule_config.params.get("min_shared", 3))
+    min_score = float(rule_config.params.get("min_score", 0.5))
+    min_island_size = int(rule_config.params.get("min_island_size", 2))
+    # Receiver-cluster corroboration params (Lexicon side).
     min_cluster_size = int(rule_config.params.get("min_cluster_size", 3))
-    # New gate: at least N clusters with substantive profiles.
-    min_substantive_clusters = int(
-        rule_config.params.get(
-            "min_substantive_clusters",
-            # Legacy param name preserved for back-compat: if older
-            # configs specify min_strong_receivers, honour it.
-            rule_config.params.get("min_strong_receivers", 2),
-        ),
-    )
     raw_exempt = rule_config.params.get("exempt_names", ["self", "cls"])
     exempt_names = frozenset(raw_exempt) if raw_exempt else frozenset()
-    # Cross-cluster Jaccard at or below this counts as "genuinely
-    # disjoint concerns" — the only regime where a deterministic split
-    # is safe. Above it, the module may be a cohesive layered pipeline,
-    # so the rule degrades to REVIEW_INTENT (see project_confusion_topology).
-    max_disjoint_jaccard = float(rule_config.params.get("max_disjoint_jaccard", 0.05))
     severity = rule_config.severity
     root = _derive_root(lexicon, slop_config)
 
-    clusters = lexicon.first_param_clusters(
-        min_cluster=min_cluster_size,
-        exempt_names=exempt_names,
-        root=root,
-    )
+    def _rel(p) -> str:
+        try:
+            return str(Path(p).relative_to(root))
+        except ValueError:
+            return str(p)
 
-    # Group file-scope clusters by file. Package/root-scope clusters
-    # are irrelevant for the file-level rule.
-    by_file: dict[str, list] = {}
-    for cluster in clusters:
-        if cluster.scope_kind != "file":
+    # Primary signal: per-file disjoint redundancy clusters (call-islands).
+    # Built from a Structure over the same parses the Lexicon wraps — the
+    # grab-bag battery is inherently cross-substrate (structural cohesion +
+    # lexical receivers), so the rule computes both halves itself.
+    from slop.structure.view import Structure
+
+    structure = Structure(lexicon._parses)  # noqa: SLF001 — shared parse substrate
+    clusters_abs = structure.redundancy_clusters(
+        min_shared=min_shared, min_score=min_score,
+    )
+    clusters_by_file: dict[str, list[frozenset[str]]] = {
+        _rel(f): [c for c in islands if len(c) >= min_island_size]
+        for f, islands in clusters_abs.items()
+    }
+
+    # Corroboration: substantive first-parameter receiver clusters per file.
+    receiver_by_file: dict[str, list] = {}
+    for c in lexicon.first_param_clusters(
+        min_cluster=min_cluster_size, exempt_names=exempt_names, root=root,
+    ):
+        if c.scope_kind != "file":
             continue
-        by_file.setdefault(cluster.scope, []).append(cluster)
+        if c.profile_label in _SUBSTANTIVE_PROFILES:
+            receiver_by_file.setdefault(c.scope, []).append(c)
 
     functions_per_file = _functions_per_file(lexicon, root)
+    line_index = _name_line_index(lexicon, root)
     files_searched = len(functions_per_file)
     functions_analyzed = sum(functions_per_file.values())
 
     violations: list[Slop] = []
-    for file, file_clusters in by_file.items():
+    for file, islands in sorted(clusters_by_file.items()):
+        if len(islands) < min_islands:
+            continue
         n_functions = functions_per_file.get(file, 0)
         if n_functions < min_functions:
             continue
-        if len(file_clusters) < min_clusters:
-            continue
-        substantive = [
-            c for c in file_clusters
-            if c.profile_label in _SUBSTANTIVE_PROFILES
-        ]
-        if len(substantive) < min_substantive_clusters:
-            continue
 
-        cluster_tuples = [
-            (c.parameter_name, len(c.members), c.profile_label)
-            for c in substantive
-        ]
-        cluster_summary = ", ".join(
-            f"`{p}` ({n}, {label})" for p, n, label in cluster_tuples
+        islands_sorted = sorted(islands, key=lambda m: (-len(m), sorted(m)))
+        members_flat = [name for isl in islands_sorted for name in isl]
+        anchor = min(
+            (line_index.get((file, name), 1) for name in members_flat),
+            default=1,
         )
-        first_cluster = substantive[0]
-        line = first_cluster.members[0][2] if first_cluster.members else 1
-        cross_cohesion = _cross_cluster_jaccard(substantive)
+        cross_j = _cross_island_jaccard(islands_sorted)
+        receivers = receiver_by_file.get(file, [])
+        corroborated = len(receivers) > 0
 
-        module_stem = Path(file).stem.lstrip("_")
-        stem_tokens = [t for t in split_tokens(module_stem) if t.lower() not in UNIVERSAL_NOISE]
-        is_concept_noun = len(stem_tokens) == 1 and len(stem_tokens[0]) >= 4
+        boundary = " | ".join(
+            "{" + ", ".join(sorted(m)) + "}" for m in islands_sorted
+        )
+        corroboration_note = (
+            f" Corroborated by {len(receivers)} substantive receiver "
+            f"cluster(s) ("
+            + ", ".join(f"`{c.parameter_name}`" for c in receivers)
+            + ")."
+            if corroborated else
+            " No receiver-cluster corroboration (structural signal only)."
+        )
+        prescription = (
+            f"Review whether `{file}` is a cohesive pipeline or a grab-bag. "
+            f"Its functions partition into {len(islands_sorted)} disjoint "
+            f"call-islands: {boundary}. If one function bridges these "
+            f"islands (a coordinated pipeline), leave it; if the islands are "
+            f"independent concerns, split along these boundaries."
+            f"{corroboration_note}"
+        )
 
-        # Cohesion gates the prescription confidence. Near-zero cross-
-        # cluster vocabulary overlap means the clusters are genuinely
-        # disjoint concerns — safe to prescribe a deterministic split.
-        # Moderate overlap is ambiguous: it could be a layered pipeline
-        # (clusters are abstraction layers that share vocabulary and call
-        # each other) rather than a grab-bag. We can't tell the two apart
-        # with vocabulary alone — that needs call-graph topology (chain vs
-        # star), which is future work. So moderate overlap degrades to
-        # REVIEW_INTENT rather than a wrong deterministic prescription
-        # that could send an agent in refactor circles.
-        if cross_cohesion <= max_disjoint_jaccard:
-            # Confident split. Concept-noun chooses the split SHAPE
-            # (subpackage under a thematic umbrella vs flat siblings) —
-            # it no longer decides WHETHER to split.
-            if is_concept_noun:
-                action = Action.EXTRACT_SUBPACKAGE
-                prescription = (
-                    f"Extract `{file}` into a `{module_stem}/` subpackage. "
-                    f"The file holds {len(substantive)} substantive "
-                    f"receiver clusters ({cluster_summary}) with disjoint "
-                    f"vocabularies (Jaccard {cross_cohesion:.2f}) — genuinely "
-                    f"separate concerns. The module name `{module_stem}` is "
-                    f"a concept-noun acting as a thematic umbrella; the "
-                    f"clusters belong as sibling modules under that "
-                    f"namespace. Dotref will shorten the leaf names."
-                )
-            else:
-                action = Action.SPLIT_MODULE
-                prescription = (
-                    f"Split `{file}` into sibling modules along receiver "
-                    f"boundaries. The file holds {len(substantive)} "
-                    f"substantive receiver clusters ({cluster_summary}) "
-                    f"with disjoint vocabularies (Jaccard "
-                    f"{cross_cohesion:.2f}) — unrelated concerns sharing a "
-                    f"namespace by accident."
-                )
-        else:
-            # Ambiguous: moderate vocabulary overlap. Could be a cohesive
-            # layered pipeline. Surface for judgment; don't prescribe.
-            action = Action.REVIEW_INTENT
-            prescription = (
-                f"Review whether `{file}` is a cohesive pipeline or a "
-                f"grab-bag. It holds {len(substantive)} receiver clusters "
-                f"({cluster_summary}) with moderate cross-cluster "
-                f"vocabulary overlap (Jaccard {cross_cohesion:.2f}). "
-                f"Moderate overlap is ambiguous: if the clusters are "
-                f"abstraction layers that call each other (a pipeline), "
-                f"leave it; if they're independent concerns that merely "
-                f"share some vocabulary, split along receiver boundaries."
-            )
-
-        # Confident-split findings carry real confidence; ambiguous
-        # (REVIEW_INTENT) findings are surfaced low so they sort below
-        # actionable prescriptions.
-        if action is Action.REVIEW_INTENT:
-            confidence = 0.4
-        else:
-            confidence = 0.7 if len(substantive) >= 3 else 0.6
+        # Advisory tier: detecting islands proves partitionability, not that
+        # a split is warranted. Corroboration by an independent lexical
+        # signal raises confidence but never reaches deterministic-action
+        # territory.
+        confidence = 0.55 if corroborated else 0.45
 
         violations.append(Slop(
             rule=_RULE,
             file=file,
-            line=line,
+            line=anchor,
             symbol=file,
             message=(
-                f"`{file}` holds {n_functions} functions clustering on "
-                f"{len(substantive)} substantive receivers "
-                f"({cluster_summary}). Cross-cluster vocabulary Jaccard "
-                f"is {cross_cohesion:.2f}."
+                f"`{file}` ({n_functions} functions) splits into "
+                f"{len(islands_sorted)} disjoint call-islands "
+                f"(cross-island name Jaccard {cross_j:.2f}). "
+                f"{'Receiver-cluster corroborated.' if corroborated else 'Structural signal only.'}"
             ),
             severity=severity,
-            value=len(substantive),
-            threshold=min_substantive_clusters,
-            action=action,
+            value=len(islands_sorted),
+            threshold=min_islands,
+            action=Action.REVIEW_INTENT,
             prescription=prescription,
             confidence=confidence,
             metadata={
                 "function_count": n_functions,
-                "clusters": [
-                    {"param": p, "members": n, "profile": label}
-                    for p, n, label in cluster_tuples
+                "islands": [sorted(m) for m in islands_sorted],
+                "cross_island_jaccard": round(cross_j, 3),
+                "receiver_corroboration": [
+                    {"param": c.parameter_name, "profile": c.profile_label}
+                    for c in receivers
                 ],
-                "cross_cluster_jaccard": round(cross_cohesion, 3),
             },
         ))
 
@@ -264,7 +253,7 @@ def run(
         summary={
             "files_searched": files_searched,
             "functions_checked": functions_analyzed,
-            "candidate_files": len(by_file),
+            "candidate_files": len(clusters_by_file),
             "violation_count": len(violations),
         },
         errors=[],
@@ -274,9 +263,9 @@ def run(
 RULE = RuleDefinition(
     name=_RULE,
     category=_RULE,
-    description='File holds multiple substantive receiver clusters (split into siblings or extract subpackage)',
+    description='File splits into ≥2 disjoint call-islands (review for grab-bag split)',
     default_severity='warning',
     default_enabled=True,
-    threshold_label='≥ 2 substantive clusters × ≥ 3 members',
+    threshold_label='≥ 2 disjoint call-islands',
     run=run,
 )
