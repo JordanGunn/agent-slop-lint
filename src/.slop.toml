@@ -221,3 +221,23 @@ path = "slop/tree/tree.py"
 rule = "coupling"
 allow_up_to = 9
 reason = "Parse substrate core — Tree couples to tree-sitter and grammar types by design."
+
+# Grammar classes implement the Language ABC's ~30 vocabulary methods, so
+# their WMC (sum of method CCNs) is inherent method-count tax, not per-method
+# complexity. NOTE: waivers have no scope field, so this also covers any
+# function-scope cyclomatic in grammars (per-language AST handlers). Other
+# complexity metrics (combinatorial/cognitive NPath) are intentionally NOT
+# waived — those stay visible as honest signal on grammar AST logic.
+[[waivers]]
+id = "grammar-abc-complexity"
+path = "slop/language/grammars/*.py"
+rule = "complexity.cyclomatic"
+allow_up_to = 130
+reason = "ABC implementation tax — WMC is method-count, not per-method complexity (Cpp 129 worst)."
+
+[[waivers]]
+id = "language-base-complexity"
+path = "slop/language/base.py"
+rule = "complexity.cyclomatic"
+allow_up_to = 60
+reason = "Language ABC default-method surface — WMC reflects the contract size, inherent."
