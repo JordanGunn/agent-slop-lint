@@ -41,7 +41,7 @@ def run(
             cbo = max((structure.coupling(m, known) for m in members), default=0)
             if cbo > threshold:
                 slop = _slop(
-                    "coupling",
+                    _RULE,
                     canonical, root, severity, cbo, threshold,
                     f"CBO {cbo} exceeds {threshold}",
                 )
@@ -50,7 +50,7 @@ def run(
     findings.sort(key=lambda t: -t[0])
     violations = [v for _, v in findings]
     return RuleResult(
-        rule="coupling",
+        rule=_RULE,
         status="fail" if violations else "pass",
         violations=violations,
         summary={"classes_checked": len(groups), "violation_count": len(violations)},

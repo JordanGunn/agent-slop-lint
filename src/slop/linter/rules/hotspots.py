@@ -43,7 +43,7 @@ def run_churn_weighted(
         if fh.quadrant not in fail_on_quadrant:
             continue
         violations.append(Slop(
-            rule="hotspots",
+            rule=_RULE,
             file=fh.file,
             line=None,
             symbol=None,
@@ -64,7 +64,7 @@ def run_churn_weighted(
         ))
 
     return RuleResult(
-        rule="hotspots",
+        rule=_RULE,
         status="fail" if violations else "pass",
         violations=violations,
         summary={

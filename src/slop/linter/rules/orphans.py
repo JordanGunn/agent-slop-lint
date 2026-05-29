@@ -45,7 +45,7 @@ def run(
         if _CONFIDENCE_ORDER.get(candidate.confidence, 0) < min_confidence_level:
             continue
         violations.append(Slop(
-            rule="orphans",
+            rule=_RULE,
             file=candidate.file,
             line=candidate.line if candidate.line > 0 else None,
             symbol=candidate.symbol,
@@ -64,7 +64,7 @@ def run(
         ))
 
     return RuleResult(
-        rule="orphans",
+        rule=_RULE,
         status="fail" if violations else "pass",
         violations=violations,
         summary={

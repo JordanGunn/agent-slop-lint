@@ -29,6 +29,8 @@ from slop.linter.types import RuleDefinition
 if TYPE_CHECKING:
     from slop.structure.view import Structure
 
+_RULE = Tag.DUPLICATION.key
+
 DEFAULT_THRESHOLD = 0.05
 DEFAULT_MIN_LEAF_NODES = 10
 DEFAULT_MIN_CLUSTER_SIZE = 2
@@ -54,7 +56,7 @@ def run(
         first = cluster.members[0]
         others = ", ".join(f"{m.file}:{m.line}" for m in cluster.members[1:])
         violations.append(Slop(
-            rule="duplication",
+            rule=_RULE,
             file=first.file,
             line=first.line,
             symbol=first.name,
@@ -78,7 +80,7 @@ def run(
     if report.clone_fraction > threshold and report.functions_analyzed > 0:
         pct = report.clone_fraction * 100
         violations.insert(0, Slop(
-            rule="duplication",
+            rule=_RULE,
             file=".",
             line=None,
             symbol=None,
@@ -99,7 +101,7 @@ def run(
         ))
 
     return RuleResult(
-        rule="duplication",
+        rule=_RULE,
         status="fail" if violations else "pass",
         violations=violations,
         summary={
@@ -111,8 +113,8 @@ def run(
     )
 
 RULE = RuleDefinition(
-    name=Tag.DUPLICATION.key,
-    category=Tag.DUPLICATION.key,
+    name=_RULE,
+    category=_RULE,
     description='Type-2 clone detection: structurally identical function bodies',
     default_severity='warning',
     default_enabled=True,

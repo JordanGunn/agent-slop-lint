@@ -43,7 +43,7 @@ def run_cycles(
         for cycle in cycles:
             cycle_str = " → ".join(cycle)
             violations.append(Slop(
-                rule="deps",
+                rule=_RULE,
                 file=cycle[0] if cycle else "",
                 line=None,
                 symbol=None,
@@ -55,7 +55,7 @@ def run_cycles(
             ))
 
     return RuleResult(
-        rule="deps",
+        rule=_RULE,
         status="fail" if violations else "pass",
         violations=violations,
         summary={

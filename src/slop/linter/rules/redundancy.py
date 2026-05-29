@@ -54,7 +54,7 @@ def run(
         if len(pair.shared_callees) > 5:
             shared_preview += f" …+{len(pair.shared_callees) - 5} more"
         violations.append(Slop(
-            rule="redundancy",
+            rule=_RULE,
             file=pair.file,
             line=pair.fn_a_line,
             symbol=pair.fn_a,
@@ -78,7 +78,7 @@ def run(
         ))
 
     return RuleResult(
-        rule="redundancy",
+        rule=_RULE,
         status="fail" if violations else "pass",
         violations=violations,
         summary={
