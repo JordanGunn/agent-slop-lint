@@ -516,3 +516,42 @@ class TestCyclomaticBooleanOperatorFiltering:
         )
         # base(1) + if(1) + and(1) = 3
         assert _ccx_by_name(tmp_path)["f"] == 3
+
+
+class TestRedundancyClusters:
+    """``redundancy_clusters`` + ``intra_file_call_components``."""
+
+    _ISLANDS = (
+        "def load_one(x):\n    helper_aaa(x); helper_bbb(x); helper_ccc(x)\n"
+        "def load_two(x):\n    helper_aaa(x); helper_bbb(x); helper_ccc(x)\n"
+        "def emit_one(y):\n    other_ppp(y); other_qqq(y); other_rrr(y)\n"
+        "def emit_two(y):\n    other_ppp(y); other_qqq(y); other_rrr(y)\n"
+    )
+
+    def test_two_disjoint_islands(self, tmp_path: Path):
+        (tmp_path / "m.py").write_text(self._ISLANDS)
+        clusters = _structure(tmp_path).redundancy_clusters()
+        key = next(k for k in clusters if k.endswith("m.py"))
+        islands = clusters[key]
+        assert len(islands) == 2
+        members = {n for isl in islands for n in isl}
+        assert members == {"load_one", "load_two", "emit_one", "emit_two"}
+
+    def test_components_merge_under_coordinator(self, tmp_path: Path):
+        (tmp_path / "m.py").write_text(
+            self._ISLANDS
+            + "def run_all(z):\n    load_one(z); load_two(z); emit_one(z); emit_two(z)\n"
+        )
+        comps = _structure(tmp_path).intra_file_call_components()
+        key = next(k for k in comps if k.endswith("m.py"))
+        assert len(comps[key]) == 1
+        assert comps[key][0] == frozenset(
+            {"load_one", "load_two", "emit_one", "emit_two", "run_all"}
+        )
+
+    def test_components_stay_split_without_coordinator(self, tmp_path: Path):
+        (tmp_path / "m.py").write_text(self._ISLANDS)
+        comps = _structure(tmp_path).intra_file_call_components()
+        key = next(k for k in comps if k.endswith("m.py"))
+        # no function calls another in-file function → four singletons
+        assert len(comps[key]) == 4

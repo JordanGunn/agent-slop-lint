@@ -632,6 +632,50 @@ class Structure:
             clustered[file] = [frozenset(m) for m in groups.values()]
         return clustered
 
+    def intra_file_call_components(self) -> dict[str, list[frozenset[str]]]:
+        """Connected components of each file's intra-file call graph.
+
+        Nodes are a file's callables (by simple name); an undirected edge
+        joins caller and callee when both are defined in that file
+        (name-matched). Returns ``{file: [frozenset(names), ...]}`` with
+        every callable in exactly one component (isolated functions are
+        singletons).
+
+        This is the should-split discriminator the confusion rule layers
+        on top of ``redundancy_clusters``: if a file's redundancy islands
+        all fall in ONE component, a coordinator bridges them — a cohesive
+        pipeline, leave it. If the islands span TWO OR MORE components,
+        nothing connects them — a genuine disconnected grab-bag. The
+        coordinator that defeats plain island-detection is exactly what
+        makes the components merge, so it is a feature here, not a bug.
+        """
+        by_file: dict[str, list] = {}
+        for c in self.callables():
+            by_file.setdefault(str(c.path), []).append(c)
+
+        out: dict[str, list[frozenset[str]]] = {}
+        for file, callables in by_file.items():
+            names = {c.qualname.rsplit(".", 1)[-1] for c in callables}
+            parent: dict[str, str] = {n: n for n in names}
+
+            def find(x: str, parent=parent) -> str:
+                while parent[x] != x:
+                    parent[x] = parent[parent[x]]
+                    x = parent[x]
+                return x
+
+            for c in callables:
+                caller = c.qualname.rsplit(".", 1)[-1]
+                for callee in self.callees_of(c):
+                    if callee in names and callee != caller:
+                        parent[find(callee)] = find(caller)
+
+            groups: dict[str, set[str]] = {}
+            for n in names:
+                groups.setdefault(find(n), set()).add(n)
+            out[file] = [frozenset(g) for g in groups.values()]
+        return out
+
     def clones(self, *, min_leaf_nodes: int = 10):
         """Type-2 clone clusters — callables sharing an AST leaf-type fingerprint.
 

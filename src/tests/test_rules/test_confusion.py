@@ -28,8 +28,8 @@ def _rc(**params) -> Rule:
     return Rule(enabled=True, severity="warning", params=params)
 
 
-def test_confusion_flags_two_call_islands(tmp_path: Path):
-    """File whose functions form two disjoint call-islands fires."""
+def test_confusion_flags_disconnected_grab_bag(tmp_path: Path):
+    """Two call-islands with NO bridging coordinator → deterministic split."""
     (tmp_path / "output.py").write_text(
         # Island A: three functions sharing {alpha_load, alpha_parse, alpha_emit}
         "def handle_first(x):\n"
@@ -49,13 +49,30 @@ def test_confusion_flags_two_call_islands(tmp_path: Path):
     assert len(result.violations) == 1
     v = result.violations[0]
     assert v.symbol is not None and "output.py" in v.symbol
-    # advisory, not a deterministic split
-    assert v.action is not None and v.action.value == "review-intent"
-    # two islands recorded as boundaries
+    # coordinator test passed (disconnected) → deterministic split
+    assert v.action is not None and v.action.value == "split-module"
     islands = v.metadata["islands"]
     assert len(islands) == 2
+    assert v.metadata["call_components"] >= 2
     members = {name for isl in islands for name in isl}
     assert {"handle_first", "serve_first"} <= members
+
+
+def test_confusion_suppresses_coordinated_pipeline(tmp_path: Path):
+    """Two islands joined by a bridging coordinator → cohesive pipeline, suppressed."""
+    (tmp_path / "pipeline.py").write_text(
+        # Island A
+        "def stage_load(x):\n    alpha_one(x); alpha_two(x); alpha_three(x)\n"
+        "def stage_parse(x):\n    alpha_one(x); alpha_two(x); alpha_three(x)\n"
+        # Island B
+        "def stage_emit(y):\n    beta_one(y); beta_two(y); beta_three(y)\n"
+        "def stage_flush(y):\n    beta_one(y); beta_two(y); beta_three(y)\n"
+        # Coordinator bridging both islands → single call-component
+        "def run_pipeline(z):\n"
+        "    stage_load(z); stage_parse(z); stage_emit(z); stage_flush(z)\n"
+    )
+    result = _confusion_rule.run(_lexicon(tmp_path), _rc(), _slop())
+    assert result.status == "pass"
 
 
 def test_confusion_passes_for_single_island(tmp_path: Path):

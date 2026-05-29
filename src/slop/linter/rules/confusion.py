@@ -14,15 +14,17 @@ vocabulary-Jaccard heuristic, which was a weak proxy (see
 project_grabbag_battery / project_confusion_topology). The receiver
 clusters are kept only as *corroboration* that raises confidence.
 
-Verdict is deliberately advisory. Detecting ≥2 call-islands proves the
-file is partitionable; it does NOT prove the file *should* be split — a
-coordinated pipeline (one function bridging the islands) and a true
-grab-bag (disconnected islands) look identical at the cluster level. That
-discriminator needs full intra-file call topology, which redundancy
-clusters (a sparse pair-projection) don't carry. So the rule emits
-``REVIEW_INTENT`` with the island boundaries attached and lets the agent
-judge, rather than prescribing a split that might fragment a cohesive
-pipeline.
+Detecting ≥2 call-islands proves the file is *partitionable*; it does not
+prove the file *should* be split — a coordinated pipeline (one function
+bridging the islands) and a true grab-bag (disconnected islands) look
+identical at the cluster level. The should-split discriminator is the
+connected-component structure of the file's full intra-file call graph
+(``Structure.intra_file_call_components``): if the islands all fall in one
+component, a coordinator bridges them — a cohesive pipeline, suppressed;
+if they span two or more components, nothing connects them — a genuine
+disconnected grab-bag. Because the coordinator test has already run, a
+confirmed grab-bag earns a deterministic ``SPLIT_MODULE`` rather than a
+hedged review.
 
 Adapts Lanza & Marinescu's (2006) detection-strategy framework from OO
 classes to module-level free-function code.
@@ -154,10 +156,11 @@ def run(
     clusters_abs = structure.redundancy_clusters(
         min_shared=min_shared, min_score=min_score,
     )
-    clusters_by_file: dict[str, list[frozenset[str]]] = {
-        _rel(f): [c for c in islands if len(c) >= min_island_size]
-        for f, islands in clusters_abs.items()
-    }
+    # Should-split discriminator: connected components of each file's
+    # intra-file call graph. Islands in one component are coordinator-
+    # bridged (cohesive pipeline → suppress); islands spanning ≥2
+    # components are genuinely disconnected (grab-bag → emit).
+    components_abs = structure.intra_file_call_components()
 
     # Corroboration: substantive first-parameter receiver clusters per file.
     receiver_by_file: dict[str, list] = {}
@@ -174,13 +177,31 @@ def run(
     files_searched = len(functions_per_file)
     functions_analyzed = sum(functions_per_file.values())
 
+    candidate_files = 0
     violations: list[Slop] = []
-    for file, islands in sorted(clusters_by_file.items()):
+    for abs_file, raw_islands in sorted(clusters_abs.items()):
+        islands = [c for c in raw_islands if len(c) >= min_island_size]
         if len(islands) < min_islands:
             continue
+        file = _rel(abs_file)
         n_functions = functions_per_file.get(file, 0)
         if n_functions < min_functions:
             continue
+        candidate_files += 1
+
+        # Discriminator: how many distinct call-components do the islands
+        # occupy? One ⇒ a coordinator bridges them (cohesive pipeline) ⇒
+        # suppress. Two or more ⇒ disconnected concerns ⇒ genuine grab-bag.
+        components = components_abs.get(abs_file, [])
+        comp_of: dict[str, int] = {}
+        for idx, comp in enumerate(components):
+            for name in comp:
+                comp_of[name] = idx
+        island_components = {
+            comp_of[m] for isl in islands for m in isl if m in comp_of
+        }
+        if len(island_components) < 2:
+            continue  # coordinator-bridged → cohesive pipeline, leave it
 
         islands_sorted = sorted(islands, key=lambda m: (-len(m), sorted(m)))
         members_flat = [name for isl in islands_sorted for name in isl]
@@ -201,22 +222,21 @@ def run(
             + ", ".join(f"`{c.parameter_name}`" for c in receivers)
             + ")."
             if corroborated else
-            " No receiver-cluster corroboration (structural signal only)."
+            " (Structural signal only — no receiver-cluster corroboration.)"
         )
         prescription = (
-            f"Review whether `{file}` is a cohesive pipeline or a grab-bag. "
-            f"Its functions partition into {len(islands_sorted)} disjoint "
-            f"call-islands: {boundary}. If one function bridges these "
-            f"islands (a coordinated pipeline), leave it; if the islands are "
-            f"independent concerns, split along these boundaries."
-            f"{corroboration_note}"
+            f"Split `{file}` into sibling modules along these boundaries: "
+            f"{boundary}. The functions form {len(islands_sorted)} call-islands "
+            f"in {len(island_components)} disconnected components of the "
+            f"intra-file call graph — no function bridges them, so they are "
+            f"independent concerns sharing a namespace, not phases of one "
+            f"pipeline.{corroboration_note}"
         )
 
-        # Advisory tier: detecting islands proves partitionability, not that
-        # a split is warranted. Corroboration by an independent lexical
-        # signal raises confidence but never reaches deterministic-action
-        # territory.
-        confidence = 0.55 if corroborated else 0.45
+        # The coordinator test has already run: a confirmed disconnected
+        # grab-bag earns a deterministic split. Receiver-cluster
+        # corroboration lifts confidence further.
+        confidence = 0.8 if corroborated else 0.7
 
         violations.append(Slop(
             rule=_RULE,
@@ -225,19 +245,21 @@ def run(
             symbol=file,
             message=(
                 f"`{file}` ({n_functions} functions) splits into "
-                f"{len(islands_sorted)} disjoint call-islands "
-                f"(cross-island name Jaccard {cross_j:.2f}). "
+                f"{len(islands_sorted)} disconnected call-islands "
+                f"(no bridging coordinator; cross-island name Jaccard "
+                f"{cross_j:.2f}). "
                 f"{'Receiver-cluster corroborated.' if corroborated else 'Structural signal only.'}"
             ),
             severity=severity,
             value=len(islands_sorted),
             threshold=min_islands,
-            action=Action.REVIEW_INTENT,
+            action=Action.SPLIT_MODULE,
             prescription=prescription,
             confidence=confidence,
             metadata={
                 "function_count": n_functions,
                 "islands": [sorted(m) for m in islands_sorted],
+                "call_components": len(island_components),
                 "cross_island_jaccard": round(cross_j, 3),
                 "receiver_corroboration": [
                     {"param": c.parameter_name, "profile": c.profile_label}
@@ -253,7 +275,7 @@ def run(
         summary={
             "files_searched": files_searched,
             "functions_checked": functions_analyzed,
-            "candidate_files": len(clusters_by_file),
+            "candidate_files": candidate_files,
             "violation_count": len(violations),
         },
         errors=[],
