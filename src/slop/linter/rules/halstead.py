@@ -28,7 +28,7 @@ def _halstead_for(
     structure: Structure, c: Any,
 ) -> tuple[int, int, int, int] | None:
     """Compute (η₁, η₂, N₁, N₂) for one callable. None if not computable."""
-    from slop.structure.view import _resolve_body
+    from slop.structure.complexity import resolve_body
 
     language_id = structure.language_for(c)
     if language_id is None:
@@ -44,7 +44,7 @@ def _halstead_for(
     content = structure._content_by_key.get((str(c.path), c.qualname))  # noqa: SLF001
     if node is None or content is None:
         return None
-    walk_from = _resolve_body(node, lang.definition_unwrap_types())
+    walk_from = resolve_body(node, lang.definition_unwrap_types())
     nested_callables = lang.callable()
     return _collect_tokens(walk_from, content, operator_set, operand_set, nested_callables)
 
