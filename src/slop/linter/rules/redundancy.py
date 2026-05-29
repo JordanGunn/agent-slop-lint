@@ -47,6 +47,7 @@ def run(
     pairs = structure.redundant_siblings(
         min_shared=min_shared, min_score=min_score,
     )
+    callables_analyzed = sum(1 for _ in structure.callables())
 
     violations: list[Slop] = []
     for pair in pairs:
@@ -83,6 +84,7 @@ def run(
         violations=violations,
         summary={
             "pair_violations": len(violations),
+            "callables_analyzed": callables_analyzed,
             "min_shared": min_shared,
             "min_score": min_score,
         },

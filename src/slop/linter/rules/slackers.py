@@ -63,6 +63,7 @@ def run(
         exempt_names=exempt_names,
         root=root,
     )
+    callables_analyzed = sum(1 for _ in lexicon.callables())
 
     violations: list[Slop] = []
     for cluster in clusters:
@@ -153,6 +154,7 @@ def run(
         violations=violations,
         summary={
             "clusters_detected": len(clusters),
+            "callables_analyzed": callables_analyzed,
             "violation_count": len(violations),
         },
     )

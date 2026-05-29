@@ -6,6 +6,9 @@ from pathlib import Path
 from slop.linter.linter import Linter
 from slop.linter.rule import Rule
 from slop.config import Config
+from slop.linter import RULE_REGISTRY
+from slop.linter.format.render import _checked_count
+from slop.tree.tree import Tree
 
 
 def _config(root: Path) -> Config:
@@ -97,3 +100,29 @@ class TestComplexityFiresThroughLinter:
         summary = result.rule_results["complexity.cyclomatic"].summary
         assert summary.get("functions_checked", 0) > 0
         assert summary.get("classes_checked", 0) > 0
+
+
+class TestSafeguardCoverage:
+    """Every runnable rule must report an examined-unit count the
+    zero-check safeguard can read. A rule that reports none is invisible:
+    a future silent no-op would render as ✓ clean — the exact bug class
+    this guards. Tool-dependent rules (git/ripgrep) are skipped here;
+    the property is about pure-AST/lexicon rules' summaries.
+    """
+
+    def test_no_rule_is_invisible_to_zero_check_safeguard(self, tiny_corpus: Path):
+        t = Tree(tiny_corpus)
+        t.scan()
+        cfg = Config(root=str(tiny_corpus), languages=["python"], rules={})
+        blind: list[str] = []
+        for rd in RULE_REGISTRY:
+            view = t.lexicon if rd.category.startswith("lexical.") else t.structure
+            try:
+                res = rd.run(view, Rule(), cfg)
+            except Exception:
+                continue  # tool-dependent (git/rg) — out of this property's scope
+            if res.status == "error":
+                continue
+            if _checked_count(res.summary) is None:
+                blind.append(rd.name)
+        assert not blind, f"rules invisible to zero-check safeguard: {blind}"

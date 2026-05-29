@@ -164,7 +164,7 @@ class _CategoryAgg:
 # …). Convention over allowlist: a hardcoded key list silently drops every
 # new count key — the same source-of-truth drift that hid the complexity
 # no-op. The suffix is the single source of truth.
-_COUNT_SUFFIXES = ("_checked", "_analyzed", "_scanned", "_examined")
+_COUNT_SUFFIXES = ("_checked", "_analyzed", "_scanned", "_examined", "_searched")
 
 
 def _checked_count(summary: dict) -> int | None:
