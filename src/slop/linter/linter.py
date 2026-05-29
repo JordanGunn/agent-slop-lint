@@ -32,8 +32,15 @@ def _execute_rule_v2(
     The view is whichever substrate the rule declares via
     ``RuleDefinition.view`` (``"lexicon"`` or ``"structure"``) — looked
     up on the tree by name, not inferred from the category string.
+
+    A rule may also declare ``view="tree"`` to receive the whole ``Tree``
+    (the substrate root, exposing both ``.structure`` and ``.lexicon``).
+    This is the cross-view escape hatch for rules whose signal genuinely
+    spans substrates — e.g. correlating lexical concept ownership with the
+    structural import graph. Reserve it for that case; single-view rules
+    stay narrow.
     """
-    view = getattr(tree, rule_def.view)
+    view = tree if rule_def.view == "tree" else getattr(tree, rule_def.view)
     try:
         result = rule_def.run(view, rc, config)
     except Exception as e:

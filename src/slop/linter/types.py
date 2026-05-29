@@ -41,7 +41,9 @@ class RuleDefinition:
     ``view`` names the substrate view the rule consumes (``"structure"``
     or ``"lexicon"``) — the dispatcher passes ``getattr(tree, view)``.
     Declared per rule rather than inferred from the category string so
-    view selection isn't coupled to the naming convention.
+    view selection isn't coupled to the naming convention. The special
+    value ``"tree"`` passes the whole ``Tree`` (both views) for the rare
+    cross-view rule whose signal spans substrates.
     """
 
     name: str

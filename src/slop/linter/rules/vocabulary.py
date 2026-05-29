@@ -1,23 +1,30 @@
 """vocabulary — the identifier token space as a claim-free observation.
 
 This rule does not emit a verdict. It emits a single OBSERVATION: the
-corpus's identifier token distribution (Zipf fit, hapax floor,
-frequency spectrum, dominant concepts), narrated into natural language
-for an agent to investigate.
+corpus's identifier token distribution, decomposed three ways, narrated
+into natural language for an agent to investigate.
+
+  1. GLOBAL (Zipf fit, hapax floor, dominant concepts) — a Zipf
+     near-invariant, so it serves only as a population-norm anchor.
+  2. WITHIN-namespace — per-package hapax density; the within-codebase
+     variance the flat global bag collapses.
+  3. ACROSS-namespace — per-token owner concentration, with the structural
+     import graph gating owner-displacement (a token whose lexical owner
+     merely IMPORTS its eponymous package is a legitimate consumer, not an
+     escape). This is why the rule is cross-view (``view="tree"``):
+     lexical ownership alone can't tell reinvention from consumption.
 
 Why an observation, not a verdict: the identifier vocabulary is a Zipf
 near-invariant — engineered codebases cluster at α≈0.9 / R²≈0.93 /
 hapax≈0.49 regardless of size or discipline (measured; see project
-memory). A single scalar like the hapax ratio therefore can't honestly
-gate a build — it reads ~0.5 on clean and messy code alike. What the
-emitter CAN do is hand an agent the measured distribution plus the
-population norm and let it decide whether the shape warrants a look.
-This makes no precision claim, so it cannot be a false positive — the
-opposite of the verdict rules whose value rides on a discriminator.
+memory). No scalar here honestly gates a build. The emitter hands the
+agent the measured decomposition and lets it decide — it makes no
+precision claim, so it cannot be a false positive.
 
-The compute lives on the Lexicon view (``Lexicon.token_distribution``);
-the natural-language transform lives on the returned ``TokenDistribution``
-(``.narrate()``). This rule is the thin emission layer.
+Compute lives on the views (``Lexicon.token_distribution`` /
+``.package_distributions`` / ``.concept_ownership``,
+``Structure.dependency_graph``); narration transforms live on the
+returned records. This rule is the thin emission layer.
 """
 from __future__ import annotations
 
@@ -30,10 +37,13 @@ from slop.linter.tags import Tag
 from slop.linter.types import RuleDefinition, RuleResult
 
 if TYPE_CHECKING:
-    from slop.lexicon.view import Lexicon
+    from slop.tree.tree import Tree
 
 
 _RULE = Tag.VOCABULARY.key
+
+# How many leading tokens to analyse for cross-package ownership.
+_OWNERSHIP_TOP = 20
 
 # Universal scaffolding tokens carry no concept signal; exclude them so the
 # distribution reflects domain vocabulary, not boilerplate.
@@ -41,6 +51,41 @@ _NOISE = frozenset({
     "get", "set", "to", "from", "of", "for", "is", "as", "the", "a", "an",
     "init", "self", "cls", "run", "main", "args", "kwargs",
 })
+
+
+def _narrate_ownership(ownership) -> str:
+    """Claim-free narration of cross-package concept ownership.
+
+    The only actionable class is ``displaced_unexplained``: a token that
+    names a package but is owned elsewhere WITHOUT the owner importing that
+    package (so the owner can't be a mere consumer). Cohesive and
+    cross-cutting counts are reported as context, not as a claim.
+    """
+    if not ownership:
+        return ""
+    buckets: dict[str, list] = {}
+    for o in ownership:
+        buckets.setdefault(o.verdict(), []).append(o)
+    cohesive = len(buckets.get("cohesive", []))
+    crosscut = len(buckets.get("cross_cutting", []))
+    unexplained = buckets.get("displaced_unexplained", [])
+    parts = [
+        f"Concept ownership (top {len(ownership)} tokens): {cohesive} cohesive, "
+        f"{crosscut} cross-cutting plumbing, {len(unexplained)} displaced from "
+        f"their eponymous package without an import link."
+    ]
+    if unexplained:
+        cases = "; ".join(
+            f"`{o.token}` (owned by `{o.owner}`, not `{o.token}/`; "
+            f"`{o.owner}` doesn't import `{o.token}/`)"
+            for o in unexplained[:5]
+        )
+        parts.append(
+            f"Unexplained displacement worth inspecting: {cases}. The owner "
+            f"uses the concept's name but has no dependency on the package "
+            f"that owns it — check whether it reinvents rather than reuses."
+        )
+    return " ".join(parts)
 
 
 def _narrate_packages(packages, min_distinct: int) -> str:
@@ -66,9 +111,15 @@ def _narrate_packages(packages, min_distinct: int) -> str:
 
 
 def run(
-    lexicon: "Lexicon", rule_config: Rule, slop_config: Config,
+    tree: "Tree", rule_config: Rule, slop_config: Config,
 ) -> RuleResult:
-    """Emit one observation describing the identifier token distribution."""
+    """Emit one observation describing the identifier token distribution.
+
+    Cross-view (``view="tree"``): the global + within-namespace axes come
+    from the Lexicon; the across-namespace owner-displacement gate needs the
+    Structure import graph.
+    """
+    lexicon = tree.lexicon
     top = int(rule_config.params.get("top_tokens", 15))
     pkg_min_distinct = int(rule_config.params.get("package_min_distinct", 40))
     severity = rule_config.severity
@@ -84,8 +135,8 @@ def run(
 
     # Within-namespace decomposition: per-package hapax density. A flat
     # global distribution is a Zipf near-invariant; the variance lives
-    # within the codebase, across its packages. This is a raw ranked
-    # listing (instrumentation), NOT a deviation-vs-norm verdict.
+    # within the codebase, across its packages. Raw ranked listing
+    # (instrumentation), NOT a deviation-vs-norm verdict.
     packages = lexicon.package_distributions(
         min_distinct=pkg_min_distinct, exclude=_NOISE,
     )
@@ -95,14 +146,28 @@ def run(
         for pkg, d in packages
     ]
 
+    # Across-namespace: per-token owner concentration, with the import graph
+    # gating owner-displacement (owner that imports the eponymous package is
+    # a legitimate consumer, not an escape). Only unexplained displacement
+    # is signal.
+    ownership = lexicon.concept_ownership(
+        tree.structure.dependency_graph(), exclude=_NOISE, top=_OWNERSHIP_TOP,
+    )
+
     data = dist.as_dict()
     data["per_package"] = per_package
     data["package_min_distinct"] = pkg_min_distinct
+    data["concept_ownership"] = [o.as_dict() for o in ownership]
 
     message = dist.narrate()
     within = _narrate_packages(packages, pkg_min_distinct)
     if within:
         message = f"{message} {within}"
+    across = _narrate_ownership(ownership)
+    if across:
+        message = f"{message} {across}"
+
+    displaced = sum(1 for o in ownership if o.verdict() == "displaced_unexplained")
 
     observation = Slop(
         rule=_RULE,
@@ -130,6 +195,7 @@ def run(
             "zipf_alpha": round(dist.zipf_alpha, 3),
             "zipf_r2": round(dist.zipf_r2, 3),
             "packages_analyzed": len(per_package),
+            "displaced_concepts": displaced,
         },
     )
 
@@ -137,10 +203,10 @@ def run(
 RULE = RuleDefinition(
     name=_RULE,
     category=_RULE,
-    description="Identifier token distribution (Zipf/hapax) — claim-free observation, no verdict",
+    description="Identifier token distribution (Zipf/hapax + namespace decomposition) — claim-free observation, no verdict",
     default_severity="info",
     default_enabled=True,
     threshold_label="observation (no threshold)",
     run=run,
-    view="lexicon",
+    view="tree",
 )

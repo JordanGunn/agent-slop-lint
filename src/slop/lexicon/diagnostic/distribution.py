@@ -292,6 +292,50 @@ class TokenDistribution:
         return " ".join(parts)
 
 
+@dataclass(frozen=True)
+class ConceptOwnership:
+    """Cross-view ownership of one concept token across packages.
+
+    The across-namespace axis: where a token's uses concentrate, and
+    whether a token that *names* a package actually lives there. Needs the
+    structural import graph (passed in) to gate owner-displacement — a
+    concept whose lexical owner merely *imports* its eponymous package is
+    a legitimate consumer (layering), not an escape.
+    """
+
+    token: str
+    total: int
+    owner: str                       # package with the most uses
+    concentration: float             # owner's share of the token's uses
+    package_count: int               # distinct packages the token touches
+    names_package: bool              # the token is itself a package name
+    displaced: bool                  # names a package but is owned elsewhere
+    owner_imports_eponymous: bool    # the gate: owner imports the eponymous package
+
+    def verdict(self) -> str:
+        """Classify: the only actionable class is ``displaced_unexplained``."""
+        if self.displaced and not self.owner_imports_eponymous:
+            return "displaced_unexplained"
+        if self.displaced:
+            return "displaced_explained"      # layering — suppressed
+        if self.package_count >= 4 and self.concentration < 0.5:
+            return "cross_cutting"            # generic plumbing, no owner
+        return "cohesive"
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "token": self.token,
+            "total": self.total,
+            "owner": self.owner,
+            "concentration": round(self.concentration, 3),
+            "package_count": self.package_count,
+            "names_package": self.names_package,
+            "displaced": self.displaced,
+            "owner_imports_eponymous": self.owner_imports_eponymous,
+            "verdict": self.verdict(),
+        }
+
+
 def token_distribution(
     freq: Mapping[str, int], *, top: int = 15,
 ) -> TokenDistribution:

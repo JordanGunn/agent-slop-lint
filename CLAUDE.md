@@ -93,7 +93,7 @@ slop/                       <- repo root (docs, LICENSE, NOTICE, README, .slop.t
       test_*.py             Cross-cutting tests (config, output, …)
 ```
 
-Every rule consumes its substrate's view directly (`Structure` or `Lexicon`); the v1.x legacy-kernel underscore-packages have all been retired. Infrastructure primitives (tree-sitter wrapper, fd, ripgrep, git, subprocess) live under their substrate's modules (`tree/parse.py`, `tree/find.py`, `structure/grep.py`, `structure/git.py`, root-level `shell.py`).
+Every rule consumes its substrate's view directly (`Structure` or `Lexicon`), declared via `RuleDefinition.view`; the dispatcher passes `getattr(tree, view)`. The rare cross-view rule declares `view="tree"` and receives the whole `Tree` (both views) — currently only `vocabulary`, which correlates lexical concept ownership with the structural import graph. The v1.x legacy-kernel underscore-packages have all been retired. Infrastructure primitives (tree-sitter wrapper, fd, ripgrep, git, subprocess) live under their substrate's modules (`tree/parse.py`, `tree/find.py`, `structure/grep.py`, `structure/git.py`, root-level `shell.py`).
 
 ## Setup
 

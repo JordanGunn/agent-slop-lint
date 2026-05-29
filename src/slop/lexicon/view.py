@@ -39,7 +39,10 @@ from typing import (
 from slop.tree.records import Callable, Occurrence, ParseResult, ScopeKind
 
 if TYPE_CHECKING:
-    from slop.lexicon.diagnostic.distribution import TokenDistribution
+    from slop.lexicon.diagnostic.distribution import (
+        ConceptOwnership,
+        TokenDistribution,
+    )
 
 from slop.lexicon.tokens import split_tokens as _split_tokens
 
@@ -372,6 +375,48 @@ class Lexicon:
             top=top,
         )
 
+    def _package_map(self) -> dict[str, str]:
+        """Map each parsed file path (str) to its top-level package label.
+
+        Common path prefix, then DESCEND into a dominant source subtree:
+        the scan root is often above the package root (scanning ``src/``
+        where ``slop/`` and ``tests/`` are siblings collapses the whole
+        package into one bucket). While one child directory holds ≥ 2/3 of
+        the files, treat it as part of the root and descend, so grouping
+        lands at the real package level. Files outside the dominant subtree
+        are omitted. Shared by ``package_distributions`` and
+        ``concept_ownership`` so both partition the corpus identically.
+        """
+        paths = [str(path) for path, _ in self.by_file()]
+        if not paths:
+            return {}
+        splits = [p.replace("\\", "/").split("/") for p in paths]
+        depth = 0
+        for segs in zip(*splits):
+            if len(set(segs)) == 1:
+                depth += 1
+            else:
+                break
+        idx = list(range(len(paths)))
+        while True:
+            child_counts: Counter[str] = Counter()
+            for i in idx:
+                if len(splits[i]) > depth + 1:   # a directory segment, not a file
+                    child_counts[splits[i][depth]] += 1
+            if not child_counts:
+                break
+            top, top_n = child_counts.most_common(1)[0]
+            if top_n / sum(child_counts.values()) >= 0.66:
+                idx = [i for i in idx if len(splits[i]) > depth and splits[i][depth] == top]
+                depth += 1
+            else:
+                break
+        out: dict[str, str] = {}
+        for i in idx:
+            rel = splits[i][depth:]
+            out[paths[i]] = rel[0] if len(rel) > 1 else "<root>"
+        return out
+
     def package_distributions(
         self,
         *,
@@ -382,10 +427,9 @@ class Lexicon:
         """Per-top-level-package token distributions, ranked by hapax ratio.
 
         The within-namespace decomposition the flat-global
-        ``token_distribution`` collapses: groups files by their first path
-        component below the corpus's common directory prefix, then computes
-        a ``TokenDistribution`` per package. Returns
-        ``(package_label, distribution)`` sorted by ``hapax_ratio``
+        ``token_distribution`` collapses: groups files by package (see
+        ``_package_map``) and computes a ``TokenDistribution`` per package.
+        Returns ``(package_label, distribution)`` sorted by ``hapax_ratio``
         descending.
 
         ``min_distinct`` is a hard floor on vocabulary size: packages with
@@ -397,45 +441,14 @@ class Lexicon:
         """
         from slop.lexicon.diagnostic.distribution import token_distribution
 
-        pairs = [
-            (str(path).replace("\\", "/").split("/"), sub)
-            for path, sub in self.by_file()
-        ]
-        if not pairs:
+        pmap = self._package_map()
+        if not pmap:
             return []
-
-        # Common path prefix, then DESCEND into a dominant source subtree.
-        # The scan root is often above the package root (e.g. scanning
-        # `src/` where `slop/` and `tests/` are siblings) — grouping there
-        # collapses the whole package into one bucket. While one child
-        # directory holds the bulk of files, treat it as part of the root
-        # and descend, so grouping lands at the real package level.
-        common: list[str] = []
-        for segs in zip(*(parts for parts, _ in pairs)):
-            if len(set(segs)) == 1:
-                common.append(segs[0])
-            else:
-                break
-        depth = len(common)
-        scope = pairs
-        while True:
-            child_counts: Counter[str] = Counter()
-            for parts, _ in scope:
-                if len(parts) > depth + 1:   # a directory segment, not a file
-                    child_counts[parts[depth]] += 1
-            if not child_counts:
-                break
-            top, top_n = child_counts.most_common(1)[0]
-            if top_n / sum(child_counts.values()) >= 0.66:
-                scope = [p for p in scope if len(p[0]) > depth and p[0][depth] == top]
-                depth += 1
-            else:
-                break
-
         groups: dict[str, Counter[str]] = {}
-        for parts, sub in scope:
-            rel = parts[depth:]
-            pkg = rel[0] if len(rel) > 1 else "<root>"
+        for path, sub in self.by_file():
+            pkg = pmap.get(str(path))
+            if pkg is None:
+                continue
             groups.setdefault(pkg, Counter()).update(
                 sub.frequencies(
                     exclude=exclude, include_parameters=include_parameters,
@@ -448,6 +461,80 @@ class Lexicon:
             if dist.distinct >= min_distinct:
                 out.append((pkg, dist))
         out.sort(key=lambda kv: kv[1].hapax_ratio, reverse=True)
+        return out
+
+    def concept_ownership(
+        self,
+        dependency_graph: Any,
+        *,
+        exclude: frozenset[str] = frozenset(),
+        top: int = 20,
+        include_parameters: bool = True,
+    ) -> list["ConceptOwnership"]:
+        """Cross-view: per-token owner package + concentration, import-gated.
+
+        The across-namespace axis. For each of the ``top`` most-frequent
+        tokens: which package holds the most uses (``owner``), the owner's
+        share (``concentration``), and how many packages it touches. A token
+        that NAMES a package but is owned elsewhere is *displaced*;
+        ``dependency_graph`` (a ``Structure.dependency_graph()`` result, with
+        file→file ``efferent`` edges) gates that — if the owner package
+        merely imports the eponymous package, the displacement is legitimate
+        layering (a consumer mentions what it imports) and is classified
+        ``displaced_explained``. Only ``displaced_unexplained`` is signal.
+
+        This is the cross-view rule's reason to exist: lexical ownership
+        alone can't tell reinvention from consumption; the import graph can.
+        """
+        from slop.lexicon.diagnostic.distribution import ConceptOwnership
+
+        pmap = self._package_map()
+        if not pmap:
+            return []
+        packages = set(pmap.values())
+
+        tok_pkg: dict[str, Counter[str]] = {}
+        glob: Counter[str] = Counter()
+        for path, sub in self.by_file():
+            pkg = pmap.get(str(path))
+            if pkg is None:
+                continue
+            for tok, n in sub.frequencies(
+                exclude=exclude, include_parameters=include_parameters,
+            ).items():
+                tok_pkg.setdefault(tok, Counter())[pkg] += n
+                glob[tok] += n
+
+        # Aggregate file→file import edges up to package→package.
+        pkg_imports: dict[str, set[str]] = {}
+        for src, targets in getattr(dependency_graph, "efferent", {}).items():
+            src_pkg = pmap.get(src)
+            if src_pkg is None:
+                continue
+            bucket = pkg_imports.setdefault(src_pkg, set())
+            for tgt in targets:
+                tgt_pkg = pmap.get(tgt)
+                if tgt_pkg is not None and tgt_pkg != src_pkg:
+                    bucket.add(tgt_pkg)
+
+        out: list["ConceptOwnership"] = []
+        for tok, _ in glob.most_common(top):
+            dist = tok_pkg[tok]
+            total = sum(dist.values())
+            owner, owner_n = dist.most_common(1)[0]
+            names_pkg = tok in packages
+            displaced = names_pkg and owner != tok
+            linked = displaced and tok in pkg_imports.get(owner, set())
+            out.append(ConceptOwnership(
+                token=tok,
+                total=total,
+                owner=owner,
+                concentration=owner_n / total,
+                package_count=len(dist),
+                names_package=names_pkg,
+                displaced=displaced,
+                owner_imports_eponymous=linked,
+            ))
         return out
 
     def frequency_head(

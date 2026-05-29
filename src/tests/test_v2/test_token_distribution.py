@@ -156,3 +156,58 @@ class TestPackageDistributions:
         pds = _lexicon(tmp_path).package_distributions(min_distinct=2)
         names = {pkg for pkg, _ in pds}
         assert names == {"aa", "bb"}  # descended into src/, split its packages
+
+
+class _FakeGraph:
+    """Stand-in for Structure.dependency_graph(): only `.efferent` is read."""
+    def __init__(self, efferent):
+        self.efferent = efferent
+
+
+class TestConceptOwnership:
+    def _displaced_corpus(self, root: Path):
+        # widget/ DEFINES the concept; rogue/ OWNS the `widget` token by usage
+        (root / "widget").mkdir()
+        (root / "widget" / "m.py").write_text("class Widget: pass\n")
+        (root / "rogue").mkdir()
+        (root / "rogue" / "m.py").write_text(
+            "def widget_make(): pass\n"
+            "def widget_drop(): pass\n"
+            "def widget_scan(): pass\n"
+        )
+        lex = _lexicon(root)
+        paths = [str(p) for p, _ in lex.by_file()]
+        rogue = next(p for p in paths if "rogue" in p)
+        widget = next(p for p in paths if "widget" in p)
+        return lex, rogue, widget
+
+    def test_unexplained_displacement_when_no_import(self, tmp_path: Path):
+        lex, _rogue, _widget = self._displaced_corpus(tmp_path)
+        own = lex.concept_ownership(_FakeGraph({}), top=20)
+        w = next(o for o in own if o.token == "widget")
+        assert w.owner == "rogue"          # owned by usage, not by definition
+        assert w.displaced is True         # `widget` names a package it doesn't own
+        assert w.owner_imports_eponymous is False
+        assert w.verdict() == "displaced_unexplained"
+
+    def test_import_gate_suppresses_displacement(self, tmp_path: Path):
+        lex, rogue, widget = self._displaced_corpus(tmp_path)
+        # rogue imports widget -> the owner is a legitimate consumer
+        own = lex.concept_ownership(_FakeGraph({rogue: {widget}}), top=20)
+        w = next(o for o in own if o.token == "widget")
+        assert w.displaced is True
+        assert w.owner_imports_eponymous is True
+        assert w.verdict() == "displaced_explained"   # gated out, not surfaced
+
+    def test_cohesive_token_not_displaced(self, tmp_path: Path):
+        # a token that doesn't name any package is never "displaced"
+        (tmp_path / "core").mkdir()
+        (tmp_path / "core" / "m.py").write_text(
+            "def parse_alpha(): pass\ndef parse_beta(): pass\ndef parse_gamma(): pass\n"
+        )
+        lex = _lexicon(tmp_path)
+        own = lex.concept_ownership(_FakeGraph({}), top=20)
+        parse = next(o for o in own if o.token == "parse")
+        assert parse.names_package is False
+        assert parse.displaced is False
+        assert parse.verdict() in {"cohesive", "cross_cutting"}

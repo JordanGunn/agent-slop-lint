@@ -17,10 +17,10 @@ from slop.linter.slop import Action, Disposition
 from slop.tree.tree import Tree
 
 
-def _lexicon(root: Path):
+def _tree(root: Path):
     t = Tree(root)
     t.scan()
-    return t.lexicon
+    return t
 
 
 def _rc() -> Rule:
@@ -42,14 +42,14 @@ def _corpus(root: Path) -> None:
 class TestObservationContract:
     def test_emits_observation_not_violation(self, tmp_path: Path):
         _corpus(tmp_path)
-        result = vocabulary.run(_lexicon(tmp_path), _rc(), _sc(tmp_path))
+        result = vocabulary.run(_tree(tmp_path), _rc(), _sc(tmp_path))
         assert result.status == "pass"
         assert result.violations == []
         assert len(result.observations) == 1
 
     def test_observation_shape(self, tmp_path: Path):
         _corpus(tmp_path)
-        ob = vocabulary.run(_lexicon(tmp_path), _rc(), _sc(tmp_path)).observations[0]
+        ob = vocabulary.run(_tree(tmp_path), _rc(), _sc(tmp_path)).observations[0]
         assert ob.rule == "vocabulary"
         assert ob.disposition == Disposition.OBSERVATION
         assert ob.action == Action.INVESTIGATE
@@ -61,7 +61,7 @@ class TestObservationContract:
 
     def test_summary_reports_a_count(self, tmp_path: Path):
         _corpus(tmp_path)
-        result = vocabulary.run(_lexicon(tmp_path), _rc(), _sc(tmp_path))
+        result = vocabulary.run(_tree(tmp_path), _rc(), _sc(tmp_path))
         # tokens_analyzed must be > 0 so the zero-checked safeguard stays quiet
         assert result.summary["tokens_analyzed"] > 0
 
@@ -77,7 +77,7 @@ class TestObservationContract:
         )
         rc = Rule(enabled=True, severity="info",
                   params={"top_tokens": 15, "package_min_distinct": 2})
-        ob = vocabulary.run(_lexicon(tmp_path), rc, _sc(tmp_path)).observations[0]
+        ob = vocabulary.run(_tree(tmp_path), rc, _sc(tmp_path)).observations[0]
         data = ob.evidence.data
         assert "per_package" in data
         assert data["package_min_distinct"] == 2
@@ -88,9 +88,20 @@ class TestObservationContract:
 
     def test_empty_corpus_emits_nothing(self, tmp_path: Path):
         (tmp_path / "empty.py").write_text("\n")
-        result = vocabulary.run(_lexicon(tmp_path), _rc(), _sc(tmp_path))
+        result = vocabulary.run(_tree(tmp_path), _rc(), _sc(tmp_path))
         assert result.observations == []
         assert result.summary["tokens_analyzed"] == 0
+
+    def test_cross_view_across_axis_present(self, tmp_path: Path):
+        _corpus(tmp_path)
+        ob = vocabulary.run(_tree(tmp_path), _rc(), _sc(tmp_path)).observations[0]
+        # the across-axis (needs the Structure import graph) flowed through
+        assert "concept_ownership" in ob.evidence.data
+        assert "Concept ownership" in ob.message
+
+    def test_rule_is_cross_view(self):
+        # the dispatcher passes the whole Tree only when view == "tree"
+        assert vocabulary.RULE.view == "tree"
 
 
 class TestVerdictUnaffected:
