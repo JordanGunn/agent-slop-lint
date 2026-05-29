@@ -70,7 +70,6 @@ class Tag(StrEnum):
     SLACKERS = "slackers"
     CONFUSION = "confusion"
     RUNTS = "runts"
-    CHANGELINGS = "changelings"
 
     @property
     def parent(self) -> str:

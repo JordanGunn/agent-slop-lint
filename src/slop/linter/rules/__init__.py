@@ -16,7 +16,6 @@ from __future__ import annotations
 from slop.linter.types import RuleDefinition
 
 from . import (
-    changelings,
     clone_density,
     cognitive,
     combinatorial,
@@ -82,7 +81,6 @@ RULE_REGISTRY: list[RuleDefinition] = [
     slackers.RULE,
     confusion.RULE,
     runts.RULE,
-    changelings.RULE,
     # cross-cutting (need git churn or whole-repo ripgrep)
     hotspots.RULE,
     orphans.RULE,

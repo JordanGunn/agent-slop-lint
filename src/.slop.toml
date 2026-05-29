@@ -206,12 +206,6 @@ enabled = true
 max_init_lines = 5
 severity = "warning"
 
-[rules.changelings]
-enabled = true
-min_occurrences = 1
-max_occurrences = 4
-severity = "warning"
-
 
 # ---- Waivers ----------------------------------------------------------------
 

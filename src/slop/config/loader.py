@@ -288,12 +288,6 @@ DEFAULT_RULE_CONFIGS: dict[str, dict[str, Any]] = {
         "severity": "warning",
         "max_init_lines": 5,
     },
-    Tag.CHANGELINGS.key: {
-        "enabled": True,
-        "severity": "warning",
-        "min_occurrences": 1,
-        "max_occurrences": 4,
-    },
 }
 
 

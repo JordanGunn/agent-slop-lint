@@ -33,7 +33,6 @@ class Action(StrEnum):
     DROP_REDUNDANT_TOKENS = "drop-redundant-tokens"
     RENAME_BY_TEMPLATE = "rename-by-template"
     REPLACE_WITH_DOMAIN_TERM = "replace-with-domain-term"
-    REPLACE_WITH_SYMBOL = "replace-with-symbol"
     REDUCE_COMPLEXITY = "reduce-complexity"
     REVIEW_INTENT = "review-intent"
     ACCEPT_AS_FRAMEWORK = "accept-as-framework"
