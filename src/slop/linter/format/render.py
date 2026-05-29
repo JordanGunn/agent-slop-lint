@@ -11,6 +11,10 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from slop.cli.color import bold, dim, green, red, yellow
+
+# Observation glyph (U+2139 INFORMATION SOURCE) — distinct from the ✗/⚠
+# verdict markers so a claim-free nudge never reads as a defect.
+_INFO_GLYPH = "ℹ"
 from slop.linter.result import Result
 from slop.linter.types import RuleResult
 from slop.linter.slop import Slop
@@ -99,6 +103,7 @@ def _render_category(
     agg = _aggregate_category(rule_pairs)
 
     lines.extend(_render_category_findings(rule_pairs, has_multiple_rules, max_violations))
+    lines.extend(_render_observations(rule_pairs, has_multiple_rules))
 
     # Errors (missing binaries, unreadable files, git failures, …) — surfaced
     # here so silent failures can't render as ✓ clean the way they used to.
@@ -130,6 +135,26 @@ def _render_category_findings(
     return lines
 
 
+def _render_observations(
+    rule_pairs: list[tuple[str, RuleResult]],
+    has_multiple_rules: bool,
+) -> list[str]:
+    """Render claim-free observations: ℹ marker + the narration prose.
+
+    Observations carry no defect, so they render distinctly from
+    violations and are never capped — there is typically one per rule.
+    """
+    lines: list[str] = []
+    for rule_name, rr in _rules_where(rule_pairs, "observations"):
+        indent = "  "
+        if has_multiple_rules:
+            lines.append(f"  {_short_name_for(rule_name)}")
+            indent = "    "
+        for ob in rr.observations:
+            lines.append(f"{indent}{dim(_INFO_GLYPH)} {ob.message}")
+    return lines
+
+
 def _rules_where(
     rule_pairs: list[tuple[str, RuleResult]],
     attr: str,
@@ -152,6 +177,7 @@ class _CategoryAgg:
 
     total_violations: int = 0
     total_waived: int = 0
+    total_observations: int = 0
     checked: int = 0
     ran_rules: int = 0
     has_count: bool = False
@@ -189,6 +215,7 @@ def _aggregate_category(rule_pairs: list[tuple[str, RuleResult]]) -> _CategoryAg
         agg.ran_rules += 1
         agg.total_violations += len(rr.violations)
         agg.total_waived += len(rr.waived_violations)
+        agg.total_observations += len(rr.observations)
         if rr.status == "error":
             agg.has_error_status = True
         for err in rr.errors:
@@ -290,6 +317,11 @@ def _category_summary_line(agg: _CategoryAgg) -> str:
         return f"  {_plural(agg.total_violations, 'violation')}{suffix}{checked_str}"
     if agg.total_waived > 0:
         return f"  {yellow(_plural(agg.total_waived, 'waived', 'waived'))}{checked_str}"
+    # Observation-only category (no verdicts): report the nudge, not "clean".
+    # Observations make no defect claim, so this is not a pass/fail signal.
+    if agg.total_observations > 0:
+        noun = "observation" if agg.total_observations == 1 else "observations"
+        return f"  {dim(_INFO_GLYPH)} {agg.total_observations} {noun}{checked_str}"
     # A rule that ran and reported a count of 0 examined nothing despite
     # being enabled \u2014 almost always a wiring/config error (the bug that
     # hid the complexity family), NOT a clean pass. Make it loud.
@@ -344,6 +376,9 @@ def _format_footer(result: Result) -> str:
         parts.append(yellow(_plural(result.waived_count, "waived", "waived")))
     if not parts:
         parts.append(green("no violations"))
+    if result.observation_count > 0:
+        noun = "observation" if result.observation_count == 1 else "observations"
+        parts.append(dim(f"{result.observation_count} {noun}"))
     parts.append(_plural(result.rules_checked, "rule") + " checked")
     zero_checked = _zero_checked_rules(result)
     if zero_checked:

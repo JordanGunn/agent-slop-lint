@@ -298,4 +298,12 @@ severity = "warning"
 enabled = true
 max_init_lines = 5         # flag __init__.py files with more than this many code lines
 severity = "warning"
+
+# Instrumentation, not a verdict: emits the identifier token distribution
+# (Zipf fit, hapax floor, dominant concepts) as a claim-free observation for
+# an agent to investigate. info severity never affects the exit code.
+[rules.vocabulary]
+enabled = true
+top_tokens = 15            # how many leading concepts to name in the narration
+severity = "info"
 '''

@@ -43,6 +43,7 @@ from . import (
     stutter,
     uselessness,
     verbosity,
+    vocabulary,
     volume,
 )
 
@@ -81,6 +82,8 @@ RULE_REGISTRY: list[RuleDefinition] = [
     slackers.RULE,
     confusion.RULE,
     runts.RULE,
+    # claim-free instrumentation (observation, not verdict)
+    vocabulary.RULE,
     # cross-cutting (need git churn or whole-repo ripgrep)
     hotspots.RULE,
     orphans.RULE,

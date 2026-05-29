@@ -26,6 +26,7 @@ from __future__ import annotations
 from collections import Counter
 from pathlib import Path
 from typing import (
+    TYPE_CHECKING,
     AbstractSet,
     Any,
     Callable as TypingCallable,
@@ -36,6 +37,9 @@ from typing import (
 )
 
 from slop.tree.records import Callable, Occurrence, ParseResult, ScopeKind
+
+if TYPE_CHECKING:
+    from slop.lexicon.diagnostic.distribution import TokenDistribution
 
 from slop.lexicon.tokens import split_tokens as _split_tokens
 
@@ -343,6 +347,30 @@ class Lexicon:
             return 0.0
         hapax = sum(1 for n in freq.values() if n == 1)
         return hapax / len(freq)
+
+    def token_distribution(
+        self,
+        *,
+        top: int = 15,
+        exclude: frozenset[str] = frozenset(),
+        include_parameters: bool = True,
+    ) -> "TokenDistribution":
+        """Characterize this view's token space as a Zipfian distribution.
+
+        The full empirical object the orphaned ``hapax_ratio`` scalar was
+        a single bucket of: vocabulary size, Zipf fit (α + R²),
+        frequency-of-frequencies spectrum, head concentration, top tokens.
+        Carries a ``narrate()`` natural-language transform for agent-facing
+        observation output. Delegates to ``diagnostic.token_distribution``.
+        """
+        from slop.lexicon.diagnostic.distribution import token_distribution
+
+        return token_distribution(
+            self.frequencies(
+                exclude=exclude, include_parameters=include_parameters,
+            ),
+            top=top,
+        )
 
     def frequency_head(
         self,

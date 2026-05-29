@@ -288,6 +288,12 @@ DEFAULT_RULE_CONFIGS: dict[str, dict[str, Any]] = {
         "severity": "warning",
         "max_init_lines": 5,
     },
+    # --- Instrumentation (observation, not verdict; never fails a build) ---
+    Tag.VOCABULARY.key: {
+        "enabled": True,
+        "severity": "info",
+        "top_tokens": 15,
+    },
 }
 
 

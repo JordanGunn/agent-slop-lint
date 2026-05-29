@@ -24,8 +24,8 @@ from slop.config import Config
 from slop.linter.types import RuleDefinition
 
 from slop.lexicon.diagnostic.distribution import (
-    HistogramBin, Summary,
-    histogram_buckets, log_buckets, summary,
+    HistogramBin, Summary, TokenDistribution,
+    histogram_buckets, log_buckets, summary, token_distribution,
 )
 from slop.lexicon.diagnostic.violations import (
     ScopedViolationCount, ViolationCell,
@@ -38,8 +38,8 @@ if TYPE_CHECKING:
 
 __all__ = [
     # distribution
-    "HistogramBin", "Summary",
-    "histogram_buckets", "log_buckets", "summary",
+    "HistogramBin", "Summary", "TokenDistribution",
+    "histogram_buckets", "log_buckets", "summary", "token_distribution",
     # violations
     "ScopedViolationCount", "ViolationCell",
     "count_by_scope", "with_cells", "tabulate_cells", "format_cells",

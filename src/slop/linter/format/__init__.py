@@ -43,6 +43,7 @@ def as_dict(result: Result) -> dict:
             "rules_skipped": result.rules_skipped,
             "violation_count": result.slop_count,
             "advisory_count": result.advisory_count,
+            "observation_count": result.observation_count,
             "waived_count": result.waived_count,
             "result": result.verdict,
         },
@@ -80,10 +81,26 @@ def as_dict(result: Result) -> dict:
                 "threshold": v.threshold,
                 "metadata": v.metadata,
             })
+        observations_out = []
+        for v in rr.observations:
+            observations_out.append({
+                "rule": v.rule,
+                "scope": v.scope,
+                "file": v.file,
+                "line": v.line,
+                "symbol": v.symbol,
+                "message": v.message,
+                "severity": v.severity,
+                "disposition": str(v.disposition),
+                "action": str(v.action) if v.action else None,
+                "evidence": v.evidence.as_dict() if v.evidence else None,
+                "metadata": v.metadata,
+            })
         out["rules"][rule_name] = {
             "status": rr.status,
             "violations": violations_out,
             "waived_violations": waived_out,
+            "observations": observations_out,
             "summary": rr.summary,
             "errors": rr.errors,
         }

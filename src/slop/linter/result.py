@@ -24,6 +24,7 @@ class Result:
     rules_skipped: int = 0
     slop_count: int = 0
     advisory_count: int = 0
+    observation_count: int = 0
     waived_count: int = 0
     verdict: str = "pass"
 

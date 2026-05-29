@@ -206,6 +206,14 @@ enabled = true
 max_init_lines = 5         # flag __init__.py files with more than this many code lines
 severity = "warning"
 
+# Instrumentation, not a verdict: emits the identifier token distribution
+# (Zipf fit, hapax floor, dominant concepts) as a claim-free observation.
+# info severity never affects the exit code.
+[rules.vocabulary]
+enabled = true
+top_tokens = 15
+severity = "info"
+
 # ---- Waivers ----------------------------------------------------------------
 
 [[waivers]]

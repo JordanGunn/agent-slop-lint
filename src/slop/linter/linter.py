@@ -91,6 +91,7 @@ class Linter:
         rules_skipped = 0
         total_violations = 0
         total_advisories = 0
+        total_observations = 0
         total_waived = 0
 
         for rule_def in rules_to_run:
@@ -110,6 +111,7 @@ class Linter:
                     total_violations += 1
                 else:
                     total_advisories += 1
+            total_observations += len(result.observations)
             total_waived += len(result.waived_violations)
 
         return Result(
@@ -122,6 +124,7 @@ class Linter:
             rules_skipped=rules_skipped,
             slop_count=total_violations,
             advisory_count=total_advisories,
+            observation_count=total_observations,
             waived_count=total_waived,
             verdict=overall_status(rule_results, total_violations),
         )
