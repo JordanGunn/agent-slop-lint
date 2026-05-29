@@ -212,6 +212,7 @@ severity = "warning"
 [rules.vocabulary]
 enabled = true
 top_tokens = 15
+package_min_distinct = 40
 severity = "info"
 
 # ---- Waivers ----------------------------------------------------------------

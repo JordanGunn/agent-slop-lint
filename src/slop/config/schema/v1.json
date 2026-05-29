@@ -561,6 +561,9 @@
             },
             "top_tokens": {
               "default": 15
+            },
+            "package_min_distinct": {
+              "default": 40
             }
           }
         }

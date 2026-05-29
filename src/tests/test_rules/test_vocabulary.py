@@ -65,6 +65,27 @@ class TestObservationContract:
         # tokens_analyzed must be > 0 so the zero-checked safeguard stays quiet
         assert result.summary["tokens_analyzed"] > 0
 
+    def test_within_namespace_evidence_present(self, tmp_path: Path):
+        # two packages, each with enough vocabulary to clear a low floor
+        (tmp_path / "pkg_a").mkdir()
+        (tmp_path / "pkg_a" / "m.py").write_text(
+            "def aa_one(): pass\ndef aa_two(): pass\ndef aa_three(): pass\n"
+        )
+        (tmp_path / "pkg_b").mkdir()
+        (tmp_path / "pkg_b" / "m.py").write_text(
+            "def node_load(node): return node\ndef node_save(node): return node\n"
+        )
+        rc = Rule(enabled=True, severity="info",
+                  params={"top_tokens": 15, "package_min_distinct": 2})
+        ob = vocabulary.run(_lexicon(tmp_path), rc, _sc(tmp_path)).observations[0]
+        data = ob.evidence.data
+        assert "per_package" in data
+        assert data["package_min_distinct"] == 2
+        pkgs = {row["package"] for row in data["per_package"]}
+        assert {"pkg_a", "pkg_b"} <= pkgs
+        # narration appended the per-package listing
+        assert "Per-package" in ob.message
+
     def test_empty_corpus_emits_nothing(self, tmp_path: Path):
         (tmp_path / "empty.py").write_text("\n")
         result = vocabulary.run(_lexicon(tmp_path), _rc(), _sc(tmp_path))

@@ -102,3 +102,57 @@ class TestLexiconViewMethod:
 
     def test_norm_constants_exposed(self):
         assert 0.0 < HAPAX_RATIO_NORM < 1.0
+
+
+class TestPackageDistributions:
+    def _two_pkg_corpus(self, root: Path) -> None:
+        # pkg_hi: every identifier token distinct -> high hapax ratio
+        (root / "pkg_hi").mkdir()
+        (root / "pkg_hi" / "m.py").write_text(
+            "def alpha_one(): pass\n"
+            "def beta_two(): pass\n"
+            "def gamma_three(): pass\n"
+            "def delta_four(): pass\n"
+        )
+        # pkg_lo: one token reused heavily -> low hapax ratio
+        (root / "pkg_lo").mkdir()
+        (root / "pkg_lo" / "m.py").write_text(
+            "def node_load(node): return node\n"
+            "def node_save(node): return node\n"
+            "def node_walk(node): return node\n"
+            "def node_drop(node): return node\n"
+        )
+
+    def test_groups_by_package_and_ranks_by_hapax(self, tmp_path: Path):
+        self._two_pkg_corpus(tmp_path)
+        pds = _lexicon(tmp_path).package_distributions(min_distinct=3)
+        names = [pkg for pkg, _ in pds]
+        assert set(names) == {"pkg_hi", "pkg_lo"}
+        # highest hapax ratio first
+        assert names[0] == "pkg_hi"
+        assert pds[0][1].hapax_ratio > pds[1][1].hapax_ratio
+
+    def test_min_distinct_floor_drops_small_packages(self, tmp_path: Path):
+        self._two_pkg_corpus(tmp_path)
+        # floor above either package's vocabulary size -> nothing survives
+        pds = _lexicon(tmp_path).package_distributions(min_distinct=999)
+        assert pds == []
+
+    def test_descends_into_dominant_subtree(self, tmp_path: Path):
+        # scan root above the package root: a dominant `src/` subtree with
+        # sibling `docs/`. Grouping must descend into src/ and split its
+        # subpackages, not collapse everything into one `src` bucket.
+        src = tmp_path / "src"
+        (src / "aa").mkdir(parents=True)
+        (src / "bb").mkdir(parents=True)
+        (src / "aa" / "m.py").write_text(
+            "def aa_one(): pass\ndef aa_two(): pass\ndef aa_three(): pass\n"
+        )
+        (src / "bb" / "m.py").write_text(
+            "def bb_one(): pass\ndef bb_two(): pass\ndef bb_three(): pass\n"
+        )
+        (tmp_path / "docs").mkdir()
+        (tmp_path / "docs" / "tiny.py").write_text("x = 1\n")
+        pds = _lexicon(tmp_path).package_distributions(min_distinct=2)
+        names = {pkg for pkg, _ in pds}
+        assert names == {"aa", "bb"}  # descended into src/, split its packages

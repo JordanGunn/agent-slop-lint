@@ -293,6 +293,7 @@ DEFAULT_RULE_CONFIGS: dict[str, dict[str, Any]] = {
         "enabled": True,
         "severity": "info",
         "top_tokens": 15,
+        "package_min_distinct": 40,
     },
 }
 

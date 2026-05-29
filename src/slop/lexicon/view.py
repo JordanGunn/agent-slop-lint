@@ -372,6 +372,84 @@ class Lexicon:
             top=top,
         )
 
+    def package_distributions(
+        self,
+        *,
+        min_distinct: int = 40,
+        exclude: frozenset[str] = frozenset(),
+        include_parameters: bool = True,
+    ) -> list[tuple[str, "TokenDistribution"]]:
+        """Per-top-level-package token distributions, ranked by hapax ratio.
+
+        The within-namespace decomposition the flat-global
+        ``token_distribution`` collapses: groups files by their first path
+        component below the corpus's common directory prefix, then computes
+        a ``TokenDistribution`` per package. Returns
+        ``(package_label, distribution)`` sorted by ``hapax_ratio``
+        descending.
+
+        ``min_distinct`` is a hard floor on vocabulary size: packages with
+        fewer than this many distinct tokens are dropped, because per-package
+        hapax inverts on small samples (a 2-token package reads 1.0). The
+        floor is an admitted, *uncalibrated* cutoff — instrumentation, not a
+        validated threshold. Emit results as a claim-free observation, never
+        a verdict.
+        """
+        from slop.lexicon.diagnostic.distribution import token_distribution
+
+        pairs = [
+            (str(path).replace("\\", "/").split("/"), sub)
+            for path, sub in self.by_file()
+        ]
+        if not pairs:
+            return []
+
+        # Common path prefix, then DESCEND into a dominant source subtree.
+        # The scan root is often above the package root (e.g. scanning
+        # `src/` where `slop/` and `tests/` are siblings) — grouping there
+        # collapses the whole package into one bucket. While one child
+        # directory holds the bulk of files, treat it as part of the root
+        # and descend, so grouping lands at the real package level.
+        common: list[str] = []
+        for segs in zip(*(parts for parts, _ in pairs)):
+            if len(set(segs)) == 1:
+                common.append(segs[0])
+            else:
+                break
+        depth = len(common)
+        scope = pairs
+        while True:
+            child_counts: Counter[str] = Counter()
+            for parts, _ in scope:
+                if len(parts) > depth + 1:   # a directory segment, not a file
+                    child_counts[parts[depth]] += 1
+            if not child_counts:
+                break
+            top, top_n = child_counts.most_common(1)[0]
+            if top_n / sum(child_counts.values()) >= 0.66:
+                scope = [p for p in scope if len(p[0]) > depth and p[0][depth] == top]
+                depth += 1
+            else:
+                break
+
+        groups: dict[str, Counter[str]] = {}
+        for parts, sub in scope:
+            rel = parts[depth:]
+            pkg = rel[0] if len(rel) > 1 else "<root>"
+            groups.setdefault(pkg, Counter()).update(
+                sub.frequencies(
+                    exclude=exclude, include_parameters=include_parameters,
+                ),
+            )
+
+        out: list[tuple[str, "TokenDistribution"]] = []
+        for pkg, freq in groups.items():
+            dist = token_distribution(freq)
+            if dist.distinct >= min_distinct:
+                out.append((pkg, dist))
+        out.sort(key=lambda kv: kv[1].hapax_ratio, reverse=True)
+        return out
+
     def frequency_head(
         self,
         *,

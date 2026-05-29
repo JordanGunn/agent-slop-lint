@@ -305,5 +305,6 @@ severity = "warning"
 [rules.vocabulary]
 enabled = true
 top_tokens = 15            # how many leading concepts to name in the narration
+package_min_distinct = 40  # per-package hapax listing skips packages below this vocab size
 severity = "info"
 '''
