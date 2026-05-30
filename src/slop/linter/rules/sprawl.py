@@ -19,7 +19,7 @@ algorithm grounding.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Iterable
 
 from slop.linter.rule import Rule
 from slop.config import Config
@@ -77,6 +77,184 @@ def _dispatch_family_names(lexicon: Lexicon, root: Path, exempt_names: frozenset
     return frozenset(names)
 
 
+# ---- finding-construction helpers --------------------------------------
+#
+# ``run`` used to inline anchor-finding, member-collection and the
+# dispatch branching twice (once per finding kind), which exploded its
+# NPath into the hundred-thousands. These pull the nested searches and
+# the per-kind Slop construction out, leaving ``run`` two flat loops.
+
+
+def _anchor_for(clusters: Iterable[Any], keys: Iterable[str]) -> tuple[str, int]:
+    """First ``(file, line)`` anchor for any of ``keys`` across patterns.
+
+    Returns ``("", 0)`` when no key has a located member — callers fall
+    back to the ``<aggregate>`` sentinel.
+    """
+    key_list = list(keys)
+    for cluster in clusters:
+        for pattern in cluster.patterns:
+            for key in key_list:
+                members = pattern.variants.get(key)
+                if members:
+                    _, anchor_file, anchor_line = members[0]
+                    return anchor_file, anchor_line
+    return "", 0
+
+
+def _child_members(clusters: Iterable[Any], child: str) -> set[str]:
+    """All variant member names recorded for ``child`` across patterns."""
+    out: set[str] = set()
+    for cluster in clusters:
+        for pattern in cluster.patterns:
+            members = pattern.variants.get(child)
+            if members:
+                for name, _, _ in members:
+                    out.add(name)
+    return out
+
+
+def _extent_in_dispatch(
+    clusters: Iterable[Any], extent: Iterable[str], dispatch_names: frozenset[str],
+) -> bool:
+    """Whether any extent entity's members belong to a dispatch family."""
+    extent_set = set(extent)
+    for cluster in clusters:
+        for pattern in cluster.patterns:
+            for entity in extent_set:
+                members = pattern.variants.get(entity)
+                if members and any(name in dispatch_names for name, _, _ in members):
+                    return True
+    return False
+
+
+def _inheritance_finding(
+    parent: str, child: str, clusters: Iterable[Any],
+    dispatch_names: frozenset[str], severity: str,
+) -> Slop:
+    """Build the Slop for one inheritance pair (dispatch-aware)."""
+    clusters = list(clusters)
+    anchor_file, anchor_line = _anchor_for(clusters, (child,))
+    in_dispatch = bool(_child_members(clusters, child) & dispatch_names)
+
+    if in_dispatch:
+        advice = (
+            f"The shared operations reflect a dispatch/plugin "
+            f"pattern — the naming overlap is structural, not a "
+            f"missing type hierarchy. Consider extracting shared "
+            f"logic into a helper rather than introducing a class."
+        )
+        action = Action.REVIEW_INTENT
+        prescription = (
+            f"`{child}` and `{parent}` are functions in a dispatch "
+            f"family — the naming overlap is structural. Extract "
+            f"shared logic into a helper if the bodies converge."
+        )
+        confidence = 0.5
+    else:
+        advice = (
+            f"Candidate refactor: introduce class "
+            f"`{parent.capitalize()}` and `class "
+            f"{child.capitalize()}({parent.capitalize()})` to make "
+            f"the inheritance explicit."
+        )
+        action = Action.EXTRACT_CLASS
+        prescription = (
+            f"Introduce a class hierarchy: `class "
+            f"{parent.capitalize()}` and `class "
+            f"{child.capitalize()}({parent.capitalize()})`. "
+            f"The naming template already shows the inheritance."
+        )
+        confidence = 0.65
+
+    return Slop(
+        rule="lexical.sprawl",
+        file=anchor_file or "<aggregate>",
+        line=anchor_line or None,
+        symbol=child,
+        message=(
+            f"`{child}` inherits from `{parent}` (every operation "
+            f"`{parent}` overrides is also overridden by `{child}`, "
+            f"plus more). {advice}"
+        ),
+        severity=severity,
+        action=action,
+        prescription=prescription,
+        confidence=confidence,
+        metadata={
+            "kind": "inheritance_pair",
+            "parent": parent,
+            "child": child,
+            "in_dispatch_family": in_dispatch,
+        },
+    )
+
+
+def _concept_finding(
+    concept: Any, clusters: Iterable[Any],
+    dispatch_names: frozenset[str], severity: str,
+) -> Slop:
+    """Build the Slop for one FCA concept (dispatch-aware)."""
+    clusters = list(clusters)
+    anchor_file, anchor_line = _anchor_for(clusters, concept.extent)
+    entity_list = ", ".join(f"`{e}`" for e in sorted(concept.extent))
+    op_list = ", ".join(f"`{o}`" for o in sorted(concept.intent))
+    extent_in_dispatch = _extent_in_dispatch(
+        clusters, concept.extent, dispatch_names,
+    )
+
+    if extent_in_dispatch:
+        advice = (
+            "These functions belong to a dispatch/plugin family — "
+            "the shared operations reflect a registry pattern, not a "
+            "missing type. Verify the dispatch is intentional."
+        )
+        action = Action.REVIEW_INTENT
+        prescription = (
+            f"Verify the dispatch registry. {len(concept.extent)} "
+            f"entities share {len(concept.intent)} operations; this "
+            f"is a plugin/dispatch pattern, not a missing type."
+        )
+        confidence = 0.5
+    else:
+        advice = (
+            "The alphabet is acting as an undeclared type; "
+            "consider modeling its members as a class."
+        )
+        action = Action.EXTRACT_CLASS
+        prescription = (
+            f"Model the alphabet as a class: {len(concept.extent)} "
+            f"entities ({entity_list}) share {len(concept.intent)} "
+            f"operations ({op_list}). The recurring template is "
+            f"acting as an undeclared type."
+        )
+        confidence = 0.65
+
+    return Slop(
+        rule="lexical.sprawl",
+        file=anchor_file or "<aggregate>",
+        line=anchor_line or None,
+        symbol=f"concept[{len(concept.extent)}×{len(concept.intent)}]",
+        message=(
+            f"Sprawl: {len(concept.extent)} entities "
+            f"({entity_list}) share {len(concept.intent)} operations "
+            f"({op_list}). {advice}"
+        ),
+        severity=severity,
+        action=action,
+        prescription=prescription,
+        confidence=confidence,
+        metadata={
+            "kind": "concept",
+            "extent": sorted(concept.extent),
+            "intent": sorted(concept.intent),
+            "scope": concept.scope,
+            "scope_kind": concept.scope_kind,
+            "in_dispatch_family": extent_in_dispatch,
+        },
+    )
+
+
 def run(
     lexicon: Lexicon, rule_config: Rule, slop_config: Config,
 ) -> RuleResult:
@@ -96,174 +274,21 @@ def run(
     violations: list[Slop] = []
 
     for parent, child in result.inheritance_pairs:
-        anchor_file: str = ""
-        anchor_line: int = 0
-        for cluster in result.clusters:
-            for pattern in cluster.patterns:
-                if child in pattern.variants:
-                    members = pattern.variants[child]
-                    if members:
-                        _, anchor_file, anchor_line = members[0]
-                        break
-            if anchor_file:
-                break
-        child_members = set()
-        for cluster in result.clusters:
-            for pattern in cluster.patterns:
-                if child in pattern.variants:
-                    for name, _, _ in pattern.variants[child]:
-                        child_members.add(name)
-        in_dispatch = bool(child_members & dispatch_names)
-
-        if in_dispatch:
-            advice = (
-                f"The shared operations reflect a dispatch/plugin "
-                f"pattern — the naming overlap is structural, not a "
-                f"missing type hierarchy. Consider extracting shared "
-                f"logic into a helper rather than introducing a class."
-            )
-        else:
-            advice = (
-                f"Candidate refactor: introduce class "
-                f"`{parent.capitalize()}` and `class "
-                f"{child.capitalize()}({parent.capitalize()})` to make "
-                f"the inheritance explicit."
-            )
-
-        if in_dispatch:
-            inh_action = Action.REVIEW_INTENT
-            inh_prescription = (
-                f"`{child}` and `{parent}` are functions in a dispatch "
-                f"family — the naming overlap is structural. Extract "
-                f"shared logic into a helper if the bodies converge."
-            )
-            inh_confidence = 0.5
-        else:
-            inh_action = Action.EXTRACT_CLASS
-            inh_prescription = (
-                f"Introduce a class hierarchy: `class "
-                f"{parent.capitalize()}` and `class "
-                f"{child.capitalize()}({parent.capitalize()})`. "
-                f"The naming template already shows the inheritance."
-            )
-            inh_confidence = 0.65
-        violations.append(Slop(
-            rule="lexical.sprawl",
-            file=anchor_file or "<aggregate>",
-            line=anchor_line or None,
-            symbol=child,
-            message=(
-                f"`{child}` inherits from `{parent}` (every operation "
-                f"`{parent}` overrides is also overridden by `{child}`, "
-                f"plus more). {advice}"
-            ),
-            severity=severity,
-            action=inh_action,
-            prescription=inh_prescription,
-            confidence=inh_confidence,
-            metadata={
-                "kind": "inheritance_pair",
-                "parent": parent,
-                "child": child,
-                "in_dispatch_family": in_dispatch,
-            },
+        violations.append(_inheritance_finding(
+            parent, child, result.clusters, dispatch_names, severity,
         ))
 
     for concept in result.concepts:
         if (len(concept.extent) < min_concept_extent
                 or len(concept.intent) < min_concept_intent):
             continue
-        anchor_file = ""
-        anchor_line = 0
-        for cluster in result.clusters:
-            for pattern in cluster.patterns:
-                for entity in concept.extent:
-                    if entity in pattern.variants and pattern.variants[entity]:
-                        _, anchor_file, anchor_line = pattern.variants[entity][0]
-                        break
-                if anchor_file:
-                    break
-            if anchor_file:
-                break
-        entity_list = ", ".join(f"`{e}`" for e in sorted(concept.extent))
-        op_list = ", ".join(f"`{o}`" for o in sorted(concept.intent))
-
-        # Distribution check: are the extent words part of function names
-        # that belong to a dispatch family? If so, the concept is a
-        # dispatch artifact, not a missing type.
-        extent_in_dispatch = False
-        for cluster in result.clusters:
-            for pattern in cluster.patterns:
-                for entity in concept.extent:
-                    if entity in pattern.variants:
-                        for name, _, _ in pattern.variants[entity]:
-                            if name in dispatch_names:
-                                extent_in_dispatch = True
-                                break
-                    if extent_in_dispatch:
-                        break
-                if extent_in_dispatch:
-                    break
-            if extent_in_dispatch:
-                break
-
-        if extent_in_dispatch:
-            concept_advice = (
-                "These functions belong to a dispatch/plugin family — "
-                "the shared operations reflect a registry pattern, not a "
-                "missing type. Verify the dispatch is intentional."
-            )
-        else:
-            concept_advice = (
-                "The alphabet is acting as an undeclared type; "
-                "consider modeling its members as a class."
-            )
-
-        if extent_in_dispatch:
-            con_action = Action.REVIEW_INTENT
-            con_prescription = (
-                f"Verify the dispatch registry. {len(concept.extent)} "
-                f"entities share {len(concept.intent)} operations; this "
-                f"is a plugin/dispatch pattern, not a missing type."
-            )
-            con_confidence = 0.5
-        else:
-            con_action = Action.EXTRACT_CLASS
-            con_prescription = (
-                f"Model the alphabet as a class: {len(concept.extent)} "
-                f"entities ({entity_list}) share {len(concept.intent)} "
-                f"operations ({op_list}). The recurring template is "
-                f"acting as an undeclared type."
-            )
-            con_confidence = 0.65
-        violations.append(Slop(
-            rule="lexical.sprawl",
-            file=anchor_file or "<aggregate>",
-            line=anchor_line or None,
-            symbol=f"concept[{len(concept.extent)}×{len(concept.intent)}]",
-            message=(
-                f"Sprawl: {len(concept.extent)} entities "
-                f"({entity_list}) share {len(concept.intent)} operations "
-                f"({op_list}). {concept_advice}"
-            ),
-            severity=severity,
-            action=con_action,
-            prescription=con_prescription,
-            confidence=con_confidence,
-            metadata={
-                "kind": "concept",
-                "extent": sorted(concept.extent),
-                "intent": sorted(concept.intent),
-                "scope": concept.scope,
-                "scope_kind": concept.scope_kind,
-                "in_dispatch_family": extent_in_dispatch,
-            },
+        violations.append(_concept_finding(
+            concept, result.clusters, dispatch_names, severity,
         ))
 
-    status = "fail" if violations else "pass"
     return RuleResult(
         rule="lexical.sprawl",
-        status=status,
+        status="fail" if violations else "pass",
         violations=violations,
         summary={
             "functions_checked": result.functions_analyzed,

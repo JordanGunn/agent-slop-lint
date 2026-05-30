@@ -140,87 +140,115 @@ def _check_against_scopes(
             return  # most-immediate match wins
 
 
+def _decode(node, content: bytes) -> str:
+    """Decode a node's source span to text."""
+    return content[node.start_byte:node.end_byte].decode("utf-8", errors="replace")
+
+
+def _ruby_method_name(node, content: bytes) -> str | None:
+    """Name of a Ruby ``method`` / ``singleton_method`` node, or None.
+
+    Walks ``def [self .] <name>`` — the name is the first identifier/operator
+    after ``def`` (and after an optional ``self .`` receiver).
+    """
+    saw_def = saw_self = saw_dot = False
+    for child in node.children:
+        ctype = child.type
+        if ctype == "def":
+            saw_def = True
+            continue
+        if not saw_def:
+            continue
+        if ctype == "self" and not saw_self:
+            saw_self = True
+            continue
+        if ctype == "." and saw_self and not saw_dot:
+            saw_dot = True
+            continue
+        if ctype in ("identifier", "operator"):
+            return _decode(child, content).strip()
+    return None
+
+
+def _cpp_declarator_name(inner, content: bytes) -> str | None:
+    """Name from a resolved C/C++ inner declarator node, or None."""
+    itype = inner.type
+    if itype in ("identifier", "field_identifier"):
+        return _decode(inner, content)
+    if itype == "qualified_identifier":
+        for c in reversed(inner.children):
+            if c.type == "identifier":
+                return _decode(c, content)
+        return None
+    if itype == "operator_name":
+        for c in inner.children:
+            if c.type != "operator":
+                return _decode(c, content).strip()
+        return None
+    if itype == "destructor_name":
+        for c in inner.children:
+            if c.type == "identifier":
+                return "~" + _decode(c, content)
+        return None
+    return None
+
+
+def _cpp_function_name(node, content: bytes) -> str | None:
+    """Name of a C/C++ ``function_definition`` node, or None.
+
+    Unwraps pointer/reference/parenthesized declarators (bounded depth)
+    down to the ``function_declarator`` and resolves its inner declarator.
+    """
+    declarator = node.child_by_field_name("declarator")
+    for _ in range(8):
+        if declarator is None:
+            return None
+        if declarator.type == "function_declarator":
+            inner = declarator.child_by_field_name("declarator")
+            return _cpp_declarator_name(inner, content) if inner is not None else None
+        if declarator.type in (
+            "pointer_declarator", "reference_declarator",
+            "parenthesized_declarator",
+        ):
+            declarator = declarator.child_by_field_name("declarator")
+            continue
+        return None
+    return None
+
+
+def _first_identifier(node, content: bytes) -> str:
+    """Fallback: the first child ``identifier``, else ``<anonymous>``."""
+    for child in node.children:
+        if child.type == "identifier":
+            return _decode(child, content)
+    return "<anonymous>"
+
+
 def _get_name(node, content: bytes) -> str:
     """Extract a function/class node's name — mirrors grammar conventions
-    for languages whose ``name`` field is not present on the node."""
+    for languages whose ``name`` field is not present on the node.
+
+    NOTE: the Ruby/C++ branches are per-language dispatch in shared code
+    (a tabular-dispatch smell); the principled fix is to move name
+    extraction onto the grammar classes. Extracted into helpers here to
+    keep this dispatcher flat.
+    """
     name_node = node.child_by_field_name("name")
     if name_node:
-        return content[name_node.start_byte:name_node.end_byte].decode(
-            "utf-8", errors="replace",
-        )
+        return _decode(name_node, content)
     if node.type in ("lambda", "do_block", "block"):
         return "<lambda>"
     if node.type in ("method", "singleton_method"):
-        saw_def = False
-        saw_self = False
-        saw_dot = False
-        for child in node.children:
-            ctype = child.type
-            if ctype == "def":
-                saw_def = True
-                continue
-            if not saw_def:
-                continue
-            if ctype == "self" and not saw_self:
-                saw_self = True
-                continue
-            if ctype == "." and saw_self and not saw_dot:
-                saw_dot = True
-                continue
-            if ctype in ("identifier", "operator"):
-                return content[child.start_byte:child.end_byte].decode(
-                    "utf-8", errors="replace",
-                ).strip()
+        ruby = _ruby_method_name(node, content)
+        if ruby is not None:
+            return ruby
     if node.type in ("function_definition", "lambda_expression"):
         if node.type == "lambda_expression":
             return "<lambda>"
-        declarator = node.child_by_field_name("declarator")
-        for _ in range(8):
-            if declarator is None:
-                break
-            if declarator.type == "function_declarator":
-                inner = declarator.child_by_field_name("declarator")
-                if inner is None:
-                    break
-                if inner.type in ("identifier", "field_identifier"):
-                    return content[inner.start_byte:inner.end_byte].decode(
-                        "utf-8", errors="replace",
-                    )
-                if inner.type == "qualified_identifier":
-                    for c in reversed(inner.children):
-                        if c.type == "identifier":
-                            return content[c.start_byte:c.end_byte].decode(
-                                "utf-8", errors="replace",
-                            )
-                    break
-                if inner.type == "operator_name":
-                    for c in inner.children:
-                        if c.type != "operator":
-                            return content[c.start_byte:c.end_byte].decode(
-                                "utf-8", errors="replace",
-                            ).strip()
-                    break
-                if inner.type == "destructor_name":
-                    for c in inner.children:
-                        if c.type == "identifier":
-                            return "~" + content[c.start_byte:c.end_byte].decode(
-                                "utf-8", errors="replace",
-                            )
-                    break
-                break
-            if declarator.type in (
-                "pointer_declarator", "reference_declarator",
-                "parenthesized_declarator",
-            ):
-                declarator = declarator.child_by_field_name("declarator")
-                continue
-            break
-    for child in node.children:
-        if child.type == "identifier":
-            return content[child.start_byte:child.end_byte].decode(
-                "utf-8", errors="replace",
-            )
-    return "<anonymous>"
+        cpp = _cpp_function_name(node, content)
+        if cpp is not None:
+            return cpp
+    return _first_identifier(node, content)
 
 
 def _collect_identifier_nodes(node, out) -> None:
