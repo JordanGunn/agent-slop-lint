@@ -1,9 +1,9 @@
-"""Git log primitive for AUx.
+"""Git log primitive for slop.
 
-Provides shared git-history walkers used by history-aware skills (hotspots,
-future: change coupling, ownership churn). Placed in util/ because these are
-primitives — they do not emit AUx-shaped result objects, they just walk
-`git log` and return per-commit records.
+Provides shared git-history walkers used by history-aware rules (hotspots,
+future: change coupling, ownership churn). These are substrate primitives —
+they do not emit slop result objects, they just walk `git log` and return
+per-commit records (consumed by `structure/hotspots.py`).
 
 Two flavours:
     ``git_log_file_changes``  — ``--name-only``, returns file names per commit.
@@ -27,6 +27,7 @@ Failure-mode contract:
 from __future__ import annotations
 
 import subprocess
+from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -108,7 +109,7 @@ class NumstatResult:
 
 _RS = "\x1e"
 _US = "\x1f"
-_FORMAT = f"%x1e%H%x1f%aI%x1f%P"
+_FORMAT = "%x1e%H%x1f%aI%x1f%P"
 
 
 # ---------------------------------------------------------------------------
@@ -160,81 +161,139 @@ def _parse_header(block: str) -> tuple[str, str, int, str] | None:
     return commit_hash, author_date, parent_count, file_text
 
 
-def _parse_log_output(output: str) -> list[CommitRecord]:
-    """Parse ``git log --name-only`` output into CommitRecords."""
-    if not output:
-        return []
+def _iter_commit_blocks(output: str) -> Iterator[tuple[str, str, int, str]]:
+    """Yield ``(hash, date, parent_count, file_text)`` per commit block.
 
-    records: list[CommitRecord] = []
+    Shared skeleton for both log parsers: split on the record separator,
+    skip blank blocks, parse each header (dropping malformed ones). The two
+    parsers differ only in how they turn ``file_text`` into file records.
+    """
+    if not output:
+        return
     for block in output.split(_RS):
         if not block or not block.strip():
             continue
         parsed = _parse_header(block)
-        if parsed is None:
-            continue
-        commit_hash, author_date, parent_count, file_text = parsed
+        if parsed is not None:
+            yield parsed
+
+
+def _parse_log_output(output: str) -> list[CommitRecord]:
+    """Parse ``git log --name-only`` output into CommitRecords."""
+    records: list[CommitRecord] = []
+    for commit_hash, author_date, parent_count, file_text in _iter_commit_blocks(output):
         files = tuple(
             line for line in file_text.split("\n") if line and line.strip()
         )
-        records.append(
-            CommitRecord(
-                commit_hash=commit_hash,
-                author_date=author_date,
-                files_changed=files,
-                parent_count=parent_count,
-            )
-        )
+        records.append(CommitRecord(
+            commit_hash=commit_hash,
+            author_date=author_date,
+            files_changed=files,
+            parent_count=parent_count,
+        ))
     return records
 
 
-def _parse_numstat_log_output(output: str) -> list[NumstatCommitRecord]:
-    """Parse ``git log --numstat`` output into NumstatCommitRecords.
+def _parse_numstat_line(line: str) -> FileChurnRecord | None:
+    """Parse one ``insertions\\tdeletions\\tpath`` numstat line.
 
-    Each file line is ``insertions\\tdeletions\\tpath``.
-    Binary files report ``-\\t-\\tpath`` — mapped to (0, 0).
+    Binary files report ``-`` counts → mapped to 0. Returns None for blank
+    or malformed (< 3 field) lines.
     """
-    if not output:
-        return []
+    line = line.strip()
+    if not line:
+        return None
+    parts = line.split("\t", 2)
+    if len(parts) < 3:
+        return None
+    ins_str, del_str, path = parts
+    insertions = int(ins_str) if ins_str != "-" else 0
+    deletions = int(del_str) if del_str != "-" else 0
+    return FileChurnRecord(file=path, insertions=insertions, deletions=deletions)
 
+
+def _parse_numstat_log_output(output: str) -> list[NumstatCommitRecord]:
+    """Parse ``git log --numstat`` output into NumstatCommitRecords."""
     records: list[NumstatCommitRecord] = []
-    for block in output.split(_RS):
-        if not block or not block.strip():
-            continue
-        parsed = _parse_header(block)
-        if parsed is None:
-            continue
-        commit_hash, author_date, parent_count, file_text = parsed
-
-        file_records: list[FileChurnRecord] = []
-        for line in file_text.split("\n"):
-            line = line.strip()
-            if not line:
-                continue
-            parts = line.split("\t", 2)
-            if len(parts) < 3:
-                continue
-            ins_str, del_str, path = parts
-            # Binary files: "-\t-\tpath"
-            insertions = int(ins_str) if ins_str != "-" else 0
-            deletions = int(del_str) if del_str != "-" else 0
-            file_records.append(
-                FileChurnRecord(file=path, insertions=insertions, deletions=deletions)
-            )
-
-        records.append(
-            NumstatCommitRecord(
-                commit_hash=commit_hash,
-                author_date=author_date,
-                files=tuple(file_records),
-                parent_count=parent_count,
-            )
+    for commit_hash, author_date, parent_count, file_text in _iter_commit_blocks(output):
+        files = tuple(
+            rec
+            for line in file_text.split("\n")
+            if (rec := _parse_numstat_line(line)) is not None
         )
+        records.append(NumstatCommitRecord(
+            commit_hash=commit_hash,
+            author_date=author_date,
+            files=files,
+            parent_count=parent_count,
+        ))
     return records
 
 
 # ---------------------------------------------------------------------------
 # Shared git log infrastructure
 # ---------------------------------------------------------------------------
+
+
+def _validate_log_args(
+    since: str | None, until: str | None, paths: list[str] | None,
+) -> None:
+    """Reject flag-like argument values (git-flag injection guard)."""
+    if since is not None:
+        _reject_flag_like(since, "since")
+    if until is not None:
+        _reject_flag_like(until, "until")
+    for p in paths or ():
+        _reject_flag_like(p, "paths element")
+
+
+def _resolve_repo_root(cwd: Path) -> tuple[Path | None, list[str]]:
+    """Resolve the repo top-level for ``cwd``; ``(None, errors)`` if not a repo."""
+    cwd_for_rev = cwd if cwd.is_dir() else cwd.parent
+    result = run_tool(["git", "rev-parse", "--show-toplevel"], cwd=cwd_for_rev)
+    if not result.ok:
+        err = result.stderr.strip() or f"git rev-parse failed (exit {result.returncode})"
+        return None, [f"not a git repository: {err}"]
+    return Path(result.stdout.strip()), []
+
+
+def _has_commits(repo_root: Path) -> bool:
+    """True if the repo has at least one commit (HEAD resolves)."""
+    return run_tool(
+        ["git", "rev-parse", "--verify", "--quiet", "HEAD"], cwd=repo_root,
+    ).ok
+
+
+def _detect_shallow(repo_root: Path) -> tuple[bool, list[str]]:
+    """Whether the repo is shallow, with a truncation warning if so."""
+    result = run_tool(["git", "rev-parse", "--is-shallow-repository"], cwd=repo_root)
+    if result.ok and result.stdout.strip() == "true":
+        return True, [
+            "repository is shallow; git log history is truncated — "
+            "run `git fetch --unshallow` for complete history"
+        ]
+    return False, []
+
+
+def _build_log_args(
+    log_mode: str,
+    include_merges: bool,
+    since: str | None,
+    until: str | None,
+    paths: list[str] | None,
+) -> list[str]:
+    """Assemble the ``git log`` argv for the requested window and mode."""
+    args = ["git", "log", log_mode, f"--pretty=format:{_FORMAT}"]
+    if not include_merges:
+        args.append("--no-merges")
+    if since is not None:
+        args.append(f"--since={since}")
+    if until is not None:
+        args.append(f"--until={until}")
+    if paths:
+        args.append("--")
+        args.extend(paths)
+    return args
 
 
 def _run_git_log(
@@ -249,95 +308,59 @@ def _run_git_log(
 ) -> tuple[str | None, Path | None, bool, list[str]]:
     """Run ``git log`` and return raw stdout plus metadata.
 
-    Returns (stdout_or_none, repo_root, is_shallow, errors).
-    stdout is None on failure; errors is populated with reasons.
+    Returns ``(stdout_or_none, repo_root, is_shallow, errors)``. stdout is
+    None on failure; "" for an empty repo; errors carries the reasons.
+    Orchestrates the validate → resolve → guard → build → run pipeline.
     """
-    # --- Argument validation (flag-injection guard) ---
-    if since is not None:
-        _reject_flag_like(since, "since")
-    if until is not None:
-        _reject_flag_like(until, "until")
-    if paths is not None:
-        for p in paths:
-            _reject_flag_like(p, "paths element")
+    _validate_log_args(since, until, paths)
 
-    errors: list[str] = []
-
-    # --- Git availability ---
     if which("git") is None:
         return None, None, False, [
             "git not found — install git and ensure it is in PATH"
         ]
 
-    # --- Resolve repo root ---
-    cwd_for_rev = cwd if cwd.is_dir() else cwd.parent
-    top_result = run_tool(
-        ["git", "rev-parse", "--show-toplevel"],
-        cwd=cwd_for_rev,
-    )
-    if not top_result.ok:
-        err = top_result.stderr.strip() or f"git rev-parse failed (exit {top_result.returncode})"
-        return None, None, False, [f"not a git repository: {err}"]
+    repo_root, errors = _resolve_repo_root(cwd)
+    if repo_root is None:
+        return None, None, False, errors
 
-    repo_root = Path(top_result.stdout.strip())
+    if not _has_commits(repo_root):
+        return "", repo_root, False, []   # no commits yet — empty, not an error
 
-    # --- Empty-repo short-circuit ---
-    head_result = run_tool(
-        ["git", "rev-parse", "--verify", "--quiet", "HEAD"],
-        cwd=repo_root,
-    )
-    if not head_result.ok:
-        # No commits yet — return empty stdout, not an error
-        return "", repo_root, False, []
+    is_shallow, errors = _detect_shallow(repo_root)
+    args = _build_log_args(log_mode, include_merges, since, until, paths)
 
-    # --- Shallow repo detection ---
-    shallow_result = run_tool(
-        ["git", "rev-parse", "--is-shallow-repository"],
-        cwd=repo_root,
-    )
-    is_shallow = False
-    if shallow_result.ok and shallow_result.stdout.strip() == "true":
-        is_shallow = True
-        errors.append(
-            "repository is shallow; git log history is truncated — "
-            "run `git fetch --unshallow` for complete history"
-        )
-
-    # --- Build log command ---
-    log_args: list[str] = [
-        "git",
-        "log",
-        log_mode,
-        f"--pretty=format:{_FORMAT}",
-    ]
-    if not include_merges:
-        log_args.append("--no-merges")
-    if since is not None:
-        log_args.append(f"--since={since}")
-    if until is not None:
-        log_args.append(f"--until={until}")
-    if paths:
-        log_args.append("--")
-        log_args.extend(paths)
-
-    # --- Run log ---
     try:
-        log_result = run_tool(log_args, cwd=repo_root, timeout=timeout)
+        result = run_tool(args, cwd=repo_root, timeout=timeout)
     except subprocess.TimeoutExpired:
         errors.append(f"git log timed out after {timeout}s")
         return None, repo_root, is_shallow, errors
 
-    if not log_result.ok:
-        err = log_result.stderr.strip() or f"git log failed (exit {log_result.returncode})"
-        errors.append(err)
+    if not result.ok:
+        errors.append(result.stderr.strip() or f"git log failed (exit {result.returncode})")
         return None, repo_root, is_shallow, errors
 
-    return log_result.stdout, repo_root, is_shallow, errors
+    return result.stdout, repo_root, is_shallow, errors
 
 
 # ---------------------------------------------------------------------------
 # Public entry points
 # ---------------------------------------------------------------------------
+
+
+def _finalize(stdout, repo_root, is_shallow, errors, *, parse, result_cls):
+    """Wrap parser output (or a failure) in the result dataclass.
+
+    ``LogResult`` and ``NumstatResult`` share field names, so one builder
+    serves both — collapsing the near-identical tails of the two walkers.
+    """
+    commits = () if stdout is None else tuple(parse(stdout))
+    return result_cls(
+        commits=commits,
+        repo_root=repo_root,
+        ok=stdout is not None,
+        is_shallow=is_shallow,
+        errors=tuple(errors),
+    )
 
 
 def git_log_file_changes(
@@ -369,17 +392,9 @@ def git_log_file_changes(
         cwd, since=since, until=until, include_merges=include_merges,
         paths=paths, timeout=timeout, log_mode="--name-only",
     )
-
-    if stdout is None:
-        return LogResult(
-            commits=(), repo_root=repo_root, ok=False,
-            is_shallow=is_shallow, errors=tuple(errors),
-        )
-
-    commits = _parse_log_output(stdout)
-    return LogResult(
-        commits=tuple(commits), repo_root=repo_root, ok=True,
-        is_shallow=is_shallow, errors=tuple(errors),
+    return _finalize(
+        stdout, repo_root, is_shallow, errors,
+        parse=_parse_log_output, result_cls=LogResult,
     )
 
 
@@ -416,15 +431,7 @@ def git_log_numstat(
         cwd, since=since, until=until, include_merges=include_merges,
         paths=paths, timeout=timeout, log_mode="--numstat",
     )
-
-    if stdout is None:
-        return NumstatResult(
-            commits=(), repo_root=repo_root, ok=False,
-            is_shallow=is_shallow, errors=tuple(errors),
-        )
-
-    commits = _parse_numstat_log_output(stdout)
-    return NumstatResult(
-        commits=tuple(commits), repo_root=repo_root, ok=True,
-        is_shallow=is_shallow, errors=tuple(errors),
+    return _finalize(
+        stdout, repo_root, is_shallow, errors,
+        parse=_parse_numstat_log_output, result_cls=NumstatResult,
     )
