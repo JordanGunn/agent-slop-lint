@@ -100,6 +100,70 @@ class Lexicon:
     # the bag by default; bring them in via a separate explicit walk if
     # research demands it.
 
+    @staticmethod
+    def _filtered(
+        tokens: Iterable[str], path: Path, exclude: frozenset[str],
+    ) -> Iterator[tuple[str, Path]]:
+        """Lowercase, drop excluded, and pair each token with ``path``."""
+        for t in tokens:
+            tl = t.lower()
+            if tl not in exclude:
+                yield tl, path
+
+    def _entity_tokens(
+        self, exclude: frozenset[str],
+    ) -> Iterator[tuple[str, Path]]:
+        """Tokens from named-entity (callable / class) names."""
+        for entity in self.named_entities():
+            yield from self._filtered(
+                entity.tokens, Path(entity.file), exclude,
+            )
+
+    def _param_tokens(
+        self, exclude: frozenset[str],
+    ) -> Iterator[tuple[str, Path]]:
+        """Tokens from parameter names (excluding ``self`` / ``cls``)."""
+        for c in self.callables():
+            for p in c.parameters:
+                if p.name in ("self", "cls"):
+                    continue
+                yield from self._filtered(
+                    Lexicon.split_tokens(p.name), c.path, exclude,
+                )
+
+    def _callable_body_tokens(
+        self, parse: Any, c: Any, exclude: frozenset[str],
+    ) -> Iterator[tuple[str, Path]]:
+        """Tokens from identifier references inside one callable's body.
+
+        Skips single-underscore-prefixed names (keeps dunders).
+        """
+        node = parse.callable_nodes.get(c.qualname)
+        if node is None:
+            return
+        body = node.child_by_field_name("body") or node
+        content = parse.content
+        for ident in _walk_identifier_nodes(body):
+            name = content[ident.start_byte:ident.end_byte].decode(
+                "utf-8", errors="replace",
+            )
+            if name.startswith("_") and not name.startswith("__"):
+                continue
+            yield from self._filtered(
+                Lexicon.split_tokens(name), c.path, exclude,
+            )
+
+    def _body_tokens(
+        self, exclude: frozenset[str],
+    ) -> Iterator[tuple[str, Path]]:
+        """Tokens from identifier references inside callable bodies. One
+        pair per body occurrence, so spread analyses weight body references
+        the same as signature references."""
+        for parse in self._parses:
+            for c in parse.callables:
+                if all(f(c) for f in self._filters):
+                    yield from self._callable_body_tokens(parse, c, exclude)
+
     def _iter_token_locations(
         self,
         *,
@@ -109,50 +173,14 @@ class Lexicon:
     ) -> Iterator[tuple[str, Path]]:
         """Yield ``(token, path)`` pairs honouring this view's filters.
 
-        ``include_body_identifiers`` walks each callable's body AST and
-        emits tokens from every identifier reference inside (skipping
-        single-underscore-prefixed names but keeping dunders). One
-        ``(token, path)`` per body occurrence — token-spread analyses
-        thus weight body references the same as signature references.
+        Composes the three token sources: entity names, then (optionally)
+        parameter names, then (optionally) body identifier references.
         """
-        for entity in self.named_entities():
-            entity_path = Path(entity.file)
-            for t in entity.tokens:
-                tl = t.lower()
-                if tl in exclude:
-                    continue
-                yield tl, entity_path
+        yield from self._entity_tokens(exclude)
         if include_parameters:
-            for c in self.callables():
-                for p in c.parameters:
-                    if p.name in ("self", "cls"):
-                        continue
-                    for t in Lexicon.split_tokens(p.name):
-                        tl = t.lower()
-                        if tl in exclude:
-                            continue
-                        yield tl, c.path
+            yield from self._param_tokens(exclude)
         if include_body_identifiers:
-            for parse in self._parses:
-                content = parse.content
-                for c in parse.callables:
-                    if not all(f(c) for f in self._filters):
-                        continue
-                    node = parse.callable_nodes.get(c.qualname)
-                    if node is None:
-                        continue
-                    body = node.child_by_field_name("body") or node
-                    for ident in _walk_identifier_nodes(body):
-                        name = content[ident.start_byte:ident.end_byte].decode(
-                            "utf-8", errors="replace",
-                        )
-                        if name.startswith("_") and not name.startswith("__"):
-                            continue
-                        for t in Lexicon.split_tokens(name):
-                            tl = t.lower()
-                            if tl in exclude:
-                                continue
-                            yield tl, c.path
+            yield from self._body_tokens(exclude)
 
     def tokens(
         self,
