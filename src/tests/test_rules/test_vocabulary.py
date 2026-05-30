@@ -104,6 +104,58 @@ class TestObservationContract:
         assert vocabulary.RULE.view == "tree"
 
 
+class TestAcrossAxisPositive:
+    """End-to-end true-positive: the import gate discriminates a reinvented
+    concept from a legitimately-consumed one, through the REAL dependency
+    graph (not a constructed one). Validates the across-axis fires on a
+    positive and stays silent on the explained case in the same corpus.
+    """
+
+    def _slopped_corpus(self, root: Path) -> None:
+        for pkg in ("widget", "rogue", "gadget", "client"):
+            (root / pkg).mkdir()
+            (root / pkg / "__init__.py").write_text("")
+        # eponymous homes define the concepts
+        (root / "widget" / "core.py").write_text("class Widget:\n    pass\n")
+        (root / "gadget" / "core.py").write_text("class Gadget:\n    pass\n")
+        # rogue REINVENTS `widget` and never imports widget/  -> unexplained
+        (root / "rogue" / "stuff.py").write_text(
+            "def widget_alpha(): pass\ndef widget_beta(): pass\n"
+            "def widget_gamma(): pass\ndef widget_delta(): pass\n"
+        )
+        # client uses `gadget` heavily but DOES import gadget/  -> explained
+        (root / "client" / "use.py").write_text(
+            "from gadget.core import Gadget\n"
+            "def gadget_alpha(): return Gadget()\ndef gadget_beta(): return Gadget()\n"
+            "def gadget_gamma(): pass\ndef gadget_delta(): pass\n"
+        )
+
+    def test_gate_discriminates_through_real_graph(self, tmp_path: Path):
+        self._slopped_corpus(tmp_path)
+        tree = _tree(tmp_path)
+        graph = tree.structure.dependency_graph()
+        own = {o.token: o for o in tree.lexicon.concept_ownership(graph, top=30)}
+
+        widget = own["widget"]
+        assert widget.owner == "rogue" and widget.displaced
+        assert widget.owner_imports_eponymous is False
+        assert widget.verdict() == "displaced_unexplained"   # the wolf fires
+
+        gadget = own["gadget"]
+        assert gadget.owner == "client" and gadget.displaced
+        assert gadget.owner_imports_eponymous is True
+        assert gadget.verdict() == "displaced_explained"     # gated out
+
+    def test_observation_surfaces_only_the_unexplained_case(self, tmp_path: Path):
+        self._slopped_corpus(tmp_path)
+        result = vocabulary.run(_tree(tmp_path), _rc(), _sc(tmp_path))
+        ob = result.observations[0]
+        assert result.summary["displaced_concepts"] >= 1
+        # narration names the reinvented concept, not the consumed one
+        assert "`widget`" in ob.message
+        assert "displaced from their eponymous package without an import link" in ob.message
+
+
 class TestVerdictUnaffected:
     def test_observation_does_not_fail_the_build(self, tmp_path: Path):
         _corpus(tmp_path)
