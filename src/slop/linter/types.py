@@ -15,7 +15,6 @@ class RuleResult:
     rule: str
     status: str = "pass"
     violations: list[Slop] = field(default_factory=list)
-    waived_violations: list[Slop] = field(default_factory=list)
     observations: list[Slop] = field(default_factory=list)
     summary: dict[str, Any] = field(default_factory=dict)
     errors: list[str] = field(default_factory=list)

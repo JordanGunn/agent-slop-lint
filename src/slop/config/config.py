@@ -2,22 +2,22 @@
 
 ``Config`` is what ``Linter.run()`` consumes — the merged result of
 config-file discovery + defaults. ``Config.rule_config(name)`` returns
-the per-rule ``Rule`` (from ``slop.linter.rule_config``); missing
-rules fall back to an empty default.
+the per-rule ``Rule`` (from ``slop.linter.rule``); missing rules fall
+back to an empty default.
 
-``Waiver`` is a scoped exception for known, bounded lint findings: it
-suppresses findings for a specific (rule, path) tuple. Used sparingly
-to keep exceptional findings visible without weakening global
-thresholds. ``allow_up_to`` is a local relaxation; ``expires`` is an
-optional ISO date after which the waiver is treated as stale and
-surfaced as advisory.
+``ignore`` is the global exemption surface: a scope-keyed map of declared
+names (``classes`` / ``functions`` / ``modules`` / ``packages``) that
+suppresses any matching finding across every rule. Per-rule exemptions
+live under ``[rules.<rule>.ignore]`` (carried in that rule's ``params``).
+A finding is suppressed when its ``symbol`` appears in the ignore list
+for its scope — a plain membership check, scope-precise (ignoring a
+class never blinds its methods) and rule-precise when scoped to a rule.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from slop.config.waiver import Waiver
 from slop.linter.rule import Rule
 
 
@@ -28,7 +28,7 @@ class Config:
     root: str = "."
     languages: list[str] = field(default_factory=list)
     exclude: list[str] = field(default_factory=list)
-    waivers: list[Waiver] = field(default_factory=list)
+    ignore: dict[str, list[str]] = field(default_factory=dict)
     rules: dict[str, Rule] = field(default_factory=dict)
     config_path: Path | None = None
 

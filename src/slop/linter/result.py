@@ -25,7 +25,6 @@ class Result:
     slop_count: int = 0
     advisory_count: int = 0
     observation_count: int = 0
-    waived_count: int = 0
     verdict: str = "pass"
 
     def json(self) -> dict[str, Any]:

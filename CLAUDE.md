@@ -33,8 +33,8 @@ slop/                       <- repo root (docs, LICENSE, NOTICE, README, .slop.t
           skill.py          slop install skill
         templates.py       `.slop.toml` template emission for `slop init`: PROFILES catalog + generate_default_config()
       config/               Config-file domain (slop.config) — load, validate, model; no scaffold emission
-        __init__.py         Public surface: Config, Waiver, load_config, schema
-        models.py           Config + Waiver dataclasses
+        __init__.py         Public surface: Config, load_config, schema
+        config.py           Config dataclass (incl. global scope-keyed `ignore`)
         loader.py           Upward walk (.slop.toml / pyproject[tool.slop]) + merge + DEFAULT_RULE_CONFIGS
         schema/v1.json      JSON Schema asset — committed source of truth for the config-file shape
         schema/__init__.py  load(version="v1") helper (importlib.resources)
@@ -74,7 +74,7 @@ slop/                       <- repo root (docs, LICENSE, NOTICE, README, .slop.t
         diagnostics.py      Research-grade cell/cluster diagnostics (not yet productionised)
       linter/               Linter, Result, Slop, dispatch, format, rule registry
         linter.py           Linter(config).run() — main entry point
-        dispatch.py         select_rules, apply_waivers, overall_status, execute_rule
+        dispatch.py         select_rules, apply_ignores, overall_status, execute_rule
         result.py           Result dataclass; .json() returns dict, .pretty() returns str
         slop.py             Slop finding type
         types.py            RuleResult, RuleDefinition, RuleRunner
@@ -152,7 +152,8 @@ Rules emit `Slop` (the finding type, importable from `slop.linter`) for threshol
 - **`Result.json()` returns a dict; `Result.pretty()` returns a string.** Both delegate to `slop.linter.format`. The CLI does `json.dumps(result.json(), indent=2)` at the output boundary.
 - **Config discovery walks upward** from CWD for `.slop.toml` or `pyproject.toml` with `[tool.slop]`. A pyproject without `[tool.slop]` is skipped, so sub-project pyproject files (like `src/pyproject.toml` in this repo) don't mask a repo-root `.slop.toml`.
 - **Config schema is a versioned JSON asset, not a Python function.** `slop/config/schema/v1.json` is the committed source of truth; `slop schema [--version v1]` reads it via `importlib.resources`. A pytest drift guard (`tests/test_config_schema.py`) asserts the asset stays in sync with `Config` dataclass fields and `DEFAULT_RULE_CONFIGS` keys — adding a rule without updating the schema fails CI.
-- **Config-domain vs. rule-domain split.** `slop.config` owns config-file shape: `Config`, `Waiver`, the TOML loader, the schema asset. `slop.linter.rule_config`, `slop.linter.severity`, `slop.linter.tags` stay in `linter/` — they're rule settings the config file *populates*, not config-file shape.
+- **Exemptions are scope-keyed name lists (`ignore`), not waivers.** The old `[[waivers]]` array (id/path/rule/allow_up_to/expires + glob/fnmatch matching) was retired for a single membership check: a finding is suppressed when its `symbol` is in the ignore list for its `scope`. Global `[ignore]` (all rules) and per-rule `[rules.<rule>.ignore]` (carried in that rule's `params`), keyed by `functions`/`classes`/`modules`/`packages` (validated at load; unknown keys like `any` raise). The win over waivers is **scope precision** — `ignore.classes = ["Lexicon"]` waives the class-scope WMC without blinding `Lexicon`'s function-scope methods, which a path-level waiver fundamentally couldn't express. Suppression is silent (the exemption is auditable in config, not the output); there is no `allow_up_to` ceiling or `expires`. Matching lives in `dispatch.apply_ignores`.
+- **Config-domain vs. rule-domain split.** `slop.config` owns config-file shape: `Config` (incl. the global scope-keyed `ignore` map), the TOML loader, the schema asset. `slop.linter.rule_config`, `slop.linter.severity`, `slop.linter.tags` stay in `linter/` — they're rule settings the config file *populates*, not config-file shape.
 - **14-day default hotspot window.** Tuned for agentic code generation where architectural damage accumulates in days, not months.
 - **Exit codes:** 0 = clean, 1 = violations, 2 = error.
 

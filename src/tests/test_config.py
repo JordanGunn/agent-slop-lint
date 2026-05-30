@@ -149,59 +149,54 @@ thresholds = { class = 999 }
     assert rc.params["thresholds"]["function"] == 10
 
 
-def test_loads_top_level_waivers(tmp_path: Path):
+def test_loads_global_ignore(tmp_path: Path):
     (tmp_path / ".slop.toml").write_text(
         """\
-[[waivers]]
-id = "parser-npath"
-path = "src/parser/**"
-rule = "complexity.combinatorial"
-allow_up_to = 1200
-reason = "Parser branch shape mirrors grammar alternatives."
-expires = "2099-01-01"
+[ignore]
+classes = ["GeneratedModel", "VendorWidget"]
+functions = ["legacy_shim"]
 """
     )
     config = load_config(root=str(tmp_path))
-    assert len(config.waivers) == 1
-    waiver = config.waivers[0]
-    assert waiver.id == "parser-npath"
-    assert waiver.path == "src/parser/**"
-    assert waiver.rule == "complexity.combinatorial"
-    assert waiver.allow_up_to == 1200
-    assert waiver.reason.startswith("Parser branch")
-    assert waiver.expires == "2099-01-01"
+    assert config.ignore == {
+        "classes": ["GeneratedModel", "VendorWidget"],
+        "functions": ["legacy_shim"],
+    }
 
 
-def test_waiver_requires_reason(tmp_path: Path):
+def test_loads_per_rule_ignore(tmp_path: Path):
     (tmp_path / ".slop.toml").write_text(
         """\
-[[waivers]]
-id = "missing-reason"
-path = "src/parser/**"
-rule = "complexity.combinatorial"
+[rules.coupling]
+ignore = { classes = ["Cpp", "Tree"] }
 """
     )
-    with pytest.raises(ValueError, match="reason"):
+    config = load_config(root=str(tmp_path))
+    rc = config.rule_config("coupling")
+    assert rc.params["ignore"] == {"classes": ["Cpp", "Tree"]}
+
+
+def test_global_ignore_rejects_unknown_scope(tmp_path: Path):
+    # `any` (and typos) must fail loudly — the mechanism can only honour the
+    # four scopes that map to a finding scope.
+    (tmp_path / ".slop.toml").write_text(
+        """\
+[ignore]
+any = ["self", "cls"]
+"""
+    )
+    with pytest.raises(ValueError, match="unknown scope 'any'"):
         load_config(root=str(tmp_path))
 
 
-def test_waiver_rejects_duplicate_ids(tmp_path: Path):
+def test_per_rule_ignore_rejects_unknown_scope(tmp_path: Path):
     (tmp_path / ".slop.toml").write_text(
         """\
-[[waivers]]
-id = "same"
-path = "a.py"
-rule = "complexity.combinatorial"
-reason = "one"
-
-[[waivers]]
-id = "same"
-path = "b.py"
-rule = "complexity.combinatorial"
-reason = "two"
+[rules.coupling]
+ignore = { typo = ["Cpp"] }
 """
     )
-    with pytest.raises(ValueError, match="duplicate waiver id"):
+    with pytest.raises(ValueError, match="unknown scope 'typo'"):
         load_config(root=str(tmp_path))
 
 

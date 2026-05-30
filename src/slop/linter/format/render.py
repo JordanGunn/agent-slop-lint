@@ -122,15 +122,11 @@ def _render_category_findings(
     has_multiple_rules: bool,
     max_violations: int,
 ) -> list[str]:
-    """Render failing findings first, then waived findings."""
+    """Render failing findings."""
     lines: list[str] = []
     for rule_name, rr in _rules_where(rule_pairs, "violations"):
         lines.extend(_render_violations(
             rule_name, rr.violations, has_multiple_rules, max_violations,
-        ))
-    for rule_name, rr in _rules_where(rule_pairs, "waived_violations"):
-        lines.extend(_render_waived(
-            rule_name, rr.waived_violations, has_multiple_rules, max_violations,
         ))
     return lines
 
@@ -161,8 +157,8 @@ def _rules_where(
 ) -> list[tuple[str, RuleResult]]:
     """Return non-skipped rule results whose ``attr`` attribute is truthy.
 
-    ``attr`` is one of ``"violations"`` or ``"waived_violations"`` — the
-    two finding-list fields callers want to iterate over.
+    ``attr`` is one of ``"violations"`` or ``"observations"`` — the
+    finding-list fields callers want to iterate over.
     """
     return [
         (rule_name, rr)
@@ -176,7 +172,6 @@ class _CategoryAgg:
     """Aggregated metrics for one category across all its sub-rules."""
 
     total_violations: int = 0
-    total_waived: int = 0
     total_observations: int = 0
     checked: int = 0
     ran_rules: int = 0
@@ -214,7 +209,6 @@ def _aggregate_category(rule_pairs: list[tuple[str, RuleResult]]) -> _CategoryAg
             continue
         agg.ran_rules += 1
         agg.total_violations += len(rr.violations)
-        agg.total_waived += len(rr.waived_violations)
         agg.total_observations += len(rr.observations)
         if rr.status == "error":
             agg.has_error_status = True
@@ -262,48 +256,6 @@ def _render_violations(
     return lines
 
 
-def _render_waived(
-    rule_name: str,
-    violations: list[Slop],
-    has_multiple_rules: bool,
-    max_violations: int,
-) -> list[str]:
-    """Render waived findings for one sub-rule."""
-    lines: list[str] = []
-    if has_multiple_rules:
-        sub_name = _short_name_for(rule_name)
-        lines.append(f"  {sub_name} waived")
-        indent = "    "
-    else:
-        lines.append("  waived")
-        indent = "    "
-
-    shown = violations[:max_violations]
-    for v in shown:
-        loc = v.file
-        if v.line:
-            loc += f":{v.line}"
-        if v.symbol:
-            loc += f" {v.symbol}"
-        waiver = v.metadata.get("waiver", {})
-        waiver_id = waiver.get("id", "unknown-waiver")
-        reason = waiver.get("reason", "")
-        lines.append(
-            f"{indent}{yellow(chr(0x26a0))} {loc} \u2014 {v.message} "
-            f"(waived by {waiver_id})"
-        )
-        if reason:
-            lines.append(dim(f"{indent}  reason: {reason}"))
-
-    remaining = len(violations) - len(shown)
-    if remaining > 0:
-        lines.append(dim(f"{indent}...and {remaining} more waived"))
-
-    if has_multiple_rules:
-        lines.append("")
-    return lines
-
-
 def _category_summary_line(agg: _CategoryAgg) -> str:
     """Pick the right one-line summary (errors > violations > zero-check > clean)."""
     checked_str = f", {agg.checked} checked" if agg.checked else ""
@@ -313,10 +265,7 @@ def _category_summary_line(agg: _CategoryAgg) -> str:
         noun = "error" if count == 1 else "errors"
         return f"  {cross} {count} {noun}{checked_str}"
     if agg.total_violations > 0:
-        suffix = f", {_plural(agg.total_waived, 'waived', 'waived')}" if agg.total_waived else ""
-        return f"  {_plural(agg.total_violations, 'violation')}{suffix}{checked_str}"
-    if agg.total_waived > 0:
-        return f"  {yellow(_plural(agg.total_waived, 'waived', 'waived'))}{checked_str}"
+        return f"  {_plural(agg.total_violations, 'violation')}{checked_str}"
     # Observation-only category (no verdicts): report the nudge, not "clean".
     # Observations make no defect claim, so this is not a pass/fail signal.
     if agg.total_observations > 0:
@@ -372,8 +321,6 @@ def _format_footer(result: Result) -> str:
         parts.append(red(_plural(result.slop_count, "violation")))
     if result.advisory_count > 0:
         parts.append(yellow(_plural(result.advisory_count, "advisory", "advisories")))
-    if result.waived_count > 0:
-        parts.append(yellow(_plural(result.waived_count, "waived", "waived")))
     if not parts:
         parts.append(green("no violations"))
     if result.observation_count > 0:

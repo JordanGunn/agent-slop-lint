@@ -18,7 +18,7 @@ class TestSlopConstruction:
 
     def test_attribute_names_match_violation_for_duck_typing(self):
         # The migration relies on Slop having the same attribute names as
-        # the legacy Slop so formatters and waiver-matching can iterate
+        # the legacy Slop so formatters can iterate
         # mixed lists transparently.
         s = Slop(rule="r", file="f", line=1, symbol="x", message="m",
                  severity="warning", value=5, threshold=3, metadata={"k": "v"})

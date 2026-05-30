@@ -12,12 +12,11 @@ from slop.tree.tree import Tree
 
 
 def _config(root: Path) -> Config:
-    """Minimal Config — enabled rules, no waivers."""
+    """Minimal Config — enabled rules, no ignores."""
     return Config(
         root=str(root),
         languages=["python"],
         exclude=[],
-        waivers=[],
         rules={},  # defaults applied by rule_config
     )
 
@@ -41,7 +40,7 @@ class TestLinterRun:
         result = Linter(cfg).run()
         assert result.slop_count >= 0
         assert result.advisory_count >= 0
-        assert result.waived_count >= 0
+        assert result.observation_count >= 0
 
 
 def _branchy_body(indent: str, n: int = 11) -> str:
@@ -72,7 +71,6 @@ class TestComplexityFiresThroughLinter:
             root=str(root),
             languages=["python"],
             exclude=[],
-            waivers=[],
             rules={
                 "complexity.cyclomatic": Rule(
                     enabled=True,
@@ -126,3 +124,75 @@ class TestSafeguardCoverage:
             if _checked_count(res.summary) is None:
                 blind.append(rd.name)
         assert not blind, f"rules invisible to zero-check safeguard: {blind}"
+
+
+class TestIgnores:
+    """The scope-keyed ignore lists that replaced waivers. The headline
+    property — scope precision — is what the path-based waivers could not
+    express: ignoring a class's WMC must NOT blind its methods.
+    """
+
+    def _fat_class(self, tmp_path: Path) -> Path:
+        # class Fat: WMC = 4 * 12 = 48 (> 40, class scope) AND each method has
+        # CCN 12 (> 10, function scope).
+        methods = "".join(
+            f"    def m{m}(self, x):\n" + _branchy_body("        ") + "        return -1\n"
+            for m in range(4)
+        )
+        (tmp_path / "fat.py").write_text("class Fat:\n" + methods)
+        return tmp_path
+
+    def _cyclomatic_cfg(self, root: Path, ignore: dict) -> Config:
+        return Config(
+            root=str(root),
+            languages=["python"],
+            rules={
+                "complexity.cyclomatic": Rule(
+                    enabled=True, severity="error",
+                    params={"thresholds": {"function": 10, "class": 40},
+                            "ignore": ignore},
+                ),
+            },
+        )
+
+    def test_class_ignore_is_scope_precise(self, tmp_path: Path):
+        self._fat_class(tmp_path)
+        cfg = self._cyclomatic_cfg(tmp_path, {"classes": ["Fat"]})
+        result = Linter(cfg).run(filter_rule="complexity.cyclomatic")
+        scopes = {
+            (v.scope, v.symbol)
+            for v in result.rule_results["complexity.cyclomatic"].violations
+        }
+        assert ("class", "Fat") not in scopes        # WMC suppressed
+        assert any(s == "function" for s, _ in scopes)  # methods still fire
+
+    def test_no_ignore_flags_the_class(self, tmp_path: Path):
+        self._fat_class(tmp_path)
+        cfg = self._cyclomatic_cfg(tmp_path, {})
+        result = Linter(cfg).run(filter_rule="complexity.cyclomatic")
+        scopes = {
+            (v.scope, v.symbol)
+            for v in result.rule_results["complexity.cyclomatic"].violations
+        }
+        assert ("class", "Fat") in scopes            # un-ignored: WMC fires
+
+    def test_global_ignore_suppresses_by_scope(self, tmp_path: Path):
+        self._fat_class(tmp_path)
+        cfg = Config(
+            root=str(tmp_path),
+            languages=["python"],
+            ignore={"classes": ["Fat"]},   # global, all rules
+            rules={
+                "complexity.cyclomatic": Rule(
+                    enabled=True, severity="error",
+                    params={"thresholds": {"function": 10, "class": 40}},
+                ),
+            },
+        )
+        result = Linter(cfg).run(filter_rule="complexity.cyclomatic")
+        scopes = {
+            (v.scope, v.symbol)
+            for v in result.rule_results["complexity.cyclomatic"].violations
+        }
+        assert ("class", "Fat") not in scopes        # global ignore applied
+        assert any(s == "function" for s, _ in scopes)

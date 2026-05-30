@@ -1,4 +1,4 @@
-"""Rule-execution helpers — selection + waivers + verdict aggregation.
+"""Rule-execution helpers — selection + ignores + verdict aggregation.
 
 Moved here from the retired ``slop.engine`` module during the deletion
 sweep. ``Linter.run`` consumes these; nothing else should import from
@@ -6,14 +6,17 @@ this module (it's private to the linter package).
 """
 from __future__ import annotations
 
-from dataclasses import replace
-from datetime import date
-from fnmatch import fnmatchcase
-from pathlib import Path
-
-from slop.config import Waiver
+from slop.linter.rule import Rule
 from slop.linter.types import RuleResult
 from slop.linter.slop import Slop
+
+# Map a finding's ``scope`` to its ignore-list key.
+_SCOPE_PLURAL: dict[str, str] = {
+    "function": "functions",
+    "class": "classes",
+    "module": "modules",
+    "package": "packages",
+}
 
 
 def select_rules(name, category):
@@ -85,92 +88,34 @@ def overall_status(rule_results, total_violations) -> str:
     return "pass"
 
 
-def apply_waivers(
+def apply_ignores(
     result: RuleResult,
-    waivers: list[Waiver],
-    root: Path,
+    rule_config: Rule,
+    global_ignore: dict[str, list[str]],
 ) -> RuleResult:
-    """Move matching violations into waived_violations without hiding them."""
-    if not waivers or not result.violations:
+    """Drop findings whose declared name is in an ignore list for its scope.
+
+    A finding is suppressed when its ``symbol`` appears in the union of the
+    global ``[ignore]`` table and this rule's ``[rules.<rule>.ignore]`` for
+    the finding's scope. Scope-precise: ignoring a class never blinds its
+    methods. Silent: suppressed findings are dropped, not surfaced — the
+    exemption lives auditably in the config, not in the output.
+    """
+    if not result.violations:
+        return result
+    rule_ignore = rule_config.params.get("ignore", {}) or {}
+    if not global_ignore and not rule_ignore:
         return result
 
-    remaining: list[Slop] = []
-    waived: list[Slop] = [*result.waived_violations]
-    today = date.today()
+    kept: list[Slop] = []
+    for v in result.violations:
+        plural = _SCOPE_PLURAL.get(v.scope or "")
+        if plural is not None and v.symbol is not None:
+            ignored = set(global_ignore.get(plural, ())) | set(rule_ignore.get(plural, ()))
+            if v.symbol in ignored:
+                continue
+        kept.append(v)
 
-    for violation in result.violations:
-        waiver = _matching_waiver(violation, waivers, root, today)
-        if waiver is None:
-            remaining.append(violation)
-        else:
-            waived.append(_mark_waived(violation, waiver))
-
-    result.violations = remaining
-    result.waived_violations = waived
-    if result.status == "fail" and not remaining:
-        result.status = "pass"
-    result.summary["waived_count"] = len(waived)
-    result.summary["violation_count"] = len(remaining)
+    result.violations = kept
+    result.summary["violation_count"] = len(kept)
     return result
-
-
-def _matching_waiver(
-    violation: Slop,
-    waivers: list[Waiver],
-    root: Path,
-    today: date,
-) -> Waiver | None:
-    """Find the first active waiver that applies to a violation."""
-    for waiver in waivers:
-        if _waiver_expired(waiver, today):
-            continue
-        if not _rule_matches(violation.rule, waiver.rule):
-            continue
-        if not _path_matches(violation.file, waiver.path, root):
-            continue
-        if not _value_allowed(violation, waiver):
-            continue
-        return waiver
-    return None
-
-
-def _waiver_expired(waiver: Waiver, today: date) -> bool:
-    return waiver.expires is not None and date.fromisoformat(waiver.expires) < today
-
-
-def _rule_matches(rule: str, pattern: str) -> bool:
-    return fnmatchcase(rule, pattern)
-
-
-def _path_matches(file: str, pattern: str, root: Path) -> bool:
-    normalized = _normalize_violation_path(file, root)
-    return fnmatchcase(normalized, pattern) or fnmatchcase(f"./{normalized}", pattern)
-
-
-def _normalize_violation_path(file: str, root: Path) -> str:
-    path = Path(file)
-    if path.is_absolute():
-        try:
-            path = path.relative_to(root)
-        except ValueError:
-            pass
-    return path.as_posix()
-
-
-def _value_allowed(violation: Slop, waiver: Waiver) -> bool:
-    if waiver.allow_up_to is None:
-        return True
-    if not isinstance(violation.value, int | float):
-        return False
-    return violation.value <= waiver.allow_up_to
-
-
-def _mark_waived(violation: Slop, waiver: Waiver) -> Slop:
-    metadata = dict(violation.metadata)
-    metadata["waiver"] = {
-        "id": waiver.id,
-        "reason": waiver.reason,
-        "allow_up_to": waiver.allow_up_to,
-        "expires": waiver.expires,
-    }
-    return replace(violation, metadata=metadata)

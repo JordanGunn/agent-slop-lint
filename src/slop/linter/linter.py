@@ -15,7 +15,7 @@ from slop.config import Config
 from slop.linter.types import RuleDefinition, RuleResult
 from slop.tree.tree import Tree
 
-from .dispatch import apply_waivers, overall_status, select_rules
+from .dispatch import apply_ignores, overall_status, select_rules
 from .result import Result
 
 __all__ = ["Linter"]
@@ -99,7 +99,6 @@ class Linter:
         total_violations = 0
         total_advisories = 0
         total_observations = 0
-        total_waived = 0
 
         for rule_def in rules_to_run:
             rc = self.config.rule_config(rule_def.name)
@@ -109,7 +108,7 @@ class Linter:
                 continue
 
             result = _execute_rule_v2(rule_def, self.tree, rc, self.config)
-            result = apply_waivers(result, self.config.waivers, self.tree.root)
+            result = apply_ignores(result, rc, self.config.ignore)
             rule_results[rule_def.name] = result
             rules_checked += 1
 
@@ -119,7 +118,6 @@ class Linter:
                 else:
                     total_advisories += 1
             total_observations += len(result.observations)
-            total_waived += len(result.waived_violations)
 
         return Result(
             version=__version__,
@@ -132,6 +130,5 @@ class Linter:
             slop_count=total_violations,
             advisory_count=total_advisories,
             observation_count=total_observations,
-            waived_count=total_waived,
             verdict=overall_status(rule_results, total_violations),
         )

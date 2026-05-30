@@ -12,15 +12,10 @@ root = "."
 # Global file exclusions (applied to all rules)
 exclude = ["**/test_*", "**/vendor/**"]
 
-# Scoped waivers keep exceptional findings visible without weakening global
-# thresholds. Prefer a local allow_up_to ceiling over an unbounded waiver.
-# [[waivers]]
-# id = "parser-npath"
-# path = "src/parser/**"
-# rule = "complexity.combinatorial"
-# allow_up_to = 1200
-# reason = "Parser branch shape mirrors grammar alternatives."
-# expires = "2026-09-01"
+# Exemptions are declared names keyed by scope (functions/classes/modules/
+# packages). Global [ignore] applies to all rules; per-rule exemptions go
+# under [rules.<rule>.ignore]. Scope-precise — ignoring a class never blinds
+# its methods. See the grammar/view exemptions on coupling + complexity below.
 
 # Rule names are bare (no scope prefix). Scope is first-class: each rule
 # declares the scopes it supports and emits per-scope findings with a
@@ -33,6 +28,11 @@ enabled = true
 thresholds = { function = 10, class = 40 }
 # function: McCabe CCN per callable (McCabe 1976).
 # class: WMC = sum of method CCNs (Chidamber & Kemerer 1994).
+# Class-scope WMC exemptions (breadth, not per-method complexity): the grammar
+# ABC implementations + Language base (~30 vocabulary methods each), and the
+# rich Lexicon/Structure view facades. Class-scope only — grammar/view
+# *function* methods stay checked (this is what waivers couldn't express).
+ignore = { classes = ["C", "Cpp", "CSharp", "Go", "Java", "JavaScript", "Julia", "Python", "Ruby", "Rust", "TypeScript", "Language", "Lexicon", "Structure"] }
 severity = "error"
 
 [rules.complexity.cognitive]
@@ -67,6 +67,9 @@ severity = "error"
 enabled = true
 thresholds = { class = 8 }
 # CBO at class scope (Chidamber & Kemerer 1994).
+# Inherent coupling: grammar classes couple to the Language hierarchy by
+# design; Tree couples to tree-sitter + grammar types as the parse substrate.
+ignore = { classes = ["C", "Cpp", "CSharp", "Go", "Java", "JavaScript", "Julia", "Python", "Ruby", "Rust", "TypeScript", "Tree"] }
 severity = "error"
 
 [rules.inheritance.depth]
@@ -214,39 +217,3 @@ enabled = true
 top_tokens = 15
 package_min_distinct = 40
 severity = "info"
-
-# ---- Waivers ----------------------------------------------------------------
-
-[[waivers]]
-id = "grammar-abc-coupling"
-path = "slop/language/grammars/*.py"
-rule = "coupling"
-allow_up_to = 12
-reason = "ABC implementation tax — coupling to Language hierarchy is inherent."
-
-[[waivers]]
-id = "tree-core-coupling"
-path = "slop/tree/tree.py"
-rule = "coupling"
-allow_up_to = 9
-reason = "Parse substrate core — Tree couples to tree-sitter and grammar types by design."
-
-# Grammar classes implement the Language ABC's ~30 vocabulary methods, so
-# their WMC (sum of method CCNs) is inherent method-count tax, not per-method
-# complexity. NOTE: waivers have no scope field, so this also covers any
-# function-scope cyclomatic in grammars (per-language AST handlers). Other
-# complexity metrics (combinatorial/cognitive NPath) are intentionally NOT
-# waived — those stay visible as honest signal on grammar AST logic.
-[[waivers]]
-id = "grammar-abc-complexity"
-path = "slop/language/grammars/*.py"
-rule = "complexity.cyclomatic"
-allow_up_to = 130
-reason = "ABC implementation tax — WMC is method-count, not per-method complexity (Cpp 129 worst)."
-
-[[waivers]]
-id = "language-base-complexity"
-path = "slop/language/base.py"
-rule = "complexity.cyclomatic"
-allow_up_to = 60
-reason = "Language ABC default-method surface — WMC reflects the contract size, inherent."

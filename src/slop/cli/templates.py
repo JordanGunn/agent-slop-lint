@@ -105,15 +105,16 @@ root = "."
 # Global file exclusions (applied to all rules)
 # exclude = ["**/test_*", "**/vendor/**"]
 
-# Scoped waivers keep exceptional findings visible without weakening global
-# thresholds. Prefer a local allow_up_to ceiling over an unbounded waiver.
-# [[waivers]]
-# id = "parser-npath"
-# path = "src/parser/**"
-# rule = "complexity.combinatorial"
-# allow_up_to = 1200
-# reason = "Parser branch shape mirrors grammar alternatives."
-# expires = "2026-09-01"
+# Exemptions are declared names, keyed by scope (functions / classes /
+# modules / packages). A finding is suppressed when its symbol is in the
+# list for its scope. Global [ignore] applies to every rule; per-rule
+# exemptions go under [rules.<rule>.ignore]. Scope-precise — ignoring a
+# class never blinds its methods.
+# [ignore]
+# classes = ["GeneratedModel"]            # suppressed in every rule
+#
+# [rules.coupling.ignore]
+# classes = ["WidgetController"]           # suppressed only for coupling
 
 # Rule names are bare (no scope prefix). Scope is first-class: each rule
 # declares the scopes it supports and emits per-scope findings with a

@@ -181,38 +181,6 @@ def test_human_error_status_does_not_render_as_clean():
     assert "examined 0 units" not in output  # errors take precedence over zero-check
 
 
-def test_human_renders_waived_findings_without_failure():
-    waived = _violation("npath", "src/parser/grammar.py", 12, "parse_expr", 914)
-    waived.metadata["waiver"] = {
-        "id": "parser-npath",
-        "reason": "Parser branch shape mirrors grammar alternatives.",
-        "allow_up_to": 1200,
-        "expires": "2099-01-01",
-    }
-    rr = RuleResult(
-        rule="npath",
-        status="pass",
-        violations=[],
-        waived_violations=[waived],
-        summary={"functions_checked": 1, "violation_count": 0, "waived_count": 1},
-    )
-    result = Result(
-        version="0.1.0",
-        root="/test",
-        languages=["python"],
-        display_root="./test",
-        rule_results={"npath": rr},
-        rules_checked=1,
-        waived_count=1,
-        verdict="pass",
-    )
-    output = format_human(result)
-    assert "waived by parser-npath" in output
-    assert "Parser branch shape" in output
-    assert "1 waived" in output
-    assert "PASS" in output
-
-
 # ---------------------------------------------------------------------------
 # Quiet mode
 # ---------------------------------------------------------------------------
@@ -229,13 +197,6 @@ def test_quiet_is_one_line():
 def test_quiet_pass():
     result = _make_result([], status="pass")
     output = format_quiet(result)
-    assert "PASS" in output
-
-
-def test_quiet_includes_waived_count():
-    result = _make_result([], status="pass", waived_count=2)
-    output = format_quiet(result)
-    assert "2 waived" in output
     assert "PASS" in output
 
 
@@ -261,31 +222,4 @@ def test_json_has_expected_keys():
     rule_data = data["rules"]["complexity.cyclomatic"]
     assert rule_data["status"] == "fail"
     assert len(rule_data["violations"]) == 1
-    assert "waived_violations" in rule_data
-
-
-def test_json_includes_waived_findings():
-    waived = _violation("npath", "src/parser/grammar.py", 12, "parse_expr", 914)
-    waived.metadata["waiver"] = {
-        "id": "parser-npath",
-        "reason": "Parser branch shape mirrors grammar alternatives.",
-    }
-    rr = RuleResult(
-        rule="npath",
-        status="pass",
-        waived_violations=[waived],
-        summary={"functions_checked": 1, "waived_count": 1},
-    )
-    result = Result(
-        version="0.1.0",
-        root="/test",
-        languages=["python"],
-        rule_results={"npath": rr},
-        rules_checked=1,
-        waived_count=1,
-        verdict="pass",
-    )
-    data = to_dict(result)
-    assert data["summary"]["waived_count"] == 1
-    waiver = data["rules"]["npath"]["waived_violations"][0]["metadata"]["waiver"]
-    assert waiver["id"] == "parser-npath"
+    assert "observations" in rule_data

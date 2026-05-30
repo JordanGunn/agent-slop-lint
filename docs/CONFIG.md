@@ -16,120 +16,60 @@ slop cites well-established metrics (McCabe, Chidamber & Kemerer, Halstead, Nejm
 
 Every other rule's default matches the cited source.
 
-## Scoped waivers
+## Ignoring findings
 
-Do not lower a global threshold just because one parser, state machine,
-generated-adjacent file, or compatibility layer is legitimately more complex
-than the rest of the project. Use a waiver instead.
+Do not lower a global threshold because one inherent-cost entity — an ABC
+implementation, a parse substrate, a rich facade — is legitimately past a rule
+where the rest of the project isn't. Name the entity in an `ignore` list
+instead.
 
-A waiver is a bounded exception. slop still analyzes the code and still prints
-the finding, but a matching finding does not fail the run while it remains
-inside the waiver's local ceiling.
-
-```toml
-[[waivers]]
-id = "parser-npath"
-path = "src/parser/**"
-rule = "structural.complexity.npath"
-allow_up_to = 1200
-reason = "Parser branch shape mirrors grammar alternatives."
-expires = "2026-09-01"
-```
-
-Required fields:
-
-| Field | Meaning |
-|---|---|
-| `id` | Stable identifier shown in output and JSON. Must be unique. |
-| `path` | Glob matched against repo-relative violation paths. |
-| `rule` | One rule name or glob pattern, for example `"structural.complexity.npath"` or `"structural.complexity.cognitive"`. |
-| `reason` | Human-readable rationale. Required so exceptions are reviewable. |
-
-Optional fields:
-
-| Field | Meaning |
-|---|---|
-| `allow_up_to` | Local ceiling for numeric findings. If the measured value exceeds this number, the finding fails normally. |
-| `expires` | ISO date (`YYYY-MM-DD`). Expired waivers no longer apply. |
-
-Waivers are intentionally different from `exclude`.
-
-- `exclude` means "do not analyze this path."
-- `waivers` means "analyze this path, show matching findings, but do not fail
-  while the finding stays within a documented exception."
-
-Prefer `allow_up_to` for complexity, NPath, Halstead, class, package, and
-hotspot findings. An unbounded waiver is allowed for non-numeric cases such as
-dependency cycles, but it should be rare because it can hide growth inside the
-exception boundary.
-
-Each waiver has exactly one local ceiling. If one path needs exceptions for
-multiple metrics, write multiple waiver entries. Do not reuse one number across
-metrics with different scales.
+An ignore list is a set of **declared names**, keyed by **scope**. A finding is
+suppressed when its symbol appears in the list for its scope. This is a plain
+membership check — no globs, ceilings, ids, or expiry dates.
 
 ```toml
-[[waivers]]
-id = "parser-npath"
-path = "src/parser/**"
-rule = "structural.complexity.npath"
-allow_up_to = 1200
-reason = "Parser branch shape mirrors grammar alternatives."
+# Global — suppressed across every rule. Reserve for genuinely cross-cutting
+# names (generated/vendored entities); push real exemptions to a rule.
+[ignore]
+classes = ["GeneratedModel"]
 
-[[waivers]]
-id = "parser-cognitive"
-path = "src/parser/**"
-rule = "structural.complexity.cognitive"
-allow_up_to = 30
-reason = "Parser branch shape mirrors grammar alternatives."
+# Per-rule — the workhorse. Suppressed only for this rule.
+[rules.coupling]
+ignore = { classes = ["Cpp", "C", "Tree"] }   # coupling to the Language ABC is inherent
+
+[rules.complexity.cyclomatic]
+ignore = { classes = ["Lexicon", "Structure"] }   # rich-facade WMC (class scope) only
 ```
 
-Waived findings appear in human output under a `waived` block and in JSON under
-`waived_violations`. They are not counted as failing violations.
+Valid scope keys, each mapping 1:1 to a finding scope:
 
-Human output:
+| Scope key | Suppresses findings at scope |
+|---|---|
+| `functions` | function (CCN, cognitive, NPath, density, …) |
+| `classes` | class (WMC, coupling, DIT, NOC) |
+| `modules` | module (god_module, escape_hatches) |
+| `packages` | package (rigidity, uselessness) |
 
-```text
-structural.complexity
-  npath waived
-    ⚠ src/parser/grammar.py:88 parse_expr — NPath 914 exceeds 400 (waived by parser-npath)
-      reason: Parser branch shape mirrors grammar alternatives.
+An unknown key (a typo, or a tag the mechanism can't honour like `any`) is
+**rejected loudly** at load time — every key does exactly what its name says.
 
-  1 waived, 42 checked
+Two properties make this precise where a path-based exception couldn't be:
 
-────────────────────────────────────────
-1 waived | 1 rule checked | PASS
-```
+- **Scope-precise.** `[rules.complexity.cyclomatic] ignore = { classes = ["Lexicon"] }`
+  suppresses `Lexicon`'s class-scope WMC but leaves its *methods*
+  (function-scope) still checked. Ignoring a class never blinds its methods.
+- **Rule-precise.** A per-rule ignore touches only that rule; `Lexicon`'s
+  coupling and inheritance are unaffected.
 
-JSON output keeps failing and waived findings separate:
+`ignore` is different from `exclude`:
 
-```json
-{
-  "rules": {
-    "structural.complexity.npath": {
-      "violations": [],
-      "waived_violations": [
-        {
-          "rule": "structural.complexity.npath",
-          "file": "src/parser/grammar.py",
-          "value": 914,
-          "threshold": 400,
-          "metadata": {
-            "waiver": {
-              "id": "parser-npath",
-              "reason": "Parser branch shape mirrors grammar alternatives.",
-              "allow_up_to": 1200,
-              "expires": null
-            }
-          }
-        }
-      ]
-    }
-  }
-}
-```
+- `exclude` means "do not analyze this path at all" (every rule, every scope).
+- `ignore` means "analyze normally, but suppress findings for these named
+  entities at this scope."
 
-Expired waivers and findings above `allow_up_to` fail normally. That makes a
-waiver a ceiling, not an ignore.
+Suppression is silent: an ignored finding is dropped, not surfaced. The
+exemption lives auditably in the config — that's where you review it, not in the
+output.
 
 ## Rule reference
 

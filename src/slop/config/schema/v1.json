@@ -19,21 +19,17 @@
       },
       "default": []
     },
-    "waivers": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "id": {"type": "string"},
-          "path": {"type": "string"},
-          "rule": {"type": "string"},
-          "reason": {"type": "string"},
-          "allow_up_to": {"type": ["number", "null"]},
-          "expires": {"type": ["string", "null"]}
-        },
-        "required": ["id", "path", "rule", "reason"]
+    "ignore": {
+      "type": "object",
+      "description": "Global exemptions: declared names suppressed across all rules, keyed by scope. Per-rule exemptions live under rules.<rule>.ignore.",
+      "properties": {
+        "functions": {"type": "array", "items": {"type": "string"}},
+        "classes": {"type": "array", "items": {"type": "string"}},
+        "modules": {"type": "array", "items": {"type": "string"}},
+        "packages": {"type": "array", "items": {"type": "string"}}
       },
-      "default": []
+      "additionalProperties": false,
+      "default": {}
     },
     "rules": {
       "type": "object",

@@ -10,13 +10,16 @@ Loads config from (in priority order):
 from __future__ import annotations
 
 import sys
-from datetime import date
 from pathlib import Path
 from typing import Any
 
-from slop.config.config import Config, Waiver
+from slop.config.config import Config
 from slop.linter.rule import Rule
 from slop.linter.tags import Tag
+
+# Valid scope keys for [ignore] / [rules.<rule>.ignore] — each maps 1:1 to a
+# finding scope, so every key suppresses exactly what its name says.
+_IGNORE_SCOPES: tuple[str, ...] = ("functions", "classes", "modules", "packages")
 
 # ---------------------------------------------------------------------------
 # TOML structure handling
@@ -361,76 +364,38 @@ def _build_rule_configs(
         user_overrides = flat.get(category, {})
         if isinstance(user_overrides, dict):
             layered.update(user_overrides)
-        result[category] = _merge_rule_config(defaults, layered)
+        rule = _merge_rule_config(defaults, layered)
+        if "ignore" in rule.params:
+            rule.params["ignore"] = _build_ignore(
+                rule.params["ignore"], label=f"[rules.{category}.ignore]",
+            )
+        result[category] = rule
     return result
 
 
-def _build_waivers(raw_waivers: Any) -> list:
-    """Build and validate top-level waiver configuration."""
-    if raw_waivers is None:
-        return []
-    if not isinstance(raw_waivers, list):
-        raise ValueError("waivers must be an array of tables")
+def _build_ignore(raw_ignore: Any, label: str = "[ignore]") -> dict[str, list[str]]:
+    """Validate a scope-keyed ignore table: scope -> list of declared names.
 
-    waivers: list = []
-    seen_ids: set[str] = set()
-    for i, raw in enumerate(raw_waivers, start=1):
-        waivers.append(_build_waiver(raw, i, seen_ids))
-    return waivers
-
-
-def _build_waiver(
-    raw: Any, index: int, seen_ids: set[str],
-):
-    """Build one waiver from a TOML table."""
-    if not isinstance(raw, dict):
-        raise ValueError(f"waiver #{index} must be a table")
-
-    waiver_id = _required_string(raw, "id", f"waiver #{index}")
-    if waiver_id in seen_ids:
-        raise ValueError(f"duplicate waiver id: {waiver_id}")
-    seen_ids.add(waiver_id)
-
-    return Waiver(
-        id=waiver_id,
-        path=_required_string(raw, "path", f"waiver {waiver_id}"),
-        rule=_required_string(raw, "rule", f"waiver {waiver_id}"),
-        reason=_required_string(raw, "reason", f"waiver {waiver_id}"),
-        allow_up_to=_optional_number(raw, "allow_up_to", f"waiver {waiver_id}"),
-        expires=_optional_iso_date(raw, "expires", f"waiver {waiver_id}"),
-    )
-
-
-def _required_string(raw: dict[str, Any], key: str, label: str) -> str:
-    """Read a required non-empty string field."""
-    value = raw.get(key)
-    if not isinstance(value, str) or not value.strip():
-        raise ValueError(f"{label} must define a non-empty {key}")
-    return value
-
-
-def _optional_number(raw: dict[str, Any], key: str, label: str) -> float | int | None:
-    """Read an optional non-bool numeric field."""
-    value = raw.get(key)
-    if value is None:
-        return None
-    if isinstance(value, bool) or not isinstance(value, int | float):
-        raise ValueError(f"{label} {key} must be numeric")
-    return value
-
-
-def _optional_iso_date(raw: dict[str, Any], key: str, label: str) -> str | None:
-    """Read an optional ISO date string."""
-    value = raw.get(key)
-    if value is None:
-        return None
-    if not isinstance(value, str):
-        raise ValueError(f"{label} {key} must be an ISO date string")
-    try:
-        date.fromisoformat(value)
-    except ValueError as e:
-        raise ValueError(f"{label} {key} must be an ISO date string") from e
-    return value
+    Only the four scopes in ``_IGNORE_SCOPES`` are accepted; an unknown
+    key (a typo, or a tag the mechanism can't honour like ``any``) raises
+    loudly rather than silently doing nothing. Used for both the global
+    ``[ignore]`` table and per-rule ``[rules.<rule>.ignore]`` tables.
+    """
+    if raw_ignore is None:
+        return {}
+    if not isinstance(raw_ignore, dict):
+        raise ValueError(f"{label} must be a table of scope -> name list")
+    out: dict[str, list[str]] = {}
+    for scope, names in raw_ignore.items():
+        if scope not in _IGNORE_SCOPES:
+            raise ValueError(
+                f"{label} unknown scope '{scope}'; valid scopes are "
+                f"{', '.join(_IGNORE_SCOPES)}"
+            )
+        if not isinstance(names, list) or not all(isinstance(n, str) for n in names):
+            raise ValueError(f"{label}.{scope} must be a list of strings")
+        out[scope] = list(names)
+    return out
 
 
 def _discover_config(search_root: Path) -> tuple[Path | None, dict[str, Any]]:
@@ -512,7 +477,7 @@ def load_config(
     raw_root = raw.get("root")
     languages = raw.get("languages", [])
     exclude = raw.get("exclude", [])
-    waivers = _build_waivers(raw.get("waivers"))
+    ignore = _build_ignore(raw.get("ignore"))
     config_root = _resolve_config_root(raw_root, root, discovered_config)
 
     raw_rules = raw.get("rules", {})
@@ -524,7 +489,7 @@ def load_config(
         root=config_root,
         languages=languages,
         exclude=exclude,
-        waivers=waivers,
+        ignore=ignore,
         rules=rule_configs,
         config_path=discovered_config,
     )
