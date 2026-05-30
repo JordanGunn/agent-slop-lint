@@ -104,9 +104,11 @@ def _narrate_packages(packages, min_distinct: int) -> str:
     )
     return (
         f"Per-package one-off-vocabulary density (≥{min_distinct} distinct "
-        f"tokens), highest first: {shown}. Higher = more identifiers used "
-        f"once relative to the package's own vocabulary; inspect the densest "
-        f"if reviewing fragmentation."
+        f"tokens), highest first: {shown}. Higher density means more "
+        f"identifiers used once within the package — which can be "
+        f"fragmentation OR legitimate concept diversity (a registry/rules "
+        f"package where each module defines a distinct concept reads high "
+        f"too); the ratio alone does not distinguish them."
     )
 
 
