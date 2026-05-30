@@ -14,6 +14,7 @@ from slop.lexicon.diagnostic.distribution import (
     token_distribution,
 )
 from slop.tree.tree import Tree
+from slop.lexicon.diagnostic import namespace
 
 
 def _lexicon(path: Path):
@@ -94,7 +95,7 @@ class TestLexiconViewMethod:
             "def load_node(node):\n    return node\n"
             "def save_node(node):\n    return node\n"
         )
-        d = _lexicon(tmp_path).token_distribution()
+        d = namespace.token_distribution(_lexicon(tmp_path))
         assert isinstance(d, TokenDistribution)
         assert d.distinct > 0
         # `node` is reused, so it should lead the distribution
@@ -125,7 +126,7 @@ class TestPackageDistributions:
 
     def test_groups_by_package_and_ranks_by_hapax(self, tmp_path: Path):
         self._two_pkg_corpus(tmp_path)
-        pds = _lexicon(tmp_path).package_distributions(min_distinct=3)
+        pds = namespace.package_distributions(_lexicon(tmp_path), min_distinct=3)
         names = [pkg for pkg, _ in pds]
         assert set(names) == {"pkg_hi", "pkg_lo"}
         # highest hapax ratio first
@@ -135,7 +136,7 @@ class TestPackageDistributions:
     def test_min_distinct_floor_drops_small_packages(self, tmp_path: Path):
         self._two_pkg_corpus(tmp_path)
         # floor above either package's vocabulary size -> nothing survives
-        pds = _lexicon(tmp_path).package_distributions(min_distinct=999)
+        pds = namespace.package_distributions(_lexicon(tmp_path), min_distinct=999)
         assert pds == []
 
     def test_descends_into_dominant_subtree(self, tmp_path: Path):
@@ -153,7 +154,7 @@ class TestPackageDistributions:
         )
         (tmp_path / "docs").mkdir()
         (tmp_path / "docs" / "tiny.py").write_text("x = 1\n")
-        pds = _lexicon(tmp_path).package_distributions(min_distinct=2)
+        pds = namespace.package_distributions(_lexicon(tmp_path), min_distinct=2)
         names = {pkg for pkg, _ in pds}
         assert names == {"aa", "bb"}  # descended into src/, split its packages
 
@@ -183,7 +184,7 @@ class TestConceptOwnership:
 
     def test_unexplained_displacement_when_no_import(self, tmp_path: Path):
         lex, _rogue, _widget = self._displaced_corpus(tmp_path)
-        own = lex.concept_ownership(_FakeGraph({}), top=20)
+        own = namespace.concept_ownership(lex, _FakeGraph({}), top=20)
         w = next(o for o in own if o.token == "widget")
         assert w.owner == "rogue"          # owned by usage, not by definition
         assert w.displaced is True         # `widget` names a package it doesn't own
@@ -193,7 +194,7 @@ class TestConceptOwnership:
     def test_import_gate_suppresses_displacement(self, tmp_path: Path):
         lex, rogue, widget = self._displaced_corpus(tmp_path)
         # rogue imports widget -> the owner is a legitimate consumer
-        own = lex.concept_ownership(_FakeGraph({rogue: {widget}}), top=20)
+        own = namespace.concept_ownership(lex, _FakeGraph({rogue: {widget}}), top=20)
         w = next(o for o in own if o.token == "widget")
         assert w.displaced is True
         assert w.owner_imports_eponymous is True
@@ -206,7 +207,7 @@ class TestConceptOwnership:
             "def parse_alpha(): pass\ndef parse_beta(): pass\ndef parse_gamma(): pass\n"
         )
         lex = _lexicon(tmp_path)
-        own = lex.concept_ownership(_FakeGraph({}), top=20)
+        own = namespace.concept_ownership(lex, _FakeGraph({}), top=20)
         parse = next(o for o in own if o.token == "parse")
         assert parse.names_package is False
         assert parse.displaced is False

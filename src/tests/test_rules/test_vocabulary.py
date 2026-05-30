@@ -15,6 +15,7 @@ from slop.linter.rule import Rule
 from slop.linter.rules import vocabulary
 from slop.linter.slop import Action, Disposition
 from slop.tree.tree import Tree
+from slop.lexicon.diagnostic import namespace
 
 
 def _tree(root: Path):
@@ -134,7 +135,7 @@ class TestAcrossAxisPositive:
         self._slopped_corpus(tmp_path)
         tree = _tree(tmp_path)
         graph = tree.structure.dependency_graph()
-        own = {o.token: o for o in tree.lexicon.concept_ownership(graph, top=30)}
+        own = {o.token: o for o in namespace.concept_ownership(tree.lexicon, graph, top=30)}
 
         widget = own["widget"]
         assert widget.owner == "rogue" and widget.displaced

@@ -121,12 +121,14 @@ def run(
     from the Lexicon; the across-namespace owner-displacement gate needs the
     Structure import graph.
     """
+    from slop.lexicon.diagnostic import namespace
+
     lexicon = tree.lexicon
     top = int(rule_config.params.get("top_tokens", 15))
     pkg_min_distinct = int(rule_config.params.get("package_min_distinct", 40))
     severity = rule_config.severity
 
-    dist = lexicon.token_distribution(top=top, exclude=_NOISE)
+    dist = namespace.token_distribution(lexicon, top=top, exclude=_NOISE)
 
     if dist.distinct == 0:
         return RuleResult(
@@ -139,8 +141,8 @@ def run(
     # global distribution is a Zipf near-invariant; the variance lives
     # within the codebase, across its packages. Raw ranked listing
     # (instrumentation), NOT a deviation-vs-norm verdict.
-    packages = lexicon.package_distributions(
-        min_distinct=pkg_min_distinct, exclude=_NOISE,
+    packages = namespace.package_distributions(
+        lexicon, min_distinct=pkg_min_distinct, exclude=_NOISE,
     )
     per_package = [
         {"package": pkg, "hapax_ratio": round(d.hapax_ratio, 3),
@@ -152,8 +154,9 @@ def run(
     # gating owner-displacement (owner that imports the eponymous package is
     # a legitimate consumer, not an escape). Only unexplained displacement
     # is signal.
-    ownership = lexicon.concept_ownership(
-        tree.structure.dependency_graph(), exclude=_NOISE, top=_OWNERSHIP_TOP,
+    ownership = namespace.concept_ownership(
+        lexicon, tree.structure.dependency_graph(),
+        exclude=_NOISE, top=_OWNERSHIP_TOP,
     )
 
     data = dist.as_dict()
