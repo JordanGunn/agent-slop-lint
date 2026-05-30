@@ -21,6 +21,29 @@ from .result import Result
 __all__ = ["Linter"]
 
 
+def _relativize(file: str, root: Path) -> str:
+    """Canonical repo-relative path for a finding.
+
+    Rules emit a mix of absolute (``str(callable.path)``) and
+    already-relative (``_relfile``) paths; left as-is the same file splits
+    into two keys, corrupting any cross-rule / target-centric view. Collapse
+    everything to one form: absolute-under-root → relative; otherwise as-is.
+    """
+    path = Path(file)
+    if path.is_absolute():
+        try:
+            return str(path.relative_to(root))
+        except ValueError:
+            return file
+    return file
+
+
+def _normalize_paths(result: RuleResult, root: Path) -> None:
+    """Rewrite every finding's ``file`` to the canonical relative form."""
+    for finding in (*result.violations, *result.observations):
+        finding.file = _relativize(finding.file, root)
+
+
 def _execute_rule_v2(
     rule_def: RuleDefinition,
     tree: Tree,
@@ -109,6 +132,7 @@ class Linter:
 
             result = _execute_rule_v2(rule_def, self.tree, rc, self.config)
             result = apply_ignores(result, rc, self.config.ignore)
+            _normalize_paths(result, self.tree.root)
             rule_results[rule_def.name] = result
             rules_checked += 1
 

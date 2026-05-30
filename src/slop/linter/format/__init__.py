@@ -33,10 +33,16 @@ def as_dict(result: Result) -> dict:
     Returned by ``Result.json()``. The CLI's ``--output json`` mode
     serialises with ``json.dumps()`` at the output boundary.
     """
+    from slop.linter.overlap import compute_overlap
+
     out: dict = {
         "version": result.version,
         "root": result.root,
         "languages": result.languages,
+        # Cross-rule prioritisation: targets where independent concern
+        # families converge, most first. The machine-consumable form of the
+        # human "Priority" block — fix-first ordering, not per-rule listing.
+        "priority": [t.as_dict() for t in compute_overlap(result.rule_results)],
         "rules": {},
         "summary": {
             "rules_checked": result.rules_checked,

@@ -205,6 +205,12 @@ def test_quiet_pass():
 # ---------------------------------------------------------------------------
 
 
+def test_json_includes_priority():
+    data = to_dict(_make_result([_violation()]))
+    assert "priority" in data
+    assert isinstance(data["priority"], list)
+
+
 def test_json_is_valid():
     result = _make_result([_violation()])
     output = to_dict(result)

@@ -11,13 +11,14 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from slop.cli.color import bold, dim, green, red, yellow
+from slop.linter.result import Result
+from slop.linter.types import RuleResult
+from slop.linter.slop import Slop
+from slop.linter.overlap import TargetOverlap, compute_overlap
 
 # Observation glyph (U+2139 INFORMATION SOURCE) — distinct from the ✗/⚠
 # verdict markers so a claim-free nudge never reads as a defect.
 _INFO_GLYPH = "ℹ"
-from slop.linter.result import Result
-from slop.linter.types import RuleResult
-from slop.linter.slop import Slop
 
 # Default number of violations shown per sub-rule before "...and N more"
 DEFAULT_MAX_VIOLATIONS = 5
@@ -62,12 +63,40 @@ def human(result: Result, *, max_violations: int = DEFAULT_MAX_VIOLATIONS) -> st
     lines.append(bold(f"slop {result.version}") + f" \u2014 scanning {display}")
     lines.append("")
 
+    lines.extend(_render_priority(compute_overlap(result.rule_results)))
+
     for cat, rule_pairs in _group_by_category(result).items():
         lines.extend(_render_category(cat, rule_pairs, max_violations))
 
     lines.append("\u2500" * 40)
     lines.append(_format_footer(result))
     return "\n".join(lines)
+
+
+def _render_priority(targets: list[TargetOverlap]) -> list[str]:
+    """Render the 'Priority' block: targets where independent concerns converge.
+
+    This is the fix-first lens the per-rule detail below cannot show \u2014 files
+    tripping multiple orthogonal concern families, most first, drilling into
+    the worst co-firing symbols. Absent when nothing overlaps (single-rule
+    checks, clean runs).
+    """
+    if not targets:
+        return []
+    lines = [
+        bold("Priority")
+        + dim(" \u2014 where independent concerns converge (fix-first)")
+    ]
+    for t in targets:
+        head = dim(f"{len(t.families)} concerns \u00b7 {_plural(t.finding_count, 'finding')}")
+        lines.append(f"  {t.file}  {head}")
+        lines.append(dim(f"      {', '.join(t.families)}"))
+        for sym in t.symbols[:2]:
+            lines.append(dim(
+                f"      \u21b3 {sym.symbol} ({sym.scope}): {', '.join(sym.families)}"
+            ))
+    lines.append("")
+    return lines
 
 
 def _group_by_category(
