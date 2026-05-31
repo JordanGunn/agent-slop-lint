@@ -89,6 +89,12 @@ class _Base:
                 yield ch
             yield from ch._iter_callables()
 
+    def _iter_classes(self) -> Iterator[Any]:
+        for ch in self._children:
+            if ch.KIND == ComponentKind.CLASS:
+                yield ch
+            yield from ch._iter_classes()
+
     def _sum(self, prim: str) -> int:
         return sum(getattr(cl, prim)() for cl in self._iter_callables())
 
@@ -145,6 +151,7 @@ class Class(_Base, ClassABC):
         self._is_abstract = is_abstract
         self._base_names = bases
         self._properties = properties
+        self._class_index: Any = None  # attached post-carve (corpus-wide)
 
     @property
     def is_abstract(self) -> bool: return self._is_abstract
@@ -154,13 +161,27 @@ class Class(_Base, ClassABC):
     def nested_classes(self): return tuple(c for c in self._children if c.KIND == ComponentKind.CLASS)
     def symbols(self): return self._children
 
-    # ClassMeasures (CK)
-    def ck(self): raise _todo("Class.ck", "CK walkers pending")
+    # ClassMeasures (CK) — dit/noc/cbo use the corpus-wide class index
+    def ck(self):
+        from ..component.metrics import CKMetrics
+        return CKMetrics(nom=self.method_count(), dit=self.dit(), noc=self.noc(),
+                         cbo=self.cbo(), lcom=self.lcom())
     def method_count(self) -> int: return len(self.methods())
-    def dit(self): raise _todo("Class.dit", "inheritance linking pending")
-    def noc(self): raise _todo("Class.noc", "inheritance linking pending")
-    def cbo(self): raise _todo("Class.cbo", "coupling walker pending")
+    def dit(self) -> int:
+        from . import class_index
+        return class_index.dit(self, self._require_index())
+    def noc(self) -> int:
+        from . import class_index
+        return class_index.noc(self, self._require_index())
+    def cbo(self) -> int:
+        from . import class_index
+        return class_index.cbo(self, self._require_index())
     def lcom(self): return None  # not in legacy; future
+
+    def _require_index(self):
+        if self._class_index is None:
+            raise _todo("CK metrics", "class index not attached (scan via Corpus.scan)")
+        return self._class_index
 
 
 class Module(_Base, ModuleABC):
