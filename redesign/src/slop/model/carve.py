@@ -108,6 +108,7 @@ def _carve_module(path: Path, grammar: type) -> C.Module | None:
         root_node, grammar=grammar, content=content, path=path,
         parts=(qualname,), in_class=False,
     )
+    children = _reparent_callables(children, grammar, content)
     module = C.Module(
         id=ComponentId(ComponentKind.MODULE, qualname, (span,)),
         name=qualname, owner=None, extent=Extent((span,)), files=(path,),
@@ -186,6 +187,26 @@ def _make_callable(
     for ch in children:
         ch._owner = callable_
     return callable_
+
+
+def _reparent_callables(children: tuple[Any, ...], grammar: type, content: bytes) -> tuple[Any, ...]:
+    """Attach receiver/impl callables to their owning Class by construction
+    (replaces the legacy post_scan_adjust). Driven by grammar.reparent_callable."""
+    classes = {c.name: c for c in children if c.KIND == ComponentKind.CLASS}
+    if not classes:
+        return children
+    kept: list[Any] = []
+    for ch in children:
+        if ch.KIND == ComponentKind.CALLABLE:
+            target = grammar.reparent_callable(ch._node, content)
+            cls = classes.get(target) if target else None
+            if cls is not None:
+                ch._id = ComponentId(ComponentKind.CALLABLE, f"{cls.qualname}.{ch.name}", ch._extent.spans)
+                ch._owner = cls
+                cls._children = (*cls._children, ch)
+                continue
+        kept.append(ch)
+    return tuple(kept)
 
 
 def _callable_kind(node_type: str, in_class: bool) -> CallableKind:
