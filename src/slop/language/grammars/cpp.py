@@ -122,71 +122,10 @@ class Cpp(MultiPurpose):
         require_type_annotation: bool = True,
     ) -> list[tuple[str, str, int]]:
         del require_type_annotation
-        declarator = fn_node.child_by_field_name("declarator")
-        for _ in range(8):
-            if declarator is None or declarator.type == "function_declarator":
-                break
-            if declarator.type in (
-                "pointer_declarator", "reference_declarator",
-                "parenthesized_declarator",
-            ):
-                declarator = declarator.child_by_field_name("declarator")
-                continue
-            break
-        if declarator is None or declarator.type != "function_declarator":
-            return []
-        plist = declarator.child_by_field_name("parameters")
+        plist = _parameters(fn_node)
         if plist is None:
             return []
-
-        ptr_params: set[str] = set()
-        ref_params: set[str] = set()
-        for param in plist.children:
-            if param.type != "parameter_declaration":
-                continue
-            has_const = False
-            ptr_decl = None
-            ref_decl = None
-            for child in param.children:
-                ctype = child.type
-                if ctype == "type_qualifier":
-                    qtext = content[child.start_byte:child.end_byte].decode(
-                        "utf-8", errors="replace",
-                    ).strip()
-                    if qtext == "const":
-                        has_const = True
-                elif ctype == "pointer_declarator":
-                    ptr_decl = child
-                elif ctype == "reference_declarator":
-                    ref_decl = child
-            if has_const:
-                continue
-            target_decl = ptr_decl or ref_decl
-            if target_decl is None:
-                continue
-            cur = target_decl
-            for _ in range(4):
-                if cur is None:
-                    break
-                inner = cur.child_by_field_name("declarator")
-                if inner is None:
-                    for c in cur.children:
-                        if c.type == "identifier":
-                            inner = c
-                            break
-                if inner is None:
-                    break
-                if inner.type == "identifier":
-                    name = content[inner.start_byte:inner.end_byte].decode(
-                        "utf-8", errors="replace",
-                    )
-                    if target_decl is ptr_decl:
-                        ptr_params.add(name)
-                    else:
-                        ref_params.add(name)
-                    break
-                cur = inner
-
+        ptr_params, ref_params = _collect_ptr_ref_params(plist, content)
         body = fn_node.child_by_field_name("body") or fn_node
         out: list[tuple[str, str, int]] = []
         # Pointer-mutation shapes (same as C) for ptr_params.
@@ -202,79 +141,14 @@ class Cpp(MultiPurpose):
     def stringly_typed_params(
         cls, fn_node: Any, content: bytes,
     ) -> list[tuple[str, bool]]:
-        declarator = fn_node.child_by_field_name("declarator")
-        for _ in range(8):
-            if declarator is None or declarator.type == "function_declarator":
-                break
-            if declarator.type in (
-                "pointer_declarator", "reference_declarator",
-                "parenthesized_declarator",
-            ):
-                declarator = declarator.child_by_field_name("declarator")
-                continue
-            break
-        if declarator is None or declarator.type != "function_declarator":
-            return []
-        plist = declarator.child_by_field_name("parameters")
+        plist = _parameters(fn_node)
         if plist is None:
             return []
-
         out: list[tuple[str, bool]] = []
         for param in plist.children:
             if param.type != "parameter_declaration":
                 continue
-            is_string = False
-            ptr_or_ref = None
-            for child in param.children:
-                ctype = child.type
-                if ctype == "primitive_type":
-                    text = content[child.start_byte:child.end_byte].decode(
-                        "utf-8", errors="replace",
-                    ).strip()
-                    if text == "char":
-                        is_string = True
-                elif ctype in ("pointer_declarator", "reference_declarator"):
-                    ptr_or_ref = child
-                elif ctype == "qualified_identifier":
-                    text = content[child.start_byte:child.end_byte].decode(
-                        "utf-8", errors="replace",
-                    ).strip()
-                    if text in (
-                        "std::string", "std::string_view",
-                        "std::wstring", "std::wstring_view",
-                    ):
-                        is_string = True
-                elif ctype == "type_identifier":
-                    text = content[child.start_byte:child.end_byte].decode(
-                        "utf-8", errors="replace",
-                    ).strip()
-                    if text in ("string", "string_view", "wstring", "wstring_view"):
-                        is_string = True
-            if not is_string:
-                continue
-
-            name: str | None = None
-            if ptr_or_ref is not None:
-                cur = ptr_or_ref
-                for _ in range(4):
-                    if cur is None:
-                        break
-                    inner = cur.child_by_field_name("declarator")
-                    if inner is None:
-                        break
-                    if inner.type == "identifier":
-                        name = content[inner.start_byte:inner.end_byte].decode(
-                            "utf-8", errors="replace",
-                        )
-                        break
-                    cur = inner
-            else:
-                for child in param.children:
-                    if child.type == "identifier":
-                        name = content[child.start_byte:child.end_byte].decode(
-                            "utf-8", errors="replace",
-                        )
-                        break
+            name = _string_param_name(param, content)
             if name is not None:
                 out.append((name, True))
         return out
@@ -451,48 +325,197 @@ class Cpp(MultiPurpose):
         if node.type != Node.FUNCTION_DEFINITION:
             # Fall back to default for non-function nodes (class_specifier etc.).
             return super().extract_name(node, content)
-        declarator = node.child_by_field_name("declarator")
-        for _ in range(8):
-            if declarator is None:
-                return "<anonymous>"
-            if declarator.type == Wrapper.FUNCTION_DECLARATOR:
-                inner = declarator.child_by_field_name("declarator")
-                if inner is None:
-                    return "<anonymous>"
-                if inner.type in (Identifier.IDENTIFIER, Identifier.FIELD_IDENTIFIER):
-                    return content[inner.start_byte:inner.end_byte].decode(
-                        "utf-8", errors="replace",
-                    )
-                if inner.type == Identifier.QUALIFIED_IDENTIFIER:
-                    for c in reversed(inner.children):
-                        if c.type == Identifier.IDENTIFIER:
-                            return content[c.start_byte:c.end_byte].decode(
-                                "utf-8", errors="replace",
-                            )
-                    return "<anonymous>"
-                if inner.type == Identifier.OPERATOR_NAME:
-                    for c in inner.children:
-                        if c.type != Identifier.OPERATOR:
-                            return content[c.start_byte:c.end_byte].decode(
-                                "utf-8", errors="replace",
-                            ).strip()
-                    return "<anonymous>"
-                if inner.type == Identifier.DESTRUCTOR_NAME:
-                    for c in inner.children:
-                        if c.type == Identifier.IDENTIFIER:
-                            return "~" + content[c.start_byte:c.end_byte].decode(
-                                "utf-8", errors="replace",
-                            )
-                    return "<anonymous>"
-                return "<anonymous>"
-            if declarator.type in (
-                Wrapper.POINTER_DECLARATOR, Wrapper.REFERENCE_DECLARATOR,
-                Wrapper.PARENTHESIZED_DECLARATOR,
-            ):
-                declarator = declarator.child_by_field_name("declarator")
-                continue
-            break
+        fdecl = _function_declarator(node)
+        if fdecl is None:
+            return "<anonymous>"
+        inner = fdecl.child_by_field_name("declarator")
+        if inner is None:
+            return "<anonymous>"
+        return _name_from_declarator_inner(inner, content)
+
+
+def _function_declarator(fn_node: Any) -> Any | None:
+    """Unwrap pointer/reference/parenthesized declarators to the function_declarator.
+
+    C++ wraps the function_declarator when the return type is a pointer
+    or reference (``int* f(...)`` → pointer_declarator → function_declarator).
+    Returns the function_declarator node, or None if the chain doesn't reach
+    one within a bounded number of hops.
+    """
+    declarator = fn_node.child_by_field_name("declarator")
+    for _ in range(8):
+        if declarator is None:
+            return None
+        if declarator.type == "function_declarator":
+            return declarator
+        if declarator.type in (
+            "pointer_declarator", "reference_declarator",
+            "parenthesized_declarator",
+        ):
+            declarator = declarator.child_by_field_name("declarator")
+            continue
+        return None
+    return None
+
+
+def _parameters(fn_node: Any) -> Any | None:
+    """Return the parameter_list node of a function definition, or None."""
+    fdecl = _function_declarator(fn_node)
+    if fdecl is None:
+        return None
+    return fdecl.child_by_field_name("parameters")
+
+
+def _declarator_identifier(
+    decl: Any, content: bytes, *, scan_children: bool = False,
+) -> str | None:
+    """Walk a pointer/reference declarator chain to its inner identifier name.
+
+    ``scan_children`` mirrors the original hidden_mutators behavior of
+    falling back to a direct identifier child when ``declarator`` is absent;
+    stringly_typed_params left untouched (passes False).
+    """
+    cur = decl
+    for _ in range(4):
+        if cur is None:
+            return None
+        inner = cur.child_by_field_name("declarator")
+        if inner is None and scan_children:
+            for c in cur.children:
+                if c.type == "identifier":
+                    inner = c
+                    break
+        if inner is None:
+            return None
+        if inner.type == "identifier":
+            return content[inner.start_byte:inner.end_byte].decode(
+                "utf-8", errors="replace",
+            )
+        cur = inner
+    return None
+
+
+def _collect_ptr_ref_params(
+    plist: Any, content: bytes,
+) -> tuple[set[str], set[str]]:
+    """Partition a parameter_list into non-const pointer and reference names."""
+    pointers: set[str] = set()
+    references: set[str] = set()
+    for param in plist.children:
+        if param.type != "parameter_declaration":
+            continue
+        has_const = False
+        ptr_decl = None
+        ref_decl = None
+        for child in param.children:
+            ctype = child.type
+            if ctype == "type_qualifier":
+                qtext = content[child.start_byte:child.end_byte].decode(
+                    "utf-8", errors="replace",
+                ).strip()
+                if qtext == "const":
+                    has_const = True
+            elif ctype == "pointer_declarator":
+                ptr_decl = child
+            elif ctype == "reference_declarator":
+                ref_decl = child
+        if has_const:
+            continue
+        target_decl = ptr_decl or ref_decl
+        if target_decl is None:
+            continue
+        name = _declarator_identifier(target_decl, content, scan_children=True)
+        if name is None:
+            continue
+        if target_decl is ptr_decl:
+            pointers.add(name)
+        else:
+            references.add(name)
+    return pointers, references
+
+
+_STRING_QUALIFIED = frozenset({
+    "std::string", "std::string_view", "std::wstring", "std::wstring_view",
+})
+_STRING_TYPE_ID = frozenset({"string", "string_view", "wstring", "wstring_view"})
+
+
+def _string_param_name(param: Any, content: bytes) -> str | None:
+    """Return the name of a string-typed parameter, or None if not a string.
+
+    Recognises ``char`` (with a pointer declarator), ``std::string`` family
+    (qualified_identifier), and the unqualified ``string`` family
+    (type_identifier under a ``using namespace std``).
+    """
+    is_string = False
+    ptr_or_ref = None
+    for child in param.children:
+        ctype = child.type
+        if ctype == "primitive_type":
+            text = content[child.start_byte:child.end_byte].decode(
+                "utf-8", errors="replace",
+            ).strip()
+            if text == "char":
+                is_string = True
+        elif ctype in ("pointer_declarator", "reference_declarator"):
+            ptr_or_ref = child
+        elif ctype == "qualified_identifier":
+            text = content[child.start_byte:child.end_byte].decode(
+                "utf-8", errors="replace",
+            ).strip()
+            if text in _STRING_QUALIFIED:
+                is_string = True
+        elif ctype == "type_identifier":
+            text = content[child.start_byte:child.end_byte].decode(
+                "utf-8", errors="replace",
+            ).strip()
+            if text in _STRING_TYPE_ID:
+                is_string = True
+    if not is_string:
+        return None
+    if ptr_or_ref is not None:
+        return _declarator_identifier(ptr_or_ref, content)
+    for child in param.children:
+        if child.type == "identifier":
+            return content[child.start_byte:child.end_byte].decode(
+                "utf-8", errors="replace",
+            )
+    return None
+
+
+def _name_from_declarator_inner(inner: Any, content: bytes) -> str:
+    """Resolve a function name from the function_declarator's inner declarator.
+
+    Handles plain/field identifiers, out-of-line qualified names, operator
+    overloads, and destructors; returns ``<anonymous>`` for anything else.
+    """
+    itype = inner.type
+    if itype in (Identifier.IDENTIFIER, Identifier.FIELD_IDENTIFIER):
+        return content[inner.start_byte:inner.end_byte].decode(
+            "utf-8", errors="replace",
+        )
+    if itype == Identifier.QUALIFIED_IDENTIFIER:
+        for c in reversed(inner.children):
+            if c.type == Identifier.IDENTIFIER:
+                return content[c.start_byte:c.end_byte].decode(
+                    "utf-8", errors="replace",
+                )
         return "<anonymous>"
+    if itype == Identifier.OPERATOR_NAME:
+        for c in inner.children:
+            if c.type != Identifier.OPERATOR:
+                return content[c.start_byte:c.end_byte].decode(
+                    "utf-8", errors="replace",
+                ).strip()
+        return "<anonymous>"
+    if itype == Identifier.DESTRUCTOR_NAME:
+        for c in inner.children:
+            if c.type == Identifier.IDENTIFIER:
+                return "~" + content[c.start_byte:c.end_byte].decode(
+                    "utf-8", errors="replace",
+                )
+        return "<anonymous>"
+    return "<anonymous>"
 
 
 def _cpp_walk_pointer_mutations(
@@ -514,24 +537,37 @@ def _cpp_walk_reference_mutations(
         if n.type == "assignment_expression":
             lhs = n.child_by_field_name("left")
             if lhs is not None:
-                if lhs.type == "identifier":
-                    name = content[lhs.start_byte:lhs.end_byte].decode(
-                        "utf-8", errors="replace",
-                    )
-                    if name in params:
-                        out.append((name, "ref-assign", n.start_point[0] + 1))
-                elif lhs.type == "field_expression":
-                    obj = lhs.child_by_field_name("argument")
-                    if obj is None:
-                        for c in lhs.children:
-                            if c.type == "identifier":
-                                obj = c
-                                break
-                    if obj is not None and obj.type == "identifier":
-                        name = content[obj.start_byte:obj.end_byte].decode(
-                            "utf-8", errors="replace",
-                        )
-                        if name in params:
-                            out.append((name, "ref-field-assign", n.start_point[0] + 1))
+                hit = _reference_lhs_param(lhs, content, params)
+                if hit is not None:
+                    name, kind = hit
+                    out.append((name, kind, n.start_point[0] + 1))
         stack.extend(n.children)
     return out
+
+
+def _reference_lhs_param(
+    lhs: Any, content: bytes, params: set[str],
+) -> tuple[str, str] | None:
+    """Classify an assignment LHS as a reference-param mutation, or None.
+
+    ``r = ...`` (direct assignment to a non-const reference) → ``ref-assign``;
+    ``r.field = ...`` → ``ref-field-assign``. Mirrors C's ``_c_lhs_param``.
+    """
+    ltype = lhs.type
+    if ltype == "identifier":
+        name = content[lhs.start_byte:lhs.end_byte].decode("utf-8", errors="replace")
+        if name in params:
+            return (name, "ref-assign")
+        return None
+    if ltype == "field_expression":
+        obj = lhs.child_by_field_name("argument")
+        if obj is None:
+            for c in lhs.children:
+                if c.type == "identifier":
+                    obj = c
+                    break
+        if obj is not None and obj.type == "identifier":
+            name = content[obj.start_byte:obj.end_byte].decode("utf-8", errors="replace")
+            if name in params:
+                return (name, "ref-field-assign")
+    return None
