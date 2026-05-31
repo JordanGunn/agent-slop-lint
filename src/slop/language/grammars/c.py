@@ -111,7 +111,8 @@ class C(Procedural):
         require_type_annotation: bool = True,
     ) -> list[tuple[str, str, int]]:
         del require_type_annotation
-        # Find function_declarator + extract non-const pointer params.
+        # Find function_declarator (unwrapping pointer-return declarators) +
+        # extract non-const pointer params.
         declarator = fn_node.child_by_field_name("declarator")
         while declarator is not None and declarator.type == "pointer_declarator":
             declarator = declarator.child_by_field_name("declarator")
@@ -123,36 +124,9 @@ class C(Procedural):
 
         ptr_params: set[str] = set()
         for param in plist.children:
-            if param.type != "parameter_declaration":
-                continue
-            has_const = False
-            ptr_decl = None
-            for child in param.children:
-                ctype = child.type
-                if ctype == "type_qualifier":
-                    qtext = content[child.start_byte:child.end_byte].decode(
-                        "utf-8", errors="replace",
-                    ).strip()
-                    if qtext == "const":
-                        has_const = True
-                elif ctype == "pointer_declarator":
-                    ptr_decl = child
-            if has_const or ptr_decl is None:
-                continue
-            cur = ptr_decl
-            for _ in range(4):
-                if cur is None:
-                    break
-                inner = cur.child_by_field_name("declarator")
-                if inner is None:
-                    break
-                if inner.type == "identifier":
-                    ptr_params.add(content[inner.start_byte:inner.end_byte].decode(
-                        "utf-8", errors="replace",
-                    ))
-                    break
-                cur = inner
-
+            name = _pointer_param_name(param, content)
+            if name is not None:
+                ptr_params.add(name)
         if not ptr_params:
             return []
         body = fn_node.child_by_field_name("body") or fn_node
@@ -177,36 +151,7 @@ class C(Procedural):
 
         out: list[tuple[str, bool]] = []
         for param in plist.children:
-            if param.type != "parameter_declaration":
-                continue
-            is_char_ptr = False
-            ptr_decl = None
-            for c in param.children:
-                if c.type == "primitive_type":
-                    ptext = content[c.start_byte:c.end_byte].decode(
-                        "utf-8", errors="replace",
-                    ).strip()
-                    if ptext == "char":
-                        is_char_ptr = True
-                elif c.type == "pointer_declarator":
-                    ptr_decl = c
-            if not is_char_ptr or ptr_decl is None:
-                continue
-
-            cur = ptr_decl
-            name: str | None = None
-            for _ in range(4):
-                if cur is None:
-                    break
-                inner = cur.child_by_field_name("declarator")
-                if inner is None:
-                    break
-                if inner.type == "identifier":
-                    name = content[inner.start_byte:inner.end_byte].decode(
-                        "utf-8", errors="replace",
-                    )
-                    break
-                cur = inner
+            name = _char_pointer_param_name(param, content)
             if name is not None:
                 out.append((name, True))
         return out
@@ -312,6 +257,63 @@ class C(Procedural):
         return "<anonymous>"
 
 
+def _declarator_identifier(decl: Any, content: bytes) -> str | None:
+    """Walk a pointer declarator chain to its inner identifier name, or None."""
+    cur = decl
+    for _ in range(4):
+        if cur is None:
+            return None
+        inner = cur.child_by_field_name("declarator")
+        if inner is None:
+            return None
+        if inner.type == "identifier":
+            return content[inner.start_byte:inner.end_byte].decode("utf-8", errors="replace")
+        cur = inner
+    return None
+
+
+def _pointer_param_name(param: Any, content: bytes) -> str | None:
+    """Name of a non-const pointer parameter, or None."""
+    if param.type != "parameter_declaration":
+        return None
+    has_const = False
+    ptr_decl = None
+    for child in param.children:
+        ctype = child.type
+        if ctype == "type_qualifier":
+            qtext = content[child.start_byte:child.end_byte].decode(
+                "utf-8", errors="replace",
+            ).strip()
+            if qtext == "const":
+                has_const = True
+        elif ctype == "pointer_declarator":
+            ptr_decl = child
+    if has_const or ptr_decl is None:
+        return None
+    return _declarator_identifier(ptr_decl, content)
+
+
+def _char_pointer_param_name(param: Any, content: bytes) -> str | None:
+    """Name of a ``char*`` parameter, or None."""
+    if param.type != "parameter_declaration":
+        return None
+    is_char = False
+    ptr_decl = None
+    for child in param.children:
+        ctype = child.type
+        if ctype == "primitive_type":
+            ptext = content[child.start_byte:child.end_byte].decode(
+                "utf-8", errors="replace",
+            ).strip()
+            if ptext == "char":
+                is_char = True
+        elif ctype == "pointer_declarator":
+            ptr_decl = child
+    if not is_char or ptr_decl is None:
+        return None
+    return _declarator_identifier(ptr_decl, content)
+
+
 def _c_walk_pointer_mutations(
     body: Any, content: bytes, params: set[str],
 ) -> list[tuple[str, str, int]]:
@@ -340,47 +342,63 @@ def _c_walk_pointer_mutations(
 def _c_lhs_param(
     lhs: Any, content: bytes, params: set[str],
 ) -> tuple[str, str] | None:
+    """Classify an assignment LHS as a pointer-param mutation, or None."""
     ltype = lhs.type
     if ltype == "pointer_expression":
-        for child in lhs.children:
-            if child.type == "identifier":
-                name = content[child.start_byte:child.end_byte].decode(
-                    "utf-8", errors="replace",
-                )
-                if name in params:
-                    return (name, "deref-assign")
-        return None
+        return _deref_assign_param(lhs, content, params)
     if ltype == "field_expression":
-        op_present = any(c.type == "->" for c in lhs.children)
-        if not op_present:
-            return None
-        obj = lhs.child_by_field_name("argument")
-        if obj is None:
-            for c in lhs.children:
-                if c.type == "identifier":
-                    obj = c
-                    break
-        if obj is not None and obj.type == "identifier":
-            name = content[obj.start_byte:obj.end_byte].decode(
-                "utf-8", errors="replace",
-            )
-            if name in params:
-                return (name, "field-assign")
-        return None
+        return _field_assign_param(lhs, content, params)
     if ltype == "subscript_expression":
-        argument = lhs.child_by_field_name("argument")
-        if argument is not None and argument.type == "identifier":
-            name = content[argument.start_byte:argument.end_byte].decode(
-                "utf-8", errors="replace",
-            )
+        return _subscript_assign_param(lhs, content, params)
+    return None
+
+
+def _identifier_child(node: Any) -> Any | None:
+    """Return the first direct ``identifier`` child of a node, or None."""
+    for c in node.children:
+        if c.type == "identifier":
+            return c
+    return None
+
+
+def _deref_assign_param(
+    lhs: Any, content: bytes, params: set[str],
+) -> tuple[str, str] | None:
+    """``*p = ...`` — first identifier child that names a pointer param."""
+    for child in lhs.children:
+        if child.type == "identifier":
+            name = content[child.start_byte:child.end_byte].decode("utf-8", errors="replace")
             if name in params:
-                return (name, "subscript-assign")
-        for c in lhs.children:
-            if c.type == "identifier":
-                name = content[c.start_byte:c.end_byte].decode(
-                    "utf-8", errors="replace",
-                )
-                if name in params:
-                    return (name, "subscript-assign")
-                break
+                return (name, "deref-assign")
+    return None
+
+
+def _field_assign_param(
+    lhs: Any, content: bytes, params: set[str],
+) -> tuple[str, str] | None:
+    """``p->field = ...`` — arrow-operator field access on a pointer param."""
+    if not any(c.type == "->" for c in lhs.children):
+        return None
+    obj = lhs.child_by_field_name("argument") or _identifier_child(lhs)
+    if obj is not None and obj.type == "identifier":
+        name = content[obj.start_byte:obj.end_byte].decode("utf-8", errors="replace")
+        if name in params:
+            return (name, "field-assign")
+    return None
+
+
+def _subscript_assign_param(
+    lhs: Any, content: bytes, params: set[str],
+) -> tuple[str, str] | None:
+    """``p[i] = ...`` — subscript on a pointer param (argument field, else first id)."""
+    argument = lhs.child_by_field_name("argument")
+    if argument is not None and argument.type == "identifier":
+        name = content[argument.start_byte:argument.end_byte].decode("utf-8", errors="replace")
+        if name in params:
+            return (name, "subscript-assign")
+    ident = _identifier_child(lhs)
+    if ident is not None:
+        name = content[ident.start_byte:ident.end_byte].decode("utf-8", errors="replace")
+        if name in params:
+            return (name, "subscript-assign")
     return None
