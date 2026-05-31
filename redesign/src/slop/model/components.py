@@ -158,7 +158,11 @@ class Class(_Base, ClassABC):
     def is_abstract(self) -> bool: return self._is_abstract
     def methods(self): return tuple(c for c in self._children if c.KIND == ComponentKind.CALLABLE)
     def properties(self): return self._properties
-    def bases(self): raise _todo("Class.bases", "resolved-superclass linking pending")
+    def bases(self):
+        idx = self._class_index
+        if idx is None:
+            return ()
+        return tuple(idx.by_name[b] for b in self._base_names if b in idx.by_name)
     def nested_classes(self): return tuple(c for c in self._children if c.KIND == ComponentKind.CLASS)
     def symbols(self): return self._children
 
@@ -226,7 +230,11 @@ class Package(_Base, PackageABC):
     def martin_metrics(self): raise _todo("Package.martin_metrics", "needs DependencyGraph (out of scope)")
     def in_zone_of_pain(self): raise _todo("Package.in_zone_of_pain", "needs DependencyGraph (out of scope)")
     def in_zone_of_uselessness(self): raise _todo("Package.in_zone_of_uselessness", "needs DependencyGraph (out of scope)")
-    def is_runt(self): raise _todo("Package.is_runt", "pending")
+    def is_runt(self) -> bool:
+        """A package whose boundary does not earn its weight: <=1 module and no
+        top-level definitions (a trivial single-/empty-module package)."""
+        mods = self.modules()
+        return len(mods) <= 1 and sum(m.definition_count() for m in mods) == 0
 
 
 class Realm(_Base, RealmABC):
@@ -267,9 +275,13 @@ class Corpus(_Base, CorpusABC):
         return scan_corpus(root, config)
 
     # CorpusMeasures — graph-dependent / cross-cutting
-    def orphans(self): raise _todo("Corpus.orphans", "cross-file reference search pending")
+    def orphans(self):
+        from .orphans import orphans
+        return orphans(self)
     def duplication(self):
         from .relational import clone_clusters
         return clone_clusters(list(self._iter_callables()))
-    def hotspots(self): raise _todo("Corpus.hotspots", "git-churn join pending")
+    def hotspots(self):
+        from .hotspots import hotspots
+        return hotspots(self)
     def dependency_cycles(self): raise _todo("Corpus.dependency_cycles", "needs DependencyGraph (out of scope)")

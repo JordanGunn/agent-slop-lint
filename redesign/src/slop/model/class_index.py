@@ -17,6 +17,7 @@ class ClassIndex:
     known: frozenset[str]
     parent_map: dict[str, list[str]]
     children_map: dict[str, list[str]]
+    by_name: dict[str, Any]   # simple name -> a Class component (last wins on clash)
 
 
 def build(classes: list[Any]) -> ClassIndex:
@@ -24,14 +25,16 @@ def build(classes: list[Any]) -> ClassIndex:
     known: set[str] = set()
     parent_map: dict[str, list[str]] = {}
     children_map: dict[str, list[str]] = {}
+    by_name: dict[str, Any] = {}
     for cls in classes:
         name = cls.name
         known.add(name)
+        by_name[name] = cls
         bases = list(cls._base_names)
         parent_map.setdefault(name, []).extend(bases)
         for base in bases:
             children_map.setdefault(base, []).append(name)
-    return ClassIndex(frozenset(known), parent_map, children_map)
+    return ClassIndex(frozenset(known), parent_map, children_map, by_name)
 
 
 def dit(cls: Any, idx: ClassIndex) -> int:
