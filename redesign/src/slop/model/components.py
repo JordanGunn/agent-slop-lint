@@ -175,9 +175,15 @@ class Module(_Base, ModuleABC):
     def escape_hatch_density(self) -> float:
         from .annotations import escape_hatch_density as _ehd
         return _ehd(self._node, self._content, self._grammar)
-    def redundant_siblings(self): raise _todo("Module.redundant_siblings", "callee-overlap pending")
-    def call_islands(self): raise _todo("Module.call_islands", "intra-module call topology pending")
-    def clone_clusters(self): raise _todo("Module.clone_clusters", "clone fingerprinting pending")
+    def redundant_siblings(self):
+        from .relational import redundant_siblings
+        return redundant_siblings(self)
+    def call_islands(self):
+        from .relational import call_islands
+        return call_islands(self)
+    def clone_clusters(self):
+        from .relational import clone_clusters
+        return clone_clusters(list(self._iter_callables()))
 
 
 # ============================ aggregate containers ========================
@@ -240,6 +246,8 @@ class Corpus(_Base, CorpusABC):
 
     # CorpusMeasures — graph-dependent / cross-cutting
     def orphans(self): raise _todo("Corpus.orphans", "cross-file reference search pending")
-    def duplication(self): raise _todo("Corpus.duplication", "clone fingerprinting pending")
+    def duplication(self):
+        from .relational import clone_clusters
+        return clone_clusters(list(self._iter_callables()))
     def hotspots(self): raise _todo("Corpus.hotspots", "git-churn join pending")
     def dependency_cycles(self): raise _todo("Corpus.dependency_cycles", "needs DependencyGraph (out of scope)")
