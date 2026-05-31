@@ -269,6 +269,20 @@ class Grammar(ABC):
         return ()
 
     @classmethod
+    def resolve_module(cls, module: str, candidates: dict[str, Any]) -> Any | None:
+        """Resolve a raw import specifier to a candidate (a module id), via the
+        corpus name index. Default: exact match, then trailing segment after a
+        ``.``/``::``/``/`` separator. Grammars with bespoke resolution override."""
+        if module in candidates:
+            return candidates[module]
+        for sep in (".", "::", "/"):
+            if sep in module:
+                tail = module.rsplit(sep, 1)[1]
+                if tail in candidates:
+                    return candidates[tail]
+        return None
+
+    @classmethod
     def resolve_packages(cls, root: Path, files: list[Path]) -> dict[str, list[Path]]:
         """Group files into packages by language rule. Default: one package per directory."""
         root_path = Path(root)

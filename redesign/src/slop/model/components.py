@@ -192,7 +192,9 @@ class Class(_Base, ClassABC):
 class Module(_Base, ModuleABC):
     KIND = ComponentKind.MODULE
 
-    def imports(self): raise _todo("Module.imports", "import extraction pending")
+    def imports(self):
+        from .imports import module_imports
+        return module_imports(self)
     def symbols(self): return self._children
 
     # ModuleMeasures
@@ -220,16 +222,57 @@ class Package(_Base, PackageABC):
     def __init__(self, *, path: Path, **kw: Any) -> None:
         super().__init__(**kw)
         self._path = path
+        self._dep_graph: Any = None        # attached post-carve
+        self._module_pkg: dict = {}        # module id -> package id
 
     @property
     def path(self) -> Path: return self._path
     def packages(self): return tuple(c for c in self._children if c.KIND == ComponentKind.PACKAGE)
     def modules(self): return tuple(c for c in self._children if c.KIND == ComponentKind.MODULE)
 
-    # PackageMeasures — graph-dependent, out of scope
-    def martin_metrics(self): raise _todo("Package.martin_metrics", "needs DependencyGraph (out of scope)")
-    def in_zone_of_pain(self): raise _todo("Package.in_zone_of_pain", "needs DependencyGraph (out of scope)")
-    def in_zone_of_uselessness(self): raise _todo("Package.in_zone_of_uselessness", "needs DependencyGraph (out of scope)")
+    # PackageMeasures (Martin 1994) — uses the corpus DependencyGraph contracted
+    # to package granularity + abstractness from the grammar's classification.
+    def _martin_raw(self) -> tuple[int, int, int, int]:
+        if self._dep_graph is None:
+            raise _todo("Package.martin", "dependency graph not attached (scan via Corpus.scan)")
+        ce: set = set(); ca: set = set()
+        for m in self.modules():
+            for t in self._dep_graph.efferent_nodes(m.id):
+                p = self._module_pkg.get(t)
+                if p is not None and p != self.id:
+                    ce.add(p)
+            for s in self._dep_graph.afferent_nodes(m.id):
+                p = self._module_pkg.get(s)
+                if p is not None and p != self.id:
+                    ca.add(p)
+        na = nc = 0
+        for cls in self._iter_classes():
+            c = cls._grammar.is_abstract_scope(cls._node, cls._content)
+            if c is True:
+                na += 1
+            elif c is False:
+                nc += 1
+        return len(ca), len(ce), na, nc
+
+    def martin_metrics(self):
+        from ..component.metrics import PackageMetrics
+        ca, ce, na, nc = self._martin_raw()
+        i = ce / (ca + ce) if (ca + ce) else 0.0
+        a = na / (na + nc) if (na + nc) else 0.0
+        return PackageMetrics(afferent=ca, efferent=ce, instability=i, abstractness=a,
+                              distance=abs(a + i - 1.0))
+
+    def in_zone_of_pain(self) -> bool:
+        ca, ce, na, nc = self._martin_raw()
+        if not (ca + ce) or not (na + nc):
+            return False  # undefined — not classifiable
+        return (ce / (ca + ce)) < 0.3 and (na / (na + nc)) < 0.3
+
+    def in_zone_of_uselessness(self) -> bool:
+        ca, ce, na, nc = self._martin_raw()
+        if not (ca + ce) or not (na + nc):
+            return False
+        return (ce / (ca + ce)) > 0.7 and (na / (na + nc)) > 0.7
     def is_runt(self) -> bool:
         """A package whose boundary does not earn its weight: <=1 module and no
         top-level definitions (a trivial single-/empty-module package)."""
@@ -262,12 +305,17 @@ class Corpus(_Base, CorpusABC):
         super().__init__(**kw)
         self._root = root
         self._config = config
+        self._dep_graph: Any = None  # attached post-carve
 
     @property
     def root(self) -> Path: return self._root
     @property
     def config(self): return self._config
     def realms(self): return tuple(c for c in self._children if c.KIND == ComponentKind.REALM)
+
+    def dependency_graph(self):
+        """The corpus Module-level DependencyGraph (built during scan)."""
+        return self._dep_graph
 
     @classmethod
     def scan(cls, root: Path, config: Any) -> "Corpus":
@@ -284,4 +332,5 @@ class Corpus(_Base, CorpusABC):
     def hotspots(self):
         from .hotspots import hotspots
         return hotspots(self)
-    def dependency_cycles(self): raise _todo("Corpus.dependency_cycles", "needs DependencyGraph (out of scope)")
+    def dependency_cycles(self):
+        return self._dep_graph.cycles() if self._dep_graph is not None else []

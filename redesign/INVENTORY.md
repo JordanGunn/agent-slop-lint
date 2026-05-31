@@ -38,12 +38,12 @@ Status legend:
 | redundancy | sibling-callee overlap | `Module.redundant_siblings` | done |
 | duplication | type-2 clone clusters | `Module.clone_clusters` (+ `Corpus.duplication`) | done |
 | lexical.confusion | disjoint call-islands (structural, NOT lexical) | `Module.call_islands` | done |
-| rigidity | Martin zone of pain | `Package.in_zone_of_pain` / `martin_metrics` | graph |
-| uselessness | Martin zone of uselessness | `Package.in_zone_of_uselessness` / `martin_metrics` | graph |
+| rigidity | Martin zone of pain | `Package.in_zone_of_pain` / `martin_metrics` | done |
+| uselessness | Martin zone of uselessness | `Package.in_zone_of_uselessness` / `martin_metrics` | done |
 | lexical.runts | trivial single-module package | `Package.is_runt` | done |
 | hotspots | churn × complexity | `Corpus.hotspots` | done |
 | orphans | unreferenced symbols | `Corpus.orphans` | done |
-| deps | import cycles (Tarjan SCC) | `DependencyGraph.cycles` / `Corpus.dependency_cycles` | graph |
+| deps | import cycles (Tarjan SCC) | `DependencyGraph.cycles` / `Corpus.dependency_cycles` | done |
 | lexical.stutter | scope-token repetition | rule consuming `Lexicon` | rule |
 | lexical.verbosity | over-long names | rule consuming `Lexicon` | rule |
 | lexical.hammers | catchall vocabulary | rule consuming `Lexicon` | rule |
@@ -65,3 +65,4 @@ Status legend:
 - **WMC weighting.** CK leave the method weight open; legacy used cyclomatic-sum (which collapses WMC into `class.cyclomatic`). New `wmc()` must pick a real definition (unweighted method count, or configurable weight) to stay distinct.
 - **Confusion altitude.** Placed at `Module.call_islands` (intra-module topology). Whether it stays a structural Module metric or moves behind the CallGraph bar is unresolved — see DESIGN.md.
 - **`Module` relational metrics** (redundant_siblings / call_islands / clone_clusters) currently sit on `ModuleMeasures`; they may migrate to a graph projection if a cross-module form is needed.
+- **Package carving fidelity (follow-up).** Carving groups one Package per directory (basename-named, flat) rather than using `grammar.resolve_packages` (`__init__`-gated, nested). The Martin *compute* is oracle-correct (verified: `config` Ca=5/Ce=1/I=0.17/A=0/D=0.83), but package *boundaries* diverge from the legacy until the carver uses `resolve_packages`. Class-less packages report `A=0.0` (record is non-optional float) vs the legacy's `None`/`unknown`; the zone verdicts guard on definedness and are correct.
