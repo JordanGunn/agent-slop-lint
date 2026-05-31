@@ -185,28 +185,40 @@ _JS_MUTATION_METHODS: frozenset[str] = frozenset({
 })
 
 
+def _identifier_child(node: Any) -> Any | None:
+    """Return the first direct ``identifier`` child of a node, or None."""
+    for c in node.children:
+        if c.type == "identifier":
+            return c
+    return None
+
+
+def _decode(node: Any, content: bytes) -> str:
+    return content[node.start_byte:node.end_byte].decode("utf-8", errors="replace")
+
+
+def _js_formal_param_name(child: Any, content: bytes) -> str | None:
+    """Name of a JS formal parameter (bare identifier or ``x = default``)."""
+    if child.type == "identifier":
+        return _decode(child, content)
+    if child.type == "assignment_pattern":
+        left = child.child_by_field_name("left")
+        if left is not None and left.type == "identifier":
+            return _decode(left, content)
+    return None
+
+
 def _js_parameter_names(fn_node: Any, content: bytes) -> set[str]:
     params_node = fn_node.child_by_field_name("parameters") or fn_node.child_by_field_name("parameter")
     if params_node is None:
         # Arrow functions with a single bare identifier parameter.
-        for child in fn_node.children:
-            if child.type == "identifier":
-                return {content[child.start_byte:child.end_byte].decode(
-                    "utf-8", errors="replace",
-                )}
-        return set()
+        ident = _identifier_child(fn_node)
+        return {_decode(ident, content)} if ident is not None else set()
     names: set[str] = set()
     for child in params_node.children:
-        if child.type == "identifier":
-            names.add(content[child.start_byte:child.end_byte].decode(
-                "utf-8", errors="replace",
-            ))
-        elif child.type in ("assignment_pattern",):
-            left = child.child_by_field_name("left")
-            if left is not None and left.type == "identifier":
-                names.add(content[left.start_byte:left.end_byte].decode(
-                    "utf-8", errors="replace",
-                ))
+        name = _js_formal_param_name(child, content)
+        if name is not None:
+            names.add(name)
     return names
 
 
@@ -214,6 +226,42 @@ _TS_MUTABLE_TYPES: frozenset[str] = frozenset({
     "Array", "Map", "Set", "WeakMap", "WeakSet",
     "ReadonlyArray",  # commonly mutated despite the read-only annotation
 })
+
+
+def _type_tokens(text: str) -> set[str]:
+    """Split a type annotation into identifier-like tokens (``Array<number>``
+    → {``Array``, ``number``})."""
+    tokens: set[str] = set()
+    buf: list[str] = []
+    for ch in text:
+        if ch.isalnum() or ch == "_":
+            buf.append(ch)
+        elif buf:
+            tokens.add("".join(buf))
+            buf = []
+    if buf:
+        tokens.add("".join(buf))
+    return tokens
+
+
+def _ts_collection_param(child: Any, content: bytes, require_annotation: bool) -> str | None:
+    """Name of a TS parameter, gated on a collection-type annotation when
+    ``require_annotation`` is set. tree-sitter-typescript wraps params in
+    ``required_parameter`` / ``optional_parameter`` nodes."""
+    if child.type not in ("required_parameter", "optional_parameter"):
+        return None
+    pattern = child.child_by_field_name("pattern")
+    if pattern is None or pattern.type != "identifier":
+        return None
+    name = _decode(pattern, content)
+    if not require_annotation:
+        return name
+    type_ann = child.child_by_field_name("type")
+    if type_ann is None:
+        return None
+    if _type_tokens(_decode(type_ann, content)) & _TS_MUTABLE_TYPES:
+        return name
+    return None
 
 
 def _ts_parameter_names_with_annotation(
@@ -226,40 +274,28 @@ def _ts_parameter_names_with_annotation(
         return set()
     names: set[str] = set()
     for child in params_node.children:
-        # tree-sitter-typescript wraps params in ``required_parameter`` /
-        # ``optional_parameter`` nodes that contain the pattern (identifier)
-        # and an optional ``type_annotation`` field.
-        if child.type not in ("required_parameter", "optional_parameter"):
-            continue
-        pattern = child.child_by_field_name("pattern")
-        if pattern is None or pattern.type != "identifier":
-            continue
-        name = content[pattern.start_byte:pattern.end_byte].decode(
-            "utf-8", errors="replace",
-        )
-        type_ann = child.child_by_field_name("type")
-        if not require_annotation:
-            names.add(name)
-            continue
-        if type_ann is None:
-            continue
-        type_text = content[type_ann.start_byte:type_ann.end_byte].decode(
-            "utf-8", errors="replace",
-        )
-        tokens: set[str] = set()
-        buf: list[str] = []
-        for ch in type_text:
-            if ch.isalnum() or ch == "_":
-                buf.append(ch)
-            else:
-                if buf:
-                    tokens.add("".join(buf))
-                    buf = []
-        if buf:
-            tokens.add("".join(buf))
-        if tokens & _TS_MUTABLE_TYPES:
+        name = _ts_collection_param(child, content, require_annotation)
+        if name is not None:
             names.add(name)
     return names
+
+
+def _js_mutation_call(n: Any, content: bytes, params: set[str]) -> tuple[str, str] | None:
+    """``obj.method(...)`` where obj is a tracked param and method mutates."""
+    fn_child = n.child_by_field_name("function")
+    if fn_child is None or fn_child.type != "member_expression":
+        return None
+    obj = fn_child.child_by_field_name("object")
+    prop = fn_child.child_by_field_name("property")
+    if obj is None or prop is None:
+        return None
+    if obj.type != "identifier" or prop.type not in ("property_identifier", "identifier"):
+        return None
+    obj_name = _decode(obj, content)
+    method = _decode(prop, content)
+    if obj_name in params and method in _JS_MUTATION_METHODS:
+        return (obj_name, method)
+    return None
 
 
 def _js_walk_mutations(
@@ -270,22 +306,8 @@ def _js_walk_mutations(
     while stack:
         n = stack.pop()
         if n.type == "call_expression":
-            fn_child = n.child_by_field_name("function")
-            if fn_child is not None and fn_child.type == "member_expression":
-                obj = fn_child.child_by_field_name("object")
-                prop = fn_child.child_by_field_name("property")
-                if (
-                    obj is not None and prop is not None
-                    and obj.type == "identifier"
-                    and prop.type in ("property_identifier", "identifier")
-                ):
-                    obj_name = content[obj.start_byte:obj.end_byte].decode(
-                        "utf-8", errors="replace",
-                    )
-                    method = content[prop.start_byte:prop.end_byte].decode(
-                        "utf-8", errors="replace",
-                    )
-                    if obj_name in params and method in _JS_MUTATION_METHODS:
-                        out.append((obj_name, method, n.start_point[0] + 1))
+            hit = _js_mutation_call(n, content, params)
+            if hit is not None:
+                out.append((hit[0], hit[1], n.start_point[0] + 1))
         stack.extend(n.children)
     return out
