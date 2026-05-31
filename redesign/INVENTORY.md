@@ -7,10 +7,9 @@ its row says so. Source of truth for *what* to compute; DESIGN.md is the source
 of truth for *how* the model is shaped.
 
 Status legend:
-- **stub** — abstract signature exists in the spine (`measures.py` / kind ABC); not yet implemented.
-- **projection** — signature on the `Lexicon` projection Protocol (`projection.py`); designed in build step 4.
-- **graph** — belongs to a derived graph (`DependencyGraph` built step 6; `CallGraph` deferred).
-- **rule** — a rule-layer verdict that *consumes* `Lexicon`/`AST` primitives (metric-vs-rule separation); not a projection method.
+- **done** — implemented + oracle-verified across the 11 grammars.
+- **graph** — blocked on the `DependencyGraph` (out of scope this build); raises `NotImplementedError` with a pointer.
+- **rule** — a rule-layer verdict that *consumes* `Lexicon`/`AST` primitives (metric-vs-rule separation); the Lexicon primitives it needs (`tokens`/`significant_token_count`/`hapax_ratio`) are implemented; the rule itself is the next layer.
 - **future** — known-desirable, absent from legacy; signature carried as intended behaviour.
 
 ## Metric placement classes
@@ -23,27 +22,27 @@ Status legend:
 
 | Legacy rule | Measures | New owner.method | Status |
 |---|---|---|---|
-| complexity.cyclomatic | McCabe CCN | `Callable.cyclomatic` (+ container Σ) | stub |
-| complexity.cognitive | Campbell cognitive | `Callable.cognitive` | stub |
-| complexity.combinatorial | Nejmeh NPath | `Callable.combinatorial` | stub |
-| complexity.volume | Halstead volume | `Callable.volume` / `Callable.halstead` | stub |
-| complexity.density | Halstead difficulty (non-additive) | `Callable.halstead_density` | stub |
-| coupling | CK CBO | `Class.cbo` / `Class.ck` | stub |
-| inheritance.depth | CK DIT | `Class.dit` | stub |
-| inheritance.children | CK NOC | `Class.noc` | stub |
-| types.hidden_mutators | in-place param mutation | `Callable.mutated_parameters` | stub |
-| types.magic_literals | non-trivial numeric literals | `Callable.magic_literals` | stub |
-| types.sentinels | stringly-typed sentinel params | `Callable.sentinel_parameters` | stub |
-| god_module | top-level definition count | `Module.definition_count` | stub |
-| types.escape_hatches | escape-hatch annotation density | `Module.escape_hatch_density` | stub |
-| redundancy | sibling-callee overlap | `Module.redundant_siblings` | stub |
-| duplication | type-2 clone clusters | `Module.clone_clusters` (+ `Corpus.duplication`) | stub |
-| lexical.confusion | disjoint call-islands (structural, NOT lexical) | `Module.call_islands` | stub |
-| rigidity | Martin zone of pain | `Package.in_zone_of_pain` / `martin_metrics` | stub |
-| uselessness | Martin zone of uselessness | `Package.in_zone_of_uselessness` / `martin_metrics` | stub |
-| lexical.runts | trivial single-module package | `Package.is_runt` | stub |
-| hotspots | churn × complexity | `Corpus.hotspots` | stub |
-| orphans | unreferenced symbols | `Corpus.orphans` | stub |
+| complexity.cyclomatic | McCabe CCN | `Callable.cyclomatic` (+ container Σ) | done |
+| complexity.cognitive | Campbell cognitive | `Callable.cognitive` | done |
+| complexity.combinatorial | Nejmeh NPath | `Callable.combinatorial` | done |
+| complexity.volume | Halstead volume | `Callable.volume` / `Callable.halstead` | done |
+| complexity.density | Halstead difficulty (non-additive) | `Callable.halstead_density` | done |
+| coupling | CK CBO | `Class.cbo` / `Class.ck` | done |
+| inheritance.depth | CK DIT | `Class.dit` | done |
+| inheritance.children | CK NOC | `Class.noc` | done |
+| types.hidden_mutators | in-place param mutation | `Callable.mutated_parameters` | done |
+| types.magic_literals | non-trivial numeric literals | `Callable.magic_literals` | done |
+| types.sentinels | stringly-typed sentinel params | `Callable.sentinel_parameters` | done |
+| god_module | top-level definition count | `Module.definition_count` | done |
+| types.escape_hatches | escape-hatch annotation density | `Module.escape_hatch_density` | done |
+| redundancy | sibling-callee overlap | `Module.redundant_siblings` | done |
+| duplication | type-2 clone clusters | `Module.clone_clusters` (+ `Corpus.duplication`) | done |
+| lexical.confusion | disjoint call-islands (structural, NOT lexical) | `Module.call_islands` | done |
+| rigidity | Martin zone of pain | `Package.in_zone_of_pain` / `martin_metrics` | graph |
+| uselessness | Martin zone of uselessness | `Package.in_zone_of_uselessness` / `martin_metrics` | graph |
+| lexical.runts | trivial single-module package | `Package.is_runt` | done |
+| hotspots | churn × complexity | `Corpus.hotspots` | done |
+| orphans | unreferenced symbols | `Corpus.orphans` | done |
 | deps | import cycles (Tarjan SCC) | `DependencyGraph.cycles` / `Corpus.dependency_cycles` | graph |
 | lexical.stutter | scope-token repetition | rule consuming `Lexicon` | rule |
 | lexical.verbosity | over-long names | rule consuming `Lexicon` | rule |
