@@ -80,7 +80,8 @@ class _Base:
         return AST(tuple(roots))
 
     def lexicon(self):
-        raise _todo("Lexicon", "projection pending (build step 4)")
+        from .lexicon import build_lexicon
+        return build_lexicon(self)
 
     # ---- aggregatable complexity (container default = sum of leaves) --
     def _iter_callables(self) -> Iterator[Any]:
