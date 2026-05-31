@@ -21,7 +21,7 @@ from ..component.identity import CallableKind, ComponentId, ComponentKind, Exten
 from ..component.symbol import Callable as CallableABC
 from ..component.symbol import Class as ClassABC
 from ..component.symbol import Module as ModuleABC
-from . import complexity
+from . import complexity, halstead
 from .ast import AST, Root
 
 
@@ -123,15 +123,15 @@ class Callable(_Base, CallableABC):
     def volume(self) -> float: return float(self._volume())
     def sloc(self) -> int: return self._sloc()
 
-    def _cyclomatic(self) -> int: return complexity.cyclomatic(self._node, self._grammar)
-    def _cognitive(self) -> int: raise _todo("cognitive", "walker pending")
-    def _combinatorial(self) -> int: raise _todo("combinatorial (npath)", "walker pending")
-    def _volume(self) -> int: raise _todo("halstead volume", "walker pending")
-    def _sloc(self) -> int: raise _todo("sloc", "pending")
+    def _cyclomatic(self) -> int: return complexity.cyclomatic(self._node, self._content, self._grammar)
+    def _cognitive(self) -> int: return complexity.cognitive(self._node, self._content, self._grammar)
+    def _combinatorial(self) -> int: return complexity.combinatorial(self._node, self._grammar)
+    def _volume(self) -> float: return halstead.volume(self._node, self._content, self._grammar)
+    def _sloc(self) -> int: return halstead.sloc(self._node, self._content)
 
     # CallableMeasures (non-aggregatable)
-    def halstead(self): raise _todo("Callable.halstead", "walker pending")
-    def halstead_density(self): raise _todo("Callable.halstead_density", "walker pending")
+    def halstead(self): return halstead.profile(self._node, self._content, self._grammar)
+    def halstead_density(self) -> float: return halstead.profile(self._node, self._content, self._grammar).difficulty
     def magic_literals(self): raise _todo("Callable.magic_literals", "pending")
     def mutated_parameters(self): raise _todo("Callable.mutated_parameters", "pending")
     def sentinel_parameters(self): raise _todo("Callable.sentinel_parameters", "pending")
