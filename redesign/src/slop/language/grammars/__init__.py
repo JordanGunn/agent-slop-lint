@@ -1,21 +1,24 @@
-"""Concrete grammars + registry. Broadening from Python outward."""
+"""Concrete grammars + registry — all 11 languages."""
 from __future__ import annotations
 
 from .c import C
+from .cpp import Cpp
 from .csharp import CSharp
 from .go import Go
 from .java import Java
+from .javascript import JavaScript
 from .julia import Julia
 from .python import Python
+from .ruby import Ruby
+from .rust import Rust
+from .typescript import TypeScript
+
+_GRAMMARS = [Python, Go, C, Cpp, Julia, Java, CSharp, Rust, Ruby, JavaScript, TypeScript]
 
 # language id -> Grammar class
-GRAMMARS_BY_ID: dict[str, type] = {
-    Python.id: Python,
-    Go.id: Go,
-    C.id: C,
-    Julia.id: Julia,
-    Java.id: Java,
-    CSharp.id: CSharp,
-}
+GRAMMARS_BY_ID: dict[str, type] = {g.id: g for g in _GRAMMARS}
 
-__all__ = ["Python", "Go", "C", "Julia", "Java", "CSharp", "GRAMMARS_BY_ID"]
+__all__ = [
+    "Python", "Go", "C", "Cpp", "Julia", "Java", "CSharp", "Rust", "Ruby",
+    "JavaScript", "TypeScript", "GRAMMARS_BY_ID",
+]
