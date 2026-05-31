@@ -172,7 +172,9 @@ class Module(_Base, ModuleABC):
     # ModuleMeasures
     def definition_count(self) -> int:
         return sum(1 for c in self._children if c.KIND in (ComponentKind.CALLABLE, ComponentKind.CLASS))
-    def escape_hatch_density(self): raise _todo("Module.escape_hatch_density", "annotation walker pending")
+    def escape_hatch_density(self) -> float:
+        from .annotations import escape_hatch_density as _ehd
+        return _ehd(self._node, self._content, self._grammar)
     def redundant_siblings(self): raise _todo("Module.redundant_siblings", "callee-overlap pending")
     def call_islands(self): raise _todo("Module.call_islands", "intra-module call topology pending")
     def clone_clusters(self): raise _todo("Module.clone_clusters", "clone fingerprinting pending")
