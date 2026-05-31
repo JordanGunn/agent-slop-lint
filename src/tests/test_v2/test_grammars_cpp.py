@@ -64,6 +64,61 @@ def _parse_fn(tmp_path: Path, src: str):
     return _first_function(tree), content
 
 
+def _first_scope(tree, types):
+    stack = [tree.root_node]
+    while stack:
+        n = stack.pop()
+        if n.type in types:
+            return n
+        stack.extend(n.children)
+    raise AssertionError(f"no node of {types} found")
+
+
+def _parse_scope(tmp_path: Path, src: str, types):
+    p = tmp_path / "x.cpp"
+    p.write_text(src)
+    parsed = parse_file(p, "cpp")
+    assert parsed is not None
+    tree, content = parsed
+    return _first_scope(tree, types), content
+
+
+class TestCppAbstractScope:
+    """Characterization of pure-virtual class detection."""
+
+    def test_pure_virtual_is_abstract(self, tmp_path: Path):
+        n, content = _parse_scope(tmp_path, "class Shape { public: virtual double area() = 0; };\n", {"class_specifier"})
+        assert Cpp.is_abstract_scope(n, content) is True
+
+    def test_concrete_class_not_abstract(self, tmp_path: Path):
+        n, content = _parse_scope(tmp_path, "class Circle { public: double area() { return 1.0; } };\n", {"class_specifier"})
+        assert Cpp.is_abstract_scope(n, content) is False
+
+    def test_struct_never_abstract(self, tmp_path: Path):
+        n, content = _parse_scope(tmp_path, "struct P { int x; };\n", {"struct_specifier"})
+        assert Cpp.is_abstract_scope(n, content) is False
+
+
+class TestCppExtractSuperclasses:
+    """Characterization of base-class extraction (qualified names → last segment)."""
+
+    def test_single_base(self, tmp_path: Path):
+        n, content = _parse_scope(tmp_path, "class Dog : public Animal {};\n", {"class_specifier"})
+        assert Cpp.extract_superclasses(n, content) == ["Animal"]
+
+    def test_multiple_bases(self, tmp_path: Path):
+        n, content = _parse_scope(tmp_path, "class Dog : public Animal, private Pet {};\n", {"class_specifier"})
+        assert Cpp.extract_superclasses(n, content) == ["Animal", "Pet"]
+
+    def test_qualified_base_keeps_last_segment(self, tmp_path: Path):
+        n, content = _parse_scope(tmp_path, "class E : public std::exception {};\n", {"class_specifier"})
+        assert Cpp.extract_superclasses(n, content) == ["exception"]
+
+    def test_no_base(self, tmp_path: Path):
+        n, content = _parse_scope(tmp_path, "class Plain {};\n", {"class_specifier"})
+        assert Cpp.extract_superclasses(n, content) == []
+
+
 class TestCppExtractNameShapes:
     """Characterization of extract_name's declarator-inner branches.
 

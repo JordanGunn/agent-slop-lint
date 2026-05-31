@@ -221,24 +221,15 @@ class Cpp(MultiPurpose):
         ntype = node.type
         if ntype == Scope.STRUCT_SPECIFIER:
             return False
-        if ntype == Scope.CLASS_SPECIFIER:
-            body = node.child_by_field_name("body")
-            if body is None:
-                return False
-            for member in body.children:
-                if member.type != "field_declaration":
-                    continue
-                has_func_decl = False
-                has_zero_literal = False
-                for c in member.children:
-                    if c.type == "function_declarator":
-                        has_func_decl = True
-                    elif c.type == "number_literal":
-                        has_zero_literal = True
-                if has_func_decl and has_zero_literal:
-                    return True
+        if ntype != Scope.CLASS_SPECIFIER:
+            return None
+        body = node.child_by_field_name("body")
+        if body is None:
             return False
-        return None
+        for member in body.children:
+            if _is_pure_virtual(member):
+                return True
+        return False
 
     @classmethod
     def numeric_literal_nodes(cls) -> frozenset[str]:
@@ -253,18 +244,8 @@ class Cpp(MultiPurpose):
         """
         out: list[str] = []
         for child in node.children:
-            if child.type != "base_class_clause":
-                continue
-            for sub in child.children:
-                if sub.type == "type_identifier":
-                    out.append(content[sub.start_byte:sub.end_byte].decode("utf-8", errors="replace"))
-                elif sub.type == "qualified_identifier":
-                    last = None
-                    for c in sub.children:
-                        if c.type in ("identifier", "type_identifier"):
-                            last = c
-                    if last is not None:
-                        out.append(content[last.start_byte:last.end_byte].decode("utf-8", errors="replace"))
+            if child.type == "base_class_clause":
+                out.extend(_base_class_names(child, content))
         return out
 
     @classmethod
@@ -366,6 +347,58 @@ def _parameters(fn_node: Any) -> Any | None:
     return fdecl.child_by_field_name("parameters")
 
 
+def _identifier_child(node: Any) -> Any | None:
+    """Return the first direct ``identifier`` child of a node, or None."""
+    for c in node.children:
+        if c.type == "identifier":
+            return c
+    return None
+
+
+def _is_pure_virtual(member: Any) -> bool:
+    """True if a class-body member is a pure-virtual declaration (``f() = 0``).
+
+    tree-sitter-cpp emits both a ``function_declarator`` and a ``number_literal``
+    (the ``0``) as direct children of the field_declaration.
+    """
+    if member.type != "field_declaration":
+        return False
+    has_func_decl = False
+    has_zero_literal = False
+    for c in member.children:
+        if c.type == "function_declarator":
+            has_func_decl = True
+        elif c.type == "number_literal":
+            has_zero_literal = True
+    return has_func_decl and has_zero_literal
+
+
+def _base_class_names(clause: Any, content: bytes) -> list[str]:
+    """Extract parent type names from a base_class_clause.
+
+    Plain ``type_identifier`` bases are kept verbatim; ``qualified_identifier``
+    bases (``std::exception``) keep only the last segment.
+    """
+    names: list[str] = []
+    for sub in clause.children:
+        if sub.type == "type_identifier":
+            names.append(content[sub.start_byte:sub.end_byte].decode("utf-8", errors="replace"))
+        elif sub.type == "qualified_identifier":
+            last = _last_qualified_segment(sub)
+            if last is not None:
+                names.append(content[last.start_byte:last.end_byte].decode("utf-8", errors="replace"))
+    return names
+
+
+def _last_qualified_segment(node: Any) -> Any | None:
+    """Return the last identifier/type_identifier child of a qualified_identifier."""
+    last = None
+    for c in node.children:
+        if c.type in ("identifier", "type_identifier"):
+            last = c
+    return last
+
+
 def _declarator_identifier(
     decl: Any, content: bytes, *, scan_children: bool = False,
 ) -> str | None:
@@ -381,10 +414,7 @@ def _declarator_identifier(
             return None
         inner = cur.child_by_field_name("declarator")
         if inner is None and scan_children:
-            for c in cur.children:
-                if c.type == "identifier":
-                    inner = c
-                    break
+            inner = _identifier_child(cur)
         if inner is None:
             return None
         if inner.type == "identifier":
@@ -404,40 +434,60 @@ def _collect_ptr_ref_params(
     for param in plist.children:
         if param.type != "parameter_declaration":
             continue
-        has_const = False
-        ptr_decl = None
-        ref_decl = None
-        for child in param.children:
-            ctype = child.type
-            if ctype == "type_qualifier":
-                qtext = content[child.start_byte:child.end_byte].decode(
-                    "utf-8", errors="replace",
-                ).strip()
-                if qtext == "const":
-                    has_const = True
-            elif ctype == "pointer_declarator":
-                ptr_decl = child
-            elif ctype == "reference_declarator":
-                ref_decl = child
-        if has_const:
+        target = _param_target_declarator(param, content)
+        if target is None:
             continue
-        target_decl = ptr_decl or ref_decl
-        if target_decl is None:
-            continue
-        name = _declarator_identifier(target_decl, content, scan_children=True)
+        decl, kind = target
+        name = _declarator_identifier(decl, content, scan_children=True)
         if name is None:
             continue
-        if target_decl is ptr_decl:
-            pointers.add(name)
-        else:
-            references.add(name)
+        (pointers if kind == "ptr" else references).add(name)
     return pointers, references
 
 
-_STRING_QUALIFIED = frozenset({
-    "std::string", "std::string_view", "std::wstring", "std::wstring_view",
-})
-_STRING_TYPE_ID = frozenset({"string", "string_view", "wstring", "wstring_view"})
+def _param_target_declarator(
+    param: Any, content: bytes,
+) -> tuple[Any, str] | None:
+    """Return ``(declarator, 'ptr'|'ref')`` for a non-const pointer/reference
+    parameter, or None for const-qualified or non-pointer/reference params.
+
+    Pointer wins over reference when both appear (matches the original
+    ``ptr_decl or ref_decl`` precedence).
+    """
+    has_const = False
+    ptr_decl = None
+    ref_decl = None
+    for child in param.children:
+        ctype = child.type
+        if ctype == "type_qualifier":
+            qtext = content[child.start_byte:child.end_byte].decode(
+                "utf-8", errors="replace",
+            ).strip()
+            if qtext == "const":
+                has_const = True
+        elif ctype == "pointer_declarator":
+            ptr_decl = child
+        elif ctype == "reference_declarator":
+            ref_decl = child
+    if has_const:
+        return None
+    if ptr_decl is not None:
+        return (ptr_decl, "ptr")
+    if ref_decl is not None:
+        return (ref_decl, "ref")
+    return None
+
+
+# Node type → the type-name texts that mark a string parameter. ``char``
+# only counts as a string with a pointer declarator (``char*``), but the
+# original treated any ``char`` primitive as string-typed, so it stays here.
+_STRING_TYPE_BY_NODE: dict[str, frozenset[str]] = {
+    "primitive_type": frozenset({"char"}),
+    "qualified_identifier": frozenset({
+        "std::string", "std::string_view", "std::wstring", "std::wstring_view",
+    }),
+    "type_identifier": frozenset({"string", "string_view", "wstring", "wstring_view"}),
+}
 
 
 def _string_param_name(param: Any, content: bytes) -> str | None:
@@ -447,40 +497,35 @@ def _string_param_name(param: Any, content: bytes) -> str | None:
     (qualified_identifier), and the unqualified ``string`` family
     (type_identifier under a ``using namespace std``).
     """
-    is_string = False
-    ptr_or_ref = None
-    for child in param.children:
-        ctype = child.type
-        if ctype == "primitive_type":
-            text = content[child.start_byte:child.end_byte].decode(
-                "utf-8", errors="replace",
-            ).strip()
-            if text == "char":
-                is_string = True
-        elif ctype in ("pointer_declarator", "reference_declarator"):
-            ptr_or_ref = child
-        elif ctype == "qualified_identifier":
-            text = content[child.start_byte:child.end_byte].decode(
-                "utf-8", errors="replace",
-            ).strip()
-            if text in _STRING_QUALIFIED:
-                is_string = True
-        elif ctype == "type_identifier":
-            text = content[child.start_byte:child.end_byte].decode(
-                "utf-8", errors="replace",
-            ).strip()
-            if text in _STRING_TYPE_ID:
-                is_string = True
+    is_string, ptr_or_ref = _string_type_and_declarator(param, content)
     if not is_string:
         return None
     if ptr_or_ref is not None:
         return _declarator_identifier(ptr_or_ref, content)
-    for child in param.children:
-        if child.type == "identifier":
-            return content[child.start_byte:child.end_byte].decode(
-                "utf-8", errors="replace",
-            )
+    ident = _identifier_child(param)
+    if ident is not None:
+        return content[ident.start_byte:ident.end_byte].decode("utf-8", errors="replace")
     return None
+
+
+def _string_type_and_declarator(param: Any, content: bytes) -> tuple[bool, Any]:
+    """Classify a parameter: ``(is_string_typed, pointer/reference declarator)``."""
+    is_string = False
+    ptr_or_ref = None
+    for child in param.children:
+        ctype = child.type
+        if ctype in ("pointer_declarator", "reference_declarator"):
+            ptr_or_ref = child
+            continue
+        accepted = _STRING_TYPE_BY_NODE.get(ctype)
+        if accepted is None:
+            continue
+        text = content[child.start_byte:child.end_byte].decode(
+            "utf-8", errors="replace",
+        ).strip()
+        if text in accepted:
+            is_string = True
+    return is_string, ptr_or_ref
 
 
 def _name_from_declarator_inner(inner: Any, content: bytes) -> str:
@@ -491,30 +536,37 @@ def _name_from_declarator_inner(inner: Any, content: bytes) -> str:
     """
     itype = inner.type
     if itype in (Identifier.IDENTIFIER, Identifier.FIELD_IDENTIFIER):
-        return content[inner.start_byte:inner.end_byte].decode(
-            "utf-8", errors="replace",
-        )
+        return content[inner.start_byte:inner.end_byte].decode("utf-8", errors="replace")
     if itype == Identifier.QUALIFIED_IDENTIFIER:
-        for c in reversed(inner.children):
-            if c.type == Identifier.IDENTIFIER:
-                return content[c.start_byte:c.end_byte].decode(
-                    "utf-8", errors="replace",
-                )
-        return "<anonymous>"
+        return _qualified_last_identifier(inner, content)
     if itype == Identifier.OPERATOR_NAME:
-        for c in inner.children:
-            if c.type != Identifier.OPERATOR:
-                return content[c.start_byte:c.end_byte].decode(
-                    "utf-8", errors="replace",
-                ).strip()
-        return "<anonymous>"
+        return _operator_overload_name(inner, content)
     if itype == Identifier.DESTRUCTOR_NAME:
-        for c in inner.children:
-            if c.type == Identifier.IDENTIFIER:
-                return "~" + content[c.start_byte:c.end_byte].decode(
-                    "utf-8", errors="replace",
-                )
-        return "<anonymous>"
+        return _destructor_name(inner, content)
+    return "<anonymous>"
+
+
+def _qualified_last_identifier(inner: Any, content: bytes) -> str:
+    """Rightmost identifier of a qualified_identifier (``A::B::name`` → name)."""
+    for c in reversed(inner.children):
+        if c.type == Identifier.IDENTIFIER:
+            return content[c.start_byte:c.end_byte].decode("utf-8", errors="replace")
+    return "<anonymous>"
+
+
+def _operator_overload_name(inner: Any, content: bytes) -> str:
+    """Operator token of an operator_name (``operator+`` → ``+``)."""
+    for c in inner.children:
+        if c.type != Identifier.OPERATOR:
+            return content[c.start_byte:c.end_byte].decode("utf-8", errors="replace").strip()
+    return "<anonymous>"
+
+
+def _destructor_name(inner: Any, content: bytes) -> str:
+    """Destructor name (``~S`` → ``~S``)."""
+    for c in inner.children:
+        if c.type == Identifier.IDENTIFIER:
+            return "~" + content[c.start_byte:c.end_byte].decode("utf-8", errors="replace")
     return "<anonymous>"
 
 
@@ -556,16 +608,9 @@ def _reference_lhs_param(
     ltype = lhs.type
     if ltype == "identifier":
         name = content[lhs.start_byte:lhs.end_byte].decode("utf-8", errors="replace")
-        if name in params:
-            return (name, "ref-assign")
-        return None
+        return (name, "ref-assign") if name in params else None
     if ltype == "field_expression":
-        obj = lhs.child_by_field_name("argument")
-        if obj is None:
-            for c in lhs.children:
-                if c.type == "identifier":
-                    obj = c
-                    break
+        obj = lhs.child_by_field_name("argument") or _identifier_child(lhs)
         if obj is not None and obj.type == "identifier":
             name = content[obj.start_byte:obj.end_byte].decode("utf-8", errors="replace")
             if name in params:
