@@ -21,7 +21,7 @@ from ..component.identity import CallableKind, ComponentId, ComponentKind, Exten
 from ..component.symbol import Callable as CallableABC
 from ..component.symbol import Class as ClassABC
 from ..component.symbol import Module as ModuleABC
-from . import complexity, halstead
+from . import callable_measures, complexity, halstead
 from .ast import AST, Root
 
 
@@ -132,9 +132,9 @@ class Callable(_Base, CallableABC):
     # CallableMeasures (non-aggregatable)
     def halstead(self): return halstead.profile(self._node, self._content, self._grammar)
     def halstead_density(self) -> float: return halstead.profile(self._node, self._content, self._grammar).difficulty
-    def magic_literals(self): raise _todo("Callable.magic_literals", "pending")
-    def mutated_parameters(self): raise _todo("Callable.mutated_parameters", "pending")
-    def sentinel_parameters(self): raise _todo("Callable.sentinel_parameters", "pending")
+    def magic_literals(self): return callable_measures.magic_literals(self._node, self._content, self._grammar)
+    def mutated_parameters(self): return callable_measures.mutated_parameters(self._node, self._content, self._grammar)
+    def sentinel_parameters(self): return callable_measures.sentinel_parameters(self._node, self._content, self._grammar)
 
 
 class Class(_Base, ClassABC):
