@@ -122,7 +122,7 @@ class Rust(MultiPurpose):
         )
 
     @classmethod
-    def is_escape_hatch_text(cls, text: str) -> bool:
+    def is_dynamic_type(cls, text: str) -> bool:
         return "dyn Any" in text or "dyn std::any::Any" in text
 
     @classmethod

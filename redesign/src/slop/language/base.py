@@ -217,7 +217,7 @@ class Grammar(ABC):
         return ()
 
     @classmethod
-    def is_escape_hatch_text(cls, text: str) -> bool:
+    def is_dynamic_type(cls, text: str) -> bool:
         """True if annotation text is the language's escape-hatch type (Any/interface{}/dynamic)."""
         del text
         return False

@@ -116,7 +116,7 @@ class Python(MultiPurpose):
         )
 
     @classmethod
-    def is_escape_hatch_text(cls, text: str) -> bool:
+    def is_dynamic_type(cls, text: str) -> bool:
         return text.strip() == "Any" or "Any" in _python_type_tokens(text)
 
     @classmethod

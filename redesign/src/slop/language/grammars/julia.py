@@ -90,7 +90,7 @@ class Julia(Procedural):
         return (("(typed_expression . (_) (_) @annotation)", "annotation"),)
 
     @classmethod
-    def is_escape_hatch_text(cls, text: str) -> bool:
+    def is_dynamic_type(cls, text: str) -> bool:
         cleaned = text.strip().lstrip(":").strip()
         return cleaned == "Any" or cleaned.endswith(".Any")
 

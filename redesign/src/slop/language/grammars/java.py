@@ -103,7 +103,7 @@ class Java(ObjectOriented):
         )
 
     @classmethod
-    def is_escape_hatch_text(cls, text: str) -> bool:
+    def is_dynamic_type(cls, text: str) -> bool:
         cleaned = text.strip()
         if cleaned == "Object":
             return True

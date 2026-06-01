@@ -99,7 +99,7 @@ class C(Procedural):
         return (("(parameter_declaration) @annotation", "param"),)
 
     @classmethod
-    def is_escape_hatch_text(cls, text: str) -> bool:
+    def is_dynamic_type(cls, text: str) -> bool:
         cleaned = text.replace("\n", " ")
         return "void *" in cleaned or "void*" in cleaned
 

@@ -116,7 +116,7 @@ class TypeScript(MultiPurpose):
         return (("(type_annotation (_) @annotation)", "annotation"),)
 
     @classmethod
-    def is_escape_hatch_text(cls, text: str) -> bool:
+    def is_dynamic_type(cls, text: str) -> bool:
         cleaned = text.strip().lstrip(":").strip()
         from .javascript import _type_tokens
         return cleaned == "any" or "any" in _type_tokens(cleaned)

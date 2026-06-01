@@ -2,7 +2,7 @@
 
 Ported from the legacy ``structure/annotations.py``: per-grammar tree-sitter
 queries (``type_annotation_queries``) run against a module root; each captured
-annotation is classified via ``is_escape_hatch_text``. Density = escape-hatch
+annotation is classified via ``is_dynamic_type``. Density = escape-hatch
 annotations / total annotations over the module's extent.
 """
 from __future__ import annotations
@@ -23,7 +23,7 @@ def escape_hatch_density(root_node: Any, content: bytes, grammar: Any) -> float:
         for node in _annotation_nodes(ts_lang, query_str, root_node):
             text = content[node.start_byte:node.end_byte].decode("utf-8", errors="replace")
             total += 1
-            if grammar.is_escape_hatch_text(text):
+            if grammar.is_dynamic_type(text):
                 escapes += 1
     return escapes / total if total else 0.0
 
