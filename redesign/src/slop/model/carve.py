@@ -74,28 +74,35 @@ def scan_corpus(root: Path, config: Any) -> C.Corpus:
 
 
 def _carve_realm(root: Path, lang: str, grammar: type, paths: list[Path]) -> C.Realm | None:
-    # Group modules into packages by directory (one Package per dir).
-    by_dir: dict[Path, list[C.Module]] = {}
+    # Carve modules, then group into packages via the grammar's own
+    # resolve_packages rule (Python: __init__-gated; flat, rel-path-named —
+    # matching the legacy package model). Files in no package fall back to a
+    # per-directory package so no module is lost.
+    module_by_file: dict[Path, C.Module] = {}
     for path in sorted(paths):
         module = _carve_module(path, grammar)
         if module is not None:
-            by_dir.setdefault(path.parent, []).append(module)
-    if not by_dir:
+            module_by_file[path] = module
+    if not module_by_file:
         return None
 
+    pkg_map = grammar.resolve_packages(root, list(module_by_file.keys()))
     packages: list[C.Package] = []
-    for directory, modules in sorted(by_dir.items()):
-        pkg_name = _rel_name(directory, root)
-        pkg = C.Package(
-            path=directory,
-            id=ComponentId(ComponentKind.PACKAGE, pkg_name, ()),
-            name=directory.name or pkg_name, owner=None,
-            extent=_union_extent(modules), files=_union_files(modules),
-            children=modules,
-        )
-        for m in modules:
-            m._owner = pkg
-        packages.append(pkg)
+    covered: set[Path] = set()
+    for pkg_name, files in sorted(pkg_map.items()):
+        mods = [module_by_file[f] for f in files if f in module_by_file]
+        if not mods:
+            continue
+        covered.update(f for f in files if f in module_by_file)
+        packages.append(_make_package(pkg_name, mods))
+
+    # Fallback for files in no resolve_packages group (loose scripts).
+    uncovered: dict[Path, list[C.Module]] = {}
+    for path, module in module_by_file.items():
+        if path not in covered:
+            uncovered.setdefault(path.parent, []).append(module)
+    for directory, mods in sorted(uncovered.items()):
+        packages.append(_make_package(_rel_name(directory, root), mods))
 
     realm = C.Realm(
         root=root, grammar=grammar, language=lang,
@@ -107,6 +114,21 @@ def _carve_realm(root: Path, lang: str, grammar: type, paths: list[Path]) -> C.R
     for p in packages:
         p._owner = realm
     return realm
+
+
+def _make_package(pkg_name: str, modules: list[C.Module]) -> C.Package:
+    """Build a (flat) Package from its modules; directory inferred from them."""
+    directory = modules[0].files[0].parent
+    pkg = C.Package(
+        path=directory,
+        id=ComponentId(ComponentKind.PACKAGE, pkg_name, ()),
+        name=pkg_name, owner=None,
+        extent=_union_extent(modules), files=_union_files(modules),
+        children=modules,
+    )
+    for m in modules:
+        m._owner = pkg
+    return pkg
 
 
 def _carve_module(path: Path, grammar: type) -> C.Module | None:
