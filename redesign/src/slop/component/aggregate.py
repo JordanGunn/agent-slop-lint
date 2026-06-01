@@ -19,7 +19,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, ClassVar
 
-from ..language import Grammar, Paradigm
+from ..ast import Grammar, Paradigm
 from .base import AggregateContainer
 from .identity import ComponentKind
 from .measures import CorpusMeasures, PackageMeasures
@@ -81,7 +81,7 @@ class Realm(AggregateContainer):
     @abstractmethod
     def grammar(self) -> type[Grammar]:
         """The grammar adapter for this Realm's language (the ported
-        ``slop.language`` contract). The Realm is the layer that owns it."""
+        ``slop.ast`` contract). The Realm is the layer that owns it."""
         ...
 
     @property

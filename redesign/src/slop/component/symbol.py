@@ -108,7 +108,7 @@ class Module(SymbolContainer, ModuleMeasures):
     MultiPurpose grammars; classes for ObjectOriented and MultiPurpose), so a
     pure-OO module is never forced to return an empty free-function list. They
     will be added as paradigm-aligned accessors when the grammar hierarchy ports
-    (see ``slop.language``). Module-level and within-module relational metrics
+    (see ``slop.ast``). Module-level and within-module relational metrics
     come from ``ModuleMeasures``.
     """
 

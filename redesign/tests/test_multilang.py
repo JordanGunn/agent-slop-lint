@@ -2,7 +2,7 @@
 from pathlib import Path
 import pytest
 from slop.model import scan_corpus
-from slop.language import GRAMMARS_BY_ID
+from slop.ast import GRAMMARS_BY_ID
 
 CASES = {
     "py":  ("python", "def f(x):\n    if x and x > 0:\n        return 1\n    return 0\n", {"f": 3}),

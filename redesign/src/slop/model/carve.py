@@ -12,8 +12,8 @@ from pathlib import Path
 from typing import Any
 
 from ..component.identity import CallableKind, ComponentId, ComponentKind, Extent, Span
-from ..language import GRAMMARS_BY_ID
-from ..language.paradigms import ObjectOriented
+from ..ast import GRAMMARS_BY_ID
+from ..ast.paradigm import ObjectOriented
 from ..parse import detect_language, parse_file
 from . import components as C
 
