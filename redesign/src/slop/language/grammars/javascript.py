@@ -126,16 +126,10 @@ class JavaScript(MultiPurpose):
         return out
 
     @classmethod
-    def hidden_mutators(
-        cls, fn_node: Any, content: bytes, *, require_type_annotation: bool = True,
-    ) -> list[tuple[str, str, int]]:
-        if require_type_annotation:
-            return []  # JS has no static types to gate on
-        params = _js_parameter_names(fn_node, content)
-        if not params:
-            return []
-        body = fn_node.child_by_field_name("body") or fn_node
-        return _js_walk_mutations(body, content, params)
+    def parameter_mutations(cls, fn_node: Any, content: bytes) -> list[tuple[str, str, int]]:
+        # JS has no static types to gate parameter-mutation detection on.
+        del fn_node, content
+        return []
 
 
 _JS_MUTATION_METHODS: frozenset[str] = frozenset({
@@ -151,36 +145,6 @@ def _decode(node: Any, content: bytes) -> str:
     return content[node.start_byte:node.end_byte].decode("utf-8", errors="replace")
 
 
-def _identifier_child(node: Any) -> Any | None:
-    for c in node.children:
-        if c.type == "identifier":
-            return c
-    return None
-
-
-def _js_formal_param_name(child: Any, content: bytes) -> str | None:
-    if child.type == "identifier":
-        return _decode(child, content)
-    if child.type == "assignment_pattern":
-        left = child.child_by_field_name("left")
-        if left is not None and left.type == "identifier":
-            return _decode(left, content)
-    return None
-
-
-def _js_parameter_names(fn_node: Any, content: bytes) -> set[str]:
-    params_node = fn_node.child_by_field_name("parameters") or fn_node.child_by_field_name("parameter")
-    if params_node is None:
-        ident = _identifier_child(fn_node)
-        return {_decode(ident, content)} if ident is not None else set()
-    names: set[str] = set()
-    for child in params_node.children:
-        name = _js_formal_param_name(child, content)
-        if name is not None:
-            names.add(name)
-    return names
-
-
 def _type_tokens(text: str) -> set[str]:
     tokens: set[str] = set()
     buf: list[str] = []
@@ -194,28 +158,26 @@ def _type_tokens(text: str) -> set[str]:
     return tokens
 
 
-def _ts_collection_param(child: Any, content: bytes, require_annotation: bool) -> str | None:
+def _ts_collection_param(child: Any, content: bytes) -> str | None:
     if child.type not in ("required_parameter", "optional_parameter"):
         return None
     pattern = child.child_by_field_name("pattern")
     if pattern is None or pattern.type != "identifier":
         return None
     name = _decode(pattern, content)
-    if not require_annotation:
-        return name
     type_ann = child.child_by_field_name("type")
     if type_ann is None:
         return None
     return name if _type_tokens(_decode(type_ann, content)) & _TS_MUTABLE_TYPES else None
 
 
-def _ts_parameter_names_with_annotation(fn_node: Any, content: bytes, require_annotation: bool) -> set[str]:
+def _ts_collection_param_names(fn_node: Any, content: bytes) -> set[str]:
     params_node = fn_node.child_by_field_name("parameters")
     if params_node is None:
         return set()
     names: set[str] = set()
     for child in params_node.children:
-        name = _ts_collection_param(child, content, require_annotation)
+        name = _ts_collection_param(child, content)
         if name is not None:
             names.add(name)
     return names

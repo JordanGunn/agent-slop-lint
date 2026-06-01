@@ -149,11 +149,9 @@ class TypeScript(MultiPurpose):
         return out
 
     @classmethod
-    def hidden_mutators(
-        cls, fn_node: Any, content: bytes, *, require_type_annotation: bool = True,
-    ) -> list[tuple[str, str, int]]:
-        from .javascript import _js_walk_mutations, _ts_parameter_names_with_annotation
-        params = _ts_parameter_names_with_annotation(fn_node, content, require_type_annotation)
+    def parameter_mutations(cls, fn_node: Any, content: bytes) -> list[tuple[str, str, int]]:
+        from .javascript import _js_walk_mutations, _ts_collection_param_names
+        params = _ts_collection_param_names(fn_node, content)
         if not params:
             return []
         body = fn_node.child_by_field_name("body") or fn_node

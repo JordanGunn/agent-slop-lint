@@ -175,36 +175,25 @@ class Python(MultiPurpose):
         })
 
     @classmethod
-    def hidden_mutators(
-        cls, fn_node: Any, content: bytes, *, require_type_annotation: bool = True,
-    ) -> list[tuple[str, str, int]]:
+    def parameter_mutations(cls, fn_node: Any, content: bytes) -> list[tuple[str, str, int]]:
         params_node = fn_node.child_by_field_name("parameters")
         if params_node is None:
             return []
+        # Candidates: parameters annotated as a mutable collection type.
         candidates: set[str] = set()
         for child in params_node.children:
-            ptype = child.type
-            if ptype == "identifier":
-                if not require_type_annotation:
-                    candidates.add(_text(child, content))
-            elif ptype in ("typed_parameter", "typed_default_parameter"):
-                name_n = child.child_by_field_name("name") or next(
-                    (c for c in child.children if c.type == "identifier"), None,
-                )
-                if name_n is None:
-                    continue
-                pname = _text(name_n, content)
-                type_n = child.child_by_field_name("type")
-                if not require_type_annotation:
-                    candidates.add(pname)
-                elif type_n is not None and (
-                    _python_type_tokens(_text(type_n, content)) & _PYTHON_COLLECTION_TYPES
-                ):
-                    candidates.add(pname)
-            elif ptype == "default_parameter" and not require_type_annotation:
-                name_n = child.child_by_field_name("name")
-                if name_n is not None:
-                    candidates.add(_text(name_n, content))
+            if child.type not in ("typed_parameter", "typed_default_parameter"):
+                continue
+            name_n = child.child_by_field_name("name") or next(
+                (c for c in child.children if c.type == "identifier"), None,
+            )
+            if name_n is None:
+                continue
+            type_n = child.child_by_field_name("type")
+            if type_n is not None and (
+                _python_type_tokens(_text(type_n, content)) & _PYTHON_COLLECTION_TYPES
+            ):
+                candidates.add(_text(name_n, content))
         if not candidates:
             return []
         body = fn_node.child_by_field_name("body") or fn_node

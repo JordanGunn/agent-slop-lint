@@ -1,5 +1,5 @@
 """Per-callable non-aggregatable measures: magic literals, parameter mutations,
-sentinel parameters. Ported from the legacy magic_literals / hidden_mutators /
+sentinel parameters. Ported from the legacy magic_literals / parameter_mutations /
 sentinels compute (trivial-value and sentinel-name constants preserved)."""
 from __future__ import annotations
 
@@ -42,10 +42,11 @@ def magic_literals(node: Any, content: bytes, grammar: Any) -> list[MagicLiteral
 
 
 def mutated_parameters(node: Any, content: bytes, grammar: Any) -> list[ParameterMutation]:
-    """Collection/reference parameters mutated in place (grammar-specific shapes)."""
+    """Parameters mutated in place. The grammar reports the in-place mutation facts
+    (language-specific AST shapes); this maps them to ParameterMutation records."""
     return [
         ParameterMutation(parameter=param, kind=method, line=line)
-        for param, method, line in grammar.hidden_mutators(node, content, require_type_annotation=True)
+        for param, method, line in grammar.parameter_mutations(node, content)
     ]
 
 

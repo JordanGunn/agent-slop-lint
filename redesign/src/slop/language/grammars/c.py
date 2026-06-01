@@ -147,10 +147,7 @@ class C(Procedural):
         return "<anonymous>"
 
     @classmethod
-    def hidden_mutators(
-        cls, fn_node: Any, content: bytes, *, require_type_annotation: bool = True,
-    ) -> list[tuple[str, str, int]]:
-        del require_type_annotation
+    def parameter_mutations(cls, fn_node: Any, content: bytes) -> list[tuple[str, str, int]]:
         declarator = fn_node.child_by_field_name("declarator")
         while declarator is not None and declarator.type == "pointer_declarator":
             declarator = declarator.child_by_field_name("declarator")

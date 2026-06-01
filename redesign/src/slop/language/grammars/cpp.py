@@ -189,10 +189,7 @@ class Cpp(MultiPurpose):
         return _name_from_declarator_inner(inner, content)
 
     @classmethod
-    def hidden_mutators(
-        cls, fn_node: Any, content: bytes, *, require_type_annotation: bool = True,
-    ) -> list[tuple[str, str, int]]:
-        del require_type_annotation
+    def parameter_mutations(cls, fn_node: Any, content: bytes) -> list[tuple[str, str, int]]:
         plist = _parameters(fn_node)
         if plist is None:
             return []

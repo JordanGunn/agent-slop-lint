@@ -164,10 +164,7 @@ class Go(MultiPurpose):
         return _go_receiver_type_name(node, content)
 
     @classmethod
-    def hidden_mutators(
-        cls, fn_node: Any, content: bytes, *, require_type_annotation: bool = True,
-    ) -> list[tuple[str, str, int]]:
-        del require_type_annotation
+    def parameter_mutations(cls, fn_node: Any, content: bytes) -> list[tuple[str, str, int]]:
         params = _go_parameter_names(fn_node, content)
         if not params:
             return []

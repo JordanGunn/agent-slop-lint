@@ -198,11 +198,10 @@ class Grammar(ABC):
     # ---- mutation / sentinel / type vocabulary ------------------------
 
     @classmethod
-    def hidden_mutators(
-        cls, fn_node: Any, content: bytes, *, require_type_annotation: bool = True,
-    ) -> list[tuple[str, str, int]]:
-        """``(param, method, line)`` for in-place collection/reference mutations. Default empty."""
-        del fn_node, content, require_type_annotation
+    def parameter_mutations(cls, fn_node: Any, content: bytes) -> list[tuple[str, str, int]]:
+        """``(param, method, line)`` for each in-place parameter mutation this language
+        can detect — a fact; the rule decides what is worth flagging. Default empty."""
+        del fn_node, content
         return []
 
     @classmethod
