@@ -64,6 +64,14 @@ class Lexicon:
             return 0.0
         return sum(1 for c in self._counter.values() if c == 1) / n
 
+    def total_token_count(self) -> int:
+        """Total significant token occurrences (with multiplicity)."""
+        return sum(self._counter.values())
+
+    def most_common(self, n: int = 15) -> list[tuple[str, int]]:
+        """The ``n`` most frequent significant tokens, as (token, count)."""
+        return self._counter.most_common(n)
+
     def slice(self, extent: Extent) -> "Lexicon":
         paths = {span.path for span in extent.spans}
         return Lexicon([(r, p) for r, p in self._sources if p is not None and str(p) in paths])

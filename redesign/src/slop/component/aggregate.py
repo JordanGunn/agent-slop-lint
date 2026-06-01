@@ -17,14 +17,16 @@ from __future__ import annotations
 from abc import abstractmethod
 from collections.abc import Sequence
 from pathlib import Path
-from typing import ClassVar
+from typing import TYPE_CHECKING, ClassVar
 
-from ..config import AnalysisConfig
 from ..language import Grammar, Paradigm
 from .base import AggregateContainer
 from .identity import ComponentKind
 from .measures import CorpusMeasures, PackageMeasures
 from .symbol import Module
+
+if TYPE_CHECKING:
+    from ..config import AnalysisConfig
 
 
 class Package(AggregateContainer, PackageMeasures):
