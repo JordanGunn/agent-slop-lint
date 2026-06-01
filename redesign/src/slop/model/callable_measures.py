@@ -50,13 +50,17 @@ def mutated_parameters(node: Any, content: bytes, grammar: Any) -> list[Paramete
 
 
 def sentinel_parameters(node: Any, content: bytes, grammar: Any) -> list[SentinelParameter]:
-    """String-typed parameters with sentinel names that should be Literal/Enum."""
+    """Sentinel-named string parameters that should be a Literal/Enum.
+
+    The grammar reports the *fact* (each param's name + whether it is string-typed);
+    the sentinel judgment (the SENTINEL_NAMES vocabulary, and that an annotation-less
+    language like Ruby is flagged by name alone) is this rule's policy."""
     out: list[SentinelParameter] = []
-    for name, annotated in grammar.stringly_typed_params(node, content):
+    for name, is_string_typed in grammar.string_annotated_parameters(node, content):
         key = _STRIP_TRAILING.sub("", name).lower()
         if key not in SENTINEL_NAMES:
             continue
-        if not annotated and grammar.id != "ruby":
+        if not is_string_typed and grammar.id != "ruby":
             continue
         out.append(SentinelParameter(name=name, observed_literals=()))
     return out

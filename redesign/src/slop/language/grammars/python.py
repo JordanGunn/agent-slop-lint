@@ -226,7 +226,7 @@ class Python(MultiPurpose):
         return out
 
     @classmethod
-    def stringly_typed_params(cls, fn_node: Any, content: bytes) -> list[tuple[str, bool]]:
+    def string_annotated_parameters(cls, fn_node: Any, content: bytes) -> list[tuple[str, bool]]:
         params_node = fn_node.child_by_field_name("parameters")
         if params_node is None:
             return []

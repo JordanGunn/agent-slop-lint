@@ -206,7 +206,7 @@ class Grammar(ABC):
         return []
 
     @classmethod
-    def stringly_typed_params(cls, fn_node: Any, content: bytes) -> list[tuple[str, bool]]:
+    def string_annotated_parameters(cls, fn_node: Any, content: bytes) -> list[tuple[str, bool]]:
         """``(param, has_string_annotation)`` pairs. Default empty."""
         del fn_node, content
         return []

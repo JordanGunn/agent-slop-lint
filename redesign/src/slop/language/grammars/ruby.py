@@ -162,7 +162,7 @@ class Ruby(MultiPurpose):
         return None
 
     @classmethod
-    def stringly_typed_params(cls, fn_node: Any, content: bytes) -> list[tuple[str, bool]]:
+    def string_annotated_parameters(cls, fn_node: Any, content: bytes) -> list[tuple[str, bool]]:
         params = fn_node.child_by_field_name("parameters")
         if params is None:
             return []

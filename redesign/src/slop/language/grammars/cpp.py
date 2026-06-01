@@ -206,7 +206,7 @@ class Cpp(MultiPurpose):
         return out
 
     @classmethod
-    def stringly_typed_params(cls, fn_node: Any, content: bytes) -> list[tuple[str, bool]]:
+    def string_annotated_parameters(cls, fn_node: Any, content: bytes) -> list[tuple[str, bool]]:
         plist = _parameters(fn_node)
         if plist is None:
             return []

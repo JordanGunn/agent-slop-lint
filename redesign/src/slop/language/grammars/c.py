@@ -177,7 +177,7 @@ class C(Procedural):
         return out
 
     @classmethod
-    def stringly_typed_params(cls, fn_node: Any, content: bytes) -> list[tuple[str, bool]]:
+    def string_annotated_parameters(cls, fn_node: Any, content: bytes) -> list[tuple[str, bool]]:
         declarator = fn_node.child_by_field_name("declarator")
         for _ in range(6):
             if declarator is None or declarator.type == "function_declarator":
