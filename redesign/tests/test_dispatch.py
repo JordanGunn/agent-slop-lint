@@ -37,7 +37,7 @@ def _tuned_config() -> AnalysisConfig:
     return AnalysisConfig({
         "complexity.cyclomatic": RuleConfig(
             name="complexity.cyclomatic", severity=Severity.ERROR,
-            thresholds={"callable": 1, "class": 1}),
+            thresholds={"callable": 1}),
         "structure.call-islands": RuleConfig(
             name="structure.call-islands", params={"min_islands": 2, "min_functions": 2}),
         "vocabulary": RuleConfig(

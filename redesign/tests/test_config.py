@@ -16,7 +16,9 @@ def test_defaults_are_coherent():
     cfg = AnalysisConfig.defaults(RULE_REGISTRY)
     cyclo = cfg.for_rule("complexity.cyclomatic")
     assert cyclo is not None and cyclo.enabled
-    assert cyclo.thresholds == {"callable": 10, "class": 40}
+    # Cyclomatic is Callable-only — the class-altitude WMC gate was dropped (it
+    # conflated breadth with tangle; class size belongs to a future NOM rule).
+    assert cyclo.thresholds == {"callable": 10}
     assert cyclo.severity is Severity.ERROR
 
 
@@ -36,7 +38,6 @@ def test_toml_override_applies(tmp_path: Path):
     cyclo = cfg.for_rule("complexity.cyclomatic")
     assert cyclo.severity is Severity.WARNING
     assert cyclo.thresholds["callable"] == 15
-    assert cyclo.thresholds["class"] == 40  # untouched default preserved
 
 
 def test_threshold_for_undeclared_altitude_is_a_load_error(tmp_path: Path):

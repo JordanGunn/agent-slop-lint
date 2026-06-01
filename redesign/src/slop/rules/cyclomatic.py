@@ -1,9 +1,15 @@
 """complexity.cyclomatic — McCabe cyclomatic complexity (verdict).
 
-Defined at ``{Callable, Class}``: a Callable reports its own CCN; a Class reports
-the aggregated sum over its methods (the cyclomatic-weighted WMC). The measurement
-lives on the component view (``Component.cyclomatic``) — this rule only thresholds
-it and emits.
+Defined at ``{Callable}`` only. McCabe complexity measures control-flow paths
+*within a unit*; the class-altitude aggregate (Σ of method CCNs, the
+cyclomatic-weighted WMC) does not measure any unit's control flow — it is
+dominated by method count, so it conflates breadth with tangle. Empirically every
+class that tripped a class-altitude gate was either pure breadth (many trivial
+methods, no method over CCN 10) or had a single tangled method already flagged
+here at the Callable altitude — so the class gate only ever produced breadth
+false-positives or callable-gate duplicates. Class *size* belongs to a future
+NOM/god-class rule, not to cyclomatic. The aggregate measurement still exists on
+``Component.cyclomatic`` for any consumer that wants it; it is simply not gated.
 """
 from __future__ import annotations
 
@@ -18,17 +24,14 @@ from ..rule import Rule
 
 class CyclomaticRule(Rule):
     name = "complexity.cyclomatic"
-    altitudes = frozenset({ComponentKind.CALLABLE, ComponentKind.CLASS})
+    altitudes = frozenset({ComponentKind.CALLABLE})
 
     @classmethod
     def default_config(cls) -> RuleConfig:
         return RuleConfig(
             name=cls.name,
             severity=Severity.ERROR,
-            thresholds={
-                ComponentKind.CALLABLE.value: 10,  # McCabe 1976
-                ComponentKind.CLASS.value: 40,     # aggregated WMC; slop calibration
-            },
+            thresholds={ComponentKind.CALLABLE.value: 10},  # McCabe 1976
         )
 
     def check(self, component: Component, config: RuleConfig) -> Iterable[Finding]:
