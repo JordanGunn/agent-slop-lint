@@ -10,18 +10,25 @@ from slop.finding import Action, Disposition, Severity
 from slop.model import scan_corpus
 from slop.rules import RULE_REGISTRY
 
-# Two functions that never call each other -> two disjoint call-islands; each has
-# a branch so cyclomatic > 1; enough distinct identifiers for the vocabulary floor.
+# Two disjoint call-clusters, each of >=2 mutually-calling functions (so they
+# survive the min_island_size singleton filter); each entry has a branch so
+# cyclomatic > 1; enough distinct identifiers for the vocabulary floor.
 TWO_ISLANDS = '''\
 def alpha(first_value):
     if first_value:
-        return first_value + 1
+        return alpha_helper(first_value)
     return 0
+
+def alpha_helper(value):
+    return value + 1
 
 def beta(second_value):
     while second_value > 0:
-        second_value -= 1
+        second_value = beta_helper(second_value)
     return second_value
+
+def beta_helper(value):
+    return value - 1
 '''
 
 

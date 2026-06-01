@@ -27,19 +27,25 @@ class CallIslandsRule(Rule):
 
     @classmethod
     def default_config(cls) -> RuleConfig:
+        # No severity knob: a REVIEW verdict is WARNING-pinned by construction
+        # (see the emission), so exposing a tunable severity would be a dead knob.
         return RuleConfig(
             name=cls.name,
-            severity=Severity.WARNING,  # REVIEW is WARNING-pinned; see emission below
-            params={"min_islands": 2, "min_functions": 5},
+            params={"min_island_size": 2, "min_islands": 2, "min_functions": 5},
         )
 
     def check(self, component: Component, config: RuleConfig) -> Iterable[Finding]:
-        islands = component.call_islands()
+        all_islands = component.call_islands()
         # call_islands covers every module callable (each in exactly one island),
         # so the member sum is the module's function population.
-        function_count = sum(len(i.members) for i in islands)
+        function_count = sum(len(i.members) for i in all_islands)
+        # A singleton island (a function with no intra-module calls) is not a
+        # "concern cluster" — count only islands of >= min_island_size connected
+        # callables. Without this, any module with >=2 independent helpers fires.
+        min_island_size = int(config.param("min_island_size", 2))
         min_islands = int(config.param("min_islands", 2))
         min_functions = int(config.param("min_functions", 5))
+        islands = [i for i in all_islands if len(i.members) >= min_island_size]
         if function_count < min_functions or len(islands) < min_islands:
             return
         sizes = ", ".join(str(len(i.members)) for i in sorted(islands, key=lambda i: -len(i.members)))
