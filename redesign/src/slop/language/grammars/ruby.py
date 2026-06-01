@@ -140,7 +140,7 @@ class Ruby(MultiPurpose):
         return None
 
     @classmethod
-    def trivial_callees(cls) -> frozenset[str]:
+    def language_builtins(cls) -> frozenset[str]:
         return frozenset({
             "puts", "print", "pp", "raise", "require", "require_relative", "load",
             "attr_reader", "attr_writer", "attr_accessor", "include", "extend",

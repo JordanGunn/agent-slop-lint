@@ -115,7 +115,7 @@ class C(Procedural):
         return None
 
     @classmethod
-    def trivial_callees(cls) -> frozenset[str]:
+    def language_builtins(cls) -> frozenset[str]:
         return frozenset({
             "malloc", "calloc", "realloc", "free", "alloca", "memcpy", "memmove",
             "memset", "memcmp", "strlen", "strcpy", "strncpy", "strcat", "strncat",

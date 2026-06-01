@@ -160,7 +160,7 @@ class Python(MultiPurpose):
         return None
 
     @classmethod
-    def trivial_callees(cls) -> frozenset[str]:
+    def language_builtins(cls) -> frozenset[str]:
         return frozenset({
             "print", "len", "range", "sorted", "reversed", "enumerate", "zip",
             "map", "filter", "any", "all", "sum", "min", "max", "abs", "round",

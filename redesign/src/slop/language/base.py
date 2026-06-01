@@ -236,8 +236,9 @@ class Grammar(ABC):
         return None
 
     @classmethod
-    def trivial_callees(cls) -> frozenset[str]:
-        """Stdlib/builtin callee names to filter before overlap analysis."""
+    def language_builtins(cls) -> frozenset[str]:
+        """The language's builtin / stdlib callable names (a fact). Consumers decide
+        whether to discount them as noise; the grammar does not."""
         return frozenset()
 
     # ---- class / package vocabulary -----------------------------------

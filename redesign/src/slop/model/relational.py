@@ -17,12 +17,15 @@ from ..component.metrics import CallIsland, CloneCluster, RedundancyPair
 
 
 def callees_of(comp: Any) -> frozenset[str]:
-    """Non-trivial callee names in a callable's body (length>=3, no dunders, no trivials)."""
+    """Meaningful callee names in a callable's body (length>=3, no dunders, no builtins).
+
+    The grammar supplies the language's builtin set as a *fact*; discounting them
+    as noise is this consumer's policy decision."""
     grammar = comp._grammar
     call_types = grammar.call_node_types()
     if not call_types:
         return frozenset()
-    trivial = grammar.trivial_callees()
+    builtins = grammar.language_builtins()
     body = comp._node.child_by_field_name("body") or comp._node
     out: set[str] = set()
     stack = [body]
@@ -30,14 +33,14 @@ def callees_of(comp: Any) -> frozenset[str]:
         n = stack.pop()
         if n.type in call_types:
             name = grammar.extract_callee_name(n, comp._content)
-            if name is not None and _meaningful(name, trivial):
+            if name is not None and _meaningful(name, builtins):
                 out.add(name)
         stack.extend(n.children)
     return frozenset(out)
 
 
-def _meaningful(name: str, trivial: frozenset[str]) -> bool:
-    return len(name) >= 3 and not (name.startswith("__") and name.endswith("__")) and name not in trivial
+def _meaningful(name: str, builtins: frozenset[str]) -> bool:
+    return len(name) >= 3 and not (name.startswith("__") and name.endswith("__")) and name not in builtins
 
 
 def redundant_siblings(module: Any, *, min_shared: int = 3, min_score: float = 0.5) -> list[RedundancyPair]:
