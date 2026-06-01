@@ -243,27 +243,6 @@ class Grammar(ABC):
     # ---- class / package vocabulary -----------------------------------
 
     @classmethod
-    def is_abstract_scope(cls, node: Any, content: bytes) -> bool | None:
-        """Classify a class-like scope abstract/concrete/neither (None). Default None."""
-        del node, content
-        return None
-
-    @classmethod
-    def extract_superclasses(cls, node: Any, content: bytes) -> list[str]:
-        """Base-class / interface names declared on a class node. Default empty."""
-        del node, content
-        return []
-
-    @classmethod
-    def reparent_callable(cls, node: Any, content: bytes) -> str | None:
-        """Simple name of the type a callable structurally belongs to, when the
-        grammar emits it outside that type's body (Go receiver methods, Rust impl
-        functions). The carver attaches it to the matching Class by construction —
-        replacing the legacy ``post_scan_adjust`` record-rewrite. Default None."""
-        del node, content
-        return None
-
-    @classmethod
     def import_queries(cls) -> tuple[tuple[str, str], ...]:
         """``(query, kind)`` tree-sitter pairs capturing import module strings as ``@module``."""
         return ()
