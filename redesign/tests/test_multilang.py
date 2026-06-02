@@ -2,7 +2,7 @@
 from pathlib import Path
 import pytest
 from slop.metrics.structural.view import Structure
-from slop.model import scan_corpus
+from slop.scope import scan_corpus
 from slop.ast import GRAMMARS_BY_ID
 
 CASES = {

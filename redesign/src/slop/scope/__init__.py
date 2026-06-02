@@ -27,10 +27,13 @@ from .metrics import (
     RedundancyPair,
     SentinelParameter,
 )
+from .carve import scan_corpus
 from .projection import Lexicon
 from .symbol import Callable, Class, Module
 
 __all__ = [
+    # entry point
+    "scan_corpus",
     # spine
     "Component",
     "AggregateContainer",

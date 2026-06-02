@@ -13,14 +13,14 @@ from pathlib import Path
 
 from .config import AnalysisConfig
 from .dispatch import Dispatcher, Report
-from .model.components import Corpus
+from .scope import scan_corpus
 from .rules import RULE_REGISTRY
 
 
 def lint(root: str | Path, output: str = "human") -> int:
     root = Path(root)
     config = AnalysisConfig.load(root, RULE_REGISTRY)
-    corpus = Corpus.scan(root, config)
+    corpus = scan_corpus(root, config)
     report = Dispatcher(RULE_REGISTRY, config).run(corpus)
     if output == "json":
         print(json.dumps(report.as_dict(), indent=2))

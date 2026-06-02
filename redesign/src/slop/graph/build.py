@@ -11,9 +11,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from ..scope.identity import ComponentId, ComponentKind, Span
-from ..scope.metrics import DependencyCycle
-from ..graph.dependency import DependencyEdge, DependencyGraph
+from ..identity import ComponentId, ComponentKind, Span
+from ..metrics.structural.records import DependencyCycle
+from .dependency import DependencyEdge, DependencyGraph
 from .imports import module_imports
 
 

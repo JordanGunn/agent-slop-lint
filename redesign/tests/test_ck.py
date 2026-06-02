@@ -1,6 +1,6 @@
 from pathlib import Path
 from slop.metrics.structural.view import Structure
-from slop.model import scan_corpus
+from slop.scope import scan_corpus
 
 SRC = '''\
 class Base:

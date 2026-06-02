@@ -11,7 +11,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from ..scope.identity import CallableKind, ComponentId, ComponentKind, Extent, Span
+from .identity import CallableKind, ComponentId, ComponentKind, Extent, Span
 from ..ast import AST, GRAMMARS_BY_ID
 from ..ast.paradigm import ObjectOriented
 from ..ast.parse import detect_language, parse_file
@@ -54,10 +54,10 @@ def scan_corpus(root: Path, config: Any) -> C.Corpus:
     # dependency graph for Martin) and hang it on the Corpus root. Regions reach it
     # via region.context (owner chain) — it is not bolted onto entity attributes.
     from ..metrics.structural import class_index
-    from . import dependency
+    from ..graph.build import build as build_dependency_graph
     from .context import AnalysisContext
     index = class_index.build(list(corpus._iter_classes()))
-    graph = dependency.build(corpus)
+    graph = build_dependency_graph(corpus)
     module_pkg = {
         m.id: pkg.id
         for r in corpus.realms() for pkg in r.packages() for m in pkg.modules()

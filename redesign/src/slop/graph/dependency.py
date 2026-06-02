@@ -12,8 +12,8 @@ from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from ..scope.identity import ComponentId, Span
-from ..scope.metrics import DependencyCycle
+from ..identity import ComponentId, Span
+from ..metrics.structural.records import DependencyCycle
 
 
 @dataclass(frozen=True)

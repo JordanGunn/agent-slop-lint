@@ -3,7 +3,7 @@ without error. Graph-dependent measures (Martin, dep cycles) are expected to
 raise NotImplementedError and are excluded."""
 from pathlib import Path
 from slop.metrics.structural.view import Structure
-from slop.model import scan_corpus
+from slop.scope import scan_corpus
 from slop.scope.identity import ComponentKind
 
 def test_every_non_graph_metric_answers_on_real_corpus():

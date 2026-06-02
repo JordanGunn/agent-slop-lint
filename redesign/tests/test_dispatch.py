@@ -7,7 +7,7 @@ from pathlib import Path
 from slop.config import AnalysisConfig, RuleConfig
 from slop.dispatch import Dispatcher
 from slop.finding import Action, Disposition, Severity
-from slop.model import scan_corpus
+from slop.scope import scan_corpus
 from slop.rules import RULE_REGISTRY
 
 # Two disjoint call-clusters, each of >=2 mutually-calling functions (so they

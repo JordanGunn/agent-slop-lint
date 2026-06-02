@@ -11,7 +11,7 @@ from pathlib import Path
 
 from slop.config import RuleConfig
 from slop.finding import Disposition, Severity
-from slop.model import scan_corpus
+from slop.scope import scan_corpus
 from slop.rules.token_distribution import TokenDistributionRule
 
 SRC = '''\

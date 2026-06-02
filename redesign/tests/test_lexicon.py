@@ -1,5 +1,5 @@
 from pathlib import Path
-from slop.model import scan_corpus
+from slop.scope import scan_corpus
 from slop.scope.identity import ComponentKind
 from slop.lexicon import Lexicon, Role, token_distribution
 from slop.span import Span
