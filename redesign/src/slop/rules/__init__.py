@@ -13,12 +13,14 @@ from .call_islands import CallIslandsRule
 from .cognitive import CognitiveRule
 from .combinatorial import CombinatorialRule
 from .cyclomatic import CyclomaticRule
+from .escape_hatches import EscapeHatchesRule
 from .token_distribution import TokenDistributionRule
 
 RULE_REGISTRY: list[Rule] = [
     CyclomaticRule(),
     CognitiveRule(),
     CombinatorialRule(),
+    EscapeHatchesRule(),
     TokenDistributionRule(),
     CallIslandsRule(),
 ]
@@ -28,6 +30,7 @@ __all__ = [
     "CyclomaticRule",
     "CognitiveRule",
     "CombinatorialRule",
+    "EscapeHatchesRule",
     "TokenDistributionRule",
     "CallIslandsRule",
 ]

@@ -65,6 +65,7 @@ class Action(StrEnum):
     DROP_REDUNDANT_TOKENS = "drop-redundant-tokens"
     RENAME_BY_TEMPLATE = "rename-by-template"
     REPLACE_WITH_DOMAIN_TERM = "replace-with-domain-term"
+    REPLACE_ESCAPE_TYPE = "replace-escape-hatch-type"
     REDUCE_COMPLEXITY = "reduce-complexity"
     # intent-deferred verdict (caps at WARNING — see Verdict.__post_init__)
     REVIEW = "review"

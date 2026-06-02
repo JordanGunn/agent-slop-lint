@@ -24,7 +24,10 @@ from typing import Any
 
 from ...identity import ScopeKind
 from . import callable_measures, class_index, complexity, halstead
-from .annotations import escape_hatch_density as _escape_hatch_density
+from .annotations import (
+    escape_hatch_counts as _escape_hatch_counts,
+    escape_hatch_density as _escape_hatch_density,
+)
 from .hotspots import hotspots as _hotspots
 from .orphans import orphans as _orphans
 from .records import CKMetrics, PackageMetrics
@@ -125,6 +128,12 @@ class Structure:
     def escape_hatch_density(self) -> float:
         r = self._r
         return _escape_hatch_density(r._ast_node(), r._grammar)
+
+    def escape_hatch_counts(self) -> tuple[int, int]:
+        """``(escape-hatch annotations, total annotations)`` — the raw counts the
+        escape-hatches rule gates on (density plus the min-annotations floor)."""
+        r = self._r
+        return _escape_hatch_counts(r._ast_node(), r._grammar)
 
     def redundant_siblings(self):
         return _redundant_siblings(self._r)
