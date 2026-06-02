@@ -21,7 +21,6 @@ from ..component.identity import CallableKind, ComponentId, ComponentKind, Exten
 from ..component.symbol import Callable as CallableABC
 from ..component.symbol import Class as ClassABC
 from ..component.symbol import Module as ModuleABC
-from ..metrics.structural import callable_measures, complexity, halstead
 
 
 def _todo(what: str, why: str) -> NotImplementedError:
@@ -92,7 +91,7 @@ class _Base:
         path = self._files[0] if self._files else Path(".")
         return Node(self._node, self._content, path, self._grammar)
 
-    # ---- aggregatable complexity (container default = sum of leaves) --
+    # ---- descendant iteration (the region surface the metric views consume) --
     def _iter_callables(self) -> Iterator[Any]:
         for ch in self._children:
             if ch.KIND == ComponentKind.CALLABLE:
@@ -104,15 +103,6 @@ class _Base:
             if ch.KIND == ComponentKind.CLASS:
                 yield ch
             yield from ch._iter_classes()
-
-    def _sum(self, prim: str) -> int:
-        return sum(getattr(cl, prim)() for cl in self._iter_callables())
-
-    def cyclomatic(self) -> int: return self._sum("_cyclomatic")
-    def cognitive(self) -> int: return self._sum("_cognitive")
-    def combinatorial(self) -> int: return self._sum("_combinatorial")
-    def volume(self) -> float: return float(self._sum("_volume"))
-    def sloc(self) -> int: return self._sum("_sloc")
 
 
 # ============================ symbol containers ============================
@@ -131,26 +121,6 @@ class Callable(_Base, CallableABC):
     def locals(self): raise _todo("Callable.locals", "pending")
     def nested(self): return tuple(c for c in self._children if c.KIND == ComponentKind.CALLABLE)
     def symbols(self): return self._children
-
-    # complexity: a Callable reports its own primitive (override the sum)
-    def cyclomatic(self) -> int: return self._cyclomatic()
-    def cognitive(self) -> int: return self._cognitive()
-    def combinatorial(self) -> int: return self._combinatorial()
-    def volume(self) -> float: return float(self._volume())
-    def sloc(self) -> int: return self._sloc()
-
-    def _cyclomatic(self) -> int: return complexity.cyclomatic(self._ast_node(), self._grammar)
-    def _cognitive(self) -> int: return complexity.cognitive(self._ast_node(), self._grammar)
-    def _combinatorial(self) -> int: return complexity.combinatorial(self._ast_node(), self._grammar)
-    def _volume(self) -> float: return halstead.volume(self._ast_node(), self._grammar)
-    def _sloc(self) -> int: return halstead.sloc(self._ast_node())
-
-    # CallableMeasures (non-aggregatable)
-    def halstead(self): return halstead.profile(self._ast_node(), self._grammar)
-    def halstead_density(self) -> float: return halstead.profile(self._ast_node(), self._grammar).difficulty
-    def magic_literals(self): return callable_measures.magic_literals(self._ast_node(), self._grammar)
-    def mutated_parameters(self): return callable_measures.mutated_parameters(self._node, self._content, self._grammar)
-    def sentinel_parameters(self): return callable_measures.sentinel_parameters(self._node, self._content, self._grammar)
 
 
 class Class(_Base, ClassABC):
@@ -174,29 +144,6 @@ class Class(_Base, ClassABC):
     def nested_classes(self): return tuple(c for c in self._children if c.KIND == ComponentKind.CLASS)
     def symbols(self): return self._children
 
-    # ClassMeasures (CK) — dit/noc/cbo use the corpus-wide class index
-    def ck(self):
-        from ..component.metrics import CKMetrics
-        return CKMetrics(nom=self.method_count(), dit=self.dit(), noc=self.noc(),
-                         cbo=self.cbo(), lcom=self.lcom())
-    def method_count(self) -> int: return len(self.methods())
-    def dit(self) -> int:
-        from ..metrics.structural import class_index
-        return class_index.dit(self, self._require_index())
-    def noc(self) -> int:
-        from ..metrics.structural import class_index
-        return class_index.noc(self, self._require_index())
-    def cbo(self) -> int:
-        from ..metrics.structural import class_index
-        return class_index.cbo(self, self._require_index())
-    def lcom(self): return None  # not in legacy; future
-
-    def _require_index(self):
-        idx = self.context.class_index
-        if idx is None:
-            raise _todo("CK metrics", "class index not attached (scan via Corpus.scan)")
-        return idx
-
 
 class Module(_Base, ModuleABC):
     KIND = ComponentKind.MODULE
@@ -205,22 +152,6 @@ class Module(_Base, ModuleABC):
         from .imports import module_imports
         return module_imports(self)
     def symbols(self): return self._children
-
-    # ModuleMeasures
-    def definition_count(self) -> int:
-        return sum(1 for c in self._children if c.KIND in (ComponentKind.CALLABLE, ComponentKind.CLASS))
-    def escape_hatch_density(self) -> float:
-        from ..metrics.structural.annotations import escape_hatch_density as _ehd
-        return _ehd(self._ast_node(), self._grammar)
-    def redundant_siblings(self):
-        from ..metrics.structural.relational import redundant_siblings
-        return redundant_siblings(self)
-    def call_islands(self):
-        from ..metrics.structural.relational import call_islands
-        return call_islands(self)
-    def clone_clusters(self):
-        from ..metrics.structural.relational import clone_clusters
-        return clone_clusters(list(self._iter_callables()))
 
 
 # ============================ aggregate containers ========================
@@ -236,57 +167,6 @@ class Package(_Base, PackageABC):
     def path(self) -> Path: return self._path
     def packages(self): return tuple(c for c in self._children if c.KIND == ComponentKind.PACKAGE)
     def modules(self): return tuple(c for c in self._children if c.KIND == ComponentKind.MODULE)
-
-    # PackageMeasures (Martin 1994) — uses the corpus DependencyGraph contracted
-    # to package granularity + abstractness from the grammar's classification.
-    def _martin_raw(self) -> tuple[int, int, int, int]:
-        graph = self.context.dep_graph
-        if graph is None:
-            raise _todo("Package.martin", "dependency graph not attached (scan via Corpus.scan)")
-        module_pkg = self.context.module_pkg
-        ce: set = set(); ca: set = set()
-        for m in self.modules():
-            for t in graph.efferent_nodes(m.id):
-                p = module_pkg.get(t)
-                if p is not None and p != self.id:
-                    ce.add(p)
-            for s in graph.afferent_nodes(m.id):
-                p = module_pkg.get(s)
-                if p is not None and p != self.id:
-                    ca.add(p)
-        na = nc = 0
-        for cls in self._iter_classes():
-            c = cls._grammar.is_abstract_scope(cls._node, cls._content)
-            if c is True:
-                na += 1
-            elif c is False:
-                nc += 1
-        return len(ca), len(ce), na, nc
-
-    def martin_metrics(self):
-        from ..component.metrics import PackageMetrics
-        ca, ce, na, nc = self._martin_raw()
-        i = ce / (ca + ce) if (ca + ce) else 0.0
-        a = na / (na + nc) if (na + nc) else 0.0
-        return PackageMetrics(afferent=ca, efferent=ce, instability=i, abstractness=a,
-                              distance=abs(a + i - 1.0))
-
-    def in_zone_of_pain(self) -> bool:
-        ca, ce, na, nc = self._martin_raw()
-        if not (ca + ce) or not (na + nc):
-            return False  # undefined — not classifiable
-        return (ce / (ca + ce)) < 0.3 and (na / (na + nc)) < 0.3
-
-    def in_zone_of_uselessness(self) -> bool:
-        ca, ce, na, nc = self._martin_raw()
-        if not (ca + ce) or not (na + nc):
-            return False
-        return (ce / (ca + ce)) > 0.7 and (na / (na + nc)) > 0.7
-    def is_runt(self) -> bool:
-        """A package whose boundary does not earn its weight: <=1 module and no
-        top-level definitions (a trivial single-/empty-module package)."""
-        mods = self.modules()
-        return len(mods) <= 1 and sum(m.definition_count() for m in mods) == 0
 
 
 class Realm(_Base, RealmABC):
@@ -329,17 +209,3 @@ class Corpus(_Base, CorpusABC):
     def scan(cls, root: Path, config: Any) -> "Corpus":
         from .carve import scan_corpus
         return scan_corpus(root, config)
-
-    # CorpusMeasures — graph-dependent / cross-cutting
-    def orphans(self):
-        from ..metrics.structural.orphans import orphans
-        return orphans(self)
-    def duplication(self):
-        from ..metrics.structural.relational import clone_clusters
-        return clone_clusters(list(self._iter_callables()))
-    def hotspots(self):
-        from ..metrics.structural.hotspots import hotspots
-        return hotspots(self)
-    def dependency_cycles(self):
-        graph = self.context.dep_graph
-        return graph.cycles() if graph is not None else []

@@ -16,11 +16,10 @@ from pathlib import Path
 from typing import ClassVar
 
 from .identity import ComponentId, ComponentKind, Extent
-from .measures import ComplexityMeasures
 from .projection import Lexicon
 
 
-class Component(ComplexityMeasures, ABC):
+class Component(ABC):
     """The shared interface every scope component satisfies — the single source
     of truth for what is universal across the hierarchy.
 

@@ -22,14 +22,13 @@ from typing import TYPE_CHECKING, ClassVar
 from ..ast import Grammar, Paradigm
 from .base import AggregateContainer
 from .identity import ComponentKind
-from .measures import CorpusMeasures, PackageMeasures
 from .symbol import Module
 
 if TYPE_CHECKING:
     from ..config import AnalysisConfig
 
 
-class Package(AggregateContainer, PackageMeasures):
+class Package(AggregateContainer):
     """An organizational namespace inside a Realm — a directory or import-path
     segment grouping Modules and sub-Packages.
 
@@ -102,7 +101,7 @@ class Realm(AggregateContainer):
         ...
 
 
-class Corpus(AggregateContainer, CorpusMeasures):
+class Corpus(AggregateContainer):
     """The filesystem root selected for analysis — an analysis boundary, not
     necessarily a real project root.
 

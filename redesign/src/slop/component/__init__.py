@@ -12,14 +12,6 @@ from __future__ import annotations
 from .aggregate import Corpus, Realm, Package
 from .base import AggregateContainer, Component, SymbolContainer
 from .identity import CallableKind, ComponentId, ComponentKind, Extent, Span
-from .measures import (
-    CallableMeasures,
-    ClassMeasures,
-    ComplexityMeasures,
-    CorpusMeasures,
-    ModuleMeasures,
-    PackageMeasures,
-)
 from .metrics import (
     CallIsland,
     CKMetrics,
@@ -57,13 +49,6 @@ __all__ = [
     "Span",
     # projection
     "Lexicon",
-    # measure interfaces
-    "ComplexityMeasures",
-    "CallableMeasures",
-    "ClassMeasures",
-    "ModuleMeasures",
-    "PackageMeasures",
-    "CorpusMeasures",
     # metric records
     "HalsteadProfile",
     "CKMetrics",

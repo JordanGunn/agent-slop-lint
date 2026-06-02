@@ -17,11 +17,10 @@ from typing import ClassVar
 
 from .base import SymbolContainer
 from .identity import CallableKind, ComponentKind
-from .measures import CallableMeasures, ClassMeasures, ModuleMeasures
 from .metrics import ImportDecl
 
 
-class Callable(SymbolContainer, CallableMeasures):
+class Callable(SymbolContainer):
     """A function or method — the leaf of the hierarchy and the home altitude
     for the primitive structural metrics.
 
@@ -56,7 +55,7 @@ class Callable(SymbolContainer, CallableMeasures):
         ...
 
 
-class Class(SymbolContainer, ClassMeasures):
+class Class(SymbolContainer):
     """A class/interface/record/enum — a nested symbol container owning methods,
     properties, and child types.
 
@@ -97,7 +96,7 @@ class Class(SymbolContainer, ClassMeasures):
         ...
 
 
-class Module(SymbolContainer, ModuleMeasures):
+class Module(SymbolContainer):
     """The primary symbol container — an importable/buildable unit.
 
     Not always one file: Python maps one ``.py`` to one Module; Go maps a
