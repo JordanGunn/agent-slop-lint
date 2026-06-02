@@ -474,6 +474,27 @@ spans) — it currently has **zero callers**, so the signature change is free.
    tree-sitter leakage persists by design of the staged path — "isolated" is the
    target reached by attrition, not on day one.
 
+**Status: complete** (commits `307cda3`..`e138942`). The proxy was proven on
+cyclomatic (oracle: `test_multilang`), then every consumer migrated by
+attrition — cognitive/combinatorial/halstead, imports/annotations (via
+`Node.query`), relational/magic_literals/CK-coupling, `build_lexicon`, and
+`carve` — each oracle-checked against the full suite (63/63). `model/ast.py` is
+deleted and the dead `component.ast()` projection retired (the AST is the proxy;
+`Lexicon` stays the per-component projection). Residual raw-node access lives
+only in the grammar adapter layer (`ast/grammar/` + the `Grammar` ABC's default
+extractors in `ast/paradigm/base.py`) and `ast/tree.py`; `model/` reaches raw
+solely via `Node.raw` handoffs to grammar extractors. Two follow-ups noted below.
+
+**Follow-ups (not blocking):**
+- *stdlib shadow:* on Python 3.14, `from dataclasses import dataclass` internally
+  does `import ast`, so running Python with `src/slop/` as CWD resolves `ast` to
+  the local package and circular-crashes. Installed/`uv`/pytest paths are fine
+  (absolute `slop.ast`); it only bites a bare interpreter launched inside
+  `src/slop/`. Revisit if it proves a real footgun (rename `ast/`→`tree/`, or a
+  sitecustomize guard).
+- *NodeKind coverage:* `IMPORT`/`PARAMETER` map through `OTHER` (no single-type
+  grammar set); wire them if a consumer needs the neutral kind.
+
 ## Rule Targeting Model (validation centerpiece)
 
 Each rule declares the entity kind it targets, and each metric resolves to
