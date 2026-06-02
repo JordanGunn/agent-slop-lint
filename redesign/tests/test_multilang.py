@@ -1,6 +1,7 @@
 """Broaden check: every grammar carves + computes complexity, oracle-matched values."""
 from pathlib import Path
 import pytest
+from slop.metrics.structural.view import Structure
 from slop.model import scan_corpus
 from slop.ast import GRAMMARS_BY_ID
 
@@ -21,7 +22,7 @@ def test_language_carves_and_scores(tmp_path: Path, ext, spec):
     (tmp_path / f"a.{ext}").write_text(src)
     corpus = scan_corpus(tmp_path, config=None)
     assert corpus.realms() and corpus.realms()[0].language == lang
-    ccn = {c.name: c.cyclomatic() for c in corpus._iter_callables()}
+    ccn = {c.name: Structure.over(c).cyclomatic() for c in corpus._iter_callables()}
     for name, want in expected.items():
         assert ccn.get(name) == want, f"{lang}:{name} expected {want}, got {ccn.get(name)}"
 

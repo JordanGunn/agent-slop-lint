@@ -1,4 +1,5 @@
 from pathlib import Path
+from slop.metrics.structural.view import Structure
 from slop.model import scan_corpus
 from slop.component.identity import ComponentKind
 
@@ -30,6 +31,6 @@ def test_go_carves_and_reparents(tmp_path: Path):
     mod = realm.packages()[0].modules()[0]
     counter = next(c for c in mod.children() if c.KIND == ComponentKind.CLASS)
     assert [m.name for m in counter.methods()] == ["Inc"]   # receiver method reparented
-    assert counter.methods()[0].cyclomatic() == 4
+    assert Structure.over(counter.methods()[0]).cyclomatic() == 4
     add = next(c for c in mod.children() if c.KIND == ComponentKind.CALLABLE and c.name == "Add")
-    assert add.cyclomatic() == 1
+    assert Structure.over(add).cyclomatic() == 1

@@ -1,4 +1,5 @@
 from pathlib import Path
+from slop.metrics.structural.view import Structure
 from slop.model import scan_corpus
 
 SRC = '''\
@@ -21,17 +22,17 @@ def _classes(tmp_path: Path) -> dict:
 
 def test_dit(tmp_path: Path):
     cs = _classes(tmp_path)
-    assert (cs["Base"].dit(), cs["Mid"].dit(), cs["Leaf"].dit()) == (0, 1, 2)
+    assert (Structure.over(cs["Base"]).dit(), Structure.over(cs["Mid"]).dit(), Structure.over(cs["Leaf"]).dit()) == (0, 1, 2)
 
 def test_noc(tmp_path: Path):
     cs = _classes(tmp_path)
-    assert (cs["Base"].noc(), cs["Mid"].noc(), cs["Leaf"].noc()) == (1, 1, 0)
+    assert (Structure.over(cs["Base"]).noc(), Structure.over(cs["Mid"]).noc(), Structure.over(cs["Leaf"]).noc()) == (1, 1, 0)
 
 def test_cbo(tmp_path: Path):
     cs = _classes(tmp_path)
-    assert (cs["Base"].cbo(), cs["Mid"].cbo(), cs["Leaf"].cbo()) == (0, 1, 2)
+    assert (Structure.over(cs["Base"]).cbo(), Structure.over(cs["Mid"]).cbo(), Structure.over(cs["Leaf"]).cbo()) == (0, 1, 2)
 
 def test_ck_record(tmp_path: Path):
     cs = _classes(tmp_path)
-    ck = cs["Leaf"].ck()
+    ck = Structure.over(cs["Leaf"]).ck()
     assert (ck.dit, ck.noc, ck.cbo, ck.nom, ck.lcom) == (2, 0, 2, 1, None)

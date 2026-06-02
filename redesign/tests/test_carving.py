@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from slop.metrics.structural.view import Structure
 from slop.component import Callable, Class, Component, Corpus, Module, Package, Realm
 from slop.component.identity import ComponentKind
 from slop.model import scan_corpus
@@ -53,7 +54,7 @@ def test_concrete_kinds_and_owners(tmp_path: Path):
 
 def test_cyclomatic_primitive_matches_oracle(tmp_path: Path):
     corpus = _corpus(tmp_path)
-    ccn = {c.qualname: c.cyclomatic() for c in corpus._iter_callables()}
+    ccn = {c.qualname: Structure.over(c).cyclomatic() for c in corpus._iter_callables()}
     assert ccn == {"sample.f": 1, "sample.g": 3, "sample.Foo.m": 3}
 
 
@@ -61,9 +62,9 @@ def test_cyclomatic_aggregates_upward(tmp_path: Path):
     corpus = _corpus(tmp_path)
     mod = corpus.realms()[0].packages()[0].modules()[0]
     foo = next(c for c in mod.children() if c.KIND == ComponentKind.CLASS)
-    assert foo.cyclomatic() == 3        # class = sum of its methods
-    assert mod.cyclomatic() == 7        # module = sum of f, g, Foo.m
-    assert corpus.cyclomatic() == 7     # single module
+    assert Structure.over(foo).cyclomatic() == 3        # class = sum of its methods
+    assert Structure.over(mod).cyclomatic() == 7        # module = sum of f, g, Foo.m
+    assert Structure.over(corpus).cyclomatic() == 7     # single module
 
 
 def test_files_cardinality(tmp_path: Path):

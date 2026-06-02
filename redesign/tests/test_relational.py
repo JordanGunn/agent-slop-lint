@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from slop.metrics.structural.view import Structure
 from slop.model import scan_corpus
 
 REDUNDANT = '''\
@@ -46,20 +47,20 @@ def _module(tmp_path: Path, src: str):
 
 def test_redundant_siblings(tmp_path: Path):
     mod = _module(tmp_path, REDUNDANT)
-    pairs = mod.redundant_siblings()
+    pairs = Structure.over(mod).redundant_siblings()
     assert [(p.left, p.right) for p in pairs] == [("f1", "f2")]
     assert pairs[0].shared_callees == ("helper_a", "helper_b", "helper_c")
 
 
 def test_call_islands(tmp_path: Path):
     mod = _module(tmp_path, REDUNDANT)
-    islands = {tuple(i.members) for i in mod.call_islands()}
+    islands = {tuple(i.members) for i in Structure.over(mod).call_islands()}
     assert ("f1", "f2", "helper_a", "helper_b", "helper_c") in islands
     assert ("lonely",) in islands
 
 
 def test_clone_clusters(tmp_path: Path):
     mod = _module(tmp_path, CLONES)
-    clusters = mod.clone_clusters()
+    clusters = Structure.over(mod).clone_clusters()
     assert len(clusters) == 1
     assert set(clusters[0].members) == {"r.dup1", "r.dup2"}
