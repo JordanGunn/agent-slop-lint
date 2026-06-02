@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from ..component.identity import CallableKind, ComponentId, ComponentKind, Extent, Span
-from ..ast import GRAMMARS_BY_ID
+from ..ast import AST, GRAMMARS_BY_ID
 from ..ast.paradigm import ObjectOriented
 from ..ast.parse import detect_language, parse_file
 from . import components as C
@@ -136,19 +136,19 @@ def _carve_module(path: Path, grammar: type) -> C.Module | None:
     if parsed is None:
         return None
     tree, content = parsed
-    root_node = tree.root_node
+    root = AST(tree, content, path, grammar).root
     qualname = path.stem if path.stem != "__init__" else (path.parent.name or "<root>")
     span = Span(str(path), 0, len(content))
 
     children = _carve_decls(
-        root_node, grammar=grammar, content=content, path=path,
+        root, grammar=grammar, content=content, path=path,
         parts=(qualname,), in_class=False,
     )
     children = _reparent_callables(children, grammar, content)
     module = C.Module(
         id=ComponentId(ComponentKind.MODULE, qualname, (span,)),
         name=qualname, owner=None, extent=Extent((span,)), files=(path,),
-        children=children, node=root_node, content=content, grammar=grammar,
+        children=children, node=root.raw, content=content, grammar=grammar,
     )
     for ch in children:
         ch._owner = module
@@ -159,13 +159,13 @@ def _carve_decls(
     node: Any, *, grammar: type, content: bytes, path: Path,
     parts: tuple[str, ...], in_class: bool,
 ) -> tuple[Any, ...]:
-    """Direct declaration components within ``node`` (descending through
-    non-declaration nodes, stopping at class/callable nodes)."""
+    """Direct declaration components within ``node`` (a ``slop.ast.Node``),
+    descending through non-declaration nodes, stopping at class/callable nodes."""
     is_oo = issubclass(grammar, ObjectOriented)
     class_types = grammar.classes() if is_oo else frozenset()
     callable_types = grammar.callable()
     out: list[Any] = []
-    for child in node.children:
+    for child in node.children():
         if child.type in class_types:
             out.append(_make_class(child, grammar, content, path, parts))
         elif child.type in callable_types:
@@ -179,21 +179,21 @@ def _carve_decls(
 
 
 def _make_class(node: Any, grammar: type, content: bytes, path: Path, parts: tuple[str, ...]) -> C.Class:
-    name = grammar.extract_name(node, content) or "<anonymous>"
+    name = grammar.extract_name(node.raw, content) or "<anonymous>"
     qn = ".".join((*parts, name))
-    span = Span(str(path), node.start_byte, node.end_byte)
-    body = node.child_by_field_name("body") or node
+    span = node.span
+    body = node.field("body") or node
     children = _carve_decls(
         body, grammar=grammar, content=content, path=path,
         parts=(*parts, name), in_class=True,
     )
-    is_abs = grammar.is_abstract_scope(node, content)
+    is_abs = grammar.is_abstract_scope(node.raw, content)
     klass = C.Class(
-        is_abstract=bool(is_abs), bases=tuple(grammar.extract_superclasses(node, content)),
+        is_abstract=bool(is_abs), bases=tuple(grammar.extract_superclasses(node.raw, content)),
         properties=(),
         id=ComponentId(ComponentKind.CLASS, qn, (span,)),
         name=name, owner=None, extent=Extent((span,)), files=(path,),
-        children=children, node=node, content=content, grammar=grammar,
+        children=children, node=node.raw, content=content, grammar=grammar,
     )
     for ch in children:
         ch._owner = klass
@@ -204,21 +204,21 @@ def _make_callable(
     node: Any, grammar: type, content: bytes, path: Path,
     parts: tuple[str, ...], in_class: bool,
 ) -> C.Callable:
-    name = grammar.extract_name(node, content) or "<anonymous>"
+    name = grammar.extract_name(node.raw, content) or "<anonymous>"
     qn = ".".join((*parts, name))
-    span = Span(str(path), node.start_byte, node.end_byte)
-    body = node.child_by_field_name("body") or node
+    span = node.span
+    body = node.field("body") or node
     # Nested callables become child components; nested classes too (rare).
     children = _carve_decls(
         body, grammar=grammar, content=content, path=path,
         parts=(*parts, name), in_class=False,
     )
-    params = tuple(n for n, _anno in grammar.extract_parameters(node, content))
+    params = tuple(n for n, _anno in grammar.extract_parameters(node.raw, content))
     callable_ = C.Callable(
         kind=_callable_kind(node.type, in_class), parameters=params,
         id=ComponentId(ComponentKind.CALLABLE, qn, (span,)),
         name=name, owner=None, extent=Extent((span,)), files=(path,),
-        children=children, node=node, content=content, grammar=grammar,
+        children=children, node=node.raw, content=content, grammar=grammar,
     )
     for ch in children:
         ch._owner = callable_

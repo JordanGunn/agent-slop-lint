@@ -22,7 +22,6 @@ from ..component.symbol import Callable as CallableABC
 from ..component.symbol import Class as ClassABC
 from ..component.symbol import Module as ModuleABC
 from . import callable_measures, complexity, halstead
-from .ast import AST, Root
 
 
 def _todo(what: str, why: str) -> NotImplementedError:
@@ -70,24 +69,15 @@ class _Base:
     def children(self): return self._children
 
     # ---- projections --------------------------------------------------
-    def ast(self) -> AST:
-        if self._node is not None:
-            path = self._files[0] if self._files else Path(".")
-            return AST((Root(node=self._node, content=self._content, path=path),))
-        roots: list[Root] = []
-        for ch in self._children:
-            roots.extend(ch.ast().roots)
-        return AST(tuple(roots))
-
     def lexicon(self):
         from .lexicon import build_lexicon
         return build_lexicon(self)
 
     def _ast_node(self) -> Any:
-        """Wrap this component's own tree-sitter node in the AST proxy. The
-        component holds the raw node from carving; ported metrics consume the
-        ``Node``, never the raw node. Transitional — once carving emits the
-        proxy directly, the stored raw node and this helper dissolve."""
+        """This component's own subtree as a ``slop.ast.Node``. The component
+        holds the raw node from carving; every ported metric consumes the
+        ``Node``, never the raw node — this is the single bridge from the stored
+        node to the proxy."""
         from ..ast import Node
         path = self._files[0] if self._files else Path(".")
         return Node(self._node, self._content, path, self._grammar)

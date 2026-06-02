@@ -36,7 +36,7 @@ from .metrics import (
     RedundancyPair,
     SentinelParameter,
 )
-from .projection import AST, Lexicon
+from .projection import Lexicon
 from .symbol import Callable, Class, Module
 
 __all__ = [
@@ -58,8 +58,7 @@ __all__ = [
     "Span",
     # capability
     "HasClasses",
-    # projections
-    "AST",
+    # projection
     "Lexicon",
     # measure interfaces
     "ComplexityMeasures",

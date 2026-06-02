@@ -17,7 +17,7 @@ from typing import ClassVar
 
 from .identity import ComponentId, ComponentKind, Extent
 from .measures import ComplexityMeasures
-from .projection import AST, Lexicon
+from .projection import Lexicon
 
 
 class Component(ComplexityMeasures, ABC):
@@ -28,11 +28,15 @@ class Component(ComplexityMeasures, ABC):
     Callable), it lives here and nowhere else. That is: ``KIND`` (a class
     constant, so identity/dispatch never re-derive it), a stable identity,
     ``name``/``qualname``, an extent, the files it spans, an owner (None only for
-    the Corpus root), child components, the two lazy projections (``ast()`` +
-    ``lexicon()``) over its own extent, and the aggregatable complexity surface
-    (``ComplexityMeasures`` — primitive at the Callable leaf, summed at every
-    container). Anything non-universal — declaration ownership (``SymbolContainer``)
-    and position-unique metrics — is declared one tier down, never here.
+    the Corpus root), child components, the lazy ``lexicon()`` projection over its
+    own extent, and the aggregatable complexity surface (``ComplexityMeasures`` —
+    primitive at the Callable leaf, summed at every container). Anything
+    non-universal — declaration ownership (``SymbolContainer``) and position-unique
+    metrics — is declared one tier down, never here.
+
+    The parsed AST is no longer a per-component projection: it is the
+    ``slop.ast`` proxy (``AST``/``Node``), reached from a component's carved
+    nodes. Rules consume ``lexicon()`` and the metric surface, not AST nodes.
     """
 
     #: The entity kind this class represents; set on every concrete kind so
@@ -88,15 +92,10 @@ class Component(ComplexityMeasures, ABC):
         ...
 
     @abstractmethod
-    def ast(self) -> AST:
-        """Parsed syntax over this component's extent — the substrate metrics
-        walk. Lazy; sliced from the owner's parse, never re-parsed."""
-        ...
-
-    @abstractmethod
     def lexicon(self) -> Lexicon:
         """Cleaned identifier token-space over this component's extent (lazy).
-        Derived from ``ast()`` plus the component names in the extent."""
+        Derived from the ``slop.ast`` proxy over the extent plus the component
+        names in the extent."""
         ...
 
 
