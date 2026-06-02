@@ -19,7 +19,7 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
-from .component.identity import ComponentKind
+from .scope.identity import ComponentKind
 from .finding import Severity
 
 _SEVERITY_BY_LABEL = {s.label(): s for s in Severity}

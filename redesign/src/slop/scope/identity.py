@@ -4,7 +4,7 @@
 identity value types; like ``Span`` they now live at the package root
 (``slop.identity``) so the scope model, metric views, graphs, and linter can share
 them without depending on each other. This module re-exports them — plus ``Span`` —
-so existing ``from ..component.identity import …`` sites are unchanged during the
+so existing ``from ..scope.identity import …`` sites are unchanged during the
 scope-layer migration.
 """
 from __future__ import annotations

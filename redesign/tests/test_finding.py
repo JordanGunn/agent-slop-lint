@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import pytest
 
-from slop.component.identity import ComponentId, ComponentKind
+from slop.scope.identity import ComponentId, ComponentKind
 from slop.finding import Action, Disposition, Evidence, Observation, Severity, Verdict
 
 CID = ComponentId(ComponentKind.CALLABLE, "m.f", ())

@@ -10,7 +10,7 @@ neither depends on the other. (``Span`` was never an AST type — keeping it und
 ``ast/`` would force ``lexicon -> ast`` the moment lexicon needed it.)
 
 ``slop.ast`` and ``slop.component.identity`` both re-export ``Span``, so existing
-``from ..ast import Span`` / ``from ..component.identity import Span`` sites are
+``from ..ast import Span`` / ``from ..scope.identity import Span`` sites are
 unchanged.
 
 tree-sitter node identity is not stable across accesses, so a node's durable

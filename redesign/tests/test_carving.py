@@ -5,8 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 
 from slop.metrics.structural.view import Structure
-from slop.component import Callable, Class, Component, Corpus, Module, Package, Realm
-from slop.component.identity import ComponentKind
+from slop.scope import Callable, Class, Component, Corpus, Module, Package, Realm
+from slop.scope.identity import ComponentKind
 from slop.model import scan_corpus
 
 SAMPLE = '''\

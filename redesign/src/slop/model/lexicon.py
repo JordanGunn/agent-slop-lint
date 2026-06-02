@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..component.identity import ComponentKind
+from ..scope.identity import ComponentKind
 from ..lexicon import Lexicon, Role
 from ..span import Span
 

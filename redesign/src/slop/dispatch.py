@@ -22,7 +22,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass, field
 from typing import Any
 
-from .component.identity import ComponentKind
+from .scope.identity import ComponentKind
 from .config import AnalysisConfig
 from .finding import Disposition, Finding, Severity
 from .rule import Rule

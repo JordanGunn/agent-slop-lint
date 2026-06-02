@@ -11,9 +11,9 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-from ..component.base import Component
+from ..scope.base import Component
 from ..config import RuleConfig
-from ..component.identity import ComponentKind
+from ..scope.identity import ComponentKind
 from ..finding import Evidence, Finding, Observation, Severity
 from ..rule import Rule
 

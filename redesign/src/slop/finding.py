@@ -24,7 +24,7 @@ from enum import IntEnum, StrEnum
 from typing import TYPE_CHECKING, Any, ClassVar, Protocol, runtime_checkable
 
 if TYPE_CHECKING:
-    from .component.identity import ComponentId
+    from .scope.identity import ComponentId
 
 
 class Severity(IntEnum):

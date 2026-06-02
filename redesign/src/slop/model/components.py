@@ -14,13 +14,13 @@ from collections.abc import Iterator, Sequence
 from pathlib import Path
 from typing import Any
 
-from ..component.aggregate import Corpus as CorpusABC
-from ..component.aggregate import Package as PackageABC
-from ..component.aggregate import Realm as RealmABC
-from ..component.identity import CallableKind, ComponentId, ComponentKind, Extent
-from ..component.symbol import Callable as CallableABC
-from ..component.symbol import Class as ClassABC
-from ..component.symbol import Module as ModuleABC
+from ..scope.aggregate import Corpus as CorpusABC
+from ..scope.aggregate import Package as PackageABC
+from ..scope.aggregate import Realm as RealmABC
+from ..scope.identity import CallableKind, ComponentId, ComponentKind, Extent
+from ..scope.symbol import Callable as CallableABC
+from ..scope.symbol import Class as ClassABC
+from ..scope.symbol import Module as ModuleABC
 
 
 def _todo(what: str, why: str) -> NotImplementedError:

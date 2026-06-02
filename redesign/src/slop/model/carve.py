@@ -11,7 +11,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from ..component.identity import CallableKind, ComponentId, ComponentKind, Extent, Span
+from ..scope.identity import CallableKind, ComponentId, ComponentKind, Extent, Span
 from ..ast import AST, GRAMMARS_BY_ID
 from ..ast.paradigm import ObjectOriented
 from ..ast.parse import detect_language, parse_file

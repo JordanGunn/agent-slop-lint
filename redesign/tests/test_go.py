@@ -1,7 +1,7 @@
 from pathlib import Path
 from slop.metrics.structural.view import Structure
 from slop.model import scan_corpus
-from slop.component.identity import ComponentKind
+from slop.scope.identity import ComponentKind
 
 GO = '''\
 package m

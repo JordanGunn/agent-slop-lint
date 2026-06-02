@@ -17,8 +17,8 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from typing import ClassVar
 
-from .component.base import Component
-from .component.identity import ComponentKind
+from .scope.base import Component
+from .scope.identity import ComponentKind
 from .config import RuleConfig
 from .finding import Finding
 

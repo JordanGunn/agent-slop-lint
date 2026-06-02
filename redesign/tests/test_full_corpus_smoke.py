@@ -4,10 +4,10 @@ raise NotImplementedError and are excluded."""
 from pathlib import Path
 from slop.metrics.structural.view import Structure
 from slop.model import scan_corpus
-from slop.component.identity import ComponentKind
+from slop.scope.identity import ComponentKind
 
 def test_every_non_graph_metric_answers_on_real_corpus():
-    corpus = scan_corpus(Path(__file__).resolve().parents[1] / "src" / "slop" / "component", config=None)
+    corpus = scan_corpus(Path(__file__).resolve().parents[1] / "src" / "slop" / "scope", config=None)
     # aggregatable complexity at the top
     assert Structure.over(corpus).cyclomatic() >= 0 and Structure.over(corpus).volume() >= 0.0
     # analysis-wide

@@ -4,7 +4,7 @@ Like :class:`~slop.span.Span`, these live at the package root and depend on noth
 above it: the scope model, the metric views, the dependency/call graphs, and the
 linter all key on them, so housing them low keeps those layers from depending on each
 other just to share an id. ``component.identity`` re-exports them so existing
-``from ..component.identity import …`` sites are unchanged.
+``from ..scope.identity import …`` sites are unchanged.
 
 Logical vs physical identity: ``ComponentId`` carries a stable *logical* key (kind +
 qualname) distinct from its *physical* extent (byte spans). A one-byte edit shifts the

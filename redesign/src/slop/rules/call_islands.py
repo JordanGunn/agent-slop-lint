@@ -14,8 +14,8 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-from ..component.base import Component
-from ..component.identity import ComponentKind
+from ..scope.base import Component
+from ..scope.identity import ComponentKind
 from ..config import RuleConfig
 from ..finding import Action, Finding, Severity, Verdict
 from ..metrics.structural.view import Structure
