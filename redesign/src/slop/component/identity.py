@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 
-from ..ast.span import Span  # re-exported: Span is an AST-layer primitive (see ast/span.py)
+from ..span import Span  # re-exported: Span is the shared substrate primitive (see slop/span.py)
 
 
 class ComponentKind(Enum):

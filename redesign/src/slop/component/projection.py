@@ -35,6 +35,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 if TYPE_CHECKING:
+    from ..lexicon import TokenDistribution
     from .identity import Extent
 
 
@@ -57,9 +58,22 @@ class Lexicon(Protocol):
         namespace-maturity gate for dispersion."""
         ...
 
+    def total_token_count(self) -> int:
+        """Total significant token occurrences, with multiplicity."""
+        ...
+
     def hapax_ratio(self) -> float:
         """Fraction of significant tokens occurring exactly once (a raw norm,
         ~0.49 invariant; deviation from baseline is the signal, not the value)."""
+        ...
+
+    def most_common(self, n: int = 15) -> list[tuple[str, int]]:
+        """The ``n`` most frequent significant tokens, as ``(token, count)``."""
+        ...
+
+    def distribution(self, *, top: int = 15) -> TokenDistribution:
+        """The token-space as a measured Zipfian distribution (claim-free) — the
+        object the ``vocabulary`` observation surfaces."""
         ...
 
     def slice(self, extent: Extent) -> Lexicon:

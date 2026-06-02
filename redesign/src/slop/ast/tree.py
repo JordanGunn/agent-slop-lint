@@ -18,9 +18,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Iterator
 
+from ..span import Span
 from .nodes import NodeKind
 from .parse import parse_file
-from .span import Span
 
 
 class Node:
@@ -144,6 +144,22 @@ class Node:
             if prune and node.kind in prune:
                 continue
             stack.extend(reversed(raw.children))
+
+    def identifiers(self) -> Iterator[tuple[str, Span]]:
+        """Yield ``(text, span)`` for every identifier token in this subtree.
+
+        Identifier-hood is the grammar's own classification
+        (``NodeKind.IDENTIFIER``, i.e. ``grammar.identifiers()``), not a
+        name-shape heuristic: that counts only *leaf* identifiers, so container
+        types like C++ ``scoped_identifier`` ("a::b") neither double-count their
+        children nor leak punctuated pseudo-tokens. This is the AST's whole
+        contribution to the lexicon — words *as written*, with location; deciding
+        what counts as vocabulary (splitting ``fooBar``, stripping noise) is the
+        lexicon's job, above this boundary.
+        """
+        for node in self.walk():
+            if node.kind is NodeKind.IDENTIFIER:
+                yield node.text, node.span
 
     def query(self, pattern: str, capture: str | None = None) -> tuple["Node", ...]:
         """Run a tree-sitter query rooted at this node. With ``capture``, return

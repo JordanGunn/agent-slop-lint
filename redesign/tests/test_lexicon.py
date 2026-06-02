@@ -1,6 +1,8 @@
 from pathlib import Path
 from slop.model import scan_corpus
 from slop.component.identity import ComponentKind
+from slop.lexicon import Lexicon, Role, token_distribution
+from slop.span import Span
 
 SRC = '''\
 def process_data(raw_input):
@@ -43,3 +45,24 @@ def test_slice_is_per_file_superset(tmp_path: Path):
     mod = c.realms()[0].packages()[0].modules()[0]
     sliced = set(c.lexicon().slice(mod.extent).tokens())
     assert set(mod.lexicon().tokens()) <= sliced  # module tokens within the file slice
+
+
+# ---- kernel used standalone (no component layer) -----------------------
+
+def _lex(*texts: str) -> Lexicon:
+    return Lexicon([(t, Role.BODY_REF, Span("x.py", i, i + 1)) for i, t in enumerate(texts)])
+
+
+def test_distribution_measures_the_token_space():
+    lex = _lex("parse_node", "render_node", "render_node", "walk_node")
+    dist = lex.distribution()
+    assert dist.distinct == 4          # node, render, parse, walk
+    assert dist.n == 8                 # 4 texts × 2 tokens each
+    assert dist.top[0] == ("node", 4)  # in every text → dominant
+    assert 0.0 <= dist.zipf_r2 <= 1.0
+
+def test_distribution_degenerate_is_zeroed_not_an_error():
+    dist = token_distribution({})
+    assert dist.distinct == 0 and dist.n == 0
+    assert dist.zipf_alpha == 0.0 and dist.zipf_r2 == 0.0
+    assert dist.narrate() == "No identifier vocabulary to analyze (empty corpus)."

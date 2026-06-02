@@ -37,25 +37,10 @@ class TokenDistributionRule(Rule):
         if distinct < floor:
             return
         top_n = int(config.param("top_tokens", 15))
-        total = lexicon.total_token_count()
-        hapax = lexicon.hapax_ratio()
-        top = lexicon.most_common(top_n)
-        head = ", ".join(f"{tok}×{cnt}" for tok, cnt in top[:5])
+        dist = lexicon.distribution(top=top_n)
         yield Observation(
             rule=self.name,
             component=component.id,
-            evidence=Evidence(
-                kind="token-distribution",
-                data={
-                    "distinct": distinct,
-                    "total": total,
-                    "hapax_ratio": round(hapax, 4),
-                    "top_tokens": [[tok, cnt] for tok, cnt in top],
-                },
-            ),
-            message=(
-                f"{component.qualname}: {distinct} distinct identifier tokens over {total} "
-                f"occurrences (hapax ratio {hapax:.2f}). Head: {head}. Distribution is a Zipf "
-                f"near-invariant — look here only if the head/tail shape misreads the package's domain."
-            ),
+            evidence=Evidence(kind="token-distribution", data=dist.as_dict()),
+            message=f"{component.qualname}: {dist.narrate()}",
         )

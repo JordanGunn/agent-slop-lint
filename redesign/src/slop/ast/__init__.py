@@ -13,16 +13,18 @@ are re-exported here because the component interfaces import them.
 
 ``slop.ast`` is the home of slop's AST concept: a language-agnostic, pythonic
 *proxy over tree-sitter* (``AST`` + ``Node``, ``tree.py``) that owns all syntax
-navigation and isolates raw tree-sitter nodes to this package. ``Span`` (the
-source-location primitive) and ``NodeKind`` (the neutral node vocabulary) live
-here too. Nothing above ``ast/`` touches a raw node.
+navigation and isolates raw tree-sitter nodes to this package. ``NodeKind`` (the
+neutral node vocabulary) lives here; ``Span`` (the source-location primitive) lives
+one layer lower in ``slop.span`` — a shared base ``ast`` and ``lexicon`` both depend
+on — and is re-exported here for unchanged ``from ..ast import Span`` sites. Nothing
+above ``ast/`` touches a raw node.
 """
 from __future__ import annotations
 
+from ..span import Span
 from .grammar import GRAMMARS_BY_ID, Python
 from .nodes import NodeKind
 from .paradigm import Grammar, MultiPurpose, ObjectOriented, Paradigm, Procedural
-from .span import Span
 from .tree import AST, Node
 
 __all__ = [
