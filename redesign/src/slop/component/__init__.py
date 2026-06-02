@@ -11,7 +11,6 @@ from __future__ import annotations
 
 from .aggregate import Corpus, Realm, Package
 from .base import AggregateContainer, Component, SymbolContainer
-from .capability import HasClasses
 from .identity import CallableKind, ComponentId, ComponentKind, Extent, Span
 from .measures import (
     CallableMeasures,
@@ -56,8 +55,6 @@ __all__ = [
     "CallableKind",
     "Extent",
     "Span",
-    # capability
-    "HasClasses",
     # projection
     "Lexicon",
     # measure interfaces

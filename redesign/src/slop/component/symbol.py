@@ -62,7 +62,8 @@ class Class(SymbolContainer, ClassMeasures):
 
     The home altitude for the CK suite (``ClassMeasures``). Produced only by
     adapters for object-oriented languages; languages without classes do not
-    emit Class components (see ``capability.HasClasses``).
+    emit Class components — class-bearing-ness is gated by the Realm's grammar paradigm
+    (``ast.Paradigm``), the single source of truth for which symbol kinds exist.
     """
 
     KIND: ClassVar[ComponentKind] = ComponentKind.CLASS

@@ -50,26 +50,19 @@ def scan_corpus(root: Path, config: Any) -> C.Corpus:
     for r in realms:
         r._owner = corpus
 
-    # Attach the corpus-wide class index so CK (dit/noc/cbo) can resolve.
+    # Build the corpus-global analysis-context (class hierarchy for CK + the module
+    # dependency graph for Martin) and hang it on the Corpus root. Regions reach it
+    # via region.context (owner chain) — it is not bolted onto entity attributes.
     from ..metrics.structural import class_index
-    classes = list(corpus._iter_classes())
-    index = class_index.build(classes)
-    for cls in classes:
-        cls._class_index = index
-
-    # Build the Module-level DependencyGraph and attach it (corpus + packages).
     from . import dependency
+    from .context import AnalysisContext
+    index = class_index.build(list(corpus._iter_classes()))
     graph = dependency.build(corpus)
-    corpus._dep_graph = graph
-    module_pkg: dict = {}
-    for r in corpus.realms():
-        for pkg in r.packages():
-            for m in pkg.modules():
-                module_pkg[m.id] = pkg.id
-    for r in corpus.realms():
-        for pkg in r.packages():
-            pkg._dep_graph = graph
-            pkg._module_pkg = module_pkg
+    module_pkg = {
+        m.id: pkg.id
+        for r in corpus.realms() for pkg in r.packages() for m in pkg.modules()
+    }
+    corpus._context = AnalysisContext(class_index=index, dep_graph=graph, module_pkg=module_pkg)
     return corpus
 
 

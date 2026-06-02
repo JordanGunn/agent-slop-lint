@@ -54,6 +54,7 @@ class _Base:
         self._node = node
         self._content = content
         self._grammar = grammar
+        self._context = None  # AnalysisContext; carve hangs it on the Corpus root
 
     # ---- universal identity / location -------------------------------
     @property
@@ -67,6 +68,15 @@ class _Base:
     @property
     def files(self) -> tuple[Path, ...]: return self._files
     def children(self): return self._children
+
+    @property
+    def context(self):
+        """The corpus-global AnalysisContext, reached via the owner chain to the
+        Corpus root (where carve hangs it). None until a scan attaches it."""
+        node = self
+        while node._owner is not None:
+            node = node._owner
+        return node._context
 
     # ---- projections --------------------------------------------------
     def lexicon(self):
@@ -151,14 +161,13 @@ class Class(_Base, ClassABC):
         self._is_abstract = is_abstract
         self._base_names = bases
         self._properties = properties
-        self._class_index: Any = None  # attached post-carve (corpus-wide)
 
     @property
     def is_abstract(self) -> bool: return self._is_abstract
     def methods(self): return tuple(c for c in self._children if c.KIND == ComponentKind.CALLABLE)
     def properties(self): return self._properties
     def bases(self):
-        idx = self._class_index
+        idx = self.context.class_index
         if idx is None:
             return ()
         return tuple(idx.by_name[b] for b in self._base_names if b in idx.by_name)
@@ -183,9 +192,10 @@ class Class(_Base, ClassABC):
     def lcom(self): return None  # not in legacy; future
 
     def _require_index(self):
-        if self._class_index is None:
+        idx = self.context.class_index
+        if idx is None:
             raise _todo("CK metrics", "class index not attached (scan via Corpus.scan)")
-        return self._class_index
+        return idx
 
 
 class Module(_Base, ModuleABC):
@@ -221,8 +231,6 @@ class Package(_Base, PackageABC):
     def __init__(self, *, path: Path, **kw: Any) -> None:
         super().__init__(**kw)
         self._path = path
-        self._dep_graph: Any = None        # attached post-carve
-        self._module_pkg: dict = {}        # module id -> package id
 
     @property
     def path(self) -> Path: return self._path
@@ -232,16 +240,18 @@ class Package(_Base, PackageABC):
     # PackageMeasures (Martin 1994) — uses the corpus DependencyGraph contracted
     # to package granularity + abstractness from the grammar's classification.
     def _martin_raw(self) -> tuple[int, int, int, int]:
-        if self._dep_graph is None:
+        graph = self.context.dep_graph
+        if graph is None:
             raise _todo("Package.martin", "dependency graph not attached (scan via Corpus.scan)")
+        module_pkg = self.context.module_pkg
         ce: set = set(); ca: set = set()
         for m in self.modules():
-            for t in self._dep_graph.efferent_nodes(m.id):
-                p = self._module_pkg.get(t)
+            for t in graph.efferent_nodes(m.id):
+                p = module_pkg.get(t)
                 if p is not None and p != self.id:
                     ce.add(p)
-            for s in self._dep_graph.afferent_nodes(m.id):
-                p = self._module_pkg.get(s)
+            for s in graph.afferent_nodes(m.id):
+                p = module_pkg.get(s)
                 if p is not None and p != self.id:
                     ca.add(p)
         na = nc = 0
@@ -304,7 +314,6 @@ class Corpus(_Base, CorpusABC):
         super().__init__(**kw)
         self._root = root
         self._config = config
-        self._dep_graph: Any = None  # attached post-carve
 
     @property
     def root(self) -> Path: return self._root
@@ -314,7 +323,7 @@ class Corpus(_Base, CorpusABC):
 
     def dependency_graph(self):
         """The corpus Module-level DependencyGraph (built during scan)."""
-        return self._dep_graph
+        return self.context.dep_graph
 
     @classmethod
     def scan(cls, root: Path, config: Any) -> "Corpus":
@@ -332,4 +341,5 @@ class Corpus(_Base, CorpusABC):
         from ..metrics.structural.hotspots import hotspots
         return hotspots(self)
     def dependency_cycles(self):
-        return self._dep_graph.cycles() if self._dep_graph is not None else []
+        graph = self.context.dep_graph
+        return graph.cycles() if graph is not None else []
