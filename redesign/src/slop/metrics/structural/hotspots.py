@@ -12,8 +12,8 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-from ..component.identity import ComponentKind
-from ..component.metrics import Hotspot
+from ...identity import ComponentKind
+from .records import Hotspot
 
 _DEFAULT_WINDOW = "14 days ago"   # tuned for agentic code generation
 _MIN_RANKED = 8

@@ -6,8 +6,8 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from ..ast import NodeKind
-from ..component.metrics import MagicLiteral, ParameterMutation, SentinelParameter
+from ...ast import NodeKind
+from .records import MagicLiteral, ParameterMutation, SentinelParameter
 
 _TRIVIAL_INTS: frozenset[int] = frozenset({-1, 0, 1, 2})
 _TRIVIAL_FLOATS: frozenset[float] = frozenset({-1.0, 0.0, 0.5, 1.0, 2.0, 100.0})

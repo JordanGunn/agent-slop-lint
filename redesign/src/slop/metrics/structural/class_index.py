@@ -11,7 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from ..ast import NodeKind
+from ...ast import NodeKind
 
 
 @dataclass(frozen=True)

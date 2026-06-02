@@ -21,7 +21,7 @@ from ..component.identity import CallableKind, ComponentId, ComponentKind, Exten
 from ..component.symbol import Callable as CallableABC
 from ..component.symbol import Class as ClassABC
 from ..component.symbol import Module as ModuleABC
-from . import callable_measures, complexity, halstead
+from ..metrics.structural import callable_measures, complexity, halstead
 
 
 def _todo(what: str, why: str) -> NotImplementedError:
@@ -172,13 +172,13 @@ class Class(_Base, ClassABC):
                          cbo=self.cbo(), lcom=self.lcom())
     def method_count(self) -> int: return len(self.methods())
     def dit(self) -> int:
-        from . import class_index
+        from ..metrics.structural import class_index
         return class_index.dit(self, self._require_index())
     def noc(self) -> int:
-        from . import class_index
+        from ..metrics.structural import class_index
         return class_index.noc(self, self._require_index())
     def cbo(self) -> int:
-        from . import class_index
+        from ..metrics.structural import class_index
         return class_index.cbo(self, self._require_index())
     def lcom(self): return None  # not in legacy; future
 
@@ -200,16 +200,16 @@ class Module(_Base, ModuleABC):
     def definition_count(self) -> int:
         return sum(1 for c in self._children if c.KIND in (ComponentKind.CALLABLE, ComponentKind.CLASS))
     def escape_hatch_density(self) -> float:
-        from .annotations import escape_hatch_density as _ehd
+        from ..metrics.structural.annotations import escape_hatch_density as _ehd
         return _ehd(self._ast_node(), self._grammar)
     def redundant_siblings(self):
-        from .relational import redundant_siblings
+        from ..metrics.structural.relational import redundant_siblings
         return redundant_siblings(self)
     def call_islands(self):
-        from .relational import call_islands
+        from ..metrics.structural.relational import call_islands
         return call_islands(self)
     def clone_clusters(self):
-        from .relational import clone_clusters
+        from ..metrics.structural.relational import clone_clusters
         return clone_clusters(list(self._iter_callables()))
 
 
@@ -323,13 +323,13 @@ class Corpus(_Base, CorpusABC):
 
     # CorpusMeasures — graph-dependent / cross-cutting
     def orphans(self):
-        from .orphans import orphans
+        from ..metrics.structural.orphans import orphans
         return orphans(self)
     def duplication(self):
-        from .relational import clone_clusters
+        from ..metrics.structural.relational import clone_clusters
         return clone_clusters(list(self._iter_callables()))
     def hotspots(self):
-        from .hotspots import hotspots
+        from ..metrics.structural.hotspots import hotspots
         return hotspots(self)
     def dependency_cycles(self):
         return self._dep_graph.cycles() if self._dep_graph is not None else []

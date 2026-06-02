@@ -51,7 +51,7 @@ def scan_corpus(root: Path, config: Any) -> C.Corpus:
         r._owner = corpus
 
     # Attach the corpus-wide class index so CK (dit/noc/cbo) can resolve.
-    from . import class_index
+    from ..metrics.structural import class_index
     classes = list(corpus._iter_classes())
     index = class_index.build(classes)
     for cls in classes:

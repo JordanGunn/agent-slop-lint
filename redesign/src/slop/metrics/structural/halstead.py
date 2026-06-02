@@ -11,8 +11,8 @@ from __future__ import annotations
 import math
 from typing import Any
 
-from ..ast import NodeKind
-from ..component.metrics import HalsteadProfile
+from ...ast import NodeKind
+from .records import HalsteadProfile
 
 
 def counts(node: Any, grammar: Any) -> tuple[int, int, int, int]:

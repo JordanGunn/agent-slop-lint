@@ -12,8 +12,8 @@ import hashlib
 from itertools import combinations
 from typing import Any
 
-from ..component.identity import CallableKind, ComponentKind
-from ..component.metrics import CallIsland, CloneCluster, RedundancyPair
+from ...identity import CallableKind, ComponentKind
+from .records import CallIsland, CloneCluster, RedundancyPair
 
 
 def callees_of(comp: Any) -> frozenset[str]:

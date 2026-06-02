@@ -14,8 +14,8 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from ..component.identity import CallableKind, ComponentKind
-from ..component.metrics import Orphan
+from ...identity import CallableKind, ComponentKind
+from .records import Orphan
 
 _COMMON_NAMES = frozenset({
     "run", "main", "setup", "init", "start", "stop", "get", "set",
