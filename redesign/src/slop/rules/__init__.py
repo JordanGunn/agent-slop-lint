@@ -11,12 +11,14 @@ from __future__ import annotations
 from ..rule import Rule
 from .call_islands import CallIslandsRule
 from .cognitive import CognitiveRule
+from .combinatorial import CombinatorialRule
 from .cyclomatic import CyclomaticRule
 from .token_distribution import TokenDistributionRule
 
 RULE_REGISTRY: list[Rule] = [
     CyclomaticRule(),
     CognitiveRule(),
+    CombinatorialRule(),
     TokenDistributionRule(),
     CallIslandsRule(),
 ]
@@ -25,6 +27,7 @@ __all__ = [
     "RULE_REGISTRY",
     "CyclomaticRule",
     "CognitiveRule",
+    "CombinatorialRule",
     "TokenDistributionRule",
     "CallIslandsRule",
 ]
