@@ -13,7 +13,13 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 from ..identity import ScopeId, Span
-from ..metrics.structural.records import DependencyCycle
+
+
+@dataclass(frozen=True)
+class DependencyCycle:
+    """A strongly-connected component in the import graph (Tarjan SCC, >1 node)."""
+
+    members: tuple[str, ...]
 
 
 @dataclass(frozen=True)

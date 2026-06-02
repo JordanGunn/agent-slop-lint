@@ -141,22 +141,3 @@ class Hotspot:
     churn: int
     complexity: int
     quadrant: str
-
-
-@dataclass(frozen=True)
-class DependencyCycle:
-    """A strongly-connected component in the import graph. Legacy: deps."""
-
-    members: tuple[str, ...]
-
-
-@dataclass(frozen=True)
-class ImportDecl:
-    """A raw, pre-resolution import on a Module. Legacy: structure/imports.py
-    ``Import``. Resolution against the corpus turns it into a ``DependencyEdge``;
-    holding the raw form on the Module keeps the unresolved fact addressable.
-    """
-
-    specifier: str   # the raw module string as written
-    kind: str        # import | from | include | require | use | ...
-    line: int

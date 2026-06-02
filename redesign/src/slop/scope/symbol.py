@@ -12,7 +12,7 @@ from typing import ClassVar
 
 from .base import SymbolContainer
 from .identity import CallableKind, ScopeKind
-from ..metrics.structural.records import ImportDecl
+from .records import ImportDecl
 
 
 class Callable(SymbolContainer):

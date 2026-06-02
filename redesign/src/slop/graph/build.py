@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from ..identity import ScopeId, ScopeKind, Span
-from ..metrics.structural.records import DependencyCycle
+from .dependency import DependencyCycle
 from .dependency import DependencyEdge, DependencyGraph
 from .imports import module_imports
 

@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..metrics.structural.records import ImportDecl
+from ..scope.records import ImportDecl
 
 _STRIP = "\"'<>"
 _NON_MODULE_LEVEL_PARENTS = frozenset({"function_definition", "decorated_definition"})
