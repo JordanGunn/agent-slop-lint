@@ -4,29 +4,14 @@
 
 Public surface: the ABC tier (``Component``, ``AggregateContainer``,
 ``SymbolContainer``), the six concrete kinds, identity/extent value types, the
-capability protocols, and the metric value records. Interfaces only — no
-implementation until the spine is validated against the hard rules.
+``scan_corpus`` entry point, and the ``Selection`` region-union. Metrics live in
+``metrics/structural`` (consumed via ``Structure.over(region)``), not here.
 """
 from __future__ import annotations
 
 from .aggregate import Corpus, Realm, Package
 from .base import AggregateContainer, Component, SymbolContainer
 from .identity import CallableKind, ComponentId, ComponentKind, Extent, Span
-from .metrics import (
-    CallIsland,
-    CKMetrics,
-    CloneCluster,
-    DependencyCycle,
-    HalsteadProfile,
-    Hotspot,
-    ImportDecl,
-    MagicLiteral,
-    Orphan,
-    PackageMetrics,
-    ParameterMutation,
-    RedundancyPair,
-    SentinelParameter,
-)
 from .carve import scan_corpus
 from .projection import Lexicon
 from .selection import Selection
@@ -55,18 +40,4 @@ __all__ = [
     "Span",
     # projection
     "Lexicon",
-    # metric records
-    "HalsteadProfile",
-    "CKMetrics",
-    "PackageMetrics",
-    "MagicLiteral",
-    "ParameterMutation",
-    "SentinelParameter",
-    "RedundancyPair",
-    "CloneCluster",
-    "CallIsland",
-    "Orphan",
-    "Hotspot",
-    "DependencyCycle",
-    "ImportDecl",
 ]

@@ -17,7 +17,7 @@ from typing import ClassVar
 
 from .base import SymbolContainer
 from .identity import CallableKind, ComponentKind
-from .metrics import ImportDecl
+from ..metrics.structural.records import ImportDecl
 
 
 class Callable(SymbolContainer):
