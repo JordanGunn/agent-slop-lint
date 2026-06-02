@@ -19,6 +19,7 @@ from ..component.base import Component
 from ..component.identity import ComponentKind
 from ..config import RuleConfig
 from ..finding import Action, Finding, Severity, Verdict
+from ..metrics.structural.view import Structure
 from ..rule import Rule
 
 
@@ -38,7 +39,7 @@ class CyclomaticRule(Rule):
         threshold = config.threshold_for(component.id.kind)
         if threshold is None:
             return
-        value = component.cyclomatic()
+        value = Structure.over(component).cyclomatic()
         if value <= threshold:
             return
         yield Verdict(

@@ -18,6 +18,7 @@ from ..component.base import Component
 from ..component.identity import ComponentKind
 from ..config import RuleConfig
 from ..finding import Action, Finding, Severity, Verdict
+from ..metrics.structural.view import Structure
 from ..rule import Rule
 
 
@@ -35,7 +36,7 @@ class CallIslandsRule(Rule):
         )
 
     def check(self, component: Component, config: RuleConfig) -> Iterable[Finding]:
-        all_islands = component.call_islands()
+        all_islands = Structure.over(component).call_islands()
         # call_islands covers every module callable (each in exactly one island),
         # so the member sum is the module's function population.
         function_count = sum(len(i.members) for i in all_islands)
