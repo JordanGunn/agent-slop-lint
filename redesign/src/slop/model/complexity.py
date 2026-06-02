@@ -12,19 +12,53 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Iterable
 
+from ..ast import NodeKind
+
 
 # ---- public entry points -------------------------------------------------
 
-def cyclomatic(node: Any, content: bytes, grammar: Any) -> int:
-    """McCabe (1976): decisions + short-circuit booleans + 1."""
+def cyclomatic(node: Any, grammar: Any) -> int:
+    """McCabe (1976): decisions + short-circuit booleans + 1.
+
+    Ported onto the AST ``Node`` proxy (``node`` is a ``slop.ast.Node``):
+    ``node.body()`` replaces the hand-rolled ``resolve_body`` and
+    ``Node.walk(prune={CALLABLE})`` replaces the body-local DFS that skipped
+    nested callables. The decision/boolean vocabulary is still raw ``.type``
+    membership — that is grammar data, not navigation.
+    """
     decision_nodes = grammar.decision_nodes()
     if not decision_nodes:
         return 1
-    walk_from = resolve_body(node, grammar.definition_unwrap_types())
-    return _count_decisions(
-        walk_from, decision_nodes, grammar.boolean_op_node(),
-        grammar.boolean_op_operators(), grammar.callable(), content,
-    ) + 1
+    bool_op_node = grammar.boolean_op_node()
+    bool_ops = grammar.boolean_op_operators()
+    count = 0
+    for n in node.body().walk(prune=frozenset({NodeKind.CALLABLE})):
+        ntype = n.type
+        if ntype in decision_nodes:
+            count += 1
+        if bool_op_node is not None and ntype == bool_op_node:
+            if bool_ops is None or _node_bool_op_text(n) in bool_ops:
+                count += 1
+    return count + 1
+
+
+def _node_bool_op_text(node: Any) -> str:
+    """``_bool_op_text`` re-expressed on the Node proxy (cyclomatic path). The
+    raw-node ``_bool_op_text`` below stays until cognitive/combinatorial port."""
+    op = node.field("operator")
+    if op is not None:
+        return op.text
+    for child in node.children():
+        ctype = child.type
+        if ctype == "operator":
+            return child.text
+        if ctype in ("and", "or", "not"):
+            return ctype
+        if not child.named:
+            text = child.text
+            if text in ("&&", "||", "??", "and", "or"):
+                return text
+    return ""
 
 
 def cognitive(node: Any, content: bytes, grammar: Any) -> int:
@@ -86,33 +120,6 @@ def _bool_op_text(node: Any, content: bytes) -> str:
             if text in ("&&", "||", "??", "and", "or"):
                 return text
     return ""
-
-
-def _bool_op_matches(node: Any, operators: frozenset[str], content: bytes) -> bool:
-    op_text = _bool_op_text(node, content)
-    return op_text in operators if op_text else False
-
-
-# ---- cyclomatic ----------------------------------------------------------
-
-def _count_decisions(
-    node: Any, decision_nodes: frozenset[str], bool_op_node: str | None,
-    bool_op_operators: frozenset[str] | None, nested_callables: frozenset[str], content: bytes,
-) -> int:
-    count = 0
-    stack = [node]
-    while stack:
-        cur = stack.pop()
-        ctype = cur.type
-        if ctype in nested_callables and cur is not node:
-            continue
-        if ctype in decision_nodes:
-            count += 1
-        if bool_op_node is not None and ctype == bool_op_node:
-            if bool_op_operators is None or _bool_op_matches(cur, bool_op_operators, content):
-                count += 1
-        stack.extend(reversed(cur.children))
-    return count
 
 
 # ---- combinatorial (NPath) -----------------------------------------------

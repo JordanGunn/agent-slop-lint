@@ -14,7 +14,7 @@ from typing import Any
 from ..component.identity import CallableKind, ComponentId, ComponentKind, Extent, Span
 from ..ast import GRAMMARS_BY_ID
 from ..ast.paradigm import ObjectOriented
-from ..parse import detect_language, parse_file
+from ..ast.parse import detect_language, parse_file
 from . import components as C
 
 _SKIP_DIRS = {".git", ".venv", "venv", "__pycache__", "node_modules", ".mypy_cache", ".ruff_cache"}

@@ -11,6 +11,8 @@ from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 
+from ..ast.span import Span  # re-exported: Span is an AST-layer primitive (see ast/span.py)
+
 
 class ComponentKind(Enum):
     """The six entity kinds in the ownership hierarchy."""
@@ -33,15 +35,6 @@ class CallableKind(Enum):
     LAMBDA = "lambda"            # anonymous / inline
     CONSTRUCTOR = "constructor"  # __init__ / ctor / new
     ACCESSOR = "accessor"        # property getter/setter, where the language has them
-
-
-@dataclass(frozen=True, order=True)
-class Span:
-    """A half-open byte range within a single source file."""
-
-    path: str
-    start_byte: int
-    end_byte: int
 
 
 @dataclass(frozen=True)

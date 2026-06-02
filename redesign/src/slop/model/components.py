@@ -83,6 +83,15 @@ class _Base:
         from .lexicon import build_lexicon
         return build_lexicon(self)
 
+    def _ast_node(self) -> Any:
+        """Wrap this component's own tree-sitter node in the AST proxy. The
+        component holds the raw node from carving; ported metrics consume the
+        ``Node``, never the raw node. Transitional — once carving emits the
+        proxy directly, the stored raw node and this helper dissolve."""
+        from ..ast import Node
+        path = self._files[0] if self._files else Path(".")
+        return Node(self._node, self._content, path, self._grammar)
+
     # ---- aggregatable complexity (container default = sum of leaves) --
     def _iter_callables(self) -> Iterator[Any]:
         for ch in self._children:
@@ -130,7 +139,7 @@ class Callable(_Base, CallableABC):
     def volume(self) -> float: return float(self._volume())
     def sloc(self) -> int: return self._sloc()
 
-    def _cyclomatic(self) -> int: return complexity.cyclomatic(self._node, self._content, self._grammar)
+    def _cyclomatic(self) -> int: return complexity.cyclomatic(self._ast_node(), self._grammar)
     def _cognitive(self) -> int: return complexity.cognitive(self._node, self._content, self._grammar)
     def _combinatorial(self) -> int: return complexity.combinatorial(self._node, self._grammar)
     def _volume(self) -> float: return halstead.volume(self._node, self._content, self._grammar)

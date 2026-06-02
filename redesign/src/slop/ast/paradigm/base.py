@@ -27,7 +27,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, ClassVar
 
-from ...parse import load_ts_language
+from ..parse import load_ts_language
 
 
 class Paradigm(Enum):

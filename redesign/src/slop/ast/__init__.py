@@ -9,14 +9,21 @@ The paradigm hierarchy lives in ``paradigm/``:
 
 A ``Realm`` owns one ``Grammar``; the grammar's ``PARADIGM`` gates which typed
 accessors the Realm's carved Modules/Packages expose. ``Grammar`` + ``Paradigm``
-are re-exported here because the component interfaces import them. ``slop.ast``
-is the home of slop's AST concept — the persistent AST projection (currently
-``model/ast.py``) will move under here.
+are re-exported here because the component interfaces import them.
+
+``slop.ast`` is the home of slop's AST concept: a language-agnostic, pythonic
+*proxy over tree-sitter* (``AST`` + ``Node``, ``tree.py``) that owns all syntax
+navigation and isolates raw tree-sitter nodes to this package. ``Span`` (the
+source-location primitive) and ``NodeKind`` (the neutral node vocabulary) live
+here too. Nothing above ``ast/`` touches a raw node.
 """
 from __future__ import annotations
 
 from .grammar import GRAMMARS_BY_ID, Python
+from .nodes import NodeKind
 from .paradigm import Grammar, MultiPurpose, ObjectOriented, Paradigm, Procedural
+from .span import Span
+from .tree import AST, Node
 
 __all__ = [
     "Grammar",
@@ -26,4 +33,8 @@ __all__ = [
     "MultiPurpose",
     "Python",
     "GRAMMARS_BY_ID",
+    "AST",
+    "Node",
+    "NodeKind",
+    "Span",
 ]

@@ -209,9 +209,10 @@ Every component exposes three distinct concepts.
   roots, declarations. A Python Module's extent is one file; a Go Module's is
   all files in a directory sharing a `package` declaration; a Class's may be
   several ranges in languages with partial/reopened classes.
-- **AST** — syntax. The parsed tree(s) over a component's extent. AST stays an
-  implementation detail of parse results and views; rules do not consume AST
-  nodes directly.
+- **AST** — syntax. The parsed tree(s) over a component's extent. *Rules* do not
+  consume AST nodes directly (they consume metrics); but the AST is itself a
+  first-class, tree-sitter-isolated subsystem that metrics walk — see *AST
+  Subsystem*.
 - **Symbol Tree** — normalized semantic ownership: what declarations exist, who
   owns each, name/kind/location/containing-component. It is built *from* AST by
   language adapters; it is not the AST.
@@ -276,6 +277,202 @@ C/C++   Realm: configured root/target   Package: ns/dir/group Module: TU/header 
 C/C++ require explicit humility: without build-system knowledge some boundaries
 are best-effort. The model carries confidence and unresolved boundaries rather
 than forcing false precision.
+
+## AST Subsystem — first-class, tree-sitter-isolated
+
+The current `model/ast.py` is not an AST; it is a thin fragment built only to feed
+the component model. The actual AST *functionality* has no owner — it is sprawled
+across `parse.py`, `grammar/`, `model/ast.py`, and a single traversal vocabulary
+copy-pasted into ~12 metric modules. By slop's own thesis, that sprawl is the
+fingerprint of slop, not a design to preserve. This subsystem gives the AST one
+owner.
+
+### Principle
+
+`ast/` is **strictly the AST**: a language-agnostic, pythonic *proxy over
+tree-sitter*. It parses, walks, queries, and renders syntax — and nothing else in
+slop touches a raw tree-sitter node. We lean on tree-sitter at full power (queries,
+cursors, fields) and isolate it behind the package boundary. `ast/` imports nothing
+from above it (no `component`, no metric, no linter). You can point it at source,
+get a walkable/renderable tree, and inspect it with zero knowledge of components or
+metrics — that standalone-ness is a requirement (it powers the AST visualizer), not
+a nicety.
+
+### Layering (the AST is the lowest layer)
+
+```text
+ast/         pure syntax — a proxy over tree-sitter
+   ↑ consumed by
+component/   semantic code shape (Corpus..Callable), carved from AST + filesystem
+   ↑ consumed by
+linter/      rules, config, dispatch, findings
+```
+
+The only thing crossing *downward* into `ast/` is `Span` — a pure source-location
+primitive `(path, start_byte, end_byte)`. It lives in `ast/`; the component layer
+imports it for identity. `component → ast` is already the established direction
+(`aggregate.py` imports `Grammar`/`Paradigm`); a naive relocation of the AST that
+kept its `component.identity` import would instead create a `component ⇄ ast`
+cycle. Moving `Span` down is what keeps the edge one-directional.
+
+### Package layout
+
+```text
+ast/
+  grammar/    the 11 concrete grammars — translate raw nodes → facts.
+              These legitimately touch raw tree-sitter nodes; they are the
+              translation layer and live correctly inside ast/.
+  paradigm/   Grammar ABC + Procedural/ObjectOriented/MultiPurpose tiers
+  parse.py    (moved from top level) load grammar + parse a file → ts.Tree
+  span.py     Span (moved from component/identity.py)
+  nodes.py    NodeKind — neutral, language-agnostic node categories
+  tree.py     AST + Node — the proxy (the ONLY non-grammar holder of a ts node)
+```
+
+### The proxy API (derived from what the consumers actually re-implement)
+
+```python
+# ast/tree.py
+class Node:
+    """A pythonic proxy over one tree-sitter node — the only way the rest of
+    slop reads syntax. Identity is the span, never id(node)."""
+    @property
+    def kind(self) -> NodeKind: ...        # neutral category, via the grammar
+    @property
+    def type(self) -> str: ...             # raw ts type — escape hatch for the long tail
+    @property
+    def span(self) -> Span: ...            # durable identity
+    @property
+    def text(self) -> str: ...             # sliced from content on demand
+    @property
+    def named(self) -> bool: ...           # ts is_named
+    @property
+    def parent(self) -> "Node | None": ...
+    def children(self) -> tuple["Node", ...]: ...
+    def field(self, name: str) -> "Node | None": ...   # child_by_field_name, wrapped
+    def body(self) -> "Node": ...          # grammar-driven unwrap→body (was resolve_body)
+    def walk(self, prune: frozenset[NodeKind] = frozenset()) -> Iterator["Node"]:
+        ...                                # DFS; stop descent at prune kinds (the
+                                           # "don't cross nested callables" need)
+    def query(self, pattern: str) -> tuple["Node", ...]: ...  # full ts query power, wrapped
+    def render(self, indent: int = 0) -> str: ...   # ascii tree from THIS node down
+    def to_dict(self) -> dict: ...         # serialization (json/yaml dump)
+
+class AST:
+    """One parsed file. Owns the ts.Tree (keeps it alive so node refs stay valid),
+    the source bytes, the path, and the grammar. Hands out Node proxies."""
+    @property
+    def root(self) -> Node: ...
+    def at(self, span: Span) -> "Node | None": ...   # smallest node covering span (was _descend_to_span)
+    def render(self) -> str: ...
+```
+
+`AST` is **per file**. A component whose extent spans several files (a Go Module,
+a reopened class) is the *component layer's* composition over multiple `AST`s —
+aggregation is composition over the base case, consistent with the projections
+model. `ast/` does not model forests.
+
+**Invariant rules** (both from bug classes already hit here):
+- `Node.__eq__`/`__hash__` key on `span`, never `id(node)` — tree-sitter node
+  identity is not stable across accesses.
+- `AST` holds the `tree_sitter.Tree` for its lifetime so held node references stay
+  valid.
+
+### NodeKind — the language-agnostic vocabulary
+
+A small neutral enum for the cross-language constructs the AST commits to:
+`CALLABLE, CLASS, BRANCH, LOOP, SWITCH, CASE, TRY, CATCH, CALL, IDENTIFIER,
+LITERAL, BOOLEAN_OP, IMPORT, PARAMETER, OTHER`. The raw→neutral mapping is the
+grammar's *existing* vocabulary methods (`decision_nodes()`, `loop_nodes()`,
+`callable()`, …) — no new table, the grammar already categorizes types. Raw
+`.type` is retained as the escape hatch for the long tail. (This revives a real
+inventory item: the legacy `slop.language.ast` per-category node enums.)
+
+### The boundary: AST owns navigation, metrics own math
+
+The investigation (heatmap below) showed `complexity.py` tangles two different
+things. Keep them apart:
+
+- **Folds into `ast/`** — generic navigation: DFS, child/field access, text decode,
+  byte-span arithmetic, type-set filtering, tree-sitter queries, body unwrap. This
+  is the vocabulary duplicated across 7–11 files.
+- **Stays as compute** — *structure-directed* algorithms whose control flow IS the
+  algorithm: NPath (`_npath_of_if/switch/try`, ~130 lines — the path formula
+  differs per syntactic role and does not collapse to a generic walk) and cognitive
+  scoring (nesting penalty + compensation + boolean-chain continuation). These
+  re-express against the Node API and shed their hand-rolled plumbing; they do
+  **not** move into `ast/`.
+
+Hard line: **do not let the AST absorb metric math.** That would rebuild the v2 sin
+(substrate owning algorithm/policy) inside `ast/`. `complexity.py` shrinks and
+re-expresses; it does not vanish.
+
+### Evidence — the duplication heatmap (model/ consumers)
+
+One traversal vocabulary, copy-pasted. Files in `model/` exhibiting each idiom:
+
+```text
+DFS stack-walk         7    child_by_field_name   4
+.children iteration   11    tree-sitter query      2   (imports.py, annotations.py)
+text .decode()         8    node.type in/== filter 6   (21 of them in complexity.py)
+byte-span arithmetic   9
+```
+
+`complexity.py` is the epicenter (6 walks, 15 children-iters, 21 type-filters).
+`components.py` (0 idioms — pure orchestration) and `hotspots.py` (git + aggregate)
+are NOT duplication and are untouched.
+
+### Pruning targets (what dissolves)
+
+- **Delete** `model/ast.py` (`Root`, `AST`, `_descend_to_span`) — superseded by
+  `ast/tree.py`.
+- **Move** `parse.py` → `ast/parse.py`; **move** `Span` out of
+  `component/identity.py` → `ast/span.py`. `component/identity.py` re-exports
+  `Span` (`from ..ast.span import Span`) so the ~6 existing
+  `from ..component.identity import Span` sites do not change. `Extent` and
+  `ComponentId` stay in `component/`.
+- **Per consumer**, delete the hand-rolled traversal and re-express on `Node`:
+  - `complexity.py`: delete `_unwrap_definition`, `resolve_body`, `_bool_op_text`,
+    and all raw `stack`/`.children`/`child_by_field_name`/`.decode`/`.type in`
+    mechanics. Keep `_count_decisions` (→ a few lines), `_cognitive_walk` scoring,
+    the NPath family. `halstead.py` swaps its `resolve_body` import for `node.body()`.
+  - `relational.py`: delete `_body_of` + the DFS in `callees_of`/leaf collection;
+    keep the Jaccard/fingerprint/island compute.
+  - `callable_measures.py`, `class_index.py`, `orphans.py`, `lexicon.py`,
+    `dependency.py`: delete DFS/decode/field plumbing; keep compute.
+  - `imports.py`, `annotations.py`: route their tree-sitter queries through
+    `Node.query()`; drop the direct `tree_sitter` import.
+  - `carve.py`: re-express definition-finding on `Node` (kind/field) — stays in the
+    component layer, gets simpler.
+- **Do NOT prune** `ast/grammar/*` raw-node usage — it is the translation layer,
+  correctly inside `ast/`.
+
+`AST.slice(extent)` on the projection protocol becomes span-based (`at(span)` /
+spans) — it currently has **zero callers**, so the signature change is free.
+
+### New code (what gets built)
+
+- `ast/span.py` — `Span`.
+- `ast/nodes.py` — `NodeKind`.
+- `ast/tree.py` — `AST` + `Node` proxy (API above).
+- `component/identity.py` — re-export `Span` from `ast/`.
+- `component/projection.py` — align the `AST`/`Lexicon` protocol `slice` to spans.
+
+### Migration path (proxy first, prove, then attrition)
+
+1. Build `span.py`, `nodes.py`, `tree.py`; move `parse.py` in; wire the `Span`
+   re-export. `ast/` now self-contained.
+2. **Prove on cyclomatic** — the cleanest consumer (post-fold ~5 lines). Port it
+   onto the Node API and oracle-check identical across all 11 grammars.
+   `tests/test_multilang.py` already asserts per-language cyclomatic values — it is
+   the built-in oracle.
+3. **Attrition** — migrate remaining consumers family by family, each
+   oracle-checked against current measurements. Delete `model/ast.py` once nothing
+   imports it.
+4. **Done** = a grep shows zero raw-node access (`.children`/`.type`/`start_byte`/
+   `child_by_field_name`) outside `ast/grammar/` and `ast/tree.py`. Until then,
+   tree-sitter leakage persists by design of the staged path — "isolated" is the
+   target reached by attrition, not on day one.
 
 ## Rule Targeting Model (validation centerpiece)
 
@@ -471,9 +668,11 @@ Interfaces before implementation. No business logic until the spine is agreed.
 3. **Build the ComponentIndex** — carve `Corpus -> ... -> Callable` from
    parse results. Conservative and language-limited first (Python-shaped),
    establishing identity and ownership before chasing every language edge case.
-4. **Build the projections** — one `AST` type (parsed syntax, sliceable) and one
-   `Lexicon` type (token-space derived from the AST), each lazily instantiated
-   and sliced per component over its extent. Designed fresh, not ported.
+4. **Build the projections** — the `AST` proxy (see *AST Subsystem*: a
+   tree-sitter-isolated `Node`/`AST` in `ast/`, built proxy-first then proven on
+   cyclomatic and migrated by attrition) and one `Lexicon` type (token-space
+   derived from the AST), each lazily instantiated and sliced per component over
+   its extent.
 5. **Port rules by family, old code as inventory** — module/package rules,
    then class/complexity, then lexical over SymbolContainers. For each rule,
    read the old implementation only to confirm the computation we want, then
