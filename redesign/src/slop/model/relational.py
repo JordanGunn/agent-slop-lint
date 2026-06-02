@@ -26,16 +26,14 @@ def callees_of(comp: Any) -> frozenset[str]:
     if not call_types:
         return frozenset()
     builtins = grammar.language_builtins()
-    body = comp._node.child_by_field_name("body") or comp._node
+    node = comp._ast_node()
+    body = node.field("body") or node
     out: set[str] = set()
-    stack = [body]
-    while stack:
-        n = stack.pop()
+    for n in body.walk():
         if n.type in call_types:
-            name = grammar.extract_callee_name(n, comp._content)
+            name = grammar.extract_callee_name(n.raw, comp._content)
             if name is not None and _meaningful(name, builtins):
                 out.add(name)
-        stack.extend(n.children)
     return frozenset(out)
 
 
@@ -92,7 +90,7 @@ def clone_clusters(callables: list[Any], *, min_leaf_nodes: int = 10) -> list[Cl
     leaf-type fingerprint (identifiers/literals discarded)."""
     buckets: dict[str, list[tuple[str, int]]] = {}
     for c in callables:
-        body = _body_of(c._node, c._grammar.block_types())
+        body = _body_of(c._ast_node(), c._grammar.block_types())
         leaves = _leaf_types(body)
         if len(leaves) < min_leaf_nodes:
             continue
@@ -112,7 +110,7 @@ def clone_clusters(callables: list[Any], *, min_leaf_nodes: int = 10) -> list[Cl
 def _body_of(node: Any, block_types: frozenset[str]) -> Any:
     if not block_types:
         return node
-    for child in node.children:
+    for child in node.children():
         if child.type in block_types:
             return child
     return node
@@ -123,8 +121,9 @@ def _leaf_types(node: Any) -> list[str]:
     leaves: list[str] = []
     while stack:
         n = stack.pop()
-        if n.children:
-            stack.extend(reversed(n.children))
+        kids = n.children()
+        if kids:
+            stack.extend(reversed(kids))
         else:
             leaves.append(n.type)
     return leaves

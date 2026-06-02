@@ -148,7 +148,7 @@ class Callable(_Base, CallableABC):
     # CallableMeasures (non-aggregatable)
     def halstead(self): return halstead.profile(self._ast_node(), self._grammar)
     def halstead_density(self) -> float: return halstead.profile(self._ast_node(), self._grammar).difficulty
-    def magic_literals(self): return callable_measures.magic_literals(self._node, self._content, self._grammar)
+    def magic_literals(self): return callable_measures.magic_literals(self._ast_node(), self._grammar)
     def mutated_parameters(self): return callable_measures.mutated_parameters(self._node, self._content, self._grammar)
     def sentinel_parameters(self): return callable_measures.sentinel_parameters(self._node, self._content, self._grammar)
 

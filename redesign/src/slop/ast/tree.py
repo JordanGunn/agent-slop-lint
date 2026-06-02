@@ -57,6 +57,14 @@ class Node:
         return self._raw.type
 
     @property
+    def raw(self) -> Any:
+        """The underlying tree-sitter node. The one sanctioned escape hatch:
+        handing a node to the grammar translation layer (whose ``extract_*``
+        methods take raw nodes and legitimately live inside ast/). Code above
+        ast/ must not *navigate* a raw node — pass the opaque handle, no more."""
+        return self._raw
+
+    @property
     def named(self) -> bool:
         return self._raw.is_named
 

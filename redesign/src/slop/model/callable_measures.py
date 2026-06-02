@@ -6,6 +6,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from ..ast import NodeKind
 from ..component.metrics import MagicLiteral, ParameterMutation, SentinelParameter
 
 _TRIVIAL_INTS: frozenset[int] = frozenset({-1, 0, 1, 2})
@@ -21,23 +22,21 @@ SENTINEL_NAMES: frozenset[str] = frozenset({
 _STRIP_TRAILING = re.compile(r"_+$")
 
 
-def magic_literals(node: Any, content: bytes, grammar: Any) -> list[MagicLiteral]:
-    """Distinct non-trivial numeric literals in the callable body (excludes nested callables)."""
+def magic_literals(node: Any, grammar: Any) -> list[MagicLiteral]:
+    """Distinct non-trivial numeric literals in the callable body (excludes nested callables).
+
+    ``node`` is a ``slop.ast.Node``; ``Node.walk(prune={CALLABLE})`` is the
+    body-local DFS that does not cross nested callables.
+    """
     literal_types = grammar.numeric_literal_nodes()
     if not literal_types:
         return []
-    nested = grammar.callable()
     seen: dict[str, int] = {}
-    stack = [node]
-    while stack:
-        cur = stack.pop()
-        if cur.type in nested and cur is not node:
-            continue
+    for cur in node.walk(prune=frozenset({NodeKind.CALLABLE})):
         if cur.type in literal_types:
-            text = content[cur.start_byte:cur.end_byte].decode("utf-8", errors="replace")
+            text = cur.text
             if text not in seen and not _is_trivial(text):
-                seen[text] = cur.start_point[0] + 1
-        stack.extend(cur.children)
+                seen[text] = cur.line
     return [MagicLiteral(value=t, line=ln) for t, ln in seen.items()]
 
 

@@ -11,6 +11,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from ..ast import NodeKind
+
 
 @dataclass(frozen=True)
 class ClassIndex:
@@ -62,23 +64,18 @@ def noc(cls: Any, idx: ClassIndex) -> int:
 
 
 def cbo(cls: Any, idx: ClassIndex) -> int:
-    """Coupling Between Objects — distinct known-class references in the body."""
+    """Coupling Between Objects — distinct known-class references in the body.
+
+    ``Node.walk(prune={CLASS})`` is the class-local DFS: it descends the class's
+    own body but not into nested classes (each owns its own metric)."""
     grammar = cls._grammar
-    node = cls._node
-    content = cls._content
     ident_types = grammar.identifiers()
-    class_types = grammar.classes()
     refs: set[str] = set()
-    stack = [node]
-    while stack:
-        cur = stack.pop()
-        if cur is not node and cur.type in class_types:
-            continue  # nested class — its own metric
+    for cur in cls._ast_node().walk(prune=frozenset({NodeKind.CLASS})):
         if cur.type in ident_types:
-            text = content[cur.start_byte:cur.end_byte].decode("utf-8", errors="replace")
+            text = cur.text
             if text and text[0].isupper():
                 refs.add(text)
-        stack.extend(reversed(cur.children))
     refs &= idx.known
     for sc in cls._base_names:
         if sc in idx.known:
