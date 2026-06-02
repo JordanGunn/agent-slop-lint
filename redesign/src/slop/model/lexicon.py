@@ -78,16 +78,31 @@ class Lexicon:
 
 
 def build_lexicon(component: Any) -> Lexicon:
-    """Build a Lexicon over a component: AST identifiers ∪ fs-derived names."""
+    """Build a Lexicon over a component: AST identifiers ∪ fs-derived names.
+
+    Identifier nodes come from the ``slop.ast`` ``Node`` proxy (``Node.walk`` over
+    each node-holding component in the extent); module/package/realm names come
+    from the filesystem (they carry the grammatical-degradation signal)."""
     sources: list[tuple[str, Any]] = []
-    for node, content, path in component.ast().walk():
+    for node in _iter_ast_nodes(component):
         t = node.type
         if t == "identifier" or t.endswith("_identifier"):
-            sources.append((content[node.start_byte:node.end_byte].decode("utf-8", errors="replace"), path))
+            sources.append((node.text, node.span.path))
     for comp in _iter_all(component):
         if comp.KIND in _FS_NAMED:
             sources.append((comp.name, comp.files[0] if comp.files else None))
     return Lexicon(sources)
+
+
+def _iter_ast_nodes(component: Any):
+    """Yield every ``ast.Node`` in the component's extent. Node-holding
+    components (Module/Class/Callable) walk their own subtree; aggregates recurse
+    to their node-holding descendants, so each file is walked exactly once."""
+    if component._node is not None:
+        yield from component._ast_node().walk()
+    else:
+        for ch in component.children():
+            yield from _iter_ast_nodes(ch)
 
 
 def _iter_all(component: Any):
