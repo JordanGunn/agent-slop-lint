@@ -140,14 +140,14 @@ class Callable(_Base, CallableABC):
     def sloc(self) -> int: return self._sloc()
 
     def _cyclomatic(self) -> int: return complexity.cyclomatic(self._ast_node(), self._grammar)
-    def _cognitive(self) -> int: return complexity.cognitive(self._node, self._content, self._grammar)
-    def _combinatorial(self) -> int: return complexity.combinatorial(self._node, self._grammar)
-    def _volume(self) -> float: return halstead.volume(self._node, self._content, self._grammar)
-    def _sloc(self) -> int: return halstead.sloc(self._node, self._content)
+    def _cognitive(self) -> int: return complexity.cognitive(self._ast_node(), self._grammar)
+    def _combinatorial(self) -> int: return complexity.combinatorial(self._ast_node(), self._grammar)
+    def _volume(self) -> float: return halstead.volume(self._ast_node(), self._grammar)
+    def _sloc(self) -> int: return halstead.sloc(self._ast_node())
 
     # CallableMeasures (non-aggregatable)
-    def halstead(self): return halstead.profile(self._node, self._content, self._grammar)
-    def halstead_density(self) -> float: return halstead.profile(self._node, self._content, self._grammar).difficulty
+    def halstead(self): return halstead.profile(self._ast_node(), self._grammar)
+    def halstead_density(self) -> float: return halstead.profile(self._ast_node(), self._grammar).difficulty
     def magic_literals(self): return callable_measures.magic_literals(self._node, self._content, self._grammar)
     def mutated_parameters(self): return callable_measures.mutated_parameters(self._node, self._content, self._grammar)
     def sentinel_parameters(self): return callable_measures.sentinel_parameters(self._node, self._content, self._grammar)

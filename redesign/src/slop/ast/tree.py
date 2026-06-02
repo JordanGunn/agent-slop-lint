@@ -61,6 +61,10 @@ class Node:
         return self._raw.is_named
 
     @property
+    def child_count(self) -> int:
+        return self._raw.child_count
+
+    @property
     def kind(self) -> NodeKind:
         """Neutral category, derived from the grammar's own vocabulary."""
         return _classify(self._raw.type, self._grammar)
@@ -90,11 +94,14 @@ class Node:
         through before reading the body. Falls back to the unwrapped node when
         there is no ``body`` field.
         """
-        current = self._unwrap()
+        current = self.unwrap()
         b = current._raw.child_by_field_name("body")
         return current._wrap(b) if b is not None else current
 
-    def _unwrap(self) -> "Node":
+    def unwrap(self) -> "Node":
+        """Step through definition-wrapper nodes (e.g. C++ ``template_declaration``)
+        to the inner definition, without descending to its body. NPath unwraps
+        then does its own body-field handling."""
         unwrap = self._grammar.definition_unwrap_types()
         raw = self._raw
         for _ in range(4):
