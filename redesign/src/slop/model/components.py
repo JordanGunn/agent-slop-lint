@@ -211,7 +211,7 @@ class Module(_Base, ModuleABC):
         return sum(1 for c in self._children if c.KIND in (ComponentKind.CALLABLE, ComponentKind.CLASS))
     def escape_hatch_density(self) -> float:
         from .annotations import escape_hatch_density as _ehd
-        return _ehd(self._node, self._content, self._grammar)
+        return _ehd(self._ast_node(), self._grammar)
     def redundant_siblings(self):
         from .relational import redundant_siblings
         return redundant_siblings(self)

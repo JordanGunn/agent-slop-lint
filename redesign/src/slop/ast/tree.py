@@ -65,6 +65,11 @@ class Node:
         return self._raw.child_count
 
     @property
+    def line(self) -> int:
+        """1-based start line of this node."""
+        return self._raw.start_point[0] + 1
+
+    @property
     def kind(self) -> NodeKind:
         """Neutral category, derived from the grammar's own vocabulary."""
         return _classify(self._raw.type, self._grammar)
@@ -132,9 +137,10 @@ class Node:
                 continue
             stack.extend(reversed(raw.children))
 
-    def query(self, pattern: str) -> tuple["Node", ...]:
-        """Run a tree-sitter query rooted at this node; return every captured
-        node (flattened across capture names). Wraps the modern
+    def query(self, pattern: str, capture: str | None = None) -> tuple["Node", ...]:
+        """Run a tree-sitter query rooted at this node. With ``capture``, return
+        only nodes bound to that capture name (e.g. ``"module"`` for ``@module``);
+        otherwise every captured node, flattened. Wraps the modern
         ``Query``/``QueryCursor`` API with the pre-0.22 fallback, matching the
         loader shim in ``parse.py``."""
         ts_lang = self._grammar.ts_language()
@@ -148,12 +154,12 @@ class Node:
         if query_cls is not None and cursor_cls is not None:
             cursor = cursor_cls(query_cls(ts_lang, pattern))
             for _idx, captures in cursor.matches(self._raw):
-                out.extend(self._wrap(n) for n in _captured_nodes(captures))
+                out.extend(self._wrap(n) for n in _captured_nodes(captures, capture))
         else:
             query = ts_lang.query(pattern)
             for match in query.matches(self._raw):
                 if isinstance(match, tuple) and len(match) == 2:
-                    out.extend(self._wrap(n) for n in _captured_nodes(match[1]))
+                    out.extend(self._wrap(n) for n in _captured_nodes(match[1], capture))
         return tuple(out)
 
     # ---- inspection / serialization ----------------------------------
@@ -295,12 +301,17 @@ def _classify(raw_type: str, grammar: Any) -> NodeKind:
     return NodeKind.OTHER
 
 
-def _captured_nodes(captures: Any) -> Iterator[Any]:
+def _captured_nodes(captures: Any, name: str | None = None) -> Iterator[Any]:
     """Yield raw nodes from a tree-sitter match's captures, across both the
-    dict shape (modern) and the (name, node) pairs shape (legacy)."""
+    dict shape (modern) and the (name, node) pairs shape (legacy). With ``name``,
+    yield only nodes bound to that capture name."""
     if isinstance(captures, dict):
-        for nodes in captures.values():
-            yield from nodes
+        if name is not None:
+            yield from captures.get(name, [])
+        else:
+            for nodes in captures.values():
+                yield from nodes
         return
-    for _name, node in captures:
-        yield node
+    for cname, node in captures:
+        if name is None or cname == name:
+            yield node
