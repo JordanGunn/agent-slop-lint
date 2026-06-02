@@ -29,11 +29,14 @@ from .metrics import (
 )
 from .carve import scan_corpus
 from .projection import Lexicon
+from .selection import Selection
 from .symbol import Callable, Class, Module
 
 __all__ = [
     # entry point
     "scan_corpus",
+    # granular scoping
+    "Selection",
     # spine
     "Component",
     "AggregateContainer",
