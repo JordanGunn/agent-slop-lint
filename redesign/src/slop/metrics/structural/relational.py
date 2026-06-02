@@ -12,7 +12,7 @@ import hashlib
 from itertools import combinations
 from typing import Any
 
-from ...identity import CallableKind, ComponentKind
+from ...identity import CallableKind, ScopeKind
 from .records import CallIsland, CloneCluster, RedundancyPair
 
 
@@ -45,7 +45,7 @@ def redundant_siblings(module: Any, *, min_shared: int = 3, min_score: float = 0
     """Top-level sibling functions sharing >= min_shared non-trivial callees."""
     funcs = [
         c for c in module.children()
-        if c.KIND == ComponentKind.CALLABLE and c.kind == CallableKind.FUNCTION
+        if c.KIND == ScopeKind.CALLABLE and c.kind == CallableKind.FUNCTION
     ]
     data = [(c.name, callees_of(c)) for c in funcs]
     data = [(n, s) for n, s in data if s]

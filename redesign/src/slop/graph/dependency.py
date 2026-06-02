@@ -12,7 +12,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from ..identity import ComponentId, Span
+from ..identity import ScopeId, Span
 from ..metrics.structural.records import DependencyCycle
 
 
@@ -25,8 +25,8 @@ class DependencyEdge:
     forcing false precision.
     """
 
-    from_: ComponentId
-    to: ComponentId | None
+    from_: ScopeId
+    to: ScopeId | None
     kind: str               # import | include | require | use | build | reference
     raw_specifier: str
     source: Span
@@ -34,7 +34,7 @@ class DependencyEdge:
 
 
 class DependencyGraph(ABC):
-    """Directed graph of dependency edges. Node identity is ``ComponentId``;
+    """Directed graph of dependency edges. Node identity is ``ScopeId``;
     Package/Realm/Corpus graphs derive by contracting Module nodes upward.
     """
 
@@ -44,12 +44,12 @@ class DependencyGraph(ABC):
         ...
 
     @abstractmethod
-    def afferent(self, node: ComponentId) -> int:
+    def afferent(self, node: ScopeId) -> int:
         """Ca — count of components that depend on ``node``."""
         ...
 
     @abstractmethod
-    def efferent(self, node: ComponentId) -> int:
+    def efferent(self, node: ScopeId) -> int:
         """Ce — count of components ``node`` depends on."""
         ...
 

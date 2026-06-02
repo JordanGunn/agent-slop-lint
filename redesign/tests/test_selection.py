@@ -8,7 +8,7 @@ arbitrary union.
 from pathlib import Path
 
 from slop.scope import scan_corpus, Selection
-from slop.scope.identity import ComponentKind
+from slop.scope.identity import ScopeKind
 from slop.scope.lexicon import build_lexicon
 from slop.metrics.structural.view import Structure
 
@@ -30,7 +30,7 @@ class Beta:
 def _classes(tmp_path: Path):
     (tmp_path / "m.py").write_text(SRC)
     mod = scan_corpus(tmp_path, config=None).realms()[0].packages()[0].modules()[0]
-    classes = {c.name: c for c in mod.children() if c.KIND == ComponentKind.CLASS}
+    classes = {c.name: c for c in mod.children() if c.KIND == ScopeKind.CLASS}
     return classes["Alpha"], classes["Beta"]
 
 

@@ -14,7 +14,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from ...identity import CallableKind, ComponentKind
+from ...identity import CallableKind, ScopeKind
 from .records import Orphan
 
 _COMMON_NAMES = frozenset({
@@ -53,9 +53,9 @@ def orphans(corpus: Any) -> list[Orphan]:
 
 
 def _is_top_level_symbol(sym: Any) -> bool:
-    if sym.KIND == ComponentKind.CLASS:
+    if sym.KIND == ScopeKind.CLASS:
         return True
-    return sym.KIND == ComponentKind.CALLABLE and sym.kind == CallableKind.FUNCTION
+    return sym.KIND == ScopeKind.CALLABLE and sym.kind == CallableKind.FUNCTION
 
 
 def _word_count(text: str, word: str) -> int:
@@ -79,7 +79,7 @@ def _confidence(symbol: str, language: str | None) -> str:
 
 
 def _modules(component: Any):
-    if component.KIND == ComponentKind.MODULE:
+    if component.KIND == ScopeKind.MODULE:
         yield component
         return
     for ch in component.children():

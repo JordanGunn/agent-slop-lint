@@ -12,7 +12,7 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-from ...identity import ComponentKind
+from ...identity import ScopeKind
 from .records import Hotspot
 
 _DEFAULT_WINDOW = "14 days ago"   # tuned for agentic code generation
@@ -104,7 +104,7 @@ def _p75(values: list[int]) -> int:
 
 
 def _modules(component: Any):
-    if component.KIND == ComponentKind.MODULE:
+    if component.KIND == ScopeKind.MODULE:
         yield component
         return
     for ch in component.children():

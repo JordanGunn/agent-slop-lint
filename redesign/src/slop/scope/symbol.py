@@ -1,13 +1,8 @@
 """Symbol containers — Module, Class, Callable.
 
-These own declarations directly. Structural ownership (what's inside) is
-declared here; the *metrics* each kind owns come from the measure mixins in
-``measures.py``, so this file stays about structure and the metric inventory
-stays in one ledger.
-
-    Callable : ComplexityMeasures (inherited) + CallableMeasures
-    Class    : ComplexityMeasures (inherited) + ClassMeasures
-    Module   : ComplexityMeasures (inherited) + ModuleMeasures
+These own declarations directly: structural ownership (what's inside) is declared
+here. They answer no metrics — measurements live in ``metrics/structural`` and are
+taken over a scope via ``Structure.over(region)``; the entity stays pure ownership.
 """
 from __future__ import annotations
 
@@ -16,7 +11,7 @@ from collections.abc import Sequence
 from typing import ClassVar
 
 from .base import SymbolContainer
-from .identity import CallableKind, ComponentKind
+from .identity import CallableKind, ScopeKind
 from ..metrics.structural.records import ImportDecl
 
 
@@ -25,12 +20,12 @@ class Callable(SymbolContainer):
     for the primitive structural metrics.
 
     Owns its parameters, locals, and nested callables. ``cyclomatic`` etc. come
-    from ``ComplexityMeasures`` (via Component); the non-aggregatable extras
+    from ``ComplexityMeasures`` (via Scope); the non-aggregatable extras
     (full Halstead, density, magic literals, mutations, sentinels) come from
     ``CallableMeasures``.
     """
 
-    KIND: ClassVar[ComponentKind] = ComponentKind.CALLABLE
+    KIND: ClassVar[ScopeKind] = ScopeKind.CALLABLE
 
     @property
     @abstractmethod
@@ -65,7 +60,7 @@ class Class(SymbolContainer):
     (``ast.Paradigm``), the single source of truth for which symbol kinds exist.
     """
 
-    KIND: ClassVar[ComponentKind] = ComponentKind.CLASS
+    KIND: ClassVar[ScopeKind] = ScopeKind.CLASS
 
     @property
     @abstractmethod
@@ -112,7 +107,7 @@ class Module(SymbolContainer):
     come from ``ModuleMeasures``.
     """
 
-    KIND: ClassVar[ComponentKind] = ComponentKind.MODULE
+    KIND: ClassVar[ScopeKind] = ScopeKind.MODULE
 
     @abstractmethod
     def imports(self) -> Sequence[ImportDecl]:

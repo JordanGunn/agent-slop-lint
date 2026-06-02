@@ -21,7 +21,7 @@ from __future__ import annotations
 
 from typing import Any, Iterable, Iterator
 
-from .identity import ComponentKind
+from .identity import ScopeKind
 
 
 class Selection:
@@ -41,12 +41,12 @@ class Selection:
 
     def _iter_callables(self) -> Iterator[Any]:
         for r in self._regions:
-            if r.KIND == ComponentKind.CALLABLE:
+            if r.KIND == ScopeKind.CALLABLE:
                 yield r
             yield from r._iter_callables()
 
     def _iter_classes(self) -> Iterator[Any]:
         for r in self._regions:
-            if r.KIND == ComponentKind.CLASS:
+            if r.KIND == ScopeKind.CLASS:
                 yield r
             yield from r._iter_classes()

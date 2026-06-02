@@ -11,7 +11,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from .identity import CallableKind, ComponentId, ComponentKind, Extent, Span
+from .identity import CallableKind, ScopeId, ScopeKind, Extent, Span
 from ..ast import AST, GRAMMARS_BY_ID
 from ..ast.paradigm import ObjectOriented
 from ..ast.parse import detect_language, parse_file
@@ -42,7 +42,7 @@ def scan_corpus(root: Path, config: Any) -> C.Corpus:
 
     corpus = C.Corpus(
         root=root, config=config,
-        id=ComponentId(ComponentKind.CORPUS, root.name or "<root>", ()),
+        id=ScopeId(ScopeKind.CORPUS, root.name or "<root>", ()),
         name=root.name or "<root>", owner=None,
         extent=_union_extent(realms), files=_union_files(realms),
         children=realms,
@@ -99,7 +99,7 @@ def _carve_realm(root: Path, lang: str, grammar: type, paths: list[Path]) -> C.R
 
     realm = C.Realm(
         root=root, grammar=grammar, language=lang,
-        id=ComponentId(ComponentKind.REALM, lang, ()),
+        id=ScopeId(ScopeKind.REALM, lang, ()),
         name=lang, owner=None,
         extent=_union_extent(packages), files=_union_files(packages),
         children=packages,
@@ -114,7 +114,7 @@ def _make_package(pkg_name: str, modules: list[C.Module]) -> C.Package:
     directory = modules[0].files[0].parent
     pkg = C.Package(
         path=directory,
-        id=ComponentId(ComponentKind.PACKAGE, pkg_name, ()),
+        id=ScopeId(ScopeKind.PACKAGE, pkg_name, ()),
         name=pkg_name, owner=None,
         extent=_union_extent(modules), files=_union_files(modules),
         children=modules,
@@ -139,7 +139,7 @@ def _carve_module(path: Path, grammar: type) -> C.Module | None:
     )
     children = _reparent_callables(children, grammar, content)
     module = C.Module(
-        id=ComponentId(ComponentKind.MODULE, qualname, (span,)),
+        id=ScopeId(ScopeKind.MODULE, qualname, (span,)),
         name=qualname, owner=None, extent=Extent((span,)), files=(path,),
         children=children, node=root.raw, content=content, grammar=grammar,
     )
@@ -184,7 +184,7 @@ def _make_class(node: Any, grammar: type, content: bytes, path: Path, parts: tup
     klass = C.Class(
         is_abstract=bool(is_abs), bases=tuple(grammar.extract_superclasses(node.raw, content)),
         properties=(),
-        id=ComponentId(ComponentKind.CLASS, qn, (span,)),
+        id=ScopeId(ScopeKind.CLASS, qn, (span,)),
         name=name, owner=None, extent=Extent((span,)), files=(path,),
         children=children, node=node.raw, content=content, grammar=grammar,
     )
@@ -209,7 +209,7 @@ def _make_callable(
     params = tuple(n for n, _anno in grammar.extract_parameters(node.raw, content))
     callable_ = C.Callable(
         kind=_callable_kind(node.type, in_class), parameters=params,
-        id=ComponentId(ComponentKind.CALLABLE, qn, (span,)),
+        id=ScopeId(ScopeKind.CALLABLE, qn, (span,)),
         name=name, owner=None, extent=Extent((span,)), files=(path,),
         children=children, node=node.raw, content=content, grammar=grammar,
     )
@@ -221,16 +221,16 @@ def _make_callable(
 def _reparent_callables(children: tuple[Any, ...], grammar: type, content: bytes) -> tuple[Any, ...]:
     """Attach receiver/impl callables to their owning Class by construction
     (replaces the legacy post_scan_adjust). Driven by grammar.reparent_callable."""
-    classes = {c.name: c for c in children if c.KIND == ComponentKind.CLASS}
+    classes = {c.name: c for c in children if c.KIND == ScopeKind.CLASS}
     if not classes:
         return children
     kept: list[Any] = []
     for ch in children:
-        if ch.KIND == ComponentKind.CALLABLE:
+        if ch.KIND == ScopeKind.CALLABLE:
             target = grammar.reparent_callable(ch._node, content)
             cls = classes.get(target) if target else None
             if cls is not None:
-                ch._id = ComponentId(ComponentKind.CALLABLE, f"{cls.qualname}.{ch.name}", ch._extent.spans)
+                ch._id = ScopeId(ScopeKind.CALLABLE, f"{cls.qualname}.{ch.name}", ch._extent.spans)
                 ch._owner = cls
                 cls._children = (*cls._children, ch)
                 continue

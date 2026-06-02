@@ -17,8 +17,8 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from typing import ClassVar
 
-from .scope.base import Component
-from .scope.identity import ComponentKind
+from .scope.base import Scope
+from .scope.identity import ScopeKind
 from .config import RuleConfig
 from .finding import Finding
 
@@ -27,7 +27,7 @@ class Rule(ABC):
     #: dotted rule name (e.g. ``"complexity.cyclomatic"``).
     name: ClassVar[str]
     #: the altitudes this rule is defined at; the dispatcher visits exactly these.
-    altitudes: ClassVar[frozenset[ComponentKind]]
+    altitudes: ClassVar[frozenset[ScopeKind]]
 
     @classmethod
     @abstractmethod
@@ -37,7 +37,7 @@ class Rule(ABC):
         ...
 
     @abstractmethod
-    def check(self, component: Component, config: RuleConfig) -> Iterable[Finding]:
+    def check(self, component: Scope, config: RuleConfig) -> Iterable[Finding]:
         """Inspect ONE component — guaranteed to be of a declared altitude — and
         yield findings. Must not traverse beyond the given component."""
         ...

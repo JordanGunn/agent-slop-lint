@@ -19,16 +19,16 @@ from __future__ import annotations
 
 from typing import Any
 
-from .identity import ComponentKind
+from .identity import ScopeKind
 from ..lexicon import Lexicon, Role
 from ..span import Span
 
 #: Filesystem-derived component names carry the grammatical-degradation signal
 #: (module/package names come from the directory tree, not an AST node).
 _FS_ROLE = {
-    ComponentKind.REALM: Role.REALM,
-    ComponentKind.PACKAGE: Role.PACKAGE,
-    ComponentKind.MODULE: Role.MODULE,
+    ScopeKind.REALM: Role.REALM,
+    ScopeKind.PACKAGE: Role.PACKAGE,
+    ScopeKind.MODULE: Role.MODULE,
 }
 
 

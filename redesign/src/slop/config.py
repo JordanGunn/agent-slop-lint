@@ -19,7 +19,7 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
-from .scope.identity import ComponentKind
+from .scope.identity import ScopeKind
 from .finding import Severity
 
 _SEVERITY_BY_LABEL = {s.label(): s for s in Severity}
@@ -29,7 +29,7 @@ _SEVERITY_BY_LABEL = {s.label(): s for s in Severity}
 class RuleConfig:
     """The config slice handed to one rule's ``check``.
 
-    ``thresholds`` is keyed by altitude *label* (``ComponentKind.value``);
+    ``thresholds`` is keyed by altitude *label* (``ScopeKind.value``);
     ``params`` carries noise floors / significance gates (legitimately
     configurable even for observations — they govern output volume, not the
     claim).
@@ -41,7 +41,7 @@ class RuleConfig:
     thresholds: dict[str, float] = field(default_factory=dict)
     params: dict[str, Any] = field(default_factory=dict)
 
-    def threshold_for(self, kind: ComponentKind) -> float | None:
+    def threshold_for(self, kind: ScopeKind) -> float | None:
         return self.thresholds.get(kind.value)
 
     def param(self, key: str, default: Any = None) -> Any:

@@ -14,8 +14,8 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-from ..scope.base import Component
-from ..scope.identity import ComponentKind
+from ..scope.base import Scope
+from ..scope.identity import ScopeKind
 from ..config import RuleConfig
 from ..finding import Action, Finding, Severity, Verdict
 from ..metrics.structural.view import Structure
@@ -24,7 +24,7 @@ from ..rule import Rule
 
 class CallIslandsRule(Rule):
     name = "structure.call-islands"
-    altitudes = frozenset({ComponentKind.MODULE})
+    altitudes = frozenset({ScopeKind.MODULE})
 
     @classmethod
     def default_config(cls) -> RuleConfig:
@@ -35,7 +35,7 @@ class CallIslandsRule(Rule):
             params={"min_island_size": 2, "min_islands": 2, "min_functions": 5},
         )
 
-    def check(self, component: Component, config: RuleConfig) -> Iterable[Finding]:
+    def check(self, component: Scope, config: RuleConfig) -> Iterable[Finding]:
         all_islands = Structure.over(component).call_islands()
         # call_islands covers every module callable (each in exactly one island),
         # so the member sum is the module's function population.

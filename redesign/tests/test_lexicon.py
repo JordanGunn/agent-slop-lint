@@ -1,6 +1,6 @@
 from pathlib import Path
 from slop.scope import scan_corpus
-from slop.scope.identity import ComponentKind
+from slop.scope.identity import ScopeKind
 from slop.lexicon import Lexicon, Role, token_distribution
 from slop.span import Span
 
@@ -21,7 +21,7 @@ def _corpus(tmp_path: Path):
 def test_lexicon_exists_at_every_scope(tmp_path: Path):
     c = _corpus(tmp_path)
     mod = c.realms()[0].packages()[0].modules()[0]
-    cls = next(x for x in mod.children() if x.KIND == ComponentKind.CLASS)
+    cls = next(x for x in mod.children() if x.KIND == ScopeKind.CLASS)
     for comp in (c, c.realms()[0], mod, cls):
         assert comp.lexicon().significant_token_count() >= 0
 
@@ -33,7 +33,7 @@ def test_tokenisation_and_noise(tmp_path: Path):
 
 def test_class_lexicon_scoped(tmp_path: Path):
     mod = _corpus(tmp_path).realms()[0].packages()[0].modules()[0]
-    cls = next(x for x in mod.children() if x.KIND == ComponentKind.CLASS)
+    cls = next(x for x in mod.children() if x.KIND == ScopeKind.CLASS)
     assert set(cls.lexicon().tokens()) == {"render", "self", "state", "widget"}
 
 def test_hapax_in_range(tmp_path: Path):

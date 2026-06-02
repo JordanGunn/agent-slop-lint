@@ -22,7 +22,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass, field
 from typing import Any
 
-from .scope.identity import ComponentKind
+from .scope.identity import ScopeKind
 from .config import AnalysisConfig
 from .finding import Disposition, Finding, Severity
 from .rule import Rule
@@ -85,8 +85,8 @@ class Dispatcher:
         return Report(findings=findings, visited=visited, zero_visited=zero_visited)
 
 
-def _index_by_kind(root: Any) -> dict[ComponentKind, list[Any]]:
-    out: dict[ComponentKind, list[Any]] = {k: [] for k in ComponentKind}
+def _index_by_kind(root: Any) -> dict[ScopeKind, list[Any]]:
+    out: dict[ScopeKind, list[Any]] = {k: [] for k in ScopeKind}
     stack = [root]
     while stack:
         component = stack.pop()

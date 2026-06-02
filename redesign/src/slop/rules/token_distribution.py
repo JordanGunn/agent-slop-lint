@@ -11,16 +11,16 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-from ..scope.base import Component
+from ..scope.base import Scope
 from ..config import RuleConfig
-from ..scope.identity import ComponentKind
+from ..scope.identity import ScopeKind
 from ..finding import Evidence, Finding, Observation, Severity
 from ..rule import Rule
 
 
 class TokenDistributionRule(Rule):
     name = "vocabulary"
-    altitudes = frozenset({ComponentKind.PACKAGE})
+    altitudes = frozenset({ScopeKind.PACKAGE})
 
     @classmethod
     def default_config(cls) -> RuleConfig:
@@ -30,7 +30,7 @@ class TokenDistributionRule(Rule):
             params={"package_min_distinct": 40, "top_tokens": 15},
         )
 
-    def check(self, component: Component, config: RuleConfig) -> Iterable[Finding]:
+    def check(self, component: Scope, config: RuleConfig) -> Iterable[Finding]:
         lexicon = component.lexicon()
         distinct = lexicon.significant_token_count()
         floor = int(config.param("package_min_distinct", 40))

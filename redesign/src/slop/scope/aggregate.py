@@ -1,7 +1,7 @@
 """Aggregate containers — Corpus, Realm, Package.
 
 These own components, not declarations. Their lexicon/ast projections and
-their aggregatable complexity (via ``ComplexityMeasures`` on Component) are the
+their aggregatable complexity (via ``ComplexityMeasures`` on Scope) are the
 composition of their children's. Position-unique metrics: Package owns Martin's
 package measures + runt detection; Corpus owns the analysis-wide measures
 (orphans, duplication, hotspots, cycles). Realm is a pure aggregate plus the
@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING, ClassVar
 
 from ..ast import Grammar, Paradigm
 from .base import AggregateContainer
-from .identity import ComponentKind
+from .identity import ScopeKind
 from .symbol import Module
 
 if TYPE_CHECKING:
@@ -38,7 +38,7 @@ class Package(AggregateContainer):
     declared universally here.
     """
 
-    KIND: ClassVar[ComponentKind] = ComponentKind.PACKAGE
+    KIND: ClassVar[ScopeKind] = ScopeKind.PACKAGE
 
     @property
     @abstractmethod
@@ -68,7 +68,7 @@ class Realm(AggregateContainer):
     keeps a ``root``, owns the grammar/language, and exposes its file tree.
     """
 
-    KIND: ClassVar[ComponentKind] = ComponentKind.REALM
+    KIND: ClassVar[ScopeKind] = ScopeKind.REALM
 
     @property
     @abstractmethod
@@ -111,7 +111,7 @@ class Corpus(AggregateContainer):
     union over its Realms.
     """
 
-    KIND: ClassVar[ComponentKind] = ComponentKind.CORPUS
+    KIND: ClassVar[ScopeKind] = ScopeKind.CORPUS
 
     @property
     @abstractmethod

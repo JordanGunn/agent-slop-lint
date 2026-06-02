@@ -6,10 +6,10 @@ from __future__ import annotations
 
 import pytest
 
-from slop.scope.identity import ComponentId, ComponentKind
+from slop.scope.identity import ScopeId, ScopeKind
 from slop.finding import Action, Disposition, Evidence, Observation, Severity, Verdict
 
-CID = ComponentId(ComponentKind.CALLABLE, "m.f", ())
+CID = ScopeId(ScopeKind.CALLABLE, "m.f", ())
 
 
 def test_verdict_is_a_verdict():

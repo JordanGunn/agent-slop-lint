@@ -11,7 +11,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from ..identity import ComponentId, ComponentKind, Span
+from ..identity import ScopeId, ScopeKind, Span
 from ..metrics.structural.records import DependencyCycle
 from .dependency import DependencyEdge, DependencyGraph
 from .imports import module_imports
@@ -21,9 +21,9 @@ class ConcreteDependencyGraph(DependencyGraph):
     def __init__(
         self,
         edges: tuple[DependencyEdge, ...],
-        efferent: dict[ComponentId, frozenset[ComponentId]],
-        afferent: dict[ComponentId, frozenset[ComponentId]],
-        label: dict[ComponentId, str],
+        efferent: dict[ScopeId, frozenset[ScopeId]],
+        afferent: dict[ScopeId, frozenset[ScopeId]],
+        label: dict[ScopeId, str],
     ) -> None:
         self._edges = edges
         self._efferent = efferent
@@ -33,28 +33,28 @@ class ConcreteDependencyGraph(DependencyGraph):
     def edges(self):
         return self._edges
 
-    def afferent(self, node: ComponentId) -> int:
+    def afferent(self, node: ScopeId) -> int:
         return len(self._afferent.get(node, frozenset()))
 
-    def efferent(self, node: ComponentId) -> int:
+    def efferent(self, node: ScopeId) -> int:
         return len(self._efferent.get(node, frozenset()))
 
-    def efferent_nodes(self, node: ComponentId) -> frozenset[ComponentId]:
+    def efferent_nodes(self, node: ScopeId) -> frozenset[ScopeId]:
         return self._efferent.get(node, frozenset())
 
-    def afferent_nodes(self, node: ComponentId) -> frozenset[ComponentId]:
+    def afferent_nodes(self, node: ScopeId) -> frozenset[ScopeId]:
         return self._afferent.get(node, frozenset())
 
     def cycles(self):
         # Tarjan SCC over the efferent map; components with >1 node are cycles.
         index = 0
-        indexes: dict[ComponentId, int] = {}
-        lowlink: dict[ComponentId, int] = {}
-        stack: list[ComponentId] = []
-        on_stack: set[ComponentId] = set()
+        indexes: dict[ScopeId, int] = {}
+        lowlink: dict[ScopeId, int] = {}
+        stack: list[ScopeId] = []
+        on_stack: set[ScopeId] = set()
         out: list[DependencyCycle] = []
 
-        def strongconnect(v: ComponentId) -> None:
+        def strongconnect(v: ScopeId) -> None:
             nonlocal index
             indexes[v] = lowlink[v] = index
             index += 1
@@ -67,7 +67,7 @@ class ConcreteDependencyGraph(DependencyGraph):
                 elif w in on_stack:
                     lowlink[v] = min(lowlink[v], indexes[w])
             if lowlink[v] == indexes[v]:
-                comp: list[ComponentId] = []
+                comp: list[ScopeId] = []
                 while stack:
                     w = stack.pop()
                     on_stack.discard(w)
@@ -85,16 +85,16 @@ class ConcreteDependencyGraph(DependencyGraph):
 
 def build(corpus: Any) -> ConcreteDependencyGraph:
     modules = list(_iter_modules(corpus))
-    label: dict[ComponentId, str] = {m.id: m.qualname for m in modules}
+    label: dict[ScopeId, str] = {m.id: m.qualname for m in modules}
     module_ids = set(label)
-    index: dict[str, ComponentId] = {}
+    index: dict[str, ScopeId] = {}
     for m in modules:
         if not m.files:
             continue
         for name in _module_names_for_path(m.files[0]):
             index.setdefault(name, m.id)
 
-    efferent: dict[ComponentId, set[ComponentId]] = {m.id: set() for m in modules}
+    efferent: dict[ScopeId, set[ScopeId]] = {m.id: set() for m in modules}
     edges: list[DependencyEdge] = []
     for m in modules:
         src_span = Span(str(m.files[0]), 0, 0) if m.files else Span("", 0, 0)
@@ -108,7 +108,7 @@ def build(corpus: Any) -> ConcreteDependencyGraph:
             if resolved:
                 efferent[m.id].add(target)
 
-    afferent: dict[ComponentId, set[ComponentId]] = {m.id: set() for m in modules}
+    afferent: dict[ScopeId, set[ScopeId]] = {m.id: set() for m in modules}
     for src, tgts in efferent.items():
         for t in tgts:
             afferent[t].add(src)
@@ -122,7 +122,7 @@ def build(corpus: Any) -> ConcreteDependencyGraph:
 
 
 def _iter_modules(component: Any):
-    if component.KIND == ComponentKind.MODULE:
+    if component.KIND == ScopeKind.MODULE:
         yield component
         return
     for ch in component.children():

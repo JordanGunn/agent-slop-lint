@@ -1,10 +1,10 @@
 """Role — the provenance of a named unit entering the lexicon.
 
 What an identifier *names*, expressed in the lexicon's own vocabulary. This is a
-lexicon-owned enum on purpose: it is **not** ``component.ComponentKind``. Importing
+lexicon-owned enum on purpose: it is **not** ``component.ScopeKind``. Importing
 that would couple the lexicon upward to the component model and break the rule that
 ``lexicon/`` is usable outside the linter. The bridge (in the component layer) maps
-``ComponentKind`` + identifier position onto a ``Role`` as units cross the boundary;
+``ScopeKind`` + identifier position onto a ``Role`` as units cross the boundary;
 nothing AST- or component-shaped enters here.
 
 Role-tagging is what lets later consumers select by provenance without re-walking

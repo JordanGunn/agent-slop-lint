@@ -17,7 +17,7 @@ from typing import Any
 from .aggregate import Corpus as CorpusABC
 from .aggregate import Package as PackageABC
 from .aggregate import Realm as RealmABC
-from .identity import CallableKind, ComponentId, ComponentKind, Extent
+from .identity import CallableKind, ScopeId, ScopeKind, Extent
 from .symbol import Callable as CallableABC
 from .symbol import Class as ClassABC
 from .symbol import Module as ModuleABC
@@ -34,7 +34,7 @@ class _Base:
     def __init__(
         self,
         *,
-        id: ComponentId,
+        id: ScopeId,
         name: str,
         owner: Any | None,
         extent: Extent,
@@ -57,7 +57,7 @@ class _Base:
 
     # ---- universal identity / location -------------------------------
     @property
-    def id(self) -> ComponentId: return self._id
+    def id(self) -> ScopeId: return self._id
     @property
     def name(self) -> str: return self._name
     @property
@@ -94,13 +94,13 @@ class _Base:
     # ---- descendant iteration (the region surface the metric views consume) --
     def _iter_callables(self) -> Iterator[Any]:
         for ch in self._children:
-            if ch.KIND == ComponentKind.CALLABLE:
+            if ch.KIND == ScopeKind.CALLABLE:
                 yield ch
             yield from ch._iter_callables()
 
     def _iter_classes(self) -> Iterator[Any]:
         for ch in self._children:
-            if ch.KIND == ComponentKind.CLASS:
+            if ch.KIND == ScopeKind.CLASS:
                 yield ch
             yield from ch._iter_classes()
 
@@ -108,7 +108,7 @@ class _Base:
 # ============================ symbol containers ============================
 
 class Callable(_Base, CallableABC):
-    KIND = ComponentKind.CALLABLE
+    KIND = ScopeKind.CALLABLE
 
     def __init__(self, *, kind: CallableKind, parameters: tuple[str, ...], **kw: Any) -> None:
         super().__init__(**kw)
@@ -119,12 +119,12 @@ class Callable(_Base, CallableABC):
     def kind(self) -> CallableKind: return self._kind
     def parameters(self): return self._parameters
     def locals(self): raise _todo("Callable.locals", "pending")
-    def nested(self): return tuple(c for c in self._children if c.KIND == ComponentKind.CALLABLE)
+    def nested(self): return tuple(c for c in self._children if c.KIND == ScopeKind.CALLABLE)
     def symbols(self): return self._children
 
 
 class Class(_Base, ClassABC):
-    KIND = ComponentKind.CLASS
+    KIND = ScopeKind.CLASS
 
     def __init__(self, *, is_abstract: bool, bases: tuple[str, ...], properties: tuple[str, ...], **kw: Any) -> None:
         super().__init__(**kw)
@@ -134,19 +134,19 @@ class Class(_Base, ClassABC):
 
     @property
     def is_abstract(self) -> bool: return self._is_abstract
-    def methods(self): return tuple(c for c in self._children if c.KIND == ComponentKind.CALLABLE)
+    def methods(self): return tuple(c for c in self._children if c.KIND == ScopeKind.CALLABLE)
     def properties(self): return self._properties
     def bases(self):
         idx = self.context.class_index
         if idx is None:
             return ()
         return tuple(idx.by_name[b] for b in self._base_names if b in idx.by_name)
-    def nested_classes(self): return tuple(c for c in self._children if c.KIND == ComponentKind.CLASS)
+    def nested_classes(self): return tuple(c for c in self._children if c.KIND == ScopeKind.CLASS)
     def symbols(self): return self._children
 
 
 class Module(_Base, ModuleABC):
-    KIND = ComponentKind.MODULE
+    KIND = ScopeKind.MODULE
 
     def imports(self):
         from ..graph.imports import module_imports
@@ -157,7 +157,7 @@ class Module(_Base, ModuleABC):
 # ============================ aggregate containers ========================
 
 class Package(_Base, PackageABC):
-    KIND = ComponentKind.PACKAGE
+    KIND = ScopeKind.PACKAGE
 
     def __init__(self, *, path: Path, **kw: Any) -> None:
         super().__init__(**kw)
@@ -165,12 +165,12 @@ class Package(_Base, PackageABC):
 
     @property
     def path(self) -> Path: return self._path
-    def packages(self): return tuple(c for c in self._children if c.KIND == ComponentKind.PACKAGE)
-    def modules(self): return tuple(c for c in self._children if c.KIND == ComponentKind.MODULE)
+    def packages(self): return tuple(c for c in self._children if c.KIND == ScopeKind.PACKAGE)
+    def modules(self): return tuple(c for c in self._children if c.KIND == ScopeKind.MODULE)
 
 
 class Realm(_Base, RealmABC):
-    KIND = ComponentKind.REALM
+    KIND = ScopeKind.REALM
 
     def __init__(self, *, root: Path, grammar: type, language: str, **kw: Any) -> None:
         super().__init__(**kw)
@@ -184,11 +184,11 @@ class Realm(_Base, RealmABC):
     def grammar(self) -> type: return self._grammar
     @property
     def language(self) -> str: return self._language
-    def packages(self): return tuple(c for c in self._children if c.KIND == ComponentKind.PACKAGE)
+    def packages(self): return tuple(c for c in self._children if c.KIND == ScopeKind.PACKAGE)
 
 
 class Corpus(_Base, CorpusABC):
-    KIND = ComponentKind.CORPUS
+    KIND = ScopeKind.CORPUS
 
     def __init__(self, *, root: Path, config: Any, **kw: Any) -> None:
         super().__init__(**kw)
@@ -199,7 +199,7 @@ class Corpus(_Base, CorpusABC):
     def root(self) -> Path: return self._root
     @property
     def config(self): return self._config
-    def realms(self): return tuple(c for c in self._children if c.KIND == ComponentKind.REALM)
+    def realms(self): return tuple(c for c in self._children if c.KIND == ScopeKind.REALM)
 
     def dependency_graph(self):
         """The corpus Module-level DependencyGraph (built during scan)."""

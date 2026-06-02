@@ -2,7 +2,7 @@
 
     Corpus -> Realm -> Package -> Module -> Class -> Callable
 
-Public surface: the ABC tier (``Component``, ``AggregateContainer``,
+Public surface: the ABC tier (``Scope``, ``AggregateContainer``,
 ``SymbolContainer``), the six concrete kinds, identity/extent value types, the
 ``scan_corpus`` entry point, and the ``Selection`` region-union. Metrics live in
 ``metrics/structural`` (consumed via ``Structure.over(region)``), not here.
@@ -10,8 +10,8 @@ Public surface: the ABC tier (``Component``, ``AggregateContainer``,
 from __future__ import annotations
 
 from .aggregate import Corpus, Realm, Package
-from .base import AggregateContainer, Component, SymbolContainer
-from .identity import CallableKind, ComponentId, ComponentKind, Extent, Span
+from .base import AggregateContainer, Scope, SymbolContainer
+from .identity import CallableKind, ScopeId, ScopeKind, Extent, Span
 from .carve import scan_corpus
 from .projection import Lexicon
 from .selection import Selection
@@ -23,7 +23,7 @@ __all__ = [
     # granular scoping
     "Selection",
     # spine
-    "Component",
+    "Scope",
     "AggregateContainer",
     "SymbolContainer",
     "Corpus",
@@ -33,8 +33,8 @@ __all__ = [
     "Class",
     "Callable",
     # identity
-    "ComponentId",
-    "ComponentKind",
+    "ScopeId",
+    "ScopeKind",
     "CallableKind",
     "Extent",
     "Span",

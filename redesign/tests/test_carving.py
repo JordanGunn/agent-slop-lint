@@ -5,8 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 
 from slop.metrics.structural.view import Structure
-from slop.scope import Callable, Class, Component, Corpus, Module, Package, Realm
-from slop.scope.identity import ComponentKind
+from slop.scope import Callable, Class, Scope, Corpus, Module, Package, Realm
+from slop.scope.identity import ScopeKind
 from slop.scope import scan_corpus
 
 SAMPLE = '''\
@@ -33,7 +33,7 @@ def _corpus(tmp_path: Path) -> Corpus:
 
 def test_hierarchy_is_carved(tmp_path: Path):
     corpus = _corpus(tmp_path)
-    assert isinstance(corpus, Component) and corpus.KIND == ComponentKind.CORPUS
+    assert isinstance(corpus, Scope) and corpus.KIND == ScopeKind.CORPUS
     (realm,) = corpus.realms()
     assert isinstance(realm, Realm) and realm.language == "python"
     (pkg,) = realm.packages()
@@ -61,7 +61,7 @@ def test_cyclomatic_primitive_matches_oracle(tmp_path: Path):
 def test_cyclomatic_aggregates_upward(tmp_path: Path):
     corpus = _corpus(tmp_path)
     mod = corpus.realms()[0].packages()[0].modules()[0]
-    foo = next(c for c in mod.children() if c.KIND == ComponentKind.CLASS)
+    foo = next(c for c in mod.children() if c.KIND == ScopeKind.CLASS)
     assert Structure.over(foo).cyclomatic() == 3        # class = sum of its methods
     assert Structure.over(mod).cyclomatic() == 7        # module = sum of f, g, Foo.m
     assert Structure.over(corpus).cyclomatic() == 7     # single module

@@ -4,7 +4,7 @@ raise NotImplementedError and are excluded."""
 from pathlib import Path
 from slop.metrics.structural.view import Structure
 from slop.scope import scan_corpus
-from slop.scope.identity import ComponentKind
+from slop.scope.identity import ScopeKind
 
 def test_every_non_graph_metric_answers_on_real_corpus():
     corpus = scan_corpus(Path(__file__).resolve().parents[1] / "src" / "slop" / "scope", config=None)

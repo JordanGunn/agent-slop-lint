@@ -22,7 +22,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ...identity import ComponentKind
+from ...identity import ScopeKind
 from . import callable_measures, class_index, complexity, halstead
 from .annotations import escape_hatch_density as _escape_hatch_density
 from .hotspots import hotspots as _hotspots
@@ -53,7 +53,7 @@ class Structure:
     #      descendant callables at a container (each leaf counted once) --------
     def _leaves(self) -> list[Any]:
         r = self._r
-        return [r] if r.KIND == ComponentKind.CALLABLE else list(r._iter_callables())
+        return [r] if r.KIND == ScopeKind.CALLABLE else list(r._iter_callables())
 
     def cyclomatic(self) -> int:
         return sum(complexity.cyclomatic(c._ast_node(), c._grammar) for c in self._leaves())
@@ -120,7 +120,7 @@ class Structure:
     # ---- Module measures --------------------------------------------------
     def definition_count(self) -> int:
         return sum(1 for c in self._r.children()
-                   if c.KIND in (ComponentKind.CALLABLE, ComponentKind.CLASS))
+                   if c.KIND in (ScopeKind.CALLABLE, ScopeKind.CLASS))
 
     def escape_hatch_density(self) -> float:
         r = self._r

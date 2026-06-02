@@ -6,10 +6,10 @@ linter all key on them, so housing them low keeps those layers from depending on
 other just to share an id. ``component.identity`` re-exports them so existing
 ``from ..scope.identity import …`` sites are unchanged.
 
-Logical vs physical identity: ``ComponentId`` carries a stable *logical* key (kind +
+Logical vs physical identity: ``ScopeId`` carries a stable *logical* key (kind +
 qualname) distinct from its *physical* extent (byte spans). A one-byte edit shifts the
 spans but not the logical key, so cross-run diffing / caching / graph-keying should use
-``ComponentId.logical`` where physical drift would otherwise break identity. Equality
+``ScopeId.logical`` where physical drift would otherwise break identity. Equality
 and hashing remain structural over all fields (spans included) — the logical key is an
 additional accessor, not a change to identity semantics.
 """
@@ -22,7 +22,7 @@ from pathlib import Path
 from .span import Span
 
 
-class ComponentKind(Enum):
+class ScopeKind(Enum):
     """The six entity kinds in the ownership hierarchy."""
 
     CORPUS = "corpus"
@@ -65,7 +65,7 @@ class Extent:
 
 
 @dataclass(frozen=True)
-class ComponentId:
+class ScopeId:
     """Stable, hashable identity for a component.
 
     ``qualname`` is the dotted ownership path (``pkg.mod.Class.method``);
@@ -75,15 +75,15 @@ class ComponentId:
     them.
     """
 
-    kind: ComponentKind
+    kind: ScopeKind
     qualname: str
     spans: tuple[Span, ...]
 
     @property
-    def logical(self) -> tuple[ComponentKind, str]:
+    def logical(self) -> tuple[ScopeKind, str]:
         """The stable logical key (kind + qualname), independent of byte spans.
 
         Use this for cross-run diffing, caching, or graph-keying where the physical
-        spans drift under edits. Full ``ComponentId`` equality still includes spans
+        spans drift under edits. Full ``ScopeId`` equality still includes spans
         (to disambiguate overloads / reopened classes within one analysis)."""
         return (self.kind, self.qualname)

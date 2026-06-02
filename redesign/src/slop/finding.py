@@ -24,7 +24,7 @@ from enum import IntEnum, StrEnum
 from typing import TYPE_CHECKING, Any, ClassVar, Protocol, runtime_checkable
 
 if TYPE_CHECKING:
-    from .scope.identity import ComponentId
+    from .scope.identity import ScopeId
 
 
 class Severity(IntEnum):
@@ -81,7 +81,7 @@ class Finding(Protocol):
     """The common surface of every finding, for the output pipeline."""
 
     rule: str
-    component: ComponentId
+    component: ScopeId
     message: str
 
     @property
@@ -117,7 +117,7 @@ class Verdict:
     """
 
     rule: str
-    component: ComponentId
+    component: ScopeId
     action: Action
     prescription: str
     severity: Severity = Severity.WARNING
@@ -165,7 +165,7 @@ class Observation:
     build (severity is INFO, immutable)."""
 
     rule: str
-    component: ComponentId
+    component: ScopeId
     evidence: Evidence
     message: str
     metadata: dict[str, Any] = field(default_factory=dict)

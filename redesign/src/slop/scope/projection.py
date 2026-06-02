@@ -24,7 +24,7 @@ Design contract (the Lexicon half, still locked):
   sub-extent (matched on the extent's span paths), so child scopes reuse parent
   computation rather than re-deriving.
 - **Cache-safe by construction.** Pure function of (extent, parse data), keyed
-  by the component's stable ``ComponentId``, and immutable — memoisation can be
+  by the component's stable ``ScopeId``, and immutable — memoisation can be
   added later without redesign.
 
 The metric/rule layer *consumes* this primitive — rules are not methods here
