@@ -11,6 +11,7 @@ traceable from the new model back to the source of truth.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 
 
 # --- Complexity primitives (Callable altitude) ------------------------------
@@ -81,6 +82,36 @@ class CKMetrics:
     noc: int        # number of children
     cbo: int        # coupling between objects
     lcom: int | None  # lack of cohesion in methods — future
+
+    def as_dict(self) -> dict[str, Any]:
+        return {"nom": self.nom, "dit": self.dit, "noc": self.noc,
+                "cbo": self.cbo, "lcom": self.lcom}
+
+    def narrate(self, *, cbo_floor: int, dit_floor: int, noc_floor: int) -> str:
+        """Claim-free prose over the CK profile, naming only the metrics past their
+        attention-floor. Descriptive, never a verdict — the floors mark "worth a
+        look", not "defect". NOC in particular is framed as ambiguous: a broad base
+        is frequently a healthy abstraction, not a god-base.
+        """
+        parts: list[str] = []
+        if self.cbo > cbo_floor:
+            parts.append(
+                f"couples to {self.cbo} other classes (high — typical ≤ {cbo_floor}; "
+                f"resists isolated testing and change)"
+            )
+        if self.dit > dit_floor:
+            parts.append(
+                f"inheritance depth {self.dit} (deep — typical ≤ {dit_floor}; many "
+                f"inherited behaviours to reason about)"
+            )
+        if self.noc > noc_floor:
+            parts.append(
+                f"{self.noc} direct subclasses (broad base — often a healthy "
+                f"abstraction, but worth confirming it is not a god-base)"
+            )
+        if not parts:
+            return f"CK profile within typical bounds ({self.nom} methods)."
+        return f"CK profile — {'; '.join(parts)}. ({self.nom} methods.)"
 
 
 # --- Package altitude (Robert C. Martin 1994) -------------------------------

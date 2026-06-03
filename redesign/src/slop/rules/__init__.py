@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from ..rule import Rule
 from .call_islands import CallIslandsRule
+from .class_shape import ClassShapeRule
 from .cognitive import CognitiveRule
 from .combinatorial import CombinatorialRule
 from .cyclomatic import CyclomaticRule
@@ -25,6 +26,7 @@ RULE_REGISTRY: list[Rule] = [
     GodModuleRule(),
     EscapeHatchesRule(),
     DuplicationRule(),
+    ClassShapeRule(),
     TokenDistributionRule(),
     CallIslandsRule(),
 ]
@@ -37,6 +39,7 @@ __all__ = [
     "GodModuleRule",
     "EscapeHatchesRule",
     "DuplicationRule",
+    "ClassShapeRule",
     "TokenDistributionRule",
     "CallIslandsRule",
 ]
