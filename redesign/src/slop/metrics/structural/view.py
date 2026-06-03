@@ -31,6 +31,7 @@ from .annotations import (
 from .hotspots import _DEFAULT_WINDOW as _HOTSPOT_WINDOW, hotspots as _hotspots
 from .orphans import orphans as _orphans
 from .records import CKMetrics, PackageMetrics
+from .runts import is_runt as _is_runt
 from .relational import (
     call_islands as _call_islands,
     clone_clusters as _clone_clusters,
@@ -191,8 +192,7 @@ class Structure:
         return (ce / (ca + ce)) > 0.7 and (na / (na + nc)) > 0.7
 
     def is_runt(self) -> bool:
-        mods = self._r.modules()
-        return len(mods) <= 1 and sum(Structure.over(m).definition_count() for m in mods) == 0
+        return _is_runt(self._r)
 
     # ---- Corpus measures: analysis-wide -----------------------------------
     def orphans(self):

@@ -246,6 +246,10 @@ class Python(MultiPurpose):
             if any(_Path(f).name == "__init__.py" for f in dir_files)
         }
 
+    @classmethod
+    def package_init_name(cls) -> str | None:
+        return "__init__.py"
+
 
 _PYTHON_COLLECTION_TYPES: frozenset[str] = frozenset({
     "list", "List", "dict", "Dict", "set", "Set",

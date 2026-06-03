@@ -23,6 +23,7 @@ from .hotspots import HotspotsRule
 from .orphans import OrphansRule
 from .redundancy import RedundancyRule
 from .rigidity import RigidityRule
+from .runts import RuntsRule
 from .sentinels import SentinelsRule
 from .token_distribution import TokenDistributionRule
 from .uselessness import UselessnessRule
@@ -37,6 +38,7 @@ RULE_REGISTRY: list[Rule] = [
     DependencyCyclesRule(),
     RigidityRule(),
     UselessnessRule(),
+    RuntsRule(),
     SentinelsRule(),
     HiddenMutatorsRule(),
     OrphansRule(),
@@ -58,6 +60,7 @@ __all__ = [
     "DependencyCyclesRule",
     "RigidityRule",
     "UselessnessRule",
+    "RuntsRule",
     "SentinelsRule",
     "HiddenMutatorsRule",
     "OrphansRule",

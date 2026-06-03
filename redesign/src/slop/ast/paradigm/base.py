@@ -276,6 +276,14 @@ class Grammar(ABC):
             by_dir.setdefault(name, []).append(fp)
         return by_dir
 
+    @classmethod
+    def package_init_name(cls) -> str | None:
+        """The filename whose presence makes a directory a package (e.g. Python's
+        ``__init__.py``), or ``None`` for languages with no init-file package
+        convention. Used by the runt-package signal, which is structurally N/A
+        where this is ``None``."""
+        return None
+
 
 def _default_parameter_parts(node: Any, content: bytes) -> tuple[str | None, str | None]:
     """Default ``(name, annotation)`` extraction for one parameter node (Python-shaped)."""
