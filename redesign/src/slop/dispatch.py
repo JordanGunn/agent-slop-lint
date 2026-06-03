@@ -77,7 +77,10 @@ class Dispatcher:
             for kind in rule.altitudes:
                 for component in by_kind.get(kind, ()):
                     count += 1
-                    findings.extend(rule.check(component, rc))
+                    findings.extend(
+                        f for f in rule.check(component, rc)
+                        if not self._config.is_ignored(f.component)
+                    )
             visited[rule.name] = count
             if count == 0:
                 zero_visited.append(rule.name)

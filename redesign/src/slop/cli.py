@@ -61,6 +61,36 @@ def rules_cmd(output: str = "human") -> int:
     return 0
 
 
+def schema_cmd(output: str = "json") -> int:
+    """Emit the config shape, generated from the registry (so it cannot drift from
+    the rules it describes — unlike a hand-maintained asset)."""
+    rules_schema = []
+    for r in sorted(RULE_REGISTRY, key=lambda x: x.name):
+        rc = r.default_config()
+        rules_schema.append({
+            "name": r.name,
+            "altitudes": sorted(k.value for k in r.altitudes),
+            "enabled": rc.enabled,
+            "severity": rc.severity.label(),
+            "thresholds": dict(rc.thresholds),
+            "params": dict(rc.params),
+        })
+    schema = {
+        "version": "v1",
+        "ignore": {"functions": [], "classes": [], "modules": [], "packages": []},
+        "rules": rules_schema,
+    }
+    if output == "json":
+        print(json.dumps(schema, indent=2))
+    else:
+        print(f"slop config schema v1 — {len(rules_schema)} rules")
+        print("  [ignore] scopes: functions, classes, modules, packages")
+        for r in rules_schema:
+            keys = sorted({*r["thresholds"], *r["params"]})
+            print(f"  {r['name']}: severity={r['severity']} keys={keys}")
+    return 0
+
+
 def doctor() -> int:
     """Report the tools slop relies on. Missing optional tools degrade gracefully."""
     print("slop doctor\n")
@@ -162,6 +192,9 @@ def main(argv: list[str] | None = None) -> int:
     p_init = sub.add_parser("init", help="write a .slop.toml config template")
     p_init.add_argument("--root", default=".")
 
+    p_schema = sub.add_parser("schema", help="print the config schema (generated from the registry)")
+    p_schema.add_argument("--output", choices=["human", "json"], default="json")
+
     args = parser.parse_args(argv)
     try:
         if args.command == "lint":
@@ -174,6 +207,8 @@ def main(argv: list[str] | None = None) -> int:
             return doctor()
         if args.command == "init":
             return init(args.root)
+        if args.command == "schema":
+            return schema_cmd(args.output)
     except Exception as exc:  # noqa: BLE001 — top-level boundary: any failure is exit 2
         print(f"slop: error: {exc}", file=sys.stderr)
         return 2
