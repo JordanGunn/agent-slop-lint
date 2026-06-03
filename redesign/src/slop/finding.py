@@ -61,6 +61,7 @@ class Action(StrEnum):
     SPLIT_MODULE = "split-module"
     EXTRACT_SUBPACKAGE = "extract-subpackage"
     FLATTEN_PACKAGE = "flatten-package"
+    BREAK_DEPENDENCY_CYCLE = "break-dependency-cycle"
     NARROW_SCOPE = "narrow-scope-or-rename"
     DROP_REDUNDANT_TOKENS = "drop-redundant-tokens"
     RENAME_BY_TEMPLATE = "rename-by-template"

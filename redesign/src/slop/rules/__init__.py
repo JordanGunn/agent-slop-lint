@@ -14,6 +14,7 @@ from .class_shape import ClassShapeRule
 from .cognitive import CognitiveRule
 from .combinatorial import CombinatorialRule
 from .cyclomatic import CyclomaticRule
+from .dependency_cycles import DependencyCyclesRule
 from .duplication import DuplicationRule
 from .escape_hatches import EscapeHatchesRule
 from .god_module import GodModuleRule
@@ -28,6 +29,7 @@ RULE_REGISTRY: list[Rule] = [
     GodModuleRule(),
     EscapeHatchesRule(),
     DuplicationRule(),
+    DependencyCyclesRule(),
     RigidityRule(),
     UselessnessRule(),
     ClassShapeRule(),
@@ -43,6 +45,7 @@ __all__ = [
     "GodModuleRule",
     "EscapeHatchesRule",
     "DuplicationRule",
+    "DependencyCyclesRule",
     "RigidityRule",
     "UselessnessRule",
     "ClassShapeRule",
