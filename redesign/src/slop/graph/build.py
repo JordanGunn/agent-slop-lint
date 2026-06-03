@@ -91,7 +91,8 @@ def build(corpus: Any) -> ConcreteDependencyGraph:
     for m in modules:
         if not m.files:
             continue
-        for name in _module_names_for_path(m.files[0]):
+        init_name = m._grammar.package_init_name() if m._grammar is not None else None
+        for name in _module_names_for_path(m.files[0], init_name):
             index.setdefault(name, m.id)
 
     efferent: dict[ScopeId, set[ScopeId]] = {m.id: set() for m in modules}
@@ -129,9 +130,14 @@ def _iter_modules(component: Any):
         yield from _iter_modules(ch)
 
 
-def _module_names_for_path(fp: Path) -> list[str]:
+def _module_names_for_path(fp: Path, init_name: str | None = None) -> list[str]:
     """All module-name spellings a grammar might emit for this path
-    (ported from legacy build_module_index)."""
+    (ported from legacy build_module_index).
+
+    ``init_name`` is the grammar's ``package_init_name()`` (Python ``__init__.py``,
+    ``None`` elsewhere): a package-init module is also importable by its directory
+    path, so it gets the extra parent-package spellings. Gating on the grammar fact
+    instead of a hardcoded literal keeps non-Python languages out of this branch."""
     names: list[str] = [fp.stem, fp.name]
     parts = fp.with_suffix("").parts
     if parts:
@@ -139,7 +145,7 @@ def _module_names_for_path(fp: Path) -> list[str]:
             tail = parts[-take:]
             names.append(".".join(tail))
             names.append("/".join(tail))
-    if fp.name == "__init__.py" and len(parts) >= 2:
+    if init_name is not None and fp.name == init_name and len(parts) >= 2:
         package_parts = parts[:-1]
         names.append(".".join(package_parts))
         names.append("/".join(package_parts))

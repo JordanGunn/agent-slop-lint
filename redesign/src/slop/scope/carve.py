@@ -132,7 +132,11 @@ def _carve_module(path: Path, grammar: type) -> C.Module | None:
         return None
     tree, content = parsed
     root = AST(tree, content, path, grammar).root
-    qualname = path.stem if path.stem != "__init__" else (path.parent.name or "<root>")
+    # A package-init module (Python ``__init__.py``) is named after its directory;
+    # the init filename is a per-grammar fact, not a hardcoded literal.
+    init_name = grammar.package_init_name()
+    is_init = init_name is not None and path.name == init_name
+    qualname = (path.parent.name or "<root>") if is_init else path.stem
     span = Span(str(path), 0, len(content))
 
     children = _carve_decls(

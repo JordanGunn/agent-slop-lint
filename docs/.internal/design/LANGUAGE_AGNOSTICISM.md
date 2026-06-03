@@ -53,7 +53,10 @@ A grammar supplies (defaults in `base.py`, override where the language differs):
   `signature → call_expression → argument_list`).
 - `parameter_list_field()` / `parameter_name_node_types()` — tabular knobs for the base.
 - `package_init_name()` — the package-marker filename (Python `__init__.py`; `None`
-  where there is no init-file convention → runts is structurally N/A there).
+  where there is no init-file convention → runts is structurally N/A there). **#40:**
+  now also drives the package-init module qualname in `scope/carve` and the
+  parent-package name spellings in `graph/build` — both previously hardcoded the
+  `"__init__"`/`"__init__.py"` literal in shared code.
 - `resolve_packages(root, files)` — the language's package boundary (TODO: Go/Java/Rust).
 - `receiver_parameter_names()` — **not built; verified unnecessary.** The hardcoded
   `{self, cls}` is correct for Python and a *no-op* everywhere else: no other language
@@ -121,8 +124,18 @@ A grammar supplies (defaults in `base.py`, override where the language differs):
 6. ✅ `is_dynamic_language()` + `is_special_method()` facts — replaced the hardcoded
    `_DYNAMIC_LANGUAGES` set + `__x__` checks in `orphans`/`relational`. TS added to the
    dynamic set; `is_dunder` renamed `is_special_method`. Suite 206→210.
-7. Delegate the `__init__.py` literals in carve/graph to `package_init_name()`.
+7. ✅ Delegated the `__init__.py` literals in `scope/carve` + `graph/build` to
+   `package_init_name()`. Python behavior preserved (martin-zones import resolution
+   stays green); non-Python correctly skips the init branch. Suite 210→212.
 8. (separate) C# grammar wheel not loading — parse-level, not a fact.
+
+### Status: the grammar-fact de-overfit pass is complete (#1, #3–#4, #6–#7).
+
+The remaining shared-code Python assumptions are cleared. **#5 (`resolve_packages`)
+stays open as a fidelity enhancement, not a de-overfit bug** (reframed above), and **#8
+(C# wheel) is a packaging issue, not a grammar fact.** Every shared algorithm in
+`metrics/` + `scope/carve` + `graph/build` now reads per-language idioms from grammar
+facts; no `if lang ==` branch or hardcoded Python node-type/literal remains in them.
 
 ### Verified member-access node/field table (#36)
 
