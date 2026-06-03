@@ -187,6 +187,18 @@ class Lexical:
         isolates.sort(key=lambda kv: (-kv[1], kv[0]))
         return isolates
 
+    # ---- first-parameter clustering (implicit-receiver analysis) -----------
+    def first_param_clusters(self, *, min_cluster: int = 3,
+                             exempt_names: frozenset[str] = frozenset({"self", "cls"}),
+                             root: Any = None) -> list:
+        """Groups of callables sharing a first parameter, enriched with profile
+        signals (body Jaccard, receiver-call density, modal overlap) and reported at
+        the narrowest scope where they cohere. The implicit-receiver primitive that
+        imposters / slackers / sprawl consume."""
+        from .clusters import compute_first_param_clusters
+        return compute_first_param_clusters(
+            self, min_cluster=min_cluster, exempt_names=exempt_names, root=root)
+
 
 def _line(scope: Any) -> int:
     node = getattr(scope, "_node", None)
