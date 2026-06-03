@@ -29,6 +29,7 @@ from .runts import RuntsRule
 from .sentinels import SentinelsRule
 from .slackers import SlackersRule
 from .sprawl import SprawlRule
+from .stutter import StutterRule
 from .verbosity import VerbosityRule
 from .token_distribution import TokenDistributionRule
 from .uselessness import UselessnessRule
@@ -54,6 +55,7 @@ RULE_REGISTRY: list[Rule] = [
     ImpostersRule(),
     SlackersRule(),
     SprawlRule(),
+    StutterRule(),
     ClassShapeRule(),
     TokenDistributionRule(),
     CallIslandsRule(),
@@ -81,6 +83,7 @@ __all__ = [
     "ImpostersRule",
     "SlackersRule",
     "SprawlRule",
+    "StutterRule",
     "ClassShapeRule",
     "TokenDistributionRule",
     "CallIslandsRule",
