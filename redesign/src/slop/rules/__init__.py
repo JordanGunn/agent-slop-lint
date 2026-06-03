@@ -17,7 +17,9 @@ from .cyclomatic import CyclomaticRule
 from .duplication import DuplicationRule
 from .escape_hatches import EscapeHatchesRule
 from .god_module import GodModuleRule
+from .rigidity import RigidityRule
 from .token_distribution import TokenDistributionRule
+from .uselessness import UselessnessRule
 
 RULE_REGISTRY: list[Rule] = [
     CyclomaticRule(),
@@ -26,6 +28,8 @@ RULE_REGISTRY: list[Rule] = [
     GodModuleRule(),
     EscapeHatchesRule(),
     DuplicationRule(),
+    RigidityRule(),
+    UselessnessRule(),
     ClassShapeRule(),
     TokenDistributionRule(),
     CallIslandsRule(),
@@ -39,6 +43,8 @@ __all__ = [
     "GodModuleRule",
     "EscapeHatchesRule",
     "DuplicationRule",
+    "RigidityRule",
+    "UselessnessRule",
     "ClassShapeRule",
     "TokenDistributionRule",
     "CallIslandsRule",
