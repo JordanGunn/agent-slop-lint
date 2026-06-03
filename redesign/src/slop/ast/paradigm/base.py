@@ -112,6 +112,19 @@ class Grammar(ABC):
                         out.append((_node_text(child, content), None))
         return tuple(out)
 
+    @classmethod
+    def member_access_patterns(cls) -> tuple[tuple[str, str], ...]:
+        """``(node_type, receiver_field)`` pairs for member access — ``recv.attr`` and
+        ``recv[k]`` — where ``receiver_field`` is the ``child_by_field_name`` key
+        holding the accessed object. Used to measure whether a parameter is treated as
+        a receiver (the first-param-cluster ``missing_class`` signal). Empty default: a
+        grammar with no member-access concept reports a receiver density of 0 (an honest
+        "not measured"), never a mismeasurement. Every concrete grammar with member
+        access overrides this — the node types are language-specific (Python
+        ``attribute``, Go ``selector_expression``, Rust ``field_expression``, …), so a
+        single hardcoded set would silently read 0 on every other language."""
+        return ()
+
     # ---- cyclomatic / cognitive vocabulary ----------------------------
 
     @classmethod

@@ -10,6 +10,10 @@ class Ruby(MultiPurpose):
     id: ClassVar[str] = "ruby"
 
     @classmethod
+    def member_access_patterns(cls) -> tuple[tuple[str, str], ...]:
+        return (("call", "receiver"), ("element_reference", "object"))
+
+    @classmethod
     def callable(cls) -> frozenset[str]:
         return frozenset({"method", "singleton_method"})
 

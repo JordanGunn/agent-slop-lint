@@ -17,6 +17,10 @@ class Go(MultiPurpose):
     id: ClassVar[str] = "go"
 
     @classmethod
+    def member_access_patterns(cls) -> tuple[tuple[str, str], ...]:
+        return (("selector_expression", "operand"), ("index_expression", "operand"))
+
+    @classmethod
     def callable(cls) -> frozenset[str]:
         return frozenset({"function_declaration", "method_declaration", "func_literal"})
 

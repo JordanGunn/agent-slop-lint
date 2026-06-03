@@ -142,8 +142,8 @@ def _cluster_by_prefix(entries, *, min_cluster, exempt_names, isolate_tokens, sp
     return findings
 
 
-def _bodies_index(callables: list[Any], root: str) -> dict[tuple[str, str], tuple[Any, bytes]]:
-    out: dict[tuple[str, str], tuple[Any, bytes]] = {}
+def _bodies_index(callables: list[Any], root: str) -> dict[tuple[str, str], tuple[Any, bytes, Any]]:
+    out: dict[tuple[str, str], tuple[Any, bytes, Any]] = {}
     for c in callables:
         node = getattr(c, "_node", None)
         if node is None:
@@ -152,7 +152,7 @@ def _bodies_index(callables: list[Any], root: str) -> dict[tuple[str, str], tupl
         if body is None:
             continue
         file_rel = _rel(str(c.files[0]) if c.files else "", root)
-        out[(file_rel, c.qualname.split(".")[-1])] = (body, c._content)
+        out[(file_rel, c.qualname.split(".")[-1])] = (body, c._content, getattr(c, "_grammar", None))
     return out
 
 

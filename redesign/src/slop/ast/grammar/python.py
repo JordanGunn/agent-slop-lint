@@ -10,6 +10,10 @@ class Python(MultiPurpose):
     id: ClassVar[str] = "python"
 
     @classmethod
+    def member_access_patterns(cls) -> tuple[tuple[str, str], ...]:
+        return (("attribute", "object"), ("subscript", "value"))
+
+    @classmethod
     def callable(cls) -> frozenset[str]:
         return frozenset({"function_definition", "async_function_definition", "lambda"})
 

@@ -18,6 +18,10 @@ class Rust(MultiPurpose):
     id: ClassVar[str] = "rust"
 
     @classmethod
+    def member_access_patterns(cls) -> tuple[tuple[str, str], ...]:
+        return (("field_expression", "value"),)
+
+    @classmethod
     def callable(cls) -> frozenset[str]:
         return frozenset({"function_item"})
 

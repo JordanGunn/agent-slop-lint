@@ -10,6 +10,10 @@ class Java(ObjectOriented):
     id: ClassVar[str] = "java"
 
     @classmethod
+    def member_access_patterns(cls) -> tuple[tuple[str, str], ...]:
+        return (("field_access", "object"), ("array_access", "array"))
+
+    @classmethod
     def callable(cls) -> frozenset[str]:
         return frozenset({"method_declaration", "constructor_declaration"})
 

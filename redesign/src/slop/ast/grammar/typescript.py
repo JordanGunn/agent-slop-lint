@@ -10,6 +10,10 @@ class TypeScript(MultiPurpose):
     id: ClassVar[str] = "typescript"
 
     @classmethod
+    def member_access_patterns(cls) -> tuple[tuple[str, str], ...]:
+        return (("member_expression", "object"), ("subscript_expression", "object"))
+
+    @classmethod
     def callable(cls) -> frozenset[str]:
         return frozenset({"function_declaration", "function_expression", "arrow_function",
                           "method_definition", "generator_function_declaration"})

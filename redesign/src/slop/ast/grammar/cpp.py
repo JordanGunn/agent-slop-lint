@@ -10,6 +10,10 @@ class Cpp(MultiPurpose):
     id: ClassVar[str] = "cpp"
 
     @classmethod
+    def member_access_patterns(cls) -> tuple[tuple[str, str], ...]:
+        return (("field_expression", "argument"), ("subscript_expression", "argument"))
+
+    @classmethod
     def callable(cls) -> frozenset[str]:
         return frozenset({"function_definition", "lambda_expression"})
 

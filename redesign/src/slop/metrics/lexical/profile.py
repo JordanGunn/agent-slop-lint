@@ -86,27 +86,31 @@ def _signature_ngrams(node, n: int = 3) -> set[tuple[str, ...]]:
     return {tuple(seq[i:i + n]) for i in range(len(seq) - n + 1)}
 
 
-def _receiver_call_count(body, content: bytes, param_name: str) -> int:
+def _receiver_call_count(
+    body, content: bytes, param_name: str,
+    patterns: tuple[tuple[str, str], ...],
+) -> int:
     """Count ``param.attr`` + ``param[k]`` references in body (PoC v2.6).
 
-    Proxies "is this parameter being treated as a receiver?".
+    Proxies "is this parameter being treated as a receiver?". ``patterns`` is the
+    callable's grammar ``member_access_patterns()`` — ``(node_type, receiver_field)``
+    pairs — so the access node types are the *callable's own language's*, not Python's
+    ``attribute``/``subscript``. An empty ``patterns`` (grammar declares no member
+    access) yields 0: an honest "not measured", which was previously the silent state
+    for every non-Python language.
     """
+    if not patterns:
+        return 0
+    field_of = dict(patterns)
     count = 0
 
     def walk(node):
         nonlocal count
-        if node.type == "attribute":
-            obj = node.child_by_field_name("object")
+        field = field_of.get(node.type)
+        if field is not None:
+            obj = node.child_by_field_name(field)
             if obj is not None and obj.type == "identifier":
                 text = content[obj.start_byte:obj.end_byte].decode(
-                    "utf-8", errors="replace",
-                )
-                if text == param_name:
-                    count += 1
-        if node.type == "subscript":
-            value = node.child_by_field_name("value")
-            if value is not None and value.type == "identifier":
-                text = content[value.start_byte:value.end_byte].decode(
                     "utf-8", errors="replace",
                 )
                 if text == param_name:
@@ -152,7 +156,7 @@ def _overlap(name: str, modal: set[str], exclude: frozenset[str]) -> float:
 
 def profile_cluster(
     cluster: Any,
-    bodies: dict[tuple[str, str], tuple[Any, bytes]],
+    bodies: dict[tuple[str, str], tuple[Any, bytes, Any]],
     *,
     isolate_tokens: frozenset[str] = frozenset(),
     spread: dict[str, int] | None = None,
@@ -181,10 +185,11 @@ def profile_cluster(
     sigs: list[tuple[set[tuple[str, ...]], int]] = []
     member_names: list[str] = []
     for name, file, _line in members_with_body:
-        body_node, content = bodies[(file, name)]
+        body_node, content, grammar = bodies[(file, name)]
+        patterns = grammar.member_access_patterns() if grammar is not None else ()
         sigs.append((
             _signature_ngrams(body_node),
-            _receiver_call_count(body_node, content, cluster.parameter_name),
+            _receiver_call_count(body_node, content, cluster.parameter_name, patterns),
         ))
         member_names.append(name)
 

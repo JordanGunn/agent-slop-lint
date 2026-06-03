@@ -10,6 +10,15 @@ class CSharp(ObjectOriented):
     id: ClassVar[str] = "c_sharp"
 
     @classmethod
+    def member_access_patterns(cls) -> tuple[tuple[str, str], ...]:
+        # Unverified: the tree-sitter-c-sharp wheel does not load in this environment,
+        # so this is from the grammar's node-type names, not a live parse. Revisit when
+        # C# parses. Field names per tree-sitter-c-sharp: member/element access expose
+        # the receiver on the `expression` field.
+        return (("member_access_expression", "expression"),
+                ("element_access_expression", "expression"))
+
+    @classmethod
     def callable(cls) -> frozenset[str]:
         return frozenset({"method_declaration", "constructor_declaration", "local_function_statement"})
 

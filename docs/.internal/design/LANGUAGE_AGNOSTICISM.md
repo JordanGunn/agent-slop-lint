@@ -55,18 +55,47 @@ A grammar supplies (defaults in `base.py`, override where the language differs):
 - `package_init_name()` — the package-marker filename (Python `__init__.py`; `None`
   where there is no init-file convention → runts is structurally N/A there).
 - `resolve_packages(root, files)` — the language's package boundary (TODO: Go/Java/Rust).
-- `receiver_parameter_names()` — names to exempt as implicit receivers (TODO).
-- `member_access_patterns()` — node types for `recv.attr` / `recv[k]` (TODO).
+- `receiver_parameter_names()` — **not built; verified unnecessary.** The hardcoded
+  `{self, cls}` is correct for Python and a *no-op* everywhere else: no other language
+  puts its receiver in the parameter list (Go's is a separate `receiver` field, Rust's
+  `&self` is a keyword node `extract_parameters` does not collect, Java/C++/C#/Ruby's
+  receiver is implicit). Probed across all grammars. It is a uniform constant, not a
+  language branch, so it does not violate the tabular rule — making it a grammar fact
+  would be churn without a correctness change.
+- `member_access_patterns()` — **done.** `(node_type, receiver_field)` pairs for
+  `recv.attr` / `recv[k]`. The receiver-density signal previously read 0 on every
+  non-Python language (`profile._receiver_call_count` hardcoded Python `attribute`/
+  `subscript`), silently collapsing the first-param-cluster `missing_class` /
+  `dispatch_family` classification. Each callable's grammar is threaded through
+  `clusters._bodies_index` → `profile_cluster`. Verified non-zero on Go/Rust/Java.
+  Node/field table below.
 - `body_field()` — the callable-body field name (exists; use it in clusters).
 - `is_dunder(name)` / `is_dynamic_language()` — (TODO).
 
 ## Work-list (params-first order)
 
 1. ✅ `extract_parameters` per grammar (the root).
-2. `receiver_parameter_names()` — replace hardcoded `{self,cls}` in lexical view/clusters.
-3. `member_access_patterns()` — rewrite `profile._receiver_call_count`.
-4. `body_field()` + `noise_node_types()` delegation in clusters/profile.
+2. ~~`receiver_parameter_names()`~~ — **dropped: verified no-op** (see contract above).
+   `{self, cls}` is correct for Python, harmless everywhere else.
+3. ✅ `member_access_patterns()` — `profile._receiver_call_count` now iterates the
+   grammar's patterns; signal verified live on Go/Rust/Java (was dark).
+4. `body_field()` + `noise_node_types()` delegation in clusters/profile. **Note:** this
+   also unblocks the receiver signal on flat-body languages (Julia/Ruby), whose bodies
+   `clusters._bodies_index` currently skips (hardcoded `child_by_field_name("body")`).
 5. `resolve_packages` overrides (Go/Java/Rust/C#) + Realm←module-root.
 6. `is_dunder` / `is_dynamic_language` facts (orphans/relational).
 7. Delegate the `__init__.py` literals in carve/graph to `package_init_name()`.
 8. (separate) C# grammar wheel not loading — parse-level, not a fact.
+
+### Verified member-access node/field table (#36)
+
+| Grammar | `member_access_patterns()` |
+|---|---|
+| python | `(attribute,object)` `(subscript,value)` |
+| go | `(selector_expression,operand)` `(index_expression,operand)` |
+| rust / julia | `(field_expression,value)` |
+| java | `(field_access,object)` `(array_access,array)` |
+| c / cpp | `(field_expression,argument)` `(subscript_expression,argument)` |
+| javascript / typescript | `(member_expression,object)` `(subscript_expression,object)` |
+| ruby | `(call,receiver)` `(element_reference,object)` |
+| c_sharp | `(member_access_expression,expression)` `(element_access_expression,expression)` — **unverified** (wheel does not parse) |
