@@ -18,6 +18,7 @@ from .dependency_cycles import DependencyCyclesRule
 from .duplication import DuplicationRule
 from .escape_hatches import EscapeHatchesRule
 from .god_module import GodModuleRule
+from .hammers import HammersRule
 from .hidden_mutators import HiddenMutatorsRule
 from .hotspots import HotspotsRule
 from .orphans import OrphansRule
@@ -46,6 +47,7 @@ RULE_REGISTRY: list[Rule] = [
     OrphansRule(),
     HotspotsRule(),
     RedundancyRule(),
+    HammersRule(),
     ClassShapeRule(),
     TokenDistributionRule(),
     CallIslandsRule(),
@@ -69,6 +71,7 @@ __all__ = [
     "OrphansRule",
     "HotspotsRule",
     "RedundancyRule",
+    "HammersRule",
     "ClassShapeRule",
     "TokenDistributionRule",
     "CallIslandsRule",
