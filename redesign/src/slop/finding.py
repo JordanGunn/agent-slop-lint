@@ -67,6 +67,7 @@ class Action(StrEnum):
     RENAME_BY_TEMPLATE = "rename-by-template"
     REPLACE_WITH_DOMAIN_TERM = "replace-with-domain-term"
     REPLACE_ESCAPE_TYPE = "replace-escape-hatch-type"
+    REPLACE_SENTINEL_TYPE = "replace-sentinel-with-literal-or-enum"
     REDUCE_COMPLEXITY = "reduce-complexity"
     # intent-deferred verdict (caps at WARNING — see Verdict.__post_init__)
     REVIEW = "review"

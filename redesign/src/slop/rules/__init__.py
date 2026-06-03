@@ -18,7 +18,9 @@ from .dependency_cycles import DependencyCyclesRule
 from .duplication import DuplicationRule
 from .escape_hatches import EscapeHatchesRule
 from .god_module import GodModuleRule
+from .hidden_mutators import HiddenMutatorsRule
 from .rigidity import RigidityRule
+from .sentinels import SentinelsRule
 from .token_distribution import TokenDistributionRule
 from .uselessness import UselessnessRule
 
@@ -32,6 +34,8 @@ RULE_REGISTRY: list[Rule] = [
     DependencyCyclesRule(),
     RigidityRule(),
     UselessnessRule(),
+    SentinelsRule(),
+    HiddenMutatorsRule(),
     ClassShapeRule(),
     TokenDistributionRule(),
     CallIslandsRule(),
@@ -48,6 +52,8 @@ __all__ = [
     "DependencyCyclesRule",
     "RigidityRule",
     "UselessnessRule",
+    "SentinelsRule",
+    "HiddenMutatorsRule",
     "ClassShapeRule",
     "TokenDistributionRule",
     "CallIslandsRule",
