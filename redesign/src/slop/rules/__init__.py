@@ -25,6 +25,7 @@ from .redundancy import RedundancyRule
 from .rigidity import RigidityRule
 from .runts import RuntsRule
 from .sentinels import SentinelsRule
+from .verbosity import VerbosityRule
 from .token_distribution import TokenDistributionRule
 from .uselessness import UselessnessRule
 
@@ -41,6 +42,7 @@ RULE_REGISTRY: list[Rule] = [
     RuntsRule(),
     SentinelsRule(),
     HiddenMutatorsRule(),
+    VerbosityRule(),
     OrphansRule(),
     HotspotsRule(),
     RedundancyRule(),
@@ -63,6 +65,7 @@ __all__ = [
     "RuntsRule",
     "SentinelsRule",
     "HiddenMutatorsRule",
+    "VerbosityRule",
     "OrphansRule",
     "HotspotsRule",
     "RedundancyRule",
