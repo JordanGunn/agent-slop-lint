@@ -187,6 +187,12 @@ class C(Procedural):
             return []
         return [(n, True) for p in plist.children if (n := _char_ptr_param_name(p, content)) is not None]
 
+    @classmethod
+    def extract_parameters(cls, node: Any, content: bytes) -> tuple[tuple[str, str | None], ...]:
+        """C params hang off the function declarator; names nest in declarators."""
+        from ..paradigm.base import c_style_parameters
+        return c_style_parameters(node, content)
+
 
 def _decl_ident(decl: Any, content: bytes) -> str | None:
     cur = decl

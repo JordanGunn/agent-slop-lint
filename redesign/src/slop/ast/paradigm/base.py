@@ -72,19 +72,44 @@ class Grammar(ABC):
         return content[name_node.start_byte:name_node.end_byte].decode("utf-8", errors="replace")
 
     @classmethod
+    def parameter_list_field(cls) -> str:
+        """The field on a callable node holding its parameter list. Default
+        ``"parameters"`` (Python/Go/Rust/Java/TS/JS/Ruby); C/C++ nest it under the
+        function declarator and override ``extract_parameters`` outright."""
+        return "parameters"
+
+    @classmethod
+    def parameter_name_node_types(cls) -> frozenset[str]:
+        """Node types that *are* a parameter name (as opposed to a type). Default
+        ``{"identifier"}`` — types are distinct node kinds (``type_identifier``,
+        ``primitive_type``, ``type_annotation``, …), so identifier-typed nodes are the
+        names across most grammars."""
+        return frozenset({"identifier"})
+
+    @classmethod
     def extract_parameters(cls, node: Any, content: bytes) -> tuple[tuple[str, str | None], ...]:
-        """``(name, annotation)`` pairs for a callable's parameters (in order)."""
-        params_node = node.child_by_field_name("parameters")
-        if params_node is None:
+        """``(name, annotation)`` pairs for a callable's parameters, in order.
+
+        Language-neutral by construction: the name is an identifier-typed node — the
+        parameter node itself (a bare ``a``) or its identifier children (a typed /
+        defaulted / wrapped parameter) — while *types* are distinct node kinds and so
+        are excluded. This covers Python/Go/Rust/Java/TS/JS/Ruby unchanged. Grammars
+        whose parameter names nest deeper (C/C++ declarators) or live elsewhere (Julia
+        signatures) override this. Annotation is left ``None`` — the only caller
+        (carve) uses names; string-typing for the sentinels rule is a separate fact
+        (``string_annotated_parameters``)."""
+        plist = node.child_by_field_name(cls.parameter_list_field())
+        if plist is None:
             return ()
+        names = cls.parameter_name_node_types()
         out: list[tuple[str, str | None]] = []
-        for child in params_node.children:
-            if child.type in ("(", ")", ",", "*", "**", "/", "=", "lambda"):
-                continue
-            name, annotation = _default_parameter_parts(child, content)
-            if name is None:
-                continue
-            out.append((name, annotation))
+        for pnode in plist.children:
+            if pnode.type in names:
+                out.append((_node_text(pnode, content), None))
+            else:
+                for child in pnode.children:
+                    if child.type in names:
+                        out.append((_node_text(child, content), None))
         return tuple(out)
 
     # ---- cyclomatic / cognitive vocabulary ----------------------------
@@ -285,32 +310,71 @@ class Grammar(ABC):
         return None
 
 
-def _default_parameter_parts(node: Any, content: bytes) -> tuple[str | None, str | None]:
-    """Default ``(name, annotation)`` extraction for one parameter node (Python-shaped)."""
-    ntype = node.type
-    if ntype == "identifier":
-        return (content[node.start_byte:node.end_byte].decode("utf-8", errors="replace"), None)
-    if ntype in ("typed_parameter", "typed_default_parameter"):
-        name = None
-        for c in node.children:
-            if c.type == "identifier":
-                name = content[c.start_byte:c.end_byte].decode("utf-8", errors="replace")
-                break
-        type_node = node.child_by_field_name("type")
-        annotation = (
-            content[type_node.start_byte:type_node.end_byte].decode("utf-8", errors="replace").strip()
-            if type_node is not None else None
-        )
-        return (name, annotation)
-    if ntype == "default_parameter":
-        name_node = node.child_by_field_name("name")
-        if name_node is not None:
-            return (content[name_node.start_byte:name_node.end_byte].decode("utf-8", errors="replace"), None)
-        return (None, None)
-    if ntype in ("list_splat_pattern", "dictionary_splat_pattern"):
-        for c in node.children:
-            if c.type == "identifier":
-                prefix = "*" if ntype == "list_splat_pattern" else "**"
-                return (prefix + content[c.start_byte:c.end_byte].decode("utf-8", errors="replace"), None)
-        return (None, None)
-    return (None, None)
+def _node_text(node: Any, content: bytes) -> str:
+    """The source text spanned by ``node``."""
+    return content[node.start_byte:node.end_byte].decode("utf-8", errors="replace")
+
+
+def _first_identifier(node: Any, identifier_types: frozenset[str] = frozenset({"identifier"})) -> Any:
+    """DFS for the first identifier-typed descendant (the name buried in a C/C++
+    declarator: ``char *name`` → ``pointer_declarator`` → ``identifier``)."""
+    if node is None:
+        return None
+    stack = [node]
+    while stack:
+        n = stack.pop(0)
+        if n.type in identifier_types:
+            return n
+        stack.extend(n.children)
+    return None
+
+
+def _child_of_type(node: Any, type_name: str) -> Any:
+    if node is None:
+        return None
+    for child in node.children:
+        if child.type == type_name:
+            return child
+    return None
+
+
+def c_style_parameters(node: Any, content: bytes) -> tuple[tuple[str, str | None], ...]:
+    """C/C++ parameter extraction: the parameter list hangs off the function
+    *declarator*, and each parameter's name nests inside its own declarator
+    (``char *name`` → ``pointer_declarator`` → ``identifier``)."""
+    decl = node.child_by_field_name("declarator")
+    for _ in range(6):  # walk down to the function_declarator (mirrors c.py)
+        if decl is None or decl.type == "function_declarator":
+            break
+        decl = decl.child_by_field_name("declarator")
+    if decl is None or decl.type != "function_declarator":
+        return ()
+    plist = decl.child_by_field_name("parameters") or _child_of_type(decl, "parameter_list")
+    if plist is None:
+        return ()
+    out: list[tuple[str, str | None]] = []
+    for pnode in plist.children:
+        if pnode.type != "parameter_declaration":
+            continue
+        ident = _first_identifier(pnode.child_by_field_name("declarator") or pnode)
+        if ident is not None:
+            out.append((_node_text(ident, content), None))
+    return tuple(out)
+
+
+def julia_signature_parameters(node: Any, content: bytes) -> tuple[tuple[str, str | None], ...]:
+    """Julia parameter extraction: params live under ``signature → call_expression →
+    argument_list`` as identifiers (or the first identifier of a typed argument)."""
+    sig = _child_of_type(node, "signature")
+    call = _child_of_type(sig, "call_expression") if sig is not None else None
+    arglist = _child_of_type(call, "argument_list") if call is not None else None
+    if arglist is None:
+        return ()
+    out: list[tuple[str, str | None]] = []
+    for child in arglist.children:
+        if child.type in ("(", ")", ","):
+            continue
+        ident = child if child.type == "identifier" else _first_identifier(child)
+        if ident is not None:
+            out.append((_node_text(ident, content), None))
+    return tuple(out)

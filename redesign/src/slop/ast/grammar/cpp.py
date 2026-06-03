@@ -216,6 +216,12 @@ class Cpp(MultiPurpose):
                 out.append((name, True))
         return out
 
+    @classmethod
+    def extract_parameters(cls, node: Any, content: bytes) -> tuple[tuple[str, str | None], ...]:
+        """C++ params hang off the function declarator; names nest in declarators."""
+        from ..paradigm.base import c_style_parameters
+        return c_style_parameters(node, content)
+
 
 # ---- declarator / name helpers -------------------------------------------
 

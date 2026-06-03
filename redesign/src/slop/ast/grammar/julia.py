@@ -110,3 +110,9 @@ class Julia(Procedural):
         if ident is None:
             return "<anonymous>"
         return content[ident.start_byte:ident.end_byte].decode("utf-8", errors="replace")
+
+    @classmethod
+    def extract_parameters(cls, node: Any, content: bytes) -> tuple[tuple[str, str | None], ...]:
+        """Julia params live under ``signature → call_expression → argument_list``."""
+        from ..paradigm.base import julia_signature_parameters
+        return julia_signature_parameters(node, content)
