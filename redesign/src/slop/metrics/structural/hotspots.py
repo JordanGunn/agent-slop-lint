@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from ...identity import ScopeKind
+from .complexity import cyclomatic as _cyclomatic
 from .records import Hotspot
 
 _DEFAULT_WINDOW = "14 days ago"   # tuned for agentic code generation
@@ -35,7 +36,7 @@ def hotspots(corpus: Any, *, since: str = _DEFAULT_WINDOW) -> list[Hotspot]:
             continue
         rel = _repo_relative(mod.files[0], repo_root)
         if rel is not None:
-            complexity[rel] = complexity.get(rel, 0) + mod.cyclomatic()
+            complexity[rel] = complexity.get(rel, 0) + _module_cyclomatic(mod)
 
     files = sorted(set(complexity) | set(churn))
     rows = [(f, complexity.get(f, 0), churn.get(f, 0)) for f in files]
@@ -101,6 +102,14 @@ def _p75(values: list[int]) -> int:
         return 0
     s = sorted(values)
     return s[min(len(s) - 1, int(0.75 * (len(s) - 1)))]
+
+
+def _module_cyclomatic(mod: Any) -> int:
+    """Module-aggregate cyclomatic — the sum over the module's callables, matching
+    ``Structure.cyclomatic`` at a container. (Module.cyclomatic was severed when
+    metrics moved off the scope entities; compute it from the same primitive here
+    rather than import the view, which would cycle.)"""
+    return sum(_cyclomatic(c._ast_node(), c._grammar) for c in mod._iter_callables())
 
 
 def _modules(component: Any):

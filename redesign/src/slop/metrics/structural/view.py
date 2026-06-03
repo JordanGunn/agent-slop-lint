@@ -28,7 +28,7 @@ from .annotations import (
     escape_hatch_counts as _escape_hatch_counts,
     escape_hatch_density as _escape_hatch_density,
 )
-from .hotspots import hotspots as _hotspots
+from .hotspots import _DEFAULT_WINDOW as _HOTSPOT_WINDOW, hotspots as _hotspots
 from .orphans import orphans as _orphans
 from .records import CKMetrics, PackageMetrics
 from .relational import (
@@ -201,8 +201,8 @@ class Structure:
     def duplication(self):
         return _clone_clusters(list(self._r._iter_callables()))
 
-    def hotspots(self):
-        return _hotspots(self._r)
+    def hotspots(self, *, since: str = _HOTSPOT_WINDOW):
+        return _hotspots(self._r, since=since)
 
     def dependency_cycles(self):
         ctx = self._r.context
