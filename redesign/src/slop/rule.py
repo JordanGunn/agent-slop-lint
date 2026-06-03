@@ -7,9 +7,12 @@ inspects the single component it is handed. This is what makes the
 "enabled-but-checks-nothing" bug class unrepresentable: a rule cannot run where it
 is undefined, and the dispatcher asserts it visited >0 components.
 
-A rule is *only* a threshold check + finding emission over a view method. It does
-not re-derive a metric — every measurement already lives on the component views
-(``slop.model``), oracle-verified.
+A rule is *only* a threshold check + finding emission over a metric. It does not
+re-derive a metric — every measurement lives on a metric view constructed over the
+component (``Structure.over(component)`` for structural signals,
+``Lexical.over(component)`` for lexical ones, or ``component.lexicon()`` for the raw
+token space). The scope entities themselves are metric-free (the scope/metrics
+sever); ``slop.model`` no longer exists.
 """
 from __future__ import annotations
 
