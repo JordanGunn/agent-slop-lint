@@ -42,7 +42,19 @@ def _meaningful(name: str, builtins: frozenset[str]) -> bool:
 
 
 def redundant_siblings(module: Any, *, min_shared: int = 3, min_score: float = 0.5) -> list[RedundancyPair]:
-    """Top-level sibling functions sharing >= min_shared non-trivial callees."""
+    """Top-level sibling functions sharing >= min_shared non-trivial callees.
+
+    Precision: a shared callee only counts if it names a *project-defined* callable
+    (the corpus-wide ``callable_names`` index on the analysis-context). Without this,
+    ubiquitous stdlib methods (``.strip``/``.decode``/``.split``) inflate the overlap
+    and the rule penalises DRY — two functions that both call ``.strip()`` are not
+    sharing a helper. Builtins are already discounted in ``callees_of``; this removes
+    the rest of the stdlib-method noise. With no project-name index (a module built
+    without a carve context), it falls back to the unfiltered overlap.
+    """
+    ctx = getattr(module, "context", None)
+    project_names = ctx.callable_names if ctx is not None else None
+
     funcs = [
         c for c in module.children()
         if c.KIND == ScopeKind.CALLABLE and c.kind == CallableKind.FUNCTION
@@ -52,6 +64,8 @@ def redundant_siblings(module: Any, *, min_shared: int = 3, min_score: float = 0
     out: list[RedundancyPair] = []
     for (na, sa), (nb, sb) in combinations(data, 2):
         shared = sa & sb
+        if project_names:
+            shared = {c for c in shared if c in project_names}
         if len(shared) < min_shared:
             continue
         if len(shared) / max(len(sa), len(sb)) < min_score:

@@ -25,3 +25,4 @@ class AnalysisContext:
     class_index: Any = None          # the corpus-wide class hierarchy (CK support)
     dep_graph: Any = None            # the module DependencyGraph (Martin / cycles)
     module_pkg: dict = field(default_factory=dict)  # module id -> owning package id
+    callable_names: frozenset = field(default_factory=frozenset)  # every project-defined callable name (redundancy precision)

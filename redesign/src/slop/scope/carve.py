@@ -62,7 +62,9 @@ def scan_corpus(root: Path, config: Any) -> C.Corpus:
         m.id: pkg.id
         for r in corpus.realms() for pkg in r.packages() for m in pkg.modules()
     }
-    corpus._context = AnalysisContext(class_index=index, dep_graph=graph, module_pkg=module_pkg)
+    callable_names = frozenset(c.name for c in corpus._iter_callables())
+    corpus._context = AnalysisContext(class_index=index, dep_graph=graph,
+                                      module_pkg=module_pkg, callable_names=callable_names)
     return corpus
 
 

@@ -135,8 +135,8 @@ class Structure:
         r = self._r
         return _escape_hatch_counts(r._ast_node(), r._grammar)
 
-    def redundant_siblings(self):
-        return _redundant_siblings(self._r)
+    def redundant_siblings(self, *, min_shared: int = 3, min_score: float = 0.5):
+        return _redundant_siblings(self._r, min_shared=min_shared, min_score=min_score)
 
     def call_islands(self):
         """Disjoint components of the module's intra-file call graph."""

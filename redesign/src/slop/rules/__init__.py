@@ -21,6 +21,7 @@ from .god_module import GodModuleRule
 from .hidden_mutators import HiddenMutatorsRule
 from .hotspots import HotspotsRule
 from .orphans import OrphansRule
+from .redundancy import RedundancyRule
 from .rigidity import RigidityRule
 from .sentinels import SentinelsRule
 from .token_distribution import TokenDistributionRule
@@ -40,6 +41,7 @@ RULE_REGISTRY: list[Rule] = [
     HiddenMutatorsRule(),
     OrphansRule(),
     HotspotsRule(),
+    RedundancyRule(),
     ClassShapeRule(),
     TokenDistributionRule(),
     CallIslandsRule(),
@@ -60,6 +62,7 @@ __all__ = [
     "HiddenMutatorsRule",
     "OrphansRule",
     "HotspotsRule",
+    "RedundancyRule",
     "ClassShapeRule",
     "TokenDistributionRule",
     "CallIslandsRule",
