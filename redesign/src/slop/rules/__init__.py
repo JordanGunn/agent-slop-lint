@@ -19,6 +19,7 @@ from .duplication import DuplicationRule
 from .escape_hatches import EscapeHatchesRule
 from .god_module import GodModuleRule
 from .hidden_mutators import HiddenMutatorsRule
+from .orphans import OrphansRule
 from .rigidity import RigidityRule
 from .sentinels import SentinelsRule
 from .token_distribution import TokenDistributionRule
@@ -36,6 +37,7 @@ RULE_REGISTRY: list[Rule] = [
     UselessnessRule(),
     SentinelsRule(),
     HiddenMutatorsRule(),
+    OrphansRule(),
     ClassShapeRule(),
     TokenDistributionRule(),
     CallIslandsRule(),
@@ -54,6 +56,7 @@ __all__ = [
     "UselessnessRule",
     "SentinelsRule",
     "HiddenMutatorsRule",
+    "OrphansRule",
     "ClassShapeRule",
     "TokenDistributionRule",
     "CallIslandsRule",
