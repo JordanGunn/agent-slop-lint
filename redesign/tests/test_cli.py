@@ -40,6 +40,16 @@ def test_check_filters_to_family(tmp_path: Path, capsys):
     assert all(r.startswith("complexity.") for r in rules_fired)
 
 
+def test_check_with_ancestor_config_for_other_rule(tmp_path: Path, capsys):
+    # A config that configures a rule OUTSIDE the checked subset must not make
+    # `check` raise "configures unknown rule" (regression: validate against the
+    # full registry, dispatch only the subset).
+    (tmp_path / ".slop.toml").write_text('[rules."structure.god-module"]\nenabled = false\n')
+    (tmp_path / "m.py").write_text("def f(x): return x\n")
+    rc = cli.check("complexity", tmp_path, "json")
+    assert rc in (0, 1)  # ran cleanly, did not error (2)
+
+
 def test_doctor_runs(capsys):
     rc = cli.doctor()
     out = capsys.readouterr().out

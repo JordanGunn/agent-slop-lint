@@ -21,7 +21,11 @@ from .rules import RULE_REGISTRY
 
 def lint(root: str | Path, output: str = "human", *, rules=RULE_REGISTRY) -> int:
     root = Path(root)
-    config = AnalysisConfig.load(root, rules)
+    # Config is always validated against the FULL registry (a configured rule outside
+    # the dispatched subset is still a known rule); only `rules` are dispatched. This
+    # is what lets `check <family>` run with an ancestor config that configures other
+    # rules without raising "configures unknown rule".
+    config = AnalysisConfig.load(root, RULE_REGISTRY)
     corpus = scan_corpus(root, config)
     report = Dispatcher(rules, config).run(corpus)
     if output == "json":
