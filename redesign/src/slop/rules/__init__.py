@@ -13,14 +13,18 @@ from .call_islands import CallIslandsRule
 from .cognitive import CognitiveRule
 from .combinatorial import CombinatorialRule
 from .cyclomatic import CyclomaticRule
+from .duplication import DuplicationRule
 from .escape_hatches import EscapeHatchesRule
+from .god_module import GodModuleRule
 from .token_distribution import TokenDistributionRule
 
 RULE_REGISTRY: list[Rule] = [
     CyclomaticRule(),
     CognitiveRule(),
     CombinatorialRule(),
+    GodModuleRule(),
     EscapeHatchesRule(),
+    DuplicationRule(),
     TokenDistributionRule(),
     CallIslandsRule(),
 ]
@@ -30,7 +34,9 @@ __all__ = [
     "CyclomaticRule",
     "CognitiveRule",
     "CombinatorialRule",
+    "GodModuleRule",
     "EscapeHatchesRule",
+    "DuplicationRule",
     "TokenDistributionRule",
     "CallIslandsRule",
 ]

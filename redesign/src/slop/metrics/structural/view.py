@@ -142,8 +142,8 @@ class Structure:
         """Disjoint components of the module's intra-file call graph."""
         return _call_islands(self._r)
 
-    def clone_clusters(self):
-        return _clone_clusters(list(self._r._iter_callables()))
+    def clone_clusters(self, *, min_leaf_nodes: int = 10):
+        return _clone_clusters(list(self._r._iter_callables()), min_leaf_nodes=min_leaf_nodes)
 
     # ---- Package measures: Robert C. Martin (1994) ------------------------
     def _martin_raw(self) -> tuple[int, int, int, int]:
