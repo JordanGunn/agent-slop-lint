@@ -27,6 +27,7 @@ from .redundancy import RedundancyRule
 from .rigidity import RigidityRule
 from .runts import RuntsRule
 from .sentinels import SentinelsRule
+from .slackers import SlackersRule
 from .verbosity import VerbosityRule
 from .token_distribution import TokenDistributionRule
 from .uselessness import UselessnessRule
@@ -50,6 +51,7 @@ RULE_REGISTRY: list[Rule] = [
     RedundancyRule(),
     HammersRule(),
     ImpostersRule(),
+    SlackersRule(),
     ClassShapeRule(),
     TokenDistributionRule(),
     CallIslandsRule(),
@@ -75,6 +77,7 @@ __all__ = [
     "RedundancyRule",
     "HammersRule",
     "ImpostersRule",
+    "SlackersRule",
     "ClassShapeRule",
     "TokenDistributionRule",
     "CallIslandsRule",
