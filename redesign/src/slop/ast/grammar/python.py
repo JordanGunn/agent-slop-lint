@@ -14,6 +14,14 @@ class Python(MultiPurpose):
         return (("attribute", "object"), ("subscript", "value"))
 
     @classmethod
+    def is_dynamic_language(cls) -> bool:
+        return True
+
+    @classmethod
+    def is_special_method(cls, name: str) -> bool:
+        return name.startswith("__") and name.endswith("__")
+
+    @classmethod
     def callable(cls) -> frozenset[str]:
         return frozenset({"function_definition", "async_function_definition", "lambda"})
 

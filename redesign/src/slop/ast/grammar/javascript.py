@@ -14,6 +14,10 @@ class JavaScript(MultiPurpose):
         return (("member_expression", "object"), ("subscript_expression", "object"))
 
     @classmethod
+    def is_dynamic_language(cls) -> bool:
+        return True
+
+    @classmethod
     def callable(cls) -> frozenset[str]:
         return frozenset({"function_declaration", "function_expression", "arrow_function",
                           "method_definition", "generator_function_declaration"})

@@ -22,7 +22,6 @@ _COMMON_NAMES = frozenset({
     "update", "create", "delete", "load", "save", "process",
     "execute", "handle", "build", "parse", "check", "validate",
 })
-_DYNAMIC_LANGUAGES = frozenset({"python", "javascript", "ruby"})
 
 
 def orphans(corpus: Any) -> list[Orphan]:
@@ -46,8 +45,7 @@ def orphans(corpus: Any) -> list[Orphan]:
                 if path != def_path
             )
             if external == 0:
-                language = sym._grammar.id if sym._grammar is not None else None
-                confidence = _confidence(name, language)
+                confidence = _confidence(name, sym._grammar)
                 out.append(Orphan(qualname=sym.qualname, kind=sym.KIND.name.lower(), confidence=confidence))
     return out
 
@@ -62,8 +60,8 @@ def _word_count(text: str, word: str) -> int:
     return len(re.findall(r"\b" + re.escape(word) + r"\b", text))
 
 
-def _confidence(symbol: str, language: str | None) -> str:
-    if symbol.startswith("__") and symbol.endswith("__"):
+def _confidence(symbol: str, grammar: Any) -> str:
+    if grammar is not None and grammar.is_special_method(symbol):
         return "low"
     score = 3
     n = len(symbol)
@@ -73,7 +71,7 @@ def _confidence(symbol: str, language: str | None) -> str:
         score -= 1
     if symbol.lower() in _COMMON_NAMES:
         score -= 2
-    if language in _DYNAMIC_LANGUAGES:
+    if grammar is not None and grammar.is_dynamic_language():
         score -= 1
     return "high" if score >= 3 else "medium" if score >= 1 else "low"
 

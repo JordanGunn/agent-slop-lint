@@ -88,7 +88,17 @@ A grammar supplies (defaults in `base.py`, override where the language differs):
   children; leaves are tokens. Zero per-grammar surface, no overfit. This deviates from
   the work-list's literal "`noise_node_types()` fact" wording but serves its goal more
   completely.
-- `is_dunder(name)` / `is_dynamic_language()` — (TODO).
+- `is_dynamic_language()` / `is_special_method(name)` — **done.** Replaced the
+  hardcoded `_DYNAMIC_LANGUAGES = {python,javascript,ruby}` set and the `__x__` dunder
+  checks that were buried in shared `orphans._confidence` and `relational._meaningful`.
+  `is_dynamic_language()` lowers orphan confidence one tick (runtime dispatch defeats
+  static reference counting); `is_special_method(name)` flags implicitly-dispatched
+  names (Python `__dunder__`) as low-confidence orphans and non-meaningful callees.
+  Both default neutral on the base (False); Python overrides both, JS/Ruby/**TS**
+  override the dynamic flag. **TS added beyond the legacy set** (it erases to JS at
+  runtime — treating it as static while JS is dynamic would be incoherent). **Named
+  `is_special_method`, not the work-list's `is_dunder`**: "dunder" is the Python token,
+  not the cross-language concept (implicit runtime dispatch).
 
 ## Work-list (params-first order)
 
@@ -102,8 +112,15 @@ A grammar supplies (defaults in `base.py`, override where the language differs):
    Unblocks the receiver signal on **Julia** (the one genuinely flat-body language —
    was dropped; now `mean_receiver_calls=2.0`/`missing_class`, verified). Ruby already
    worked via its `body` field. Suite 204→206.
-5. `resolve_packages` overrides (Go/Java/Rust/C#) + Realm←module-root.
-6. `is_dunder` / `is_dynamic_language` facts (orphans/relational).
+5. `resolve_packages` overrides (Go/Java/Rust/C#) + Realm←module-root. **Reframed:**
+   not a silent-deadening bug — `resolve_packages` already has a neutral per-dir default
+   + isolated Python override, and the dep graph resolves edges by *module* name, not
+   package. Gap is package *naming* (dir path vs declared identifier) everywhere + Java/C#
+   *grouping* granularity (declared `package`/`namespace` vs directory). A fidelity
+   enhancement; sequenced after the genuine de-overfit items.
+6. ✅ `is_dynamic_language()` + `is_special_method()` facts — replaced the hardcoded
+   `_DYNAMIC_LANGUAGES` set + `__x__` checks in `orphans`/`relational`. TS added to the
+   dynamic set; `is_dunder` renamed `is_special_method`. Suite 206→210.
 7. Delegate the `__init__.py` literals in carve/graph to `package_init_name()`.
 8. (separate) C# grammar wheel not loading — parse-level, not a fact.
 

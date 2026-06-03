@@ -278,6 +278,28 @@ class Grammar(ABC):
         whether to discount them as noise; the grammar does not."""
         return frozenset()
 
+    # ---- reference / dispatch semantics -------------------------------
+
+    @classmethod
+    def is_dynamic_language(cls) -> bool:
+        """True if the language resolves references dynamically at runtime — duck
+        typing, reflection, monkey-patching, string-keyed dispatch — to a degree that
+        defeats static reference counting. Lowers orphan-detection confidence: an
+        apparent orphan may be reached by machinery static analysis cannot see.
+        Default ``False`` (statically dispatched); the dynamic grammars override."""
+        return False
+
+    @classmethod
+    def is_special_method(cls, name: str) -> bool:
+        """True if ``name`` is a language-special method/symbol invoked *implicitly*
+        by the runtime rather than called by name (Python's ``__dunder__``). Such a
+        name looks orphaned (no explicit caller) and is not a domain-meaningful callee,
+        so the orphan and sibling-redundancy signals discount it. Default ``False`` —
+        most languages have no name-pattern convention for implicit dispatch; Python
+        overrides with the dunder rule."""
+        del name
+        return False
+
     # ---- class / package vocabulary -----------------------------------
 
     @classmethod

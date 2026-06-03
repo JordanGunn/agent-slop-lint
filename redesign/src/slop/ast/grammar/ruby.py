@@ -14,6 +14,10 @@ class Ruby(MultiPurpose):
         return (("call", "receiver"), ("element_reference", "object"))
 
     @classmethod
+    def is_dynamic_language(cls) -> bool:
+        return True
+
+    @classmethod
     def callable(cls) -> frozenset[str]:
         return frozenset({"method", "singleton_method"})
 

@@ -17,10 +17,12 @@ from .records import CallIsland, CloneCluster, RedundancyPair
 
 
 def callees_of(comp: Any) -> frozenset[str]:
-    """Meaningful callee names in a callable's body (length>=3, no dunders, no builtins).
+    """Meaningful callee names in a callable's body (length>=3, no special methods,
+    no builtins).
 
-    The grammar supplies the language's builtin set as a *fact*; discounting them
-    as noise is this consumer's policy decision."""
+    The grammar supplies the language's builtin set and its implicit-dispatch
+    special-method rule as *facts*; discounting them as noise is this consumer's
+    policy decision."""
     grammar = comp._grammar
     call_types = grammar.call_node_types()
     if not call_types:
@@ -32,13 +34,15 @@ def callees_of(comp: Any) -> frozenset[str]:
     for n in body.walk():
         if n.type in call_types:
             name = grammar.extract_callee_name(n.raw, comp._content)
-            if name is not None and _meaningful(name, builtins):
+            if name is not None and _meaningful(name, builtins, grammar):
                 out.add(name)
     return frozenset(out)
 
 
-def _meaningful(name: str, builtins: frozenset[str]) -> bool:
-    return len(name) >= 3 and not (name.startswith("__") and name.endswith("__")) and name not in builtins
+def _meaningful(name: str, builtins: frozenset[str], grammar: Any) -> bool:
+    return (len(name) >= 3
+            and not (grammar is not None and grammar.is_special_method(name))
+            and name not in builtins)
 
 
 def redundant_siblings(module: Any, *, min_shared: int = 3, min_score: float = 0.5) -> list[RedundancyPair]:
