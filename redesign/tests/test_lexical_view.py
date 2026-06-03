@@ -55,3 +55,33 @@ def test_frequency_head_orders_by_count(tmp_path: Path):
     head = lx.frequency_head(threshold=1)
     # 'user' occurs in the function name, the param, and the class name → top.
     assert head[0][0] == "user" and head[0][1] >= 3
+
+
+PACKET_SRC = '''\
+def find_options(find, options): pass
+def parse_options(find, options): pass
+def merge_options(find, options): pass
+'''
+
+# 'ctx' recurs across functions but with a different partner each time — a hub.
+HUB_SRC = '''\
+def alpha(ctx, aaa): pass
+def beta(ctx, bbb): pass
+def gamma(ctx, ccc): pass
+'''
+
+
+def test_packets_finds_tokens_that_travel_together(tmp_path: Path):
+    (tmp_path / "m.py").write_text(PACKET_SRC)
+    lx = Lexical.over(scan_corpus(tmp_path, config=None))
+    packets = lx.packets(min_bags=3, min_association=0.7)
+    assert {"find", "options"} in packets
+
+
+def test_packet_isolates_surface_hubs(tmp_path: Path):
+    (tmp_path / "m.py").write_text(HUB_SRC)
+    lx = Lexical.over(scan_corpus(tmp_path, config=None))
+    # ctx appears 3× but bonds with no specific partner → isolate; aaa/bbb/ccc are rare.
+    isolates = dict(lx.packet_isolates(min_bags=3, min_frequency=3))
+    assert "ctx" in isolates and isolates["ctx"] == 3
+    assert lx.packets(min_bags=3, min_association=0.7) == []

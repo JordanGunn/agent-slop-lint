@@ -116,6 +116,77 @@ class Lexical:
         head.sort(key=lambda kv: (-kv[1], kv[0]))
         return head
 
+    # ---- co-occurrence: which tokens travel together ----------------------
+    def callable_token_bags(self, *, exclude: frozenset[str] = frozenset()) -> list[set[str]]:
+        """One token-set per callable (name + parameter tokens, ``self``/``cls``
+        dropped). The unit of co-occurrence: parameter packets / dataclass candidates."""
+        bags: list[set[str]] = []
+        for c in self._named_callables():
+            bag: set[str] = set()
+            for tok in split_tokens(c.name):
+                tl = tok.lower()
+                if tl not in exclude:
+                    bag.add(tl)
+            for param in c.parameters():
+                if param in ("self", "cls"):
+                    continue
+                for tok in split_tokens(param):
+                    tl = tok.lower()
+                    if tl not in exclude:
+                        bag.add(tl)
+            if bag:
+                bags.append(bag)
+        return bags
+
+    def packets(self, *, min_bags: int = 3, min_association: float = 0.7,
+                exclude: frozenset[str] = frozenset()) -> list[set[str]]:
+        """Token sets that travel together: every pair has max-normalised association
+        ``cooc(a,b)/max(freq a, freq b) >= min_association`` and each token appears in
+        ``>= min_bags`` callable bags. Max-normalisation separates mutual packets
+        (an undeclared dataclass) from hubs (a token that co-occurs with everything)."""
+        bags = self.callable_token_bags(exclude=exclude)
+        token_freq: Counter = Counter()
+        for bag in bags:
+            token_freq.update(bag)
+        cooc: Counter = Counter()
+        for bag in bags:
+            toks = sorted(bag)
+            for i, a in enumerate(toks):
+                for b in toks[i + 1:]:
+                    cooc[(a, b)] += 1
+        neighbours: dict[str, set[str]] = {}
+        for (a, b), n in cooc.items():
+            if token_freq[a] < min_bags or token_freq[b] < min_bags:
+                continue
+            if n / max(token_freq[a], token_freq[b]) >= min_association:
+                neighbours.setdefault(a, set()).add(b)
+                neighbours.setdefault(b, set()).add(a)
+        seen: set[frozenset[str]] = set()
+        out: list[set[str]] = []
+        for tok in sorted(neighbours):
+            candidate = frozenset(neighbours[tok] | {tok})
+            if candidate in seen or len(candidate) < 2:
+                continue
+            seen.add(candidate)
+            out.append(set(candidate))
+        return sorted(out, key=lambda s: (-len(s), sorted(s)))
+
+    def packet_isolates(self, *, min_bags: int = 3, min_association: float = 0.7,
+                        min_frequency: int = 1,
+                        exclude: frozenset[str] = frozenset()) -> list[tuple[str, int]]:
+        """Tokens with frequency ≥ ``min_frequency`` appearing in zero packets — the
+        hub diagnostic: frequent, often spread, but bonding with no specific partner
+        (infrastructure plumbing: ``root``/``node``/``config``)."""
+        freq = self.frequencies()
+        if not freq:
+            return []
+        members: set[str] = set()
+        for p in self.packets(min_bags=min_bags, min_association=min_association, exclude=exclude):
+            members |= p
+        isolates = [(t, n) for t, n in freq.items() if n >= min_frequency and t not in members]
+        isolates.sort(key=lambda kv: (-kv[1], kv[0]))
+        return isolates
+
 
 def _line(scope: Any) -> int:
     node = getattr(scope, "_node", None)
