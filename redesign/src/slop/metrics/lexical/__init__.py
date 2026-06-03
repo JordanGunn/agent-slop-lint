@@ -13,5 +13,6 @@ from __future__ import annotations
 
 from . import affix, filters
 from .records import FirstParameterCluster, NamedEntity
+from .view import Lexical
 
-__all__ = ["affix", "filters", "FirstParameterCluster", "NamedEntity"]
+__all__ = ["Lexical", "affix", "filters", "FirstParameterCluster", "NamedEntity"]
