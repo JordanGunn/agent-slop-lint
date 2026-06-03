@@ -69,7 +69,25 @@ A grammar supplies (defaults in `base.py`, override where the language differs):
   `dispatch_family` classification. Each callable's grammar is threaded through
   `clusters._bodies_index` → `profile_cluster`. Verified non-zero on Go/Rust/Java.
   Node/field table below.
-- `body_field()` — the callable-body field name (exists; use it in clusters).
+- `body_field()` — **done (delegated).** `clusters._body_roots(node, grammar)` resolves
+  the walkable body language-agnostically: the named `body_field()` child where it is
+  non-empty; else a `block_types()` wrapper child (Ruby's `body_statement`); else the
+  flat-body direct children minus `body_skip_types()` (Julia). The old hardcoded
+  `child_by_field_name("body")` silently dropped *every Julia callable* (its
+  `function_definition` has no body field → `None`), leaving Julia's receiver-density
+  signal dark. **Correction to the prior note:** Ruby was *not* actually dropped — its
+  `method` node exposes a `body` field (→ `body_statement`), so the hardcode already
+  reached it. Only Julia was genuinely dark.
+- `noise_node_types()` — **not added; replaced by a universal property.** The
+  Python-specific `_LEAF_OR_NOISE` set in `profile._signature_ngrams` (which listed
+  `attribute`/`string`/`integer`/punctuation) leaked every other language's leaf tokens
+  (`int_literal`, `:=`, `func`, `end`, `integer_literal`, …) into the structural ngram.
+  Rather than enumerate each grammar's literal/keyword tokens (fragile: a new grammar
+  silently leaks until someone remembers to list them), the signature now keeps **only
+  interior nodes** (`node.child_count > 0`) — a node carries structural shape iff it has
+  children; leaves are tokens. Zero per-grammar surface, no overfit. This deviates from
+  the work-list's literal "`noise_node_types()` fact" wording but serves its goal more
+  completely.
 - `is_dunder(name)` / `is_dynamic_language()` — (TODO).
 
 ## Work-list (params-first order)
@@ -79,9 +97,11 @@ A grammar supplies (defaults in `base.py`, override where the language differs):
    `{self, cls}` is correct for Python, harmless everywhere else.
 3. ✅ `member_access_patterns()` — `profile._receiver_call_count` now iterates the
    grammar's patterns; signal verified live on Go/Rust/Java (was dark).
-4. `body_field()` + `noise_node_types()` delegation in clusters/profile. **Note:** this
-   also unblocks the receiver signal on flat-body languages (Julia/Ruby), whose bodies
-   `clusters._bodies_index` currently skips (hardcoded `child_by_field_name("body")`).
+4. ✅ `body_field()` delegation via `clusters._body_roots` (field → block wrapper →
+   flat-children); `noise_node_types()` superseded by the interior-only ngram rule.
+   Unblocks the receiver signal on **Julia** (the one genuinely flat-body language —
+   was dropped; now `mean_receiver_calls=2.0`/`missing_class`, verified). Ruby already
+   worked via its `body` field. Suite 204→206.
 5. `resolve_packages` overrides (Go/Java/Rust/C#) + Realm←module-root.
 6. `is_dunder` / `is_dynamic_language` facts (orphans/relational).
 7. Delegate the `__init__.py` literals in carve/graph to `package_init_name()`.

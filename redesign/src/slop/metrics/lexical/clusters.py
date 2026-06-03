@@ -142,18 +142,50 @@ def _cluster_by_prefix(entries, *, min_cluster, exempt_names, isolate_tokens, sp
     return findings
 
 
-def _bodies_index(callables: list[Any], root: str) -> dict[tuple[str, str], tuple[Any, bytes, Any]]:
-    out: dict[tuple[str, str], tuple[Any, bytes, Any]] = {}
+def _bodies_index(callables: list[Any], root: str) -> dict[tuple[str, str], tuple[list[Any], bytes, Any]]:
+    out: dict[tuple[str, str], tuple[list[Any], bytes, Any]] = {}
     for c in callables:
         node = getattr(c, "_node", None)
         if node is None:
             continue
-        body = node.child_by_field_name("body")
-        if body is None:
+        grammar = getattr(c, "_grammar", None)
+        roots = _body_roots(node, grammar)
+        if not roots:
             continue
         file_rel = _rel(str(c.files[0]) if c.files else "", root)
-        out[(file_rel, c.qualname.split(".")[-1])] = (body, c._content, getattr(c, "_grammar", None))
+        out[(file_rel, c.qualname.split(".")[-1])] = (roots, c._content, grammar)
     return out
+
+
+def _body_roots(node: Any, grammar: Any) -> list[Any]:
+    """Body sub-tree roots to walk for the body-shape / receiver-density signals,
+    resolved language-agnostically from grammar facts instead of a hardcoded ``"body"``
+    field:
+
+    - ``body_field()`` non-empty → the named body child
+      (Python/Go/Rust/Java/TS/JS/C/C++/C#);
+    - else a ``block_types()`` wrapper child → that block (Ruby's ``body_statement``);
+    - else flat-body → the direct children minus ``body_skip_types()`` keyword/signature
+      noise (Julia, whose ``function_definition`` exposes no body field).
+
+    Returns ``[]`` when no body is resolvable, dropping the callable from the index
+    exactly as the old ``child_by_field_name("body") is None`` guard did. That hardcode
+    silently dropped *every* Julia callable, leaving its receiver-density signal dark;
+    this is the flat-body half of the ``member_access_patterns`` fix."""
+    if grammar is None:
+        body = node.child_by_field_name("body")
+        return [body] if body is not None else []
+    field = grammar.body_field()
+    if field:
+        body = node.child_by_field_name(field)
+        return [body] if body is not None else []
+    blocks = grammar.block_types()
+    if blocks:
+        wrap = next((ch for ch in node.children if ch.type in blocks), None)
+        if wrap is not None:
+            return [wrap]
+    skip = grammar.body_skip_types()
+    return [ch for ch in node.children if ch.type not in skip]
 
 
 def _region_hapax(lexical: Any) -> float:

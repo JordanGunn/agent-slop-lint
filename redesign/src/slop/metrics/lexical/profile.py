@@ -19,15 +19,6 @@ from typing import Any
 from .affix import UNIVERSAL_NOISE
 
 
-_LEAF_OR_NOISE = frozenset({
-    "identifier", "integer", "float", "string", "string_content",
-    "true", "false", "none", "comment",
-    ":", ",", "(", ")", "[", "]", "{", "}", ".",
-    "=", "+", "-", "*", "/", "%", "<", ">", "==", "!=",
-    "string_start", "string_end",
-})
-
-
 _FALSE_POSITIVE_NAMES: frozenset[str] = frozenset({
     "node", "tree",          # tree-sitter library types
 })
@@ -71,33 +62,47 @@ def classify_cluster(
     return ("strong", "")
 
 
-def _signature_ngrams(node, n: int = 3) -> set[tuple[str, ...]]:
-    """AST node-type ``n``-grams over a function body (PoC v2.2)."""
+def _signature_ngrams(roots, n: int = 3) -> set[tuple[str, ...]]:
+    """AST node-type ``n``-grams over a callable body (PoC v2.2), language-agnostic.
+
+    A node carries structural shape iff it is *interior* (has children); leaf nodes are
+    tokens — identifiers, literals, keywords, operators, punctuation — and are dropped.
+    Using this universal interior/leaf split instead of a hardcoded noise set avoids
+    per-grammar literal-token enumeration, which would silently leak one language's
+    tokens (Python kept ``attribute``/``string`` but not Go's ``int_literal``/``:=`` or
+    Julia's ``integer_literal``/``end``) into another's structural signature.
+
+    ``roots`` is the body sub-tree root list from ``clusters._body_roots`` — a single
+    block node for braced languages, or the bare top-level statements for a flat-body
+    language like Julia (whose ``function_definition`` has no body field).
+    """
     seq: list[str] = []
 
     def walk(nn):
-        if nn.type not in _LEAF_OR_NOISE:
+        if nn.child_count:
             seq.append(nn.type)
         for child in nn.children:
             walk(child)
-    walk(node)
+    for root in roots:
+        walk(root)
     if len(seq) < n:
         return {tuple(seq)} if seq else set()
     return {tuple(seq[i:i + n]) for i in range(len(seq) - n + 1)}
 
 
 def _receiver_call_count(
-    body, content: bytes, param_name: str,
+    roots, content: bytes, param_name: str,
     patterns: tuple[tuple[str, str], ...],
 ) -> int:
-    """Count ``param.attr`` + ``param[k]`` references in body (PoC v2.6).
+    """Count ``param.attr`` + ``param[k]`` references across the body root(s) (PoC v2.6).
 
     Proxies "is this parameter being treated as a receiver?". ``patterns`` is the
     callable's grammar ``member_access_patterns()`` — ``(node_type, receiver_field)``
     pairs — so the access node types are the *callable's own language's*, not Python's
     ``attribute``/``subscript``. An empty ``patterns`` (grammar declares no member
     access) yields 0: an honest "not measured", which was previously the silent state
-    for every non-Python language.
+    for every non-Python language. ``roots`` is the body sub-tree root list from
+    ``clusters._body_roots``.
     """
     if not patterns:
         return 0
@@ -117,7 +122,8 @@ def _receiver_call_count(
                     count += 1
         for child in node.children:
             walk(child)
-    walk(body)
+    for root in roots:
+        walk(root)
     return count
 
 
@@ -156,7 +162,7 @@ def _overlap(name: str, modal: set[str], exclude: frozenset[str]) -> float:
 
 def profile_cluster(
     cluster: Any,
-    bodies: dict[tuple[str, str], tuple[Any, bytes, Any]],
+    bodies: dict[tuple[str, str], tuple[list[Any], bytes, Any]],
     *,
     isolate_tokens: frozenset[str] = frozenset(),
     spread: dict[str, int] | None = None,
@@ -185,11 +191,11 @@ def profile_cluster(
     sigs: list[tuple[set[tuple[str, ...]], int]] = []
     member_names: list[str] = []
     for name, file, _line in members_with_body:
-        body_node, content, grammar = bodies[(file, name)]
+        roots, content, grammar = bodies[(file, name)]
         patterns = grammar.member_access_patterns() if grammar is not None else ()
         sigs.append((
-            _signature_ngrams(body_node),
-            _receiver_call_count(body_node, content, cluster.parameter_name, patterns),
+            _signature_ngrams(roots),
+            _receiver_call_count(roots, content, cluster.parameter_name, patterns),
         ))
         member_names.append(name)
 

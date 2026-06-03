@@ -38,6 +38,19 @@ CASES = {
         "  int resetCfg(Config cfg){ return cfg.value + cfg.root; }\n"
         "}\n"
     ),
+    # Julia is the genuinely flat-body case: function_definition has no body field,
+    # so _bodies_index dropped every Julia callable before #37's body_roots fix.
+    "m.jl": (
+        "function load_cfg(cfg, p)\n  cfg.path + cfg.root\nend\n"
+        "function save_cfg(cfg, d)\n  cfg.dest + cfg.root\nend\n"
+        "function reset_cfg(cfg)\n  cfg.value + cfg.root\nend\n"
+    ),
+    # Ruby reaches its body via the block_types (body_statement) route, not a body field.
+    "m.rb": (
+        "def load_cfg(cfg, p)\n  cfg.path + cfg.root\nend\n"
+        "def save_cfg(cfg, d)\n  cfg.dest + cfg.root\nend\n"
+        "def reset_cfg(cfg)\n  cfg.value + cfg.root\nend\n"
+    ),
 }
 
 
