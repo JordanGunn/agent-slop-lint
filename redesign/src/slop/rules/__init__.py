@@ -12,6 +12,7 @@ from ..rule import Rule
 from .call_islands import CallIslandsRule
 from .class_shape import ClassShapeRule
 from .cognitive import CognitiveRule
+from .cohesion import CohesionRule
 from .combinatorial import CombinatorialRule
 from .cyclomatic import CyclomaticRule
 from .dependency_cycles import DependencyCyclesRule
@@ -56,6 +57,7 @@ RULE_REGISTRY: list[Rule] = [
     SlackersRule(),
     SprawlRule(),
     StutterRule(),
+    CohesionRule(),
     ClassShapeRule(),
     TokenDistributionRule(),
     CallIslandsRule(),
@@ -84,6 +86,7 @@ __all__ = [
     "SlackersRule",
     "SprawlRule",
     "StutterRule",
+    "CohesionRule",
     "ClassShapeRule",
     "TokenDistributionRule",
     "CallIslandsRule",
