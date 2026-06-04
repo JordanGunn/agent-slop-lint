@@ -1,1 +1,1 @@
-{"event_id":"evt_25274b69","schema_version":1,"event_type":"intent.abandoned","actor_id":"actor_305e9790","actor_name":"Jordan Godau","timestamp":"2026-06-04T00:31:34Z","intent_id":"int_0480762a","reason":"superseded by v3 redesign (redesign/src/slop); v2 substrate is oracle-not-template"}
+{"event_id":"evt_a981296f","schema_version":1,"event_type":"intent.abandoned","actor_id":"actor_305e9790","actor_name":"Jordan Godau","timestamp":"2026-06-04T00:31:36Z","intent_id":"int_735a2b6c","reason":"superseded by v3 redesign (redesign/src/slop); v2 substrate is oracle-not-template"}
