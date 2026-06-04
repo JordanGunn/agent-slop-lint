@@ -13,6 +13,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from ...identity import ScopeId
+
 
 # --- Complexity primitives (Callable altitude) ------------------------------
 
@@ -146,6 +148,9 @@ class CloneCluster:
 
     members: tuple[str, ...]
     leaf_count: int
+    #: Narrowest scope containing all clone members (module if co-located, else
+    #: package/realm) — the attribution target. ``None`` if unresolvable.
+    locus: ScopeId | None = None
 
 
 @dataclass(frozen=True)
@@ -162,6 +167,8 @@ class Orphan:
     qualname: str
     kind: str
     confidence: str
+    #: The orphaned symbol's own ScopeId — the attribution target. ``None`` if unresolvable.
+    locus: ScopeId | None = None
 
 
 @dataclass(frozen=True)
@@ -172,3 +179,5 @@ class Hotspot:
     churn: int
     complexity: int
     quadrant: str
+    #: The Module ScopeId for ``path`` — the attribution target. ``None`` if unresolvable.
+    locus: ScopeId | None = None

@@ -46,7 +46,7 @@ class OrphansRule(Rule):
                 continue
             yield Observation(
                 rule=self.name,
-                component=component.id,
+                component=orphan.locus or component.id,
                 evidence=Evidence(
                     kind="orphan",
                     data={"qualname": orphan.qualname, "kind": orphan.kind,

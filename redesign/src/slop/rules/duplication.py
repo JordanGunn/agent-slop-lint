@@ -47,7 +47,7 @@ class DuplicationRule(Rule):
             members = ", ".join(cluster.members)
             yield Verdict(
                 rule=self.name,
-                component=component.id,
+                component=cluster.locus or component.id,
                 action=Action.EXTRACT_HELPER,
                 prescription=(
                     f"Extract a shared helper: {len(cluster.members)} functions are Type-2 "

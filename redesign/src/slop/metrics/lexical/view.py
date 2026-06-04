@@ -67,6 +67,7 @@ class Lexical:
             name=scope.name, kind=kind,
             file=str(scope.files[0]) if scope.files else "",
             line=_line(scope), language=_language(scope), tokens=tokens,
+            locus=scope.id,
         )
 
     # ---- token vocabulary: entity names + parameter names ------------------

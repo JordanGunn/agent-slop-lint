@@ -13,6 +13,7 @@ from itertools import combinations
 from typing import Any
 
 from ...identity import CallableKind, ScopeKind
+from ..locus import narrowest_common_ancestor
 from .records import CallIsland, CloneCluster, RedundancyPair
 
 
@@ -106,20 +107,22 @@ def call_islands(module: Any) -> list[CallIsland]:
 def clone_clusters(callables: list[Any], *, min_leaf_nodes: int = 10) -> list[CloneCluster]:
     """Type-2 clone clusters among ``callables`` — bodies sharing an AST
     leaf-type fingerprint (identifiers/literals discarded)."""
-    buckets: dict[str, list[tuple[str, int]]] = {}
+    buckets: dict[str, list[tuple[str, int, Any]]] = {}
     for c in callables:
         body = _body_of(c._ast_node(), c._grammar.block_types())
         leaves = _leaf_types(body)
         if len(leaves) < min_leaf_nodes:
             continue
-        buckets.setdefault(_fingerprint(leaves), []).append((c.qualname, len(leaves)))
+        buckets.setdefault(_fingerprint(leaves), []).append((c.qualname, len(leaves), c))
     clusters: list[CloneCluster] = []
     for members in buckets.values():
         if len(members) < 2:
             continue
+        nca = narrowest_common_ancestor([m[2] for m in members])
         clusters.append(CloneCluster(
             members=tuple(sorted(m[0] for m in members)),
             leaf_count=members[0][1],
+            locus=nca.id if nca is not None else None,
         ))
     clusters.sort(key=lambda cl: -len(cl.members))
     return clusters

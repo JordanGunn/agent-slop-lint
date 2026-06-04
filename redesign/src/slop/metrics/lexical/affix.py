@@ -104,6 +104,9 @@ class FCAConcept:
     intent: frozenset[str]
     scope: str = "<root>"
     scope_kind: str = "root"
+    #: Relative source files of the identifiers contributing to ``extent`` — the
+    #: basis for resolving the concept to a scope locus. Empty if untracked.
+    files: frozenset[str] = field(default_factory=frozenset)
 
 
 def scope_label(parts: tuple[str, ...]) -> tuple[str, str]:
@@ -292,7 +295,7 @@ def affix_at_scope(
     items: list[Lexeme],
     scope_path: tuple[str, ...],
     min_alphabet: int,
-) -> tuple[list[AffixCluster], list[FCAConcept], list[tuple[str, str]]]:
+) -> tuple[list[AffixCluster], list[FCAConcept], list[tuple[str, str, frozenset[str]]]]:
     """Run pattern detection + FCA + inheritance lattice on one scope's items."""
     if len(items) < 2:
         return ([], [], [])
@@ -306,18 +309,27 @@ def affix_at_scope(
         c.scope_kind = scope_kind
 
     relation: dict[str, set[str]] = {}
+    member_files: dict[str, set[str]] = {}
     if clusters:
         primary = max(clusters, key=lambda c: sum(len(p.variants) for p in c.patterns))
         for pattern in primary.patterns:
             stem_no_star = "_".join(t for t in pattern.stem if t != "*")
-            for entity in pattern.variants:
+            for entity, srcs in pattern.variants.items():
                 relation.setdefault(entity, set()).add(stem_no_star or "<empty>")
+                member_files.setdefault(entity, set()).update(
+                    f for _t, f, _l in srcs if f)
 
     concepts = compute_concepts(relation) if relation else []
     for c in concepts:
         c.scope = scope_str
         c.scope_kind = scope_kind
-    inheritance = find_inheritance_pairs(relation) if relation else []
+        c.files = frozenset().union(*(member_files.get(m, set()) for m in c.extent)) \
+            if c.extent else frozenset()
+    inheritance = [
+        (parent, child,
+         frozenset(member_files.get(parent, set()) | member_files.get(child, set())))
+        for parent, child in (find_inheritance_pairs(relation) if relation else [])
+    ]
 
     return (clusters, concepts, inheritance)
 
@@ -326,7 +338,7 @@ def affix_at_scope(
 class SprawlData:
     clusters: list[AffixCluster] = field(default_factory=list)
     concepts: list[FCAConcept] = field(default_factory=list)
-    inheritance_pairs: list[tuple[str, str]] = field(default_factory=list)
+    inheritance_pairs: list[tuple[str, str, frozenset[str]]] = field(default_factory=list)
     files_searched: int = 0
     functions_analyzed: int = 0
 
@@ -359,7 +371,7 @@ def sprawl_over(
 
     all_clusters: list[AffixCluster] = []
     all_concepts: list[FCAConcept] = []
-    all_pairs: list[tuple[str, str]] = []
+    all_pairs: list[tuple[str, str, frozenset[str]]] = []
     emitted_alphabets: list[tuple[tuple[str, ...], frozenset[str]]] = []
 
     for path in paths:
@@ -394,9 +406,9 @@ def sprawl_over(
             for c in concepts:
                 if len(c.extent) >= 2 and len(c.intent) >= 2 and c.extent <= kept_alphabet:
                     all_concepts.append(c)
-            for parent, child in inheritance:
+            for parent, child, pfiles in inheritance:
                 if parent in kept_alphabet and child in kept_alphabet:
-                    all_pairs.append((parent, child))
+                    all_pairs.append((parent, child, pfiles))
 
     return SprawlData(
         clusters=all_clusters,

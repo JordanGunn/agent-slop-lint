@@ -24,8 +24,17 @@ from ..scope.base import Scope
 from ..scope.identity import ScopeKind
 from ..config import RuleConfig
 from ..finding import Action, Finding, Severity, Verdict
+from ..metrics.locus import narrowest_common_ancestor
 from ..metrics.structural.view import Structure
 from ..rule import Rule
+
+
+def _modules(component):
+    if component.KIND == ScopeKind.MODULE:
+        yield component
+        return
+    for ch in component.children():
+        yield from _modules(ch)
 
 
 class DependencyCyclesRule(Rule):
@@ -40,12 +49,17 @@ class DependencyCyclesRule(Rule):
         return RuleConfig(name=cls.name, severity=Severity.ERROR)
 
     def check(self, component: Scope, config: RuleConfig) -> Iterable[Finding]:
+        mod_by_qn = {m.qualname: m for m in _modules(component)}
         for cycle in Structure.over(component).dependency_cycles():
             members = list(cycle.members)
             loop = " → ".join(members + members[:1])  # close the loop visually
+            # A cycle spans modules; attribute it to their narrowest common scope
+            # (the package if co-located) so it converges with other findings there.
+            cycle_scopes = [mod_by_qn[m] for m in members if m in mod_by_qn]
+            nca = narrowest_common_ancestor(cycle_scopes) if cycle_scopes else None
             yield Verdict(
                 rule=self.name,
-                component=component.id,
+                component=nca.id if nca is not None else component.id,
                 action=Action.BREAK_DEPENDENCY_CYCLE,
                 prescription=(
                     f"Break the import cycle {loop}: invert one dependency (depend on an "

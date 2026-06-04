@@ -63,7 +63,7 @@ class StutterRule(Rule):
                     if len(overlap) >= min_overlap:
                         shared = ", ".join(sorted(overlap))
                         yield Verdict(
-                            rule=self.name, component=component.id,
+                            rule=self.name, component=entity.id, line=entity.line,
                             action=Action.DROP_REDUNDANT_TOKENS,
                             prescription=(
                                 f"Drop {{{shared}}} from '{entity.name}': the enclosing "

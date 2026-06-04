@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import os
 from collections.abc import Iterable
+from typing import Any
 
 from ..scope.base import Scope
 from ..scope.identity import ScopeKind
@@ -24,6 +25,7 @@ from ..config import RuleConfig
 from ..finding import Action, Finding, Severity, Verdict
 from ..metrics.lexical import Lexical
 from ..metrics.lexical.affix import Lexeme, sprawl_over
+from ..metrics.locus import narrowest_common_ancestor
 from ..rule import Rule
 
 
@@ -43,14 +45,21 @@ class SprawlRule(Rule):
         root = str(getattr(component, "root", "") or "")
 
         items: list[Lexeme] = []
+        scopes_by_relfile: dict[str, list] = {}
         for c in Lexical.over(component).callables():
             if len(c.name) < 2:
                 continue
             path = str(c.files[0]) if c.files else ""
             rel = os.path.relpath(path, root) if (path and root) else path
             items.append(Lexeme.of(c.name, file=rel))
+            scopes_by_relfile.setdefault(rel, []).append(c)
         if not items:
             return
+
+        def _locus(files) -> Any:
+            scopes = [s for f in files for s in scopes_by_relfile.get(f, [])]
+            nca = narrowest_common_ancestor(scopes) if scopes else None
+            return nca.id if nca is not None else component.id
 
         data = sprawl_over(items, min_alphabet=min_alphabet)
 
@@ -60,7 +69,7 @@ class SprawlRule(Rule):
             entities = ", ".join(sorted(concept.extent))
             ops = ", ".join(sorted(concept.intent))
             yield Verdict(
-                rule=self.name, component=component.id, action=Action.REVIEW,
+                rule=self.name, component=_locus(concept.files), action=Action.REVIEW,
                 severity=Severity.WARNING,  # REVIEW caps at WARNING
                 prescription=(
                     f"The entities {{{entities}}} share the operation alphabet {{{ops}}} — a "
@@ -73,9 +82,9 @@ class SprawlRule(Rule):
                           "scope": concept.scope},
             )
 
-        for parent, child in data.inheritance_pairs:
+        for parent, child, pfiles in data.inheritance_pairs:
             yield Verdict(
-                rule=self.name, component=component.id, action=Action.REVIEW,
+                rule=self.name, component=_locus(pfiles), action=Action.REVIEW,
                 severity=Severity.WARNING,
                 prescription=(
                     f"'{child}' operations are a strict superset of '{parent}' — the naming "

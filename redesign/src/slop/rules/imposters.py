@@ -45,9 +45,10 @@ class ImpostersRule(Rule):
         for c in clusters:
             members = ", ".join(sorted(m[0] for m in c.members))
             line = min((m[2] for m in c.members), default=0)
+            locus = c.locus or component.id
             if c.profile_label == "missing_class":
                 yield Verdict(
-                    rule=self.name, component=component.id, action=Action.EXTRACT_CLASS,
+                    rule=self.name, component=locus, action=Action.EXTRACT_CLASS,
                     prescription=(
                         f"Extract a class around '{c.parameter_name}': {len(c.members)} functions "
                         f"({members}) share it and use it as a receiver (attribute access + shared "
@@ -61,7 +62,7 @@ class ImpostersRule(Rule):
                 )
             elif c.profile_label in _REVIEW_PROFILES:
                 yield Verdict(
-                    rule=self.name, component=component.id, action=Action.REVIEW,
+                    rule=self.name, component=locus, action=Action.REVIEW,
                     severity=Severity.WARNING,  # REVIEW caps at WARNING
                     prescription=(
                         f"{len(c.members)} functions ({members}) share first parameter "

@@ -31,17 +31,24 @@ def hotspots(corpus: Any, *, since: str = _DEFAULT_WINDOW) -> list[Hotspot]:
 
     # Per-file complexity (module aggregate), keyed repo-relative.
     complexity: dict[str, int] = {}
+    mod_by_rel: dict[str, Any] = {}
     for mod in _modules(corpus):
         if not mod.files:
             continue
         rel = _repo_relative(mod.files[0], repo_root)
         if rel is not None:
             complexity[rel] = complexity.get(rel, 0) + _module_cyclomatic(mod)
+            mod_by_rel.setdefault(rel, mod)
+
+    def _locus(f: str):
+        mod = mod_by_rel.get(f)
+        return mod.id if mod is not None else None
 
     files = sorted(set(complexity) | set(churn))
     rows = [(f, complexity.get(f, 0), churn.get(f, 0)) for f in files]
     if len(rows) < _MIN_RANKED:
-        return [Hotspot(path=f, churn=c, complexity=x, quadrant="insufficient_data") for f, x, c in rows]
+        return [Hotspot(path=f, churn=c, complexity=x, quadrant="insufficient_data", locus=_locus(f))
+                for f, x, c in rows]
 
     ccx_cut = _p75([x for _f, x, _c in rows])
     churn_cut = _p75([c for _f, _x, c in rows])
@@ -54,7 +61,7 @@ def hotspots(corpus: Any, *, since: str = _DEFAULT_WINDOW) -> list[Hotspot]:
             else "churning_simple" if hi_c
             else "calm"
         )
-        out.append(Hotspot(path=f, churn=c, complexity=x, quadrant=quadrant))
+        out.append(Hotspot(path=f, churn=c, complexity=x, quadrant=quadrant, locus=_locus(f)))
     out.sort(key=lambda h: (-(h.churn * h.complexity), h.path))
     return out
 

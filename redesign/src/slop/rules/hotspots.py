@@ -41,7 +41,7 @@ class HotspotsRule(Rule):
                 continue
             yield Observation(
                 rule=self.name,
-                component=component.id,
+                component=h.locus or component.id,
                 evidence=Evidence(
                     kind="hotspot",
                     data={"path": h.path, "churn": h.churn,

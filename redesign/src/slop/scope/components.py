@@ -69,6 +69,15 @@ class _Base:
     def children(self): return self._children
 
     @property
+    def line(self) -> int:
+        """1-based start line of this component in its file, or 0 if the source
+        position is unknown. The canonical locus for findings about this scope."""
+        node = self._node
+        if node is not None and getattr(node, "start_point", None) is not None:
+            return node.start_point[0] + 1
+        return 0
+
+    @property
     def context(self):
         """The corpus-global AnalysisContext, reached via the owner chain to the
         Corpus root (where carve hangs it). None until a scan attaches it."""

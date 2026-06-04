@@ -68,7 +68,7 @@ class VerbosityRule(Rule):
                 continue  # not a scope-leak — cut (local verbosity is not a defect)
             yield Verdict(
                 rule=self.name,
-                component=component.id,
+                component=entity.locus,
                 action=Action.NARROW_SCOPE,
                 prescription=(
                     f"Move {entity.kind} '{entity.name}' into a narrower namespace: its "

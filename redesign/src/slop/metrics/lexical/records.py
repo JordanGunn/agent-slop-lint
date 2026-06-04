@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from ...identity import ScopeId
+
 
 @dataclass(frozen=True)
 class NamedEntity:
@@ -12,6 +14,9 @@ class NamedEntity:
 
     Consumed by entity-name rules (verbosity, stutter, hammers). ``tokens`` is the
     snake/Camel-split word list; the rule applies its own threshold on top.
+
+    ``locus`` is the entity's own ``ScopeId`` — the canonical attribution target so a
+    finding about this entity lands on the entity, not the corpus the rule dispatched at.
     """
 
     name: str
@@ -20,6 +25,7 @@ class NamedEntity:
     line: int
     language: str
     tokens: tuple[str, ...]
+    locus: ScopeId
 
 
 @dataclass
@@ -45,3 +51,7 @@ class FirstParameterCluster:
     file_spread: int = 0
     scope_hapax_ratio: float = 0.0
     profile_label: str = "unknown"
+    #: Narrowest scope containing all members (the module if co-located, the
+    #: package/realm if spread) — the canonical attribution target. ``None`` only
+    #: if the members could not be resolved back to the scope tree.
+    locus: ScopeId | None = None

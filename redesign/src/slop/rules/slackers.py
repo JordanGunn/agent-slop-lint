@@ -65,9 +65,10 @@ class SlackersRule(Rule):
 
             names = ", ".join(sorted(n for n, _f, _l in cluster.members))
             line = min((m[2] for m in cluster.members), default=0)
+            locus = cluster.locus or component.id
             if cluster.profile_label == "missing_class":
                 yield Verdict(
-                    rule=self.name, component=component.id, action=Action.RENAME_BY_TEMPLATE,
+                    rule=self.name, component=locus, action=Action.RENAME_BY_TEMPLATE,
                     prescription=(
                         f"Adopt a naming template across the {len(cluster.members)} functions "
                         f"sharing '{cluster.parameter_name}' ({names}): the cluster is real "
@@ -82,7 +83,7 @@ class SlackersRule(Rule):
                 )
             else:  # heterogeneous
                 yield Verdict(
-                    rule=self.name, component=component.id, action=Action.REVIEW,
+                    rule=self.name, component=locus, action=Action.REVIEW,
                     severity=Severity.WARNING,  # REVIEW caps at WARNING
                     prescription=(
                         f"Review whether the {len(cluster.members)} members of the "

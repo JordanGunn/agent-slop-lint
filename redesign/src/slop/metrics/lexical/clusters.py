@@ -19,6 +19,7 @@ from __future__ import annotations
 import os
 from typing import Any
 
+from ..locus import narrowest_common_ancestor
 from .affix import UNIVERSAL_NOISE, scope_label
 from .profile import classify_cluster, profile_cluster
 from .records import FirstParameterCluster
@@ -50,9 +51,13 @@ def compute_first_param_clusters(
     spread_map = {t: len(files) for t, files in lexical.token_locations().items()}
 
     entries = _collect_entries(callables, exempt_names, root)
+    scope_by_key = {
+        (_rel(str(c.files[0]) if c.files else "", root), c.qualname.split(".")[-1]): c
+        for c in callables
+    }
     findings = _cluster_by_prefix(
         entries, min_cluster=min_cluster, exempt_names=exempt_names,
-        isolate_tokens=isolate_tokens, spread_map=spread_map)
+        isolate_tokens=isolate_tokens, spread_map=spread_map, scope_by_key=scope_by_key)
 
     bodies_index = _bodies_index(callables, root)
     scope_hapax = _region_hapax(lexical)
@@ -95,7 +100,7 @@ def _group_by_param(scope_funcs: list[_Entry]) -> dict[str, list[_Entry]]:
 
 
 def _param_cluster(prefix, pname, members, *, is_file, is_root,
-                   exempt_names, isolate_tokens, spread_map) -> FirstParameterCluster | None:
+                   exempt_names, isolate_tokens, spread_map, scope_by_key) -> FirstParameterCluster | None:
     if not is_file:
         child_keys = {m[3][len(prefix)] for m in members if len(m[3]) > len(prefix)}
         if len(child_keys) < 2:
@@ -106,13 +111,16 @@ def _param_cluster(prefix, pname, members, *, is_file, is_root,
     verdict, advisory = classify_cluster(
         pname, types, exempt_names, isolate_tokens=isolate_tokens, spread=spread_map)
     scope_str, scope_kind = scope_label(prefix)
+    member_scopes = [scope_by_key[(m[1], m[0])] for m in members if (m[1], m[0]) in scope_by_key]
+    nca = narrowest_common_ancestor(member_scopes) if member_scopes else None
     return FirstParameterCluster(
         parameter_name=pname, parameter_types=types,
         members=[(m[0], m[1], m[2]) for m in members],
-        verdict=verdict, advisory=advisory, scope=scope_str, scope_kind=scope_kind)
+        verdict=verdict, advisory=advisory, scope=scope_str, scope_kind=scope_kind,
+        locus=nca.id if nca is not None else None)
 
 
-def _cluster_by_prefix(entries, *, min_cluster, exempt_names, isolate_tokens, spread_map):
+def _cluster_by_prefix(entries, *, min_cluster, exempt_names, isolate_tokens, spread_map, scope_by_key):
     by_prefix: dict[tuple[str, ...], list[_Entry]] = {(): list(entries)}
     for e in entries:
         parts = e[3]
@@ -132,7 +140,8 @@ def _cluster_by_prefix(entries, *, min_cluster, exempt_names, isolate_tokens, sp
                 continue
             cluster = _param_cluster(
                 prefix, pname, members, is_file=is_file, is_root=is_root,
-                exempt_names=exempt_names, isolate_tokens=isolate_tokens, spread_map=spread_map)
+                exempt_names=exempt_names, isolate_tokens=isolate_tokens, spread_map=spread_map,
+                scope_by_key=scope_by_key)
             if cluster is None:
                 continue
             findings.append(cluster)

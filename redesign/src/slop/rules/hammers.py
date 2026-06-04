@@ -27,6 +27,7 @@ from ..config import RuleConfig
 from ..finding import Evidence, Finding, Observation
 from ..metrics.lexical import Lexical
 from ..metrics.lexical.affix import UNIVERSAL_NOISE
+from ..metrics.locus import narrowest_common_ancestor
 from ..rule import Rule
 
 # Lowercased catch-all vocabulary (legacy DEFAULT_PROFILE). The banlist scopes which
@@ -38,6 +39,20 @@ _HAMMERS = frozenset({
     "element", "thing", "things", "data", "info", "container", "holder", "common",
     "core", "misc", "extra", "shared", "stuff",
 })
+
+
+def _scope_index(component) -> dict:
+    """Map every scope's ScopeId to the scope, so a NamedEntity's ``locus`` can be
+    resolved back to the owner-chain-bearing scope the NCA walk needs."""
+    by_id: dict = {}
+
+    def walk(s) -> None:
+        by_id[s.id] = s
+        for ch in s.children():
+            walk(ch)
+
+    walk(component)
+    return by_id
 
 
 class HammersRule(Rule):
@@ -56,23 +71,29 @@ class HammersRule(Rule):
         spread = {t: len(files) for t, files in lx.token_locations().items()}
         isolates = {t for t, _ in lx.packet_isolates(
             min_bags=3, min_association=0.7, min_frequency=min_spread, exclude=UNIVERSAL_NOISE)}
+        scope_by_id = _scope_index(component)
 
-        # How many distinct entities each hammer term names.
-        carriers: dict[str, list[str]] = {}
+        # Which entities each hammer term names — kept as scopes so the term can be
+        # attributed to the narrowest scope its carriers share (a package if the
+        # institutionalisation is local), not blanket-pinned to the corpus.
+        carriers: dict[str, list] = {}
         for entity in lx.named_entities():
             for tok in entity.tokens:
                 tl = tok.lower()
                 if tl in terms:
-                    carriers.setdefault(tl, []).append(entity.name)
+                    carriers.setdefault(tl, []).append(entity)
 
         for term in sorted(carriers):
             files = spread.get(term, 0)
             if files < min_spread or term not in isolates:
                 continue  # not institutionalised (rare, or it bonds with a real concept)
-            names = carriers[term]
+            entities = carriers[term]
+            names = [e.name for e in entities]
+            carrier_scopes = [scope_by_id[e.locus] for e in entities if e.locus in scope_by_id]
+            nca = narrowest_common_ancestor(carrier_scopes)
             yield Observation(
                 rule=self.name,
-                component=component.id,
+                component=nca.id if nca is not None else component.id,
                 evidence=Evidence(kind="hammer", data={
                     "term": term, "file_spread": files, "entity_count": len(names),
                     "examples": sorted(set(names))[:8]}),
