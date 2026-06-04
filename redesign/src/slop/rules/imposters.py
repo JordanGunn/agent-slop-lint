@@ -36,9 +36,10 @@ from collections.abc import Iterable
 from ..scope.base import Scope
 from ..scope.identity import ScopeKind
 from ..config import RuleConfig
-from ..finding import Evidence, Finding, Observation
+from ..finding import Action, Evidence, Finding, Observation, Severity, Verdict
 from ..metrics.lexical import Lexical
 from ..rule import Rule
+from ._battery import corroboration_groups, is_corroborated
 
 # Profiles worth surfacing as evidence. missing_class is the strongest; the other two
 # are real shared inputs with an undetermined remedy.
@@ -57,11 +58,38 @@ class ImpostersRule(Rule):
         min_cluster = int(config.param("min_cluster", 3))
         clusters = Lexical.over(component).first_param_clusters(
             min_cluster=min_cluster, root=getattr(component, "root", None))
-        for c in clusters:
-            if c.profile_label not in _SURFACED:
-                continue
-            members = ", ".join(sorted(m[0] for m in c.members))
+        surfaced = [c for c in clusters if c.profile_label in _SURFACED]
+        if not surfaced:
+            return
+        groups = corroboration_groups(component)  # built once per run
+
+        for c in surfaced:
+            member_names = {m[0] for m in c.members}
+            members = ", ".join(sorted(member_names))
             locus = c.locus or component.id
+            data = {"parameter": c.parameter_name, "profile": c.profile_label,
+                    "members": [m[0] for m in c.members], "size": len(c.members),
+                    "scope": c.scope}
+
+            if is_corroborated(member_names, groups):
+                # An independent structural signal (clones / redundant siblings) binds
+                # the cluster — corroborated, so promote to a REVIEW verdict.
+                yield Verdict(
+                    rule=self.name, component=locus, action=Action.REVIEW,
+                    severity=Severity.WARNING,  # REVIEW caps at WARNING
+                    prescription=(
+                        f"{len(c.members)} functions ({members}) share receiver "
+                        f"'{c.parameter_name}' AND an independent structural signal binds them "
+                        "(Type-2 clones or shared project callees) — corroborated evidence of a "
+                        "class in hiding. Extract a class with the receiver as self, or confirm "
+                        "the structural overlap is incidental."
+                    ),
+                    value=len(c.members), threshold=min_cluster,
+                    message=f"corroborated receiver cluster '{c.parameter_name}' ({c.profile_label})",
+                    metadata={**data, "corroborated": True},
+                )
+                continue
+
             if c.profile_label == "missing_class":
                 message = (
                     f"{len(c.members)} functions ({members}) share first parameter "
@@ -79,11 +107,7 @@ class ImpostersRule(Rule):
             yield Observation(
                 rule=self.name,
                 component=locus,
-                evidence=Evidence(kind="receiver-cluster", data={
-                    "parameter": c.parameter_name, "profile": c.profile_label,
-                    "members": [m[0] for m in c.members], "size": len(c.members),
-                    "scope": c.scope}),
+                evidence=Evidence(kind="receiver-cluster", data=data),
                 message=message,
-                metadata={"parameter": c.parameter_name, "profile": c.profile_label,
-                          "members": [m[0] for m in c.members], "scope": c.scope},
+                metadata=data,
             )

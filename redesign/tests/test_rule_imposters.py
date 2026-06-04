@@ -50,6 +50,49 @@ def test_missing_class_emits_observation(tmp_path: Path):
     assert f.metadata["profile"] == "missing_class"
 
 
+# Same receiver cluster (cfg), but the three bodies are IDENTICAL — so they are also a
+# Type-2 clone family. The structural signal corroborates the inferred cluster.
+CORROBORATED = '''\
+def alpha_cfg(cfg, x):
+    a = cfg.value
+    b = a + 1
+    c = b * 2
+    d = c - 3
+    cfg.result = d
+    return d + a + b + c
+
+def beta_cfg(cfg, y):
+    a = cfg.value
+    b = a + 1
+    c = b * 2
+    d = c - 3
+    cfg.result = d
+    return d + a + b + c
+
+def gamma_cfg(cfg, z):
+    a = cfg.value
+    b = a + 1
+    c = b * 2
+    d = c - 3
+    cfg.result = d
+    return d + a + b + c
+'''
+
+
+def test_corroborated_cluster_promotes_to_review(tmp_path: Path):
+    # A receiver cluster whose members are ALSO Type-2 clones is corroborated by an
+    # independent structural signal — it earns a REVIEW verdict, not a bare observation.
+    (tmp_path / "a.py").write_text(CORROBORATED)
+    corpus = scan_corpus(tmp_path, config=None)
+    findings = list(ImpostersRule().check(corpus, ImpostersRule.default_config()))
+    assert len(findings) == 1
+    f = findings[0]
+    assert f.disposition is Disposition.VERDICT
+    assert f.action is Action.REVIEW
+    assert f.severity is Severity.WARNING
+    assert f.metadata["corroborated"] is True
+
+
 def test_below_min_cluster_silent(tmp_path: Path):
     (tmp_path / "a.py").write_text(RECEIVER)
     corpus = scan_corpus(tmp_path, config=None)

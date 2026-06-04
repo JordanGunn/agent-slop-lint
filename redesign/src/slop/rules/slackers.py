@@ -30,10 +30,11 @@ from collections.abc import Iterable
 from ..scope.base import Scope
 from ..scope.identity import ScopeKind
 from ..config import RuleConfig
-from ..finding import Evidence, Finding, Observation
+from ..finding import Action, Evidence, Finding, Observation, Severity, Verdict
 from ..metrics.lexical import Lexical
 from ..metrics.lexical.affix import UNIVERSAL_NOISE, Lexeme, build_affix_patterns
 from ..rule import Rule
+from ._battery import corroboration_groups, is_corroborated
 
 _REAL_PROFILES = frozenset({"missing_class", "heterogeneous"})
 
@@ -52,6 +53,7 @@ class SlackersRule(Rule):
         clusters = Lexical.over(component).first_param_clusters(
             min_cluster=min_cluster, root=getattr(component, "root", None))
 
+        groups: list | None = None  # corroboration index, built lazily on first misalignment
         for cluster in clusters:
             if cluster.profile_label not in _REAL_PROFILES:
                 continue
@@ -68,8 +70,35 @@ class SlackersRule(Rule):
             if coverage > max_coverage:
                 continue
 
-            names = ", ".join(sorted(n for n, _f, _l in cluster.members))
+            member_names = {m[0] for m in cluster.members}
+            names = ", ".join(sorted(member_names))
             locus = cluster.locus or component.id
+            data = {"parameter": cluster.parameter_name, "profile": cluster.profile_label,
+                    "coverage": round(coverage, 3),
+                    "members": [m[0] for m in cluster.members]}
+
+            if groups is None:
+                groups = corroboration_groups(component)
+            if is_corroborated(member_names, groups):
+                # Structure binds the cluster (clones / redundant siblings) and the names
+                # don't align — corroborated, so promote to a REVIEW verdict.
+                yield Verdict(
+                    rule=self.name, component=locus, action=Action.REVIEW,
+                    severity=Severity.WARNING,  # REVIEW caps at WARNING
+                    prescription=(
+                        f"{len(cluster.members)} functions sharing '{cluster.parameter_name}' "
+                        f"({names}) are bound by structure (Type-2 clones or shared callees) yet "
+                        f"their names don't align ({coverage:.0%} template coverage). Adopt a "
+                        f"consistent template (verb_{cluster.parameter_name} or "
+                        f"{cluster.parameter_name}_attribute), and consider extracting the shared "
+                        "shape."
+                    ),
+                    value=round(coverage, 3), threshold=max_coverage,
+                    message=f"corroborated cluster '{cluster.parameter_name}' names don't align ({coverage:.0%})",
+                    metadata={**data, "corroborated": True},
+                )
+                continue
+
             if cluster.profile_label == "missing_class":
                 message = (
                     f"{len(cluster.members)} functions sharing '{cluster.parameter_name}' "
@@ -88,12 +117,7 @@ class SlackersRule(Rule):
             yield Observation(
                 rule=self.name,
                 component=locus,
-                evidence=Evidence(kind="naming-misalignment", data={
-                    "parameter": cluster.parameter_name, "profile": cluster.profile_label,
-                    "coverage": round(coverage, 3),
-                    "members": [m[0] for m in cluster.members]}),
+                evidence=Evidence(kind="naming-misalignment", data=data),
                 message=message,
-                metadata={"parameter": cluster.parameter_name, "profile": cluster.profile_label,
-                          "coverage": round(coverage, 3),
-                          "members": [m[0] for m in cluster.members]},
+                metadata=data,
             )
