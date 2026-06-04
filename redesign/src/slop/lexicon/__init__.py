@@ -19,6 +19,13 @@ Current surface (consumer-driven; grows as rules need it):
 """
 from __future__ import annotations
 
+from .comparison import (
+    containment,
+    cosine,
+    jaccard,
+    js_divergence,
+    js_similarity,
+)
 from .corpus import Lexicon
 from .distribution import (
     HAPAX_RATIO_NORM,
@@ -42,4 +49,10 @@ __all__ = [
     "ZIPF_ALPHA_NORM",
     "ZIPF_R2_NORM",
     "HAPAX_RATIO_NORM",
+    # pairwise comparison (relational lexicostatistics)
+    "jaccard",
+    "containment",
+    "cosine",
+    "js_divergence",
+    "js_similarity",
 ]
