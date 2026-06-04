@@ -1,20 +1,33 @@
-"""lexical.imposters — parameters camouflaged as ordinary dependencies (verdict).
+"""lexical.imposters — parameters camouflaged as ordinary dependencies (observation).
 
 A cluster of functions sharing a first parameter that they all treat as a *receiver*
 (``param.attr`` access, shared body shape) is a class in hiding — the parameter is the
 implicit ``self``. ``Lexical.first_param_clusters`` surfaces these clusters and profiles
-each; this rule turns the profile into a verdict:
+each.
+
+Disposition (per the disposition policy — see DESIGN.md "Finding Ontology"): a
+first-parameter cluster is an *inferred* pattern, not an exact one. The profile
+classifier is a probabilistic judgement (cf. the complexity-decomposition tension,
+where extracting helpers manufactures first-param clusters that are *not* missing
+classes). An inferred pattern must not fire a *directive* verdict — the old
+``EXTRACT_CLASS`` verdict claimed a certainty the signal does not carry. So this rule
+now emits an ``OBSERVATION``: the cluster is real evidence worth surfacing, but slop
+cannot honestly prescribe the extraction. The agent reads the evidence and decides.
+
+Surfaced profiles:
 
 - ``missing_class`` — high receiver-call density + body-shape cohesion: the textbook
-  class extraction. Directed ``EXTRACT_CLASS`` verdict.
+  class-extraction candidate (the strongest evidence; the message says so).
 - ``dispatch_family`` / ``heterogeneous`` — a real shared input but the refactor is not
-  determined (tabular dispatch? keep as free functions? genuinely unrelated?). ``REVIEW``.
-- ``strategy_family`` (body-clones, no receiver use), ``infrastructure``,
-  ``false_positive``, ``unknown`` — skipped: not a defect slop can claim (the strategy
-  family is an accept-as-idiomatic note, cut per structural-not-style).
+  determined (tabular dispatch? keep as free functions? coincidence?).
 
-Battery: paired with ``lexical.slackers`` over the same clusters — imposters asks "is
-this a class?", slackers asks "do the names align?". Complementary, not double-counting.
+Other profiles (``strategy_family``, ``infrastructure``, ``false_positive``,
+``unknown``) are not surfaced — not even evidence slop wants to nudge on.
+
+Battery (the future upgrade to a verdict): paired with ``lexical.slackers`` over the
+same clusters, and with structural clones/redundancy. When an independent structural
+signal corroborates a cluster, the battery can promote to a ``REVIEW`` verdict — a
+single inferred signal cannot.
 """
 from __future__ import annotations
 
@@ -23,11 +36,13 @@ from collections.abc import Iterable
 from ..scope.base import Scope
 from ..scope.identity import ScopeKind
 from ..config import RuleConfig
-from ..finding import Action, Finding, Severity, Verdict
+from ..finding import Evidence, Finding, Observation
 from ..metrics.lexical import Lexical
 from ..rule import Rule
 
-_REVIEW_PROFILES = frozenset({"dispatch_family", "heterogeneous"})
+# Profiles worth surfacing as evidence. missing_class is the strongest; the other two
+# are real shared inputs with an undetermined remedy.
+_SURFACED = frozenset({"missing_class", "dispatch_family", "heterogeneous"})
 
 
 class ImpostersRule(Rule):
@@ -36,42 +51,39 @@ class ImpostersRule(Rule):
 
     @classmethod
     def default_config(cls) -> RuleConfig:
-        return RuleConfig(name=cls.name, severity=Severity.WARNING, params={"min_cluster": 3})
+        return RuleConfig(name=cls.name, params={"min_cluster": 3})
 
     def check(self, component: Scope, config: RuleConfig) -> Iterable[Finding]:
         min_cluster = int(config.param("min_cluster", 3))
         clusters = Lexical.over(component).first_param_clusters(
             min_cluster=min_cluster, root=getattr(component, "root", None))
         for c in clusters:
+            if c.profile_label not in _SURFACED:
+                continue
             members = ", ".join(sorted(m[0] for m in c.members))
-            line = min((m[2] for m in c.members), default=0)
             locus = c.locus or component.id
             if c.profile_label == "missing_class":
-                yield Verdict(
-                    rule=self.name, component=locus, action=Action.EXTRACT_CLASS,
-                    prescription=(
-                        f"Extract a class around '{c.parameter_name}': {len(c.members)} functions "
-                        f"({members}) share it and use it as a receiver (attribute access + shared "
-                        "body shape). The parameter is an implicit self — make it explicit."
-                    ),
-                    severity=config.severity, value=len(c.members), threshold=min_cluster,
-                    line=line,
-                    message=f"missing class around receiver '{c.parameter_name}' ({len(c.members)} methods)",
-                    metadata={"parameter": c.parameter_name, "profile": c.profile_label,
-                              "members": [m[0] for m in c.members], "scope": c.scope},
+                message = (
+                    f"{len(c.members)} functions ({members}) share first parameter "
+                    f"'{c.parameter_name}' and use it as a receiver (attribute access + shared "
+                    f"body shape) — a class in hiding. Likely extract a class with "
+                    f"'{c.parameter_name}' as self, once the shared shape is confirmed real."
                 )
-            elif c.profile_label in _REVIEW_PROFILES:
-                yield Verdict(
-                    rule=self.name, component=locus, action=Action.REVIEW,
-                    severity=Severity.WARNING,  # REVIEW caps at WARNING
-                    prescription=(
-                        f"{len(c.members)} functions ({members}) share first parameter "
-                        f"'{c.parameter_name}' ({c.profile_label.replace('_', ' ')}). Confirm "
-                        "whether this is a class, a tabular dispatch, or unrelated coincidence "
-                        "before refactoring."
-                    ),
-                    value=len(c.members), threshold=min_cluster, line=line,
-                    message=f"shared-receiver cluster '{c.parameter_name}' ({c.profile_label})",
-                    metadata={"parameter": c.parameter_name, "profile": c.profile_label,
-                              "members": [m[0] for m in c.members], "scope": c.scope},
+            else:
+                message = (
+                    f"{len(c.members)} functions ({members}) share first parameter "
+                    f"'{c.parameter_name}' ({c.profile_label.replace('_', ' ')}) — a real shared "
+                    "input whose refactor is undetermined (class? tabular dispatch? coincidence?). "
+                    "Confirm intent before refactoring."
                 )
+            yield Observation(
+                rule=self.name,
+                component=locus,
+                evidence=Evidence(kind="receiver-cluster", data={
+                    "parameter": c.parameter_name, "profile": c.profile_label,
+                    "members": [m[0] for m in c.members], "size": len(c.members),
+                    "scope": c.scope}),
+                message=message,
+                metadata={"parameter": c.parameter_name, "profile": c.profile_label,
+                          "members": [m[0] for m in c.members], "scope": c.scope},
+            )

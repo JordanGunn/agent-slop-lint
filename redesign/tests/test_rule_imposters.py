@@ -1,4 +1,4 @@
-"""lexical.imposters — missing-class verdict over first-parameter clusters."""
+"""lexical.imposters — missing-class observation over first-parameter clusters."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -34,15 +34,18 @@ def test_registered():
     assert any(isinstance(r, ImpostersRule) for r in RULE_REGISTRY)
 
 
-def test_missing_class_emits_extract_class(tmp_path: Path):
+def test_missing_class_emits_observation(tmp_path: Path):
+    # An inferred receiver cluster is evidence, not a directive verdict (disposition
+    # policy): the missing-class signal surfaces as a claim-free observation.
     (tmp_path / "a.py").write_text(RECEIVER)
     corpus = scan_corpus(tmp_path, config=None)
     findings = list(ImpostersRule().check(corpus, ImpostersRule.default_config()))
     assert len(findings) == 1
     f = findings[0]
-    assert f.disposition is Disposition.VERDICT
-    assert f.action is Action.EXTRACT_CLASS
-    assert f.severity is Severity.WARNING
+    assert f.disposition is Disposition.OBSERVATION
+    assert f.action is Action.INVESTIGATE
+    assert f.severity is Severity.INFO
+    assert f.evidence.kind == "receiver-cluster"
     assert f.metadata["parameter"] == "cfg"
     assert f.metadata["profile"] == "missing_class"
 

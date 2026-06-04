@@ -1,4 +1,4 @@
-"""lexical.slackers — real cluster whose member names refuse to align (verdict)."""
+"""lexical.slackers — real cluster whose member names refuse to align (observation)."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -51,14 +51,17 @@ def test_registered():
 
 
 def test_fires_when_names_dont_align(tmp_path: Path):
+    # Misalignment of an inferred cluster is evidence, not a rename directive
+    # (disposition policy): it surfaces as a claim-free observation.
     (tmp_path / "a.py").write_text(MISALIGNED)
     corpus = scan_corpus(tmp_path, config=None)
     findings = list(SlackersRule().check(corpus, SlackersRule.default_config()))
     assert len(findings) == 1
     f = findings[0]
-    assert f.disposition is Disposition.VERDICT
-    assert f.action is Action.RENAME_BY_TEMPLATE
-    assert f.severity is Severity.WARNING
+    assert f.disposition is Disposition.OBSERVATION
+    assert f.action is Action.INVESTIGATE
+    assert f.severity is Severity.INFO
+    assert f.evidence.kind == "naming-misalignment"
     assert f.metadata["parameter"] == "cfg"
 
 
