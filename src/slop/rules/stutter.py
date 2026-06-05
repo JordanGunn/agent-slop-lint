@@ -12,6 +12,15 @@ drop the tokens the scope already says — so this is a ``DROP_REDUNDANT_TOKENS`
 
 Noise tokens (Newman 14 + glue) are excluded so a shared ``id``/``data`` does not count;
 ``min_overlap_tokens`` (default 1) is the canonical single-token stutter.
+
+Calibration (measured on the v1.2.0 snapshot): of 129 stutters, 126 are module-level
+(``load_config`` in ``config``, ``git_log`` in ``git``) and only 1 is class-level. These
+are technically correct — none is degenerate, every name drops to a valid shorter form,
+and the stdlib standard is ``json.load`` not ``json.json_load`` — so the default is kept
+honest (a high count on slopped code is the signal, not over-firing). But the *enclosing*
+scopes that count are configurable via ``enclosing_scopes``: a project that judges
+module-level stutter idiomatic can set ``["class"]`` to keep only the strongest tier,
+rather than softening the shipped default.
 """
 from __future__ import annotations
 
@@ -25,7 +34,9 @@ from ..lexicon.tokenize import split_tokens
 from ..metrics.lexical.affix import UNIVERSAL_NOISE
 from ..rule import Rule
 
-_ENCLOSING = frozenset({ScopeKind.CLASS, ScopeKind.MODULE, ScopeKind.PACKAGE})
+_KIND_BY_LABEL = {
+    "class": ScopeKind.CLASS, "module": ScopeKind.MODULE, "package": ScopeKind.PACKAGE,
+}
 
 
 def _tokens(name: str) -> set[str]:
@@ -39,11 +50,15 @@ class StutterRule(Rule):
     @classmethod
     def default_config(cls) -> RuleConfig:
         return RuleConfig(name=cls.name, severity=Severity.WARNING,
-                          params={"min_overlap_tokens": 1, "check_classes": True})
+                          params={"min_overlap_tokens": 1, "check_classes": True,
+                                  "enclosing_scopes": ["class", "module", "package"]})
 
     def check(self, component: Scope, config: RuleConfig) -> Iterable[Finding]:
         min_overlap = int(config.param("min_overlap_tokens", 1))
         check_classes = bool(config.param("check_classes", True))
+        enclosing = {_KIND_BY_LABEL[k]
+                     for k in config.param("enclosing_scopes", list(_KIND_BY_LABEL))
+                     if k in _KIND_BY_LABEL}
 
         entities = list(component._iter_callables())
         if check_classes:
@@ -58,7 +73,7 @@ class StutterRule(Rule):
             # nearest enclosing scope (owner chain) whose name overlaps
             owner = entity.owner
             while owner is not None:
-                if owner.KIND in _ENCLOSING:
+                if owner.KIND in enclosing:
                     overlap = own & _tokens(owner.name)
                     if len(overlap) >= min_overlap:
                         shared = ", ".join(sorted(overlap))
