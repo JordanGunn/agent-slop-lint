@@ -94,7 +94,7 @@ if ! command -v slop &>/dev/null; then
     echo "    You may need to add ~/.local/bin to PATH"
     exit 1
 fi
-echo "  ✓ slop: $(slop --version 2>/dev/null)"
+echo "  ✓ $(slop --version)"
 
 echo
 

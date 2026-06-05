@@ -3,7 +3,26 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from slop import cli
+
+
+def test_version_flag_prints_and_exits_zero(capsys):
+    # `--version` is a top-level flag: argparse prints and exits(0) before the
+    # required-subcommand check, so `slop --version` works without a subcommand.
+    with pytest.raises(SystemExit) as exc:
+        cli.main(["--version"])
+    assert exc.value.code == 0
+    out = capsys.readouterr().out
+    assert out.startswith("slop ")
+    assert cli._version() in out
+
+
+def test_version_helper_resolves_installed_distribution():
+    # The package is installed (editable) in the dev env, so metadata resolves to a
+    # real version rather than the source-tree "unknown" fallback.
+    assert cli._version() != "unknown"
 
 
 def test_rules_lists_registry(capsys):

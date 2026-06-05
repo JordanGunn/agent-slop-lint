@@ -10,6 +10,7 @@ import argparse
 import json
 import shutil
 import sys
+from importlib.metadata import PackageNotFoundError, version as _pkg_version
 from pathlib import Path
 
 from .config import AnalysisConfig
@@ -18,6 +19,15 @@ from .finding import Severity
 from .scope import scan_corpus
 from .scope.identity import ScopeKind
 from .rules import RULE_REGISTRY
+
+
+def _version() -> str:
+    """The installed distribution version, or ``unknown`` when running from a source
+    tree that was never installed (no dist metadata to read)."""
+    try:
+        return _pkg_version("agent-slop-lint")
+    except PackageNotFoundError:
+        return "unknown"
 
 
 def _has_source(corpus) -> bool:
@@ -197,6 +207,7 @@ def _human(report: Report) -> str:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="slop", description="agentic code-quality linter")
+    parser.add_argument("--version", action="version", version=f"slop {_version()}")
     sub = parser.add_subparsers(dest="command", required=True)
 
     p_lint = sub.add_parser("lint", help="lint a source root")
