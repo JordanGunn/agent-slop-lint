@@ -7,6 +7,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0a0] - 2026-06-04
+
+Ground-up rebuild on a component model (pre-release). slop is reorganised around an
+ownership tree — Corpus › Realm › Package › Module › Class › Callable — carved once from
+the parsed sources, with two read-only views (`Structure`, `Lexical`) that rules consume
+through an altitude-driven dispatcher. The repo is collapsed to a single tree: v3 is the
+canonical source at the repo root (src-layout), and the legacy v2 package is deleted.
+
+### Added
+
+- **Finding ontology** — `Verdict` / `REVIEW` / `Observation`, chosen by epistemic
+  certainty: exact patterns get directive verdicts, confident-but-open ones get REVIEW,
+  and inferred ones get claim-free observations (which cannot be false positives).
+- **`lexical.cohesion`** — foreign-body module detection: a module whose identifier
+  vocabulary barely overlaps the rest of its package (observation).
+- **Lexicon comparison substrate** — pairwise `jaccard` / `containment` / `cosine` /
+  Jensen-Shannon over token spaces, plus a `Selection` union region.
+- **Corroborated battery** — `imposters` / `slackers` promote to a REVIEW verdict only
+  when an independent structural signal (clones or redundant siblings) corroborates the
+  cluster; otherwise they stay observations.
+- **`zero_visited` safeguard** — a rule that examined zero components is surfaced, so
+  "not flagged" is verifiable, not silent.
+- Scope-keyed `[ignore]` exemptions and a config schema generated from the registry.
+
+### Changed
+
+- Findings attribute to the **narrowest containing scope** (entity or narrowest common
+  ancestor), with a line where one applies — previously every corpus-altitude finding
+  collapsed onto the corpus root.
+- `imposters` / `slackers` emit observations (were directive `EXTRACT_CLASS` /
+  `RENAME_BY_TEMPLATE` verdicts), per the disposition policy.
+- The CLI errors (exit 2) on a nonexistent or source-free `--root` (was a false-clean
+  exit 0).
+- Package `agent-slop-lint` is now `3.0.0a0`; requires Python ≥ 3.11; README/LICENSE are a
+  single repo-root source for GitHub and PyPI.
+
+### Removed
+
+- The legacy v2 substrate (`tree` / `language` / `structure` / `linter` packages) and the
+  transitional `redesign/` tree.
+- Halstead rules (`information.volume` / `information.difficulty`) and several v1.x lexical
+  rules cut as style-not-structural: `confusion`, `cowards`, `tautology`, `tersity`.
+- The `[[waivers]]` mechanism (replaced by scope-keyed `[ignore]`) and the
+  `default`/`lax`/`strict` config profiles.
+
 ## [1.2.0] - 2026-05-07
 
 The composition collapse + audit-driven release. v1.1.0 was held
