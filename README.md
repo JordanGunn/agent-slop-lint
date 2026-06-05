@@ -118,8 +118,14 @@ slop schema                       Config schema as JSON (generated from the regi
 slop init --root <path>           Write a .slop.toml template
 slop doctor                       Check tree-sitter / git availability
 slop ast <file>                   Print a file's parse tree (named skeleton; --raw, --max-depth)
+slop lexicon [--scope Q]          Print a scope's vocabulary distribution (Zipf/hapax + head)
+slop deps [--scope Q] [--cycles]  Print the module dependency graph (resolved/unresolved edges)
 slop --version                    Print the installed version
 ```
+
+The view commands (`ast`, `lexicon`, `deps`) are read-only structural inspectors —
+sub-file-resolution skeletons, regenerated from the current source each run. `--scope`
+takes a qualname or a file path; `--output json` emits the machine form.
 
 `--output human` (default) or `--output json`. Run `slop --help` for the full list.
 

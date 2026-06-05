@@ -133,6 +133,60 @@ def test_ast_errors(tmp_path: Path, capsys):
     assert cli.ast_view(unknown, "human") == 2                       # no grammar
 
 
+def _mini_pkg(tmp_path: Path) -> Path:
+    pkg = tmp_path / "pkg"
+    pkg.mkdir()
+    (pkg / "__init__.py").write_text("")
+    (pkg / "a.py").write_text("import os\n\ndef alpha(value):\n    return os.getpid()\n")
+    (pkg / "b.py").write_text("from .a import alpha\n\ndef beta():\n    return alpha(1)\n")
+    return tmp_path
+
+
+def test_lexicon_corpus_and_json(tmp_path: Path, capsys):
+    root = _mini_pkg(tmp_path)
+    assert cli.lexicon_view(root, "human") == 0
+    assert "lexicon:" in capsys.readouterr().out
+    import json
+    assert cli.lexicon_view(root, "json") == 0
+    data = json.loads(capsys.readouterr().out)
+    assert data["distinct"] > 0 and "zipf_alpha" in data
+
+
+def test_lexicon_scope_by_path(tmp_path: Path, capsys):
+    root = _mini_pkg(tmp_path)
+    assert cli.lexicon_view(root, "human", scope="pkg/a.py") == 0
+    out = capsys.readouterr().out
+    assert "pkg/a.py" in out and "(module)" in out
+
+
+def test_lexicon_unknown_scope_errors(tmp_path: Path, capsys):
+    root = _mini_pkg(tmp_path)
+    assert cli.lexicon_view(root, "human", scope="no/such.py") == 2
+    assert "no scope" in capsys.readouterr().err
+
+
+def test_deps_human_and_json(tmp_path: Path, capsys):
+    root = _mini_pkg(tmp_path)
+    assert cli.deps_view(root, "human") == 0
+    out = capsys.readouterr().out
+    assert "deps:" in out
+    # b imports a — a resolved edge labelled by path
+    assert "pkg/b.py" in out and "pkg/a.py" in out
+    import json
+    assert cli.deps_view(root, "json") == 0
+    data = json.loads(capsys.readouterr().out)
+    assert data["modules"] >= 2
+    assert any(e["from"].endswith("b.py") and (e["to"] or "").endswith("a.py")
+               and e["resolved"] for e in data["edges"])
+
+
+def test_deps_scope_filter(tmp_path: Path, capsys):
+    root = _mini_pkg(tmp_path)
+    assert cli.deps_view(root, "human", scope="pkg/a.py") == 0
+    out = capsys.readouterr().out
+    assert "pkg/a.py" in out
+
+
 def test_init_writes_template(tmp_path: Path, capsys):
     assert cli.init(tmp_path) == 0
     cfg = (tmp_path / ".slop.toml").read_text()

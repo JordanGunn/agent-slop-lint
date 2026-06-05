@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shutil
 import sys
 from importlib.metadata import PackageNotFoundError, version as _pkg_version
@@ -28,6 +29,65 @@ def _version() -> str:
         return _pkg_version("agent-slop-lint")
     except PackageNotFoundError:
         return "unknown"
+
+
+def _walk(component):
+    """Every scope in the tree, root-first (Corpus → … → Callable)."""
+    yield component
+    for child in component.children():
+        yield from _walk(child)
+
+
+def _rel_path(scope_id, root: str) -> str | None:
+    """A scope's first source file relative to the scan root, or None if it carries no
+    span (module bare-stem qualnames collide across packages — the path disambiguates)."""
+    if scope_id.spans and scope_id.spans[0].path:
+        try:
+            return os.path.relpath(scope_id.spans[0].path, root)
+        except ValueError:
+            return scope_id.spans[0].path
+    return None
+
+
+def _resolve_scope(corpus, ident: str) -> list:
+    """Scopes matching ``ident`` by qualname or by relative file path. A list, since a
+    bare qualname can repeat (``view`` in two packages, overloads). Empty if none match."""
+    root = str(corpus.root)
+    # qualname matches any kind; a path identifies a file, so it matches the MODULE only
+    # (every callable/class in the file shares that path, but the file *is* the module).
+    return [c for c in _walk(corpus)
+            if c.qualname == ident
+            or (c.id.kind is ScopeKind.MODULE and _rel_path(c.id, root) == ident)]
+
+
+def _select_scope(corpus, ident: str):
+    """Resolve ``ident`` to a single scope, or print an error and return None: nothing
+    matched, or it was ambiguous (in which case the candidate paths are listed)."""
+    matches = _resolve_scope(corpus, ident)
+    if not matches:
+        print(f"slop: error: no scope with qualname or path '{ident}'", file=sys.stderr)
+        return None
+    if len(matches) > 1:
+        print(f"slop: error: '{ident}' is ambiguous ({len(matches)} matches); "
+              "disambiguate by path:", file=sys.stderr)
+        for m in matches:
+            print(f"  {_rel_path(m.id, str(corpus.root)) or m.qualname}", file=sys.stderr)
+        return None
+    return matches[0]
+
+
+def _scan_root(root: str | Path):
+    """Carve ``root`` into a corpus for a view command, or print an error and return
+    None (the shared lint-boundary guard: a missing or source-free root is exit 2)."""
+    root = Path(root)
+    if not root.exists():
+        print(f"slop: error: root path does not exist: {root}", file=sys.stderr)
+        return None
+    corpus = scan_corpus(root, AnalysisConfig.load(root, RULE_REGISTRY))
+    if not _has_source(corpus):
+        print(f"slop: error: no source files found under {root}", file=sys.stderr)
+        return None
+    return corpus
 
 
 def _has_source(corpus) -> bool:
@@ -178,6 +238,97 @@ def ast_view(path: str | Path, output: str = "human", *,
     return 0
 
 
+def lexicon_view(root: str | Path, output: str = "human", *,
+                 scope: str | None = None, top: int = 15) -> int:
+    """Print a scope's vocabulary distribution — the lexical skeleton.
+
+    Precise (any scope via ``--scope``, not just the corpus), abstract (the Zipf
+    distribution + head, not a token dump), current (regenerated from the fresh carve).
+    The same measured object the ``vocabulary`` observation surfaces."""
+    corpus = _scan_root(root)
+    if corpus is None:
+        return 2
+    target = corpus
+    if scope is not None:
+        target = _select_scope(corpus, scope)
+        if target is None:
+            return 2
+    dist = target.lexicon().distribution(top=top)
+    label = _rel_path(target.id, str(corpus.root)) or target.qualname or corpus.name
+    if output == "json":
+        print(json.dumps({"scope": label, "kind": target.id.kind.value,
+                          **dist.as_dict()}, indent=2))
+    else:
+        top_line = "  top: " + " ".join(f"{t}({c})" for t, c in dist.top) if dist.top else "  top: —"
+        print("\n".join([
+            f"lexicon: {label} ({target.id.kind.value})",
+            f"  tokens: {dist.distinct} significant · {dist.n} occ · "
+            f"hapax {dist.hapax_ratio:.2f} · Zipf α{dist.zipf_alpha:.2f} R²{dist.zipf_r2:.2f}",
+            top_line,
+        ]))
+    return 0
+
+
+def deps_view(root: str | Path, output: str = "human", *,
+              scope: str | None = None, cycles_only: bool = False) -> int:
+    """Print the module dependency graph — the relational skeleton.
+
+    Edges carry the ``resolved`` flag rather than forcing precision: an external or
+    bare-specifier import shows as unresolved instead of a false edge. ``--scope``
+    restricts to edges touching one module; ``--cycles`` shows only import cycles."""
+    corpus = _scan_root(root)
+    if corpus is None:
+        return 2
+    graph = corpus.context.dep_graph if corpus.context else None
+    if graph is None:
+        print("slop: error: no dependency graph available", file=sys.stderr)
+        return 2
+
+    root = str(corpus.root)
+
+    def label(scope_id) -> str:
+        # Modules' bare-stem qualnames collide across packages; the relative path is the
+        # unambiguous node label.
+        return _rel_path(scope_id, root) or scope_id.qualname
+
+    edges = list(graph.edges())
+    if scope is not None:
+        edges = [e for e in edges
+                 if scope in (e.from_.qualname, label(e.from_))
+                 or (e.to is not None and scope in (e.to.qualname, label(e.to)))]
+    cycles = graph.cycles()
+    modules = [c for c in _walk(corpus) if c.id.kind is ScopeKind.MODULE]
+    n_unresolved = sum(1 for e in edges if not e.resolved)
+
+    if output == "json":
+        print(json.dumps({
+            "modules": len(modules),
+            "edges": [{"from": label(e.from_),
+                       "to": label(e.to) if e.to is not None else None,
+                       "kind": e.kind, "resolved": e.resolved,
+                       "raw_specifier": e.raw_specifier} for e in edges],
+            "cycles": [list(c.members) for c in cycles],
+        }, indent=2))
+        return 0
+
+    lines = [f"deps: {len(modules)} modules · {len(edges)} edges · {len(cycles)} cycle(s)"]
+    if not cycles_only:
+        by_from: dict = {}
+        for e in edges:
+            if e.resolved and e.to is not None:
+                by_from.setdefault(e.from_, set()).add(label(e.to))
+        for node in sorted(by_from, key=label):
+            tos = ", ".join(sorted(by_from[node]))
+            lines.append(f"  {label(node)}  → {tos}   "
+                         f"(Ce {graph.efferent(node)} · Ca {graph.afferent(node)})")
+        if n_unresolved:
+            lines.append(f"  unresolved: {n_unresolved} edge(s) (external / bare specifiers)")
+    for c in cycles:
+        lines.append("  cycle: " + " ↔ ".join(c.members))
+    print("\n".join(lines))
+    return 0
+
+
 def init(root: str | Path) -> int:
     """Emit a ``.slop.toml`` template from each rule's default config."""
     path = Path(root) / ".slop.toml"
@@ -273,6 +424,18 @@ def main(argv: list[str] | None = None) -> int:
     p_ast.add_argument("--max-depth", type=int, default=None,
                        help="truncate the tree below this depth")
 
+    p_lex = sub.add_parser("lexicon", help="print a scope's vocabulary distribution")
+    p_lex.add_argument("--root", default=".")
+    p_lex.add_argument("--scope", default=None, help="qualname of a sub-scope (default: whole corpus)")
+    p_lex.add_argument("--top", type=int, default=15, help="number of top tokens to show")
+    p_lex.add_argument("--output", choices=["human", "json"], default="human")
+
+    p_deps = sub.add_parser("deps", help="print the module dependency graph")
+    p_deps.add_argument("--root", default=".")
+    p_deps.add_argument("--scope", default=None, help="restrict to edges touching this module qualname")
+    p_deps.add_argument("--cycles", action="store_true", help="show only import cycles")
+    p_deps.add_argument("--output", choices=["human", "json"], default="human")
+
     args = parser.parse_args(argv)
     try:
         if args.command == "lint":
@@ -289,6 +452,10 @@ def main(argv: list[str] | None = None) -> int:
             return schema_cmd(args.output)
         if args.command == "ast":
             return ast_view(args.path, args.output, raw=args.raw, max_depth=args.max_depth)
+        if args.command == "lexicon":
+            return lexicon_view(args.root, args.output, scope=args.scope, top=args.top)
+        if args.command == "deps":
+            return deps_view(args.root, args.output, scope=args.scope, cycles_only=args.cycles)
     except Exception as exc:  # noqa: BLE001 — top-level boundary: any failure is exit 2
         print(f"slop: error: {exc}", file=sys.stderr)
         return 2
