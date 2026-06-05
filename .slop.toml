@@ -1,12 +1,8 @@
-# slop — research fixture config
+# slop — config for dogfooding slop on this repo / the v1.2.0 research snapshot.
 #
-# Points at the v1.2.0 snapshot. Used as a stable known-slop corpus for
-# the lexical-signal → corrective-action research line. Waivers and
-# threshold tweaks are intentionally absent: signal suppression defeats
-# the purpose of measuring distributions.
-
-root = "docs/.internal/snapshots/v1.2.0/slop"
-languages = ["python"]
+# v3 takes the scan target from the CLI's --root (the config holds rule settings only),
+# so the former `root` / `languages` keys are gone. Threshold tweaks are intentionally
+# absent: signal suppression defeats the purpose of measuring distributions.
 
 [rules.hotspots]
-enabled = false                 # snapshot has no git history — structurally N/A
+enabled = false                 # the snapshot corpus has no git history — structurally N/A
