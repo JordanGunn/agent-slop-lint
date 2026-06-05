@@ -187,24 +187,49 @@ class Node:
         return tuple(out)
 
     # ---- inspection / serialization ----------------------------------
-    def render(self, indent: int = 0) -> str:
-        """ASCII tree from this node down — the standalone inspector / visualizer."""
+    def render(self, indent: int = 0, *, named_only: bool = False,
+               max_depth: int | None = None) -> str:
+        """ASCII tree from this node down — the standalone inspector / visualizer.
+
+        ``named_only`` drops anonymous nodes (punctuation, keywords, token parts),
+        leaving the grammar skeleton; ``max_depth`` truncates below a given depth (an
+        elided node is marked ``…``). Both are abstraction knobs: a full dump is a
+        transcript, the pruned tree is a skeleton."""
         pad = "  " * indent
         label = self._raw.type if self._raw.is_named else f'"{self._raw.type}"'
         lines = [f"{pad}{label} [{self._raw.start_byte}:{self._raw.end_byte}]"]
-        for child in self._raw.children:
-            lines.append(self._wrap(child).render(indent + 1))
+        kids = self._render_children(named_only)
+        if max_depth is not None and indent >= max_depth:
+            if kids:
+                lines.append(f"{pad}  …")
+            return "\n".join(lines)
+        for child in kids:
+            lines.append(child.render(indent + 1, named_only=named_only, max_depth=max_depth))
         return "\n".join(lines)
 
-    def to_dict(self) -> dict:
-        """Serialisable tree (json/yaml dump) from this node down."""
-        return {
+    def _render_children(self, named_only: bool) -> list["Node"]:
+        return [self._wrap(c) for c in self._raw.children
+                if not named_only or c.is_named]
+
+    def to_dict(self, *, named_only: bool = False, max_depth: int | None = None,
+                _depth: int = 0) -> dict:
+        """Serialisable tree (json/yaml dump) from this node down. ``named_only`` and
+        ``max_depth`` prune exactly as :meth:`render` does (a truncated node carries
+        ``"truncated": True`` instead of children)."""
+        node = {
             "type": self._raw.type,
             "kind": self.kind.value,
             "named": self._raw.is_named,
             "span": [self._raw.start_byte, self._raw.end_byte],
-            "children": [self._wrap(c).to_dict() for c in self._raw.children],
         }
+        kids = self._render_children(named_only)
+        if max_depth is not None and _depth >= max_depth:
+            if kids:
+                node["truncated"] = True
+            return node
+        node["children"] = [c.to_dict(named_only=named_only, max_depth=max_depth,
+                                      _depth=_depth + 1) for c in kids]
+        return node
 
 
 class AST:
@@ -257,8 +282,8 @@ class AST:
                     break
         return Node(raw, self._content, self._path, self._grammar)
 
-    def render(self) -> str:
-        return self.root.render()
+    def render(self, *, named_only: bool = False, max_depth: int | None = None) -> str:
+        return self.root.render(named_only=named_only, max_depth=max_depth)
 
 
 # ---- raw type -> neutral kind (grammar-driven; cached per grammar) -------

@@ -143,6 +143,41 @@ def doctor() -> int:
     return 0 if ok else 2
 
 
+def ast_view(path: str | Path, output: str = "human", *,
+             raw: bool = False, max_depth: int | None = None) -> int:
+    """Print the parse tree of a single source file — the standalone AST inspector.
+
+    Sub-file structure (the scoped items a flat file read discards) made visible before
+    acting: read-only seeing, decoupled from doing. Defaults to the named-node skeleton
+    (the abstraction); ``raw`` keeps every anonymous token (the full transcript)."""
+    from .ast import GRAMMARS_BY_ID
+    from .ast.parse import detect_language
+    from .ast.tree import AST
+
+    path = Path(path)
+    if not path.exists():
+        print(f"slop: error: path does not exist: {path}", file=sys.stderr)
+        return 2
+    if path.is_dir():
+        print(f"slop: error: {path} is a directory; ast takes a single file", file=sys.stderr)
+        return 2
+    lang = detect_language(path)
+    if lang is None or lang not in GRAMMARS_BY_ID:
+        print(f"slop: error: no grammar for {path} (unrecognised language)", file=sys.stderr)
+        return 2
+    ast = AST.parse(path, GRAMMARS_BY_ID[lang])
+    if ast is None:
+        print(f"slop: error: could not parse {path}", file=sys.stderr)
+        return 2
+
+    named_only = not raw
+    if output == "json":
+        print(json.dumps(ast.root.to_dict(named_only=named_only, max_depth=max_depth), indent=2))
+    else:
+        print(ast.render(named_only=named_only, max_depth=max_depth))
+    return 0
+
+
 def init(root: str | Path) -> int:
     """Emit a ``.slop.toml`` template from each rule's default config."""
     path = Path(root) / ".slop.toml"
@@ -230,6 +265,14 @@ def main(argv: list[str] | None = None) -> int:
     p_schema = sub.add_parser("schema", help="print the config schema (generated from the registry)")
     p_schema.add_argument("--output", choices=["human", "json"], default="json")
 
+    p_ast = sub.add_parser("ast", help="print the parse tree of a single source file")
+    p_ast.add_argument("path", help="source file to inspect")
+    p_ast.add_argument("--output", choices=["human", "json"], default="human")
+    p_ast.add_argument("--raw", action="store_true",
+                       help="keep anonymous tokens (full transcript); default is the named skeleton")
+    p_ast.add_argument("--max-depth", type=int, default=None,
+                       help="truncate the tree below this depth")
+
     args = parser.parse_args(argv)
     try:
         if args.command == "lint":
@@ -244,6 +287,8 @@ def main(argv: list[str] | None = None) -> int:
             return init(args.root)
         if args.command == "schema":
             return schema_cmd(args.output)
+        if args.command == "ast":
+            return ast_view(args.path, args.output, raw=args.raw, max_depth=args.max_depth)
     except Exception as exc:  # noqa: BLE001 — top-level boundary: any failure is exit 2
         print(f"slop: error: {exc}", file=sys.stderr)
         return 2

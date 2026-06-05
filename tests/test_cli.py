@@ -67,7 +67,7 @@ def test_check_filters_to_family(tmp_path: Path, capsys):
     (tmp_path / "m.py").write_text(
         "def f(a, b):\n" + "".join(f"    if a == {i}: b += {i}\n" for i in range(15)) + "    return b\n"
     )
-    rc = cli.check("complexity", tmp_path, "json")
+    assert cli.check("complexity", tmp_path, "json") in (0, 1)
     out = capsys.readouterr().out
     import json
     data = json.loads(out)
@@ -90,6 +90,47 @@ def test_doctor_runs(capsys):
     out = capsys.readouterr().out
     assert "tree-sitter" in out
     assert rc in (0, 2)
+
+
+def test_ast_default_is_named_skeleton(tmp_path: Path, capsys):
+    # The default view drops anonymous tokens (punctuation/keywords): no quoted "def"
+    # or "(", but the named structure (function_definition, identifier) is present.
+    src = tmp_path / "m.py"
+    src.write_text("def add(a, b):\n    return a + b\n")
+    assert cli.ast_view(src, "human") == 0
+    out = capsys.readouterr().out
+    assert "function_definition" in out
+    assert "identifier" in out
+    assert '"def"' not in out and '"("' not in out
+
+
+def test_ast_raw_keeps_anonymous_tokens(tmp_path: Path, capsys):
+    src = tmp_path / "m.py"
+    src.write_text("def add(a, b):\n    return a + b\n")
+    assert cli.ast_view(src, "human", raw=True) == 0
+    out = capsys.readouterr().out
+    assert '"def"' in out and '"("' in out
+
+
+def test_ast_json_and_max_depth(tmp_path: Path, capsys):
+    import json
+    src = tmp_path / "m.py"
+    src.write_text("def add(a, b):\n    return a + b\n")
+    assert cli.ast_view(src, "json", max_depth=1) == 0
+    tree = json.loads(capsys.readouterr().out)
+    assert tree["type"] == "module"
+    # depth 1 is the deepest emitted; its children are elided with a truncated marker.
+    child = tree["children"][0]
+    assert child.get("truncated") is True
+    assert "children" not in child
+
+
+def test_ast_errors(tmp_path: Path, capsys):
+    assert cli.ast_view(tmp_path / "nope.py", "human") == 2          # missing
+    assert cli.ast_view(tmp_path, "human") == 2                       # a directory
+    unknown = tmp_path / "x.unknownext"
+    unknown.write_text("x")
+    assert cli.ast_view(unknown, "human") == 2                       # no grammar
 
 
 def test_init_writes_template(tmp_path: Path, capsys):

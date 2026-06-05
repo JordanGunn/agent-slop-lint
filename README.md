@@ -117,6 +117,8 @@ slop rules                        List rules (name, disposition, altitude)
 slop schema                       Config schema as JSON (generated from the registry)
 slop init --root <path>           Write a .slop.toml template
 slop doctor                       Check tree-sitter / git availability
+slop ast <file>                   Print a file's parse tree (named skeleton; --raw, --max-depth)
+slop --version                    Print the installed version
 ```
 
 `--output human` (default) or `--output json`. Run `slop --help` for the full list.
