@@ -16,17 +16,37 @@ from .config import AnalysisConfig
 from .dispatch import Dispatcher, Report
 from .finding import Severity
 from .scope import scan_corpus
+from .scope.identity import ScopeKind
 from .rules import RULE_REGISTRY
+
+
+def _has_source(corpus) -> bool:
+    """True if the scanned corpus contains at least one module. A nonexistent or
+    source-free root yields an empty corpus; linting it would visit zero components and
+    report "clean" — a false pass. The CLI treats that as an error, not a clean run."""
+    stack = [corpus]
+    while stack:
+        component = stack.pop()
+        if component.id.kind is ScopeKind.MODULE:
+            return True
+        stack.extend(component.children())
+    return False
 
 
 def lint(root: str | Path, output: str = "human", *, rules=RULE_REGISTRY) -> int:
     root = Path(root)
+    if not root.exists():
+        print(f"slop: error: root path does not exist: {root}", file=sys.stderr)
+        return 2
     # Config is always validated against the FULL registry (a configured rule outside
     # the dispatched subset is still a known rule); only `rules` are dispatched. This
     # is what lets `check <family>` run with an ancestor config that configures other
     # rules without raising "configures unknown rule".
     config = AnalysisConfig.load(root, RULE_REGISTRY)
     corpus = scan_corpus(root, config)
+    if not _has_source(corpus):
+        print(f"slop: error: no source files found under {root}", file=sys.stderr)
+        return 2
     report = Dispatcher(rules, config).run(corpus)
     if output == "json":
         print(json.dumps(report.as_dict(), indent=2))

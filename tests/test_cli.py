@@ -28,6 +28,22 @@ def test_check_unknown_target_errors(capsys):
     assert cli.check("nonsense.rule", ".", "human") == 2
 
 
+def test_nonexistent_root_errors(tmp_path: Path, capsys):
+    # A missing root must error (exit 2), not report "clean" — the CLI-boundary form
+    # of "not-flagged != clean".
+    missing = tmp_path / "does-not-exist"
+    assert cli.lint(missing, "human") == 2
+    assert "does not exist" in capsys.readouterr().err
+
+
+def test_empty_root_errors(tmp_path: Path, capsys):
+    # An existing root with no source files would visit zero components and read as
+    # clean; that is a false pass, so it errors.
+    (tmp_path / "notes.txt").write_text("not source\n")
+    assert cli.lint(tmp_path, "human") == 2
+    assert "no source files" in capsys.readouterr().err
+
+
 def test_check_filters_to_family(tmp_path: Path, capsys):
     (tmp_path / "m.py").write_text(
         "def f(a, b):\n" + "".join(f"    if a == {i}: b += {i}\n" for i in range(15)) + "    return b\n"
