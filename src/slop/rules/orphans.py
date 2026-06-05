@@ -47,6 +47,7 @@ class OrphansRule(Rule):
             yield Observation(
                 rule=self.name,
                 component=orphan.locus or component.id,
+                line=orphan.line or None,
                 evidence=Evidence(
                     kind="orphan",
                     data={"qualname": orphan.qualname, "kind": orphan.kind,

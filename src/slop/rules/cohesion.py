@@ -78,6 +78,7 @@ class CohesionRule(Rule):
         yield Observation(
             rule=self.name,
             component=component.id,
+            line=component.line or None,
             evidence=Evidence(kind="vocabulary-cohesion", data={
                 "cohesion": round(score, 4),
                 "js_similarity": round(js, 4),

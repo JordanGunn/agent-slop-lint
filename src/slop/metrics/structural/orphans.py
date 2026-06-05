@@ -47,7 +47,7 @@ def orphans(corpus: Any) -> list[Orphan]:
             if external == 0:
                 confidence = _confidence(name, sym._grammar)
                 out.append(Orphan(qualname=sym.qualname, kind=sym.KIND.name.lower(),
-                                  confidence=confidence, locus=sym.id))
+                                  confidence=confidence, locus=sym.id, line=sym.line))
     return out
 
 

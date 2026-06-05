@@ -171,6 +171,11 @@ class Observation:
     component: ScopeId
     evidence: Evidence
     message: str
+    #: 1-based line where the observation points, when it is about a single located
+    #: site (an orphan symbol, a foreign-body module). ``None`` for whole-scope or
+    #: spread signals (a churn hotspot over a file, a hammer term across files) where
+    #: no single line is honest.
+    line: int | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
     disposition: ClassVar[Disposition] = Disposition.OBSERVATION
@@ -190,6 +195,7 @@ class Observation:
             "severity": self.severity.label(),
             "action": self.action.value,
             "message": self.message,
+            "line": self.line,
             "evidence": self.evidence.as_dict(),
             "metadata": self.metadata,
         }

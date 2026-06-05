@@ -47,6 +47,7 @@ def test_emits_observation_for_unreferenced_symbol(tmp_path: Path):
     assert f.evidence.kind == "orphan"
     assert f.evidence.data["qualname"] == "lib.untouched_routine"
     assert "untouched_routine" in f.message
+    assert f.line == 4  # def untouched_routine() is on line 4 of lib.py
 
 
 def test_referenced_symbol_is_not_an_orphan(tmp_path: Path):

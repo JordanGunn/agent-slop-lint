@@ -169,6 +169,8 @@ class Orphan:
     confidence: str
     #: The orphaned symbol's own ScopeId — the attribution target. ``None`` if unresolvable.
     locus: ScopeId | None = None
+    #: 1-based definition line of the orphaned symbol (0 if unknown).
+    line: int = 0
 
 
 @dataclass(frozen=True)
