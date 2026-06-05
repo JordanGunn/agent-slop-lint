@@ -33,13 +33,25 @@ def corroboration_groups(component: Any, *, min_leaf_nodes: int = 10) -> list[fr
     """Groups of function (leaf) names that an independent structural signal binds:
     Type-2 clone families (corpus-wide) and redundant-sibling pairs (per module). A
     first-parameter cluster whose member names overlap one group by >=2 is corroborated.
-    Leaf-name matching is approximate, but the >=2 requirement guards against collision."""
+    Leaf-name matching is approximate, but the >=2 requirement guards against collision.
+
+    Memoised on the corpus AnalysisContext: imposters and slackers both need this index,
+    and computing it walks clone detection + every module's redundancy, so it is built
+    once per run and shared (keyed by ``min_leaf_nodes``)."""
+    ctx = getattr(component, "context", None)
+    key = ("corroboration_groups", min_leaf_nodes)
+    if ctx is not None and key in ctx.cache:
+        return ctx.cache[key]
+
     groups: list[frozenset[str]] = []
     for family in Structure.over(component).clone_clusters(min_leaf_nodes=min_leaf_nodes):
         groups.append(frozenset(m.split(".")[-1] for m in family.members))
     for module in _modules(component):
         for pair in Structure.over(module).redundant_siblings():
             groups.append(frozenset({pair.left, pair.right}))
+
+    if ctx is not None:
+        ctx.cache[key] = groups
     return groups
 
 
