@@ -3,8 +3,23 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from slop.metrics.structural.relational import ubiquitous_callees
 from slop.metrics.structural.view import Structure
 from slop.scope import scan_corpus
+
+
+def test_ubiquitous_callees_flags_a_widely_called_project_callee(tmp_path: Path):
+    # `fmt` is called by 4 of 6 functions — ubiquitous (a shared utility, not a redundancy
+    # signal). `rare` is called once. The document-frequency guard catches the former only.
+    src = "def fmt(x):\n    return x\n"
+    for i in range(4):
+        src += f"def use{i}(a):\n    return fmt(a)\n"
+    src += "def lonely(a):\n    return rare(a)\n"
+    (tmp_path / "m.py").write_text(src)
+    corpus = scan_corpus(tmp_path, config=None)
+    ubi = ubiquitous_callees(corpus, threshold=0.05, min_calls=3)
+    assert "fmt" in ubi
+    assert "rare" not in ubi
 
 REDUNDANT = '''\
 def helper_a(): pass

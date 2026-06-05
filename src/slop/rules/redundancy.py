@@ -24,8 +24,25 @@ from ..scope.base import Scope
 from ..scope.identity import ScopeKind
 from ..config import RuleConfig
 from ..finding import Action, Finding, Severity, Verdict
+from ..metrics.structural.relational import ubiquitous_callees
 from ..metrics.structural.view import Structure
 from ..rule import Rule
+
+
+def _ubiquitous(component: Scope, threshold: float) -> frozenset[str]:
+    """Corpus-wide ubiquitous-callee set, computed once (walks every function body) and
+    memoised on the AnalysisContext, since the rule fires per module."""
+    ctx = getattr(component, "context", None)
+    key = ("ubiquitous_callees", threshold)
+    if ctx is not None and key in ctx.cache:
+        return ctx.cache[key]
+    root = component
+    while getattr(root, "owner", None) is not None:
+        root = root.owner
+    result = ubiquitous_callees(root, threshold=threshold)
+    if ctx is not None:
+        ctx.cache[key] = result
+    return result
 
 
 class RedundancyRule(Rule):
@@ -34,14 +51,21 @@ class RedundancyRule(Rule):
 
     @classmethod
     def default_config(cls) -> RuleConfig:
-        # REVIEW verdict → WARNING-pinned. Knobs: overlap count + overlap fraction.
-        return RuleConfig(name=cls.name, params={"min_shared": 3, "min_score": 0.5})
+        # REVIEW verdict → WARNING-pinned. Knobs: overlap count + overlap fraction, and
+        # the document-frequency ceiling above which a project callee is "infrastructure".
+        # max_ubiquity calibrated against the v1.2.0 snapshot: genuinely ubiquitous
+        # project callees (RuleResult/Violation-style constructors) sit at ~0.07 of all
+        # functions; real shared helpers sit at <0.01. 0.05 separates them.
+        return RuleConfig(name=cls.name,
+                          params={"min_shared": 3, "min_score": 0.5, "max_ubiquity": 0.05})
 
     def check(self, component: Scope, config: RuleConfig) -> Iterable[Finding]:
         min_shared = int(config.param("min_shared", 3))
         min_score = float(config.param("min_score", 0.5))
+        max_ubiquity = float(config.param("max_ubiquity", 0.25))
+        exclude = _ubiquitous(component, max_ubiquity)
         pairs = Structure.over(component).redundant_siblings(
-            min_shared=min_shared, min_score=min_score)
+            min_shared=min_shared, min_score=min_score, exclude=exclude)
         for pair in pairs:
             shared = ", ".join(pair.shared_callees)
             n = len(pair.shared_callees)

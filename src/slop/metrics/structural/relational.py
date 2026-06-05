@@ -9,6 +9,7 @@ concrete classes (avoids a cycle).
 from __future__ import annotations
 
 import hashlib
+from collections import Counter
 from itertools import combinations
 from typing import Any
 
@@ -46,7 +47,27 @@ def _meaningful(name: str, builtins: frozenset[str], grammar: Any) -> bool:
             and name not in builtins)
 
 
-def redundant_siblings(module: Any, *, min_shared: int = 3, min_score: float = 0.5) -> list[RedundancyPair]:
+def ubiquitous_callees(corpus: Any, *, threshold: float = 0.25, min_calls: int = 3) -> frozenset[str]:
+    """Project callees called by more than ``threshold`` of all functions corpus-wide —
+    the project's own 'stdlib' (a colour palette, a logging shim). They are project-defined
+    so they survive the ``callable_names`` filter, but they inflate sibling-redundancy
+    overlap exactly as language builtins do: two functions sharing only ``dim``/``yellow``
+    are not sharing a *helper*. Same keyness idea as ``lexical.cohesion`` — high
+    document-frequency carries no signal. ``min_calls`` keeps a tiny corpus from flagging a
+    callee used twice."""
+    funcs = [c for c in corpus._iter_callables() if c.kind == CallableKind.FUNCTION]
+    n = len(funcs)
+    if n == 0:
+        return frozenset()
+    df: Counter = Counter()
+    for c in funcs:
+        df.update(callees_of(c))
+    return frozenset(name for name, count in df.items()
+                     if count >= min_calls and count / n > threshold)
+
+
+def redundant_siblings(module: Any, *, min_shared: int = 3, min_score: float = 0.5,
+                       exclude: frozenset[str] = frozenset()) -> list[RedundancyPair]:
     """Top-level sibling functions sharing >= min_shared non-trivial callees.
 
     Precision: a shared callee only counts if it names a *project-defined* callable
@@ -55,7 +76,8 @@ def redundant_siblings(module: Any, *, min_shared: int = 3, min_score: float = 0
     and the rule penalises DRY — two functions that both call ``.strip()`` are not
     sharing a helper. Builtins are already discounted in ``callees_of``; this removes
     the rest of the stdlib-method noise. With no project-name index (a module built
-    without a carve context), it falls back to the unfiltered overlap.
+    without a carve context), it falls back to the unfiltered overlap. ``exclude``
+    additionally drops ubiquitous *project* callees (see ``ubiquitous_callees``).
     """
     ctx = getattr(module, "context", None)
     project_names = ctx.callable_names if ctx is not None else None
@@ -71,6 +93,8 @@ def redundant_siblings(module: Any, *, min_shared: int = 3, min_score: float = 0
         shared = sa & sb
         if project_names:
             shared = {c for c in shared if c in project_names}
+        if exclude:
+            shared = {c for c in shared if c not in exclude}
         if len(shared) < min_shared:
             continue
         if len(shared) / max(len(sa), len(sb)) < min_score:
