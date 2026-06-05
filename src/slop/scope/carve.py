@@ -261,7 +261,12 @@ def _iter_source_files(root: Path):
     for path in root.rglob("*"):
         if not path.is_file():
             continue
-        if any(part in _SKIP_DIRS for part in path.parts):
+        # Skip hidden directories (any component starting with '.') and the explicit
+        # denylist — as ripgrep/fd do. Checked on the path *relative to root* and on
+        # directory components only: the root may itself sit under a hidden ancestor
+        # (don't skip the whole scan), and a leading-dot filename is left alone.
+        dir_parts = path.relative_to(root).parts[:-1]
+        if any(part in _SKIP_DIRS or part.startswith(".") for part in dir_parts):
             continue
         yield path
 
