@@ -219,6 +219,14 @@ def test_deps_scope_filter(tmp_path: Path, capsys):
     assert "pkg/a.py" in out
 
 
+def test_deps_unknown_scope_errors(tmp_path: Path, capsys):
+    # Parity with lexicon: an unknown --scope is an error (exit 2), not a silent
+    # zero-edge result that reads as "no dependencies".
+    root = _mini_pkg(tmp_path)
+    assert cli.deps_view(root, "human", scope="pkg/nope.py") == 2
+    assert "no scope" in capsys.readouterr().err
+
+
 def test_init_writes_template(tmp_path: Path, capsys):
     assert cli.init(tmp_path) == 0
     cfg = (tmp_path / ".slop.toml").read_text()

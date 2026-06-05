@@ -320,9 +320,13 @@ def deps_view(root: str | Path, output: str = "human", *,
 
     edges = list(graph.edges())
     if scope is not None:
+        target = _select_scope(corpus, scope)  # validates: errors on unknown/ambiguous
+        if target is None:
+            return 2
+        keys = {target.qualname, _rel_path(target.id, root)}
         edges = [e for e in edges
-                 if scope in (e.from_.qualname, label(e.from_))
-                 or (e.to is not None and scope in (e.to.qualname, label(e.to)))]
+                 if {e.from_.qualname, label(e.from_)} & keys
+                 or (e.to is not None and {e.to.qualname, label(e.to)} & keys)]
     cycles = graph.cycles()
     modules = [c for c in _walk(corpus) if c.id.kind is ScopeKind.MODULE]
     n_unresolved = sum(1 for e in edges if not e.resolved)
