@@ -22,7 +22,7 @@ Plus a clone-first view: of the real clone families, how are their members named
 (identical verb / synonym verb / unrelated)? That says what fraction of real
 duplicates the lexical signal could ever catch.
 
-Run (from redesign/):  uv run python ../scripts/research/synonym_probe.py [--root R]
+Run (from the repo root):  uv run python scripts/research/synonym_probe.py [--root R]
 """
 from __future__ import annotations
 

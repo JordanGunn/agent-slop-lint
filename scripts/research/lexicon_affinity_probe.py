@@ -15,9 +15,9 @@ earns a rule before any rule is built. Two questions over a real corpus:
 Both questions reduce to comparing a module's lexicon against a *union* of scopes
 (``Selection``), so this also exercises that primitive end to end.
 
-Run (from redesign/, which owns the slop venv):
+Run (from the repo root):
 
-  uv run python ../scripts/research/lexicon_affinity_probe.py --root <source-root>
+  uv run python scripts/research/lexicon_affinity_probe.py --root <source-root>
 
 Fairness note: "own context" is the module's package minus the module itself, and
 every candidate "other package" is disjoint from the module (ancestor/descendant

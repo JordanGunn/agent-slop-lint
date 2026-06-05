@@ -5,7 +5,7 @@
 # threshold tweaks are intentionally absent: signal suppression defeats
 # the purpose of measuring distributions.
 
-root = "docs/research/snapshots/v1.2.0/slop"
+root = "docs/.internal/snapshots/v1.2.0/slop"
 languages = ["python"]
 
 [rules.hotspots]

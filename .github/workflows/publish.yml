@@ -25,19 +25,11 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq ripgrep fd-find git
 
-      - name: Create venv and install
-        working-directory: src
-        run: |
-          uv venv .venv --python 3.12
-          . .venv/bin/activate
-          uv pip install pytest ruff "tomli>=2.0"
-          uv pip install --no-sources -e .
+      - name: Install
+        run: uv sync --python 3.12
 
       - name: Test
-        working-directory: src
-        run: |
-          . .venv/bin/activate
-          python -m pytest -v
+        run: uv run --python 3.12 python -m pytest -v
 
   publish:
     needs: test
@@ -54,10 +46,9 @@ jobs:
         run: uv python install 3.12
 
       - name: Build package
-        working-directory: src
         run: uv build
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          packages-dir: src/dist/
+          packages-dir: dist/

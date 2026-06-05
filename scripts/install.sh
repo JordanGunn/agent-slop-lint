@@ -5,7 +5,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(dirname "$SCRIPT_DIR")"
-SRC_DIR="$ROOT_DIR/src"
+SRC_DIR="$ROOT_DIR"  # project root (pyproject.toml lives here since the v3 promotion)
 
 echo "slop — Installation"
 echo "==================="
@@ -79,7 +79,7 @@ if [[ ! -f "$SRC_DIR/pyproject.toml" ]]; then
 fi
 
 cd "$SRC_DIR"
-uv tool install --editable ".[dev]" --force --quiet
+uv tool install --editable "." --force --quiet
 
 echo "  ✓ slop installed (via uv tool)"
 echo

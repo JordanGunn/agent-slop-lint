@@ -4,7 +4,7 @@ $ErrorActionPreference = "Stop"
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RootDir = Split-Path -Parent $ScriptDir
-$SrcDir = Join-Path $RootDir "src"
+$SrcDir = $RootDir  # project root (pyproject.toml lives here since the v3 promotion)
 
 Write-Output "slop - Installation"
 Write-Output "==================="
@@ -86,7 +86,7 @@ if (-not (Test-Path $pyproject)) {
 
 Push-Location $SrcDir
 try {
-    & uv tool install --editable ".[dev]" --force --quiet
+    & uv tool install --editable "." --force --quiet
 } finally {
     Pop-Location
 }

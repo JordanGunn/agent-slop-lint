@@ -3,6 +3,53 @@ revision = 3
 requires-python = ">=3.11"
 
 [[package]]
+name = "agent-slop-lint"
+version = "3.0.0a0"
+source = { editable = "." }
+dependencies = [
+    { name = "tree-sitter" },
+    { name = "tree-sitter-c" },
+    { name = "tree-sitter-c-sharp" },
+    { name = "tree-sitter-cpp" },
+    { name = "tree-sitter-go" },
+    { name = "tree-sitter-java" },
+    { name = "tree-sitter-javascript" },
+    { name = "tree-sitter-julia" },
+    { name = "tree-sitter-python" },
+    { name = "tree-sitter-ruby" },
+    { name = "tree-sitter-rust" },
+    { name = "tree-sitter-typescript" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "tree-sitter", specifier = ">=0.21.0" },
+    { name = "tree-sitter-c", specifier = ">=0.21.0" },
+    { name = "tree-sitter-c-sharp", specifier = ">=0.21.0" },
+    { name = "tree-sitter-cpp", specifier = ">=0.21.0" },
+    { name = "tree-sitter-go", specifier = ">=0.21.0" },
+    { name = "tree-sitter-java", specifier = ">=0.21.0" },
+    { name = "tree-sitter-javascript", specifier = ">=0.21.0" },
+    { name = "tree-sitter-julia", specifier = ">=0.21.0" },
+    { name = "tree-sitter-python", specifier = ">=0.21.0" },
+    { name = "tree-sitter-ruby", specifier = ">=0.21.0" },
+    { name = "tree-sitter-rust", specifier = ">=0.21.0" },
+    { name = "tree-sitter-typescript", specifier = ">=0.21.0" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest", specifier = ">=7.0" },
+    { name = "ruff", specifier = ">=0.1.0" },
+]
+
+[[package]]
 name = "colorama"
 version = "0.4.6"
 source = { registry = "https://pypi.org/simple" }
@@ -87,50 +134,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/02/a8/1269eddd6945a06c23f055ef7848886e37cf9d6a8bebb386a3115f01470c/ruff-0.15.15-py3-none-win_amd64.whl", hash = "sha256:8df0323902e15e24bc4bf246da830573d3cf3352bd0b9a164eab335d111ff4a4", size = 11868463, upload-time = "2026-05-28T14:16:11.333Z" },
     { url = "https://files.pythonhosted.org/packages/4e/b2/920464c907b191e37469d477a1aa8bc048b8f36c4c1610dfa4ab87b39e18/ruff-0.15.15-py3-none-win_arm64.whl", hash = "sha256:3c8ceca6792f38196b8f589bc92eccd03eef286602da92e5dc05cc42ef6441b7", size = 11138498, upload-time = "2026-05-28T14:16:38.425Z" },
 ]
-
-[[package]]
-name = "slop"
-version = "3.0.0a0"
-source = { editable = "." }
-dependencies = [
-    { name = "tree-sitter" },
-    { name = "tree-sitter-c" },
-    { name = "tree-sitter-c-sharp" },
-    { name = "tree-sitter-cpp" },
-    { name = "tree-sitter-go" },
-    { name = "tree-sitter-java" },
-    { name = "tree-sitter-javascript" },
-    { name = "tree-sitter-julia" },
-    { name = "tree-sitter-python" },
-    { name = "tree-sitter-ruby" },
-    { name = "tree-sitter-rust" },
-    { name = "tree-sitter-typescript" },
-]
-
-[package.optional-dependencies]
-dev = [
-    { name = "pytest" },
-    { name = "ruff" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.0" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.1.0" },
-    { name = "tree-sitter", specifier = ">=0.21.0" },
-    { name = "tree-sitter-c", specifier = ">=0.21.0" },
-    { name = "tree-sitter-c-sharp", specifier = ">=0.21.0" },
-    { name = "tree-sitter-cpp", specifier = ">=0.21.0" },
-    { name = "tree-sitter-go", specifier = ">=0.21.0" },
-    { name = "tree-sitter-java", specifier = ">=0.21.0" },
-    { name = "tree-sitter-javascript", specifier = ">=0.21.0" },
-    { name = "tree-sitter-julia", specifier = ">=0.21.0" },
-    { name = "tree-sitter-python", specifier = ">=0.21.0" },
-    { name = "tree-sitter-ruby", specifier = ">=0.21.0" },
-    { name = "tree-sitter-rust", specifier = ">=0.21.0" },
-    { name = "tree-sitter-typescript", specifier = ">=0.21.0" },
-]
-provides-extras = ["dev"]
 
 [[package]]
 name = "tree-sitter"

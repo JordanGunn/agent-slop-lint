@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.11", "3.12", "3.13"]
 
     steps:
       - uses: actions/checkout@v4
@@ -27,22 +27,8 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq ripgrep fd-find git
 
-      - name: Create venv and install
-        working-directory: src
-        run: |
-          uv venv .venv --python ${{ matrix.python-version }}
-          . .venv/bin/activate
-          uv pip install pytest ruff "tomli>=2.0"
-          uv pip install --no-sources -e .
-
-      - name: Lint
-        working-directory: src
-        run: |
-          . .venv/bin/activate
-          ruff check cli/
+      - name: Install
+        run: uv sync --python ${{ matrix.python-version }}
 
       - name: Test
-        working-directory: src
-        run: |
-          . .venv/bin/activate
-          python -m pytest -v
+        run: uv run --python ${{ matrix.python-version }} python -m pytest -v
