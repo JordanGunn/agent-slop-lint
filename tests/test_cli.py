@@ -102,6 +102,22 @@ def test_ast_default_is_named_skeleton(tmp_path: Path, capsys):
     assert "function_definition" in out
     assert "identifier" in out
     assert '"def"' not in out and '"("' not in out
+    # IDE-outline surface: the definition shows its name, a line marker, and byte span.
+    assert "function_definition  add" in out      # name field surfaced
+    assert "L1" in out                            # line numbers
+    assert "[0:" in out                           # byte ranges retained
+
+
+def test_ast_json_carries_lines_and_name(tmp_path: Path, capsys):
+    import json
+    src = tmp_path / "m.py"
+    src.write_text("def add(a, b):\n    return a + b\n")
+    assert cli.ast_view(src, "json") == 0
+    tree = json.loads(capsys.readouterr().out)
+    assert tree["lines"][0] == 1
+    fn = next(c for c in tree["children"] if c["type"] == "function_definition")
+    assert fn["name"] == "add"
+    assert fn["lines"] == [1, 2] and "span" in fn
 
 
 def test_ast_raw_keeps_anonymous_tokens(tmp_path: Path, capsys):

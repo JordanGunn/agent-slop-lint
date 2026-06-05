@@ -187,17 +187,39 @@ class Node:
         return tuple(out)
 
     # ---- inspection / serialization ----------------------------------
+    def _lines(self) -> str:
+        """1-based line range — ``L12`` for a single line, ``L12-48`` for a span."""
+        start, end = self._raw.start_point[0] + 1, self._raw.end_point[0] + 1
+        return f"L{start}" if start == end else f"L{start}-{end}"
+
+    def _source_label(self, limit: int = 40) -> str | None:
+        """The node's identifying source: a definition's ``name`` field (so a function
+        node reads as its name), or a leaf token's own text. None for an interior node
+        with no name field — its children carry the detail. Collapsed + truncated."""
+        name = self._raw.child_by_field_name("name")
+        if name is not None:
+            text = self._content[name.start_byte:name.end_byte].decode("utf-8", errors="replace")
+        elif self._raw.child_count == 0:
+            text = self.text
+        else:
+            return None
+        text = " ".join(text.split())
+        return text if len(text) <= limit else text[:limit - 1] + "…"
+
     def render(self, indent: int = 0, *, named_only: bool = False,
                max_depth: int | None = None) -> str:
-        """ASCII tree from this node down — the standalone inspector / visualizer.
+        """An IDE-outline view of the tree from this node down: each line is
+        ``<type>  <name/source>  L<lines>  [<bytes>]`` — a glanceable reference surface.
 
         ``named_only`` drops anonymous nodes (punctuation, keywords, token parts),
         leaving the grammar skeleton; ``max_depth`` truncates below a given depth (an
         elided node is marked ``…``). Both are abstraction knobs: a full dump is a
         transcript, the pruned tree is a skeleton."""
         pad = "  " * indent
-        label = self._raw.type if self._raw.is_named else f'"{self._raw.type}"'
-        lines = [f"{pad}{label} [{self._raw.start_byte}:{self._raw.end_byte}]"]
+        type_label = self._raw.type if self._raw.is_named else f'"{self._raw.type}"'
+        src = self._source_label()
+        head = f"{type_label}  {src}" if src else type_label
+        lines = [f"{pad}{head}  {self._lines()}  [{self._raw.start_byte}:{self._raw.end_byte}]"]
         kids = self._render_children(named_only)
         if max_depth is not None and indent >= max_depth:
             if kids:
@@ -213,15 +235,23 @@ class Node:
 
     def to_dict(self, *, named_only: bool = False, max_depth: int | None = None,
                 _depth: int = 0) -> dict:
-        """Serialisable tree (json/yaml dump) from this node down. ``named_only`` and
-        ``max_depth`` prune exactly as :meth:`render` does (a truncated node carries
-        ``"truncated": True`` instead of children)."""
-        node = {
-            "type": self._raw.type,
+        """Serialisable tree (json/yaml dump) from this node down. Carries ``span``
+        (bytes) and ``lines`` (1-based range), plus ``name`` for a definition or
+        ``text`` for a leaf token. ``named_only`` and ``max_depth`` prune exactly as
+        :meth:`render` does (a truncated node carries ``"truncated": True``)."""
+        raw = self._raw
+        node: dict = {
+            "type": raw.type,
             "kind": self.kind.value,
-            "named": self._raw.is_named,
-            "span": [self._raw.start_byte, self._raw.end_byte],
+            "named": raw.is_named,
+            "span": [raw.start_byte, raw.end_byte],
+            "lines": [raw.start_point[0] + 1, raw.end_point[0] + 1],
         }
+        name = raw.child_by_field_name("name")
+        if name is not None:
+            node["name"] = self._content[name.start_byte:name.end_byte].decode("utf-8", errors="replace")
+        elif raw.child_count == 0:
+            node["text"] = self._source_label(limit=80)
         kids = self._render_children(named_only)
         if max_depth is not None and _depth >= max_depth:
             if kids:
