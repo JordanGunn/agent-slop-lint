@@ -219,9 +219,11 @@ def _npath_of_if(node: Any, vocab: _NPathVocab) -> int:
             else_added = False
             for ec in child.children():
                 if ec.type in vocab.block_types:
-                    alt_nps.append(_npath_of_block(ec, vocab)); else_added = True
+                    alt_nps.append(_npath_of_block(ec, vocab))
+                    else_added = True
                 elif ec.type in vocab.if_nodes:
-                    alt_nps.append(_npath_of_if(ec, vocab)); else_added = True
+                    alt_nps.append(_npath_of_if(ec, vocab))
+                    else_added = True
             if not else_added and not vocab.body_field:
                 alt_nps.append(1)
     if vocab.bare_else_keyword and not has_terminal:

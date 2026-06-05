@@ -160,7 +160,8 @@ def _type_tokens(text: str) -> set[str]:
         if ch.isalnum() or ch == "_":
             buf.append(ch)
         elif buf:
-            tokens.add("".join(buf)); buf = []
+            tokens.add("".join(buf))
+            buf = []
     if buf:
         tokens.add("".join(buf))
     return tokens

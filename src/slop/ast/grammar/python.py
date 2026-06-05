@@ -288,7 +288,8 @@ def _python_type_tokens(text: str) -> set[str]:
         if ch.isalnum() or ch == "_":
             buf.append(ch)
         elif buf:
-            out.add("".join(buf)); buf = []
+            out.add("".join(buf))
+            buf = []
     if buf:
         out.add("".join(buf))
     return out

@@ -26,9 +26,11 @@ def counts(node: Any, grammar: Any) -> tuple[int, int, int, int]:
         if n.child_count == 0:
             ntype = n.type
             if ntype in operator_set:
-                operators.add(n.text); n1_total += 1
+                operators.add(n.text)
+                n1_total += 1
             elif ntype in operand_set:
-                operands.add(n.text); n2_total += 1
+                operands.add(n.text)
+                n2_total += 1
     return len(operators), len(operands), n1_total, n2_total
 
 

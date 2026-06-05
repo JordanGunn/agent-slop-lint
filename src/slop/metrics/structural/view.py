@@ -155,7 +155,8 @@ class Structure:
         if graph is None:
             raise _todo("Package.martin", "dependency graph not attached (scan via Corpus.scan)")
         module_pkg = ctx.module_pkg
-        ce: set = set(); ca: set = set()
+        ce: set = set()
+        ca: set = set()
         for m in self._r.modules():
             for t in graph.efferent_nodes(m.id):
                 p = module_pkg.get(t)
