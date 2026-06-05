@@ -145,11 +145,27 @@ def _mini_pkg(tmp_path: Path) -> Path:
 def test_lexicon_corpus_and_json(tmp_path: Path, capsys):
     root = _mini_pkg(tmp_path)
     assert cli.lexicon_view(root, "human") == 0
-    assert "lexicon:" in capsys.readouterr().out
+    assert capsys.readouterr().out.startswith("lexicon ")
     import json
     assert cli.lexicon_view(root, "json") == 0
     data = json.loads(capsys.readouterr().out)
     assert data["distinct"] > 0 and "zipf_alpha" in data
+
+
+def test_lexicon_norm_delta_shown_and_suppressed(tmp_path: Path, capsys):
+    pkg = tmp_path / "pkg"
+    pkg.mkdir()
+    (pkg / "__init__.py").write_text("")
+    # ≥15 distinct identifiers → norm deltas annotated.
+    body = "\n".join(f"def func_{i}(arg_{i}):\n    return arg_{i} + {i}" for i in range(20))
+    (pkg / "wide.py").write_text(body + "\n")
+    (pkg / "tiny.py").write_text("def f():\n    return 1\n")
+
+    assert cli.lexicon_view(tmp_path, "human", scope="pkg/wide.py") == 0
+    assert "norm" in capsys.readouterr().out          # deviation annotated
+
+    assert cli.lexicon_view(tmp_path, "human", scope="pkg/tiny.py") == 0
+    assert "small sample" in capsys.readouterr().out   # too few tokens; norms suppressed
 
 
 def test_lexicon_scope_by_path(tmp_path: Path, capsys):
@@ -169,7 +185,7 @@ def test_deps_human_and_json(tmp_path: Path, capsys):
     root = _mini_pkg(tmp_path)
     assert cli.deps_view(root, "human") == 0
     out = capsys.readouterr().out
-    assert "deps:" in out
+    assert out.startswith("deps ")
     # b imports a — a resolved edge labelled by path
     assert "pkg/b.py" in out and "pkg/a.py" in out
     import json

@@ -90,6 +90,23 @@ def _scan_root(root: str | Path):
     return corpus
 
 
+def _view_header(command: str, target: str, summary: str) -> str:
+    """One scannable header line shared by the structural views (ast/lexicon/deps):
+    ``<command>  <target>  · <summary>``, command left-aligned to a common column."""
+    return f"{command:<8} {target}  · {summary}"
+
+
+def _norm_delta(value: float, norm: float, *, eps: float, qualifier: bool = False) -> str:
+    """``(norm 0.49 ↑)`` — how ``value`` sits against a population norm. Within ``eps``
+    reads ≈; ``qualifier`` adds steep/flat for the Zipf gradient. The view's whole point
+    is making deviation visible without the reader having to know the baseline."""
+    d = value - norm
+    arrow = "≈" if abs(d) <= eps else ("↑" if d > 0 else "↓")
+    if qualifier and arrow != "≈":
+        return f"(norm {norm:.2f} {arrow} {'steep' if d > 0 else 'flat'})"
+    return f"(norm {norm:.2f} {arrow})"
+
+
 def _has_source(corpus) -> bool:
     """True if the scanned corpus contains at least one module. A nonexistent or
     source-free root yields an empty corpus; linting it would visit zero components and
@@ -234,7 +251,9 @@ def ast_view(path: str | Path, output: str = "human", *,
     if output == "json":
         print(json.dumps(ast.root.to_dict(named_only=named_only, max_depth=max_depth), indent=2))
     else:
-        print(ast.render(named_only=named_only, max_depth=max_depth))
+        body = ast.render(named_only=named_only, max_depth=max_depth)
+        print(_view_header("ast", str(path), f"{body.count(chr(10)) + 1} nodes"))
+        print(body)
     return 0
 
 
@@ -259,13 +278,21 @@ def lexicon_view(root: str | Path, output: str = "human", *,
         print(json.dumps({"scope": label, "kind": target.id.kind.value,
                           **dist.as_dict()}, indent=2))
     else:
+        header = _view_header("lexicon", f"{label} ({target.id.kind.value})",
+                              f"{dist.distinct} tokens · {dist.n} occ")
+        norms = dist.as_dict()["norms"]
+        if dist.distinct >= 15:
+            # Enough vocabulary for the Zipf fit / hapax to be meaningful — show deviation.
+            stat = (f"  hapax {dist.hapax_ratio:.2f} "
+                    f"{_norm_delta(dist.hapax_ratio, norms['hapax_ratio'], eps=0.05)} · "
+                    f"Zipf α{dist.zipf_alpha:.2f} "
+                    f"{_norm_delta(dist.zipf_alpha, norms['zipf_alpha'], eps=0.15, qualifier=True)} "
+                    f"R²{dist.zipf_r2:.2f}")
+        else:
+            stat = (f"  hapax {dist.hapax_ratio:.2f} · Zipf α{dist.zipf_alpha:.2f} "
+                    f"R²{dist.zipf_r2:.2f} · small sample (norms suppressed)")
         top_line = "  top: " + " ".join(f"{t}({c})" for t, c in dist.top) if dist.top else "  top: —"
-        print("\n".join([
-            f"lexicon: {label} ({target.id.kind.value})",
-            f"  tokens: {dist.distinct} significant · {dist.n} occ · "
-            f"hapax {dist.hapax_ratio:.2f} · Zipf α{dist.zipf_alpha:.2f} R²{dist.zipf_r2:.2f}",
-            top_line,
-        ]))
+        print("\n".join([header, stat, top_line]))
     return 0
 
 
@@ -311,7 +338,8 @@ def deps_view(root: str | Path, output: str = "human", *,
         }, indent=2))
         return 0
 
-    lines = [f"deps: {len(modules)} modules · {len(edges)} edges · {len(cycles)} cycle(s)"]
+    lines = [_view_header("deps", scope or "corpus",
+                          f"{len(modules)} modules · {len(edges)} edges · {len(cycles)} cycle(s)")]
     if not cycles_only:
         by_from: dict = {}
         for e in edges:
