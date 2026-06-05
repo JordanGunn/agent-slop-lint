@@ -28,16 +28,38 @@ foreign bodies without flagging the ordinary tail).
 """
 from __future__ import annotations
 
+from collections import Counter
 from collections.abc import Iterable
 
 from ..scope.base import Scope
 from ..scope.identity import ScopeKind
 from ..scope.lexicon import build_lexicon
-from ..scope.selection import Selection
 from ..config import RuleConfig
 from ..finding import Evidence, Finding, Observation, Severity
 from ..lexicon import jaccard, js_similarity
 from ..rule import Rule
+
+
+def _package_freqs(package: Scope) -> tuple[dict, Counter]:
+    """Per-child token frequencies and the package total, built once per package.
+
+    The rule runs at MODULE altitude, so a naive ``build_lexicon(siblings)`` per module
+    re-tokenises every sibling — O(modules²) per package. Token frequencies are additive
+    across children (the rest-of-package frequencies are ``total − this module``), so we
+    tokenise each child once and memoise ``(per_child, total)`` on the corpus
+    AnalysisContext, keyed by package id. Each module then costs two dict ops."""
+    ctx = getattr(package, "context", None)
+    key = ("cohesion_pkg_freq", package.id)
+    if ctx is not None and key in ctx.cache:
+        return ctx.cache[key]
+    per_child = {c.id: build_lexicon(c).frequencies() for c in package.children()}
+    total: Counter = Counter()
+    for freq in per_child.values():
+        total.update(freq)
+    value = (per_child, total)
+    if ctx is not None:
+        ctx.cache[key] = value
+    return value
 
 
 class CohesionRule(Rule):
@@ -58,15 +80,16 @@ class CohesionRule(Rule):
         package = component.owner
         if package is None:
             return
-        siblings = [c for c in package.children() if c is not component]
-        if not siblings:
+        if len(package.children()) < 2:
             return  # single-child package: no rest-of-package to compare against
 
-        module_lex = component.lexicon()
-        if module_lex.significant_token_count() < min_tokens:
+        per_child, total = _package_freqs(package)
+        module_freq = per_child.get(component.id) or build_lexicon(component).frequencies()
+        if len(module_freq) < min_tokens:
             return
-        module_freq = module_lex.frequencies()
-        context_freq = build_lexicon(Selection(siblings)).frequencies()
+        # rest-of-package = package total minus this module (Counter subtraction drops
+        # tokens that fall to zero, so the keyset is exactly the siblings' vocabulary).
+        context_freq = dict(total - Counter(module_freq))
         if not context_freq:
             return
 
@@ -83,7 +106,7 @@ class CohesionRule(Rule):
                 "cohesion": round(score, 4),
                 "js_similarity": round(js, 4),
                 "package": package.qualname,
-                "module_tokens": module_lex.significant_token_count(),
+                "module_tokens": len(module_freq),
                 "shared_tokens": shared[:15],
             }),
             message=(
