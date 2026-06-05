@@ -18,7 +18,6 @@ is the layered ignore set (Newman 14 + English glue) from
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from itertools import combinations
 
 
 # Newman, AlSuhaibani, Collard & Maletic (SANER 2017) — 14 identifiers
@@ -230,33 +229,52 @@ def patterns_by_alphabet(
     return clusters
 
 
-def compute_concepts(relation: dict[str, set[str]]) -> list[FCAConcept]:
-    """All formal concepts of a binary relation (brute force; small N)."""
+def compute_concepts(
+    relation: dict[str, set[str]], *, max_concepts: int = 20_000,
+) -> list[FCAConcept]:
+    """All formal concepts of a binary relation.
+
+    Every concept intent is an intersection of object rows, so the concept set is the
+    meet-closure of the rows (plus the top — the intent of the empty extent). Computing
+    it that way is bounded by the number of *actual* concepts, which is small for real
+    identifier relations. The previous implementation brute-forced every attribute
+    subset — ``2**len(attributes)`` — which is ~2^38 (≈275e9) on the slop corpus and
+    pegged a core indefinitely. A ``max_concepts`` backstop keeps a pathological lattice
+    (densely overlapping rows) from wedging the linter: such a scope yields no crisp
+    sprawl finding anyway, so we skip it rather than spin.
+    """
     objects = list(relation.keys())
-    attributes = sorted({a for s in relation.values() for a in s})
+    rows = {o: frozenset(relation[o]) for o in objects}
+    attributes = frozenset().union(*rows.values()) if rows else frozenset()
     if not attributes:
         return []
 
     def extent(intent: frozenset[str]) -> frozenset[str]:
-        return frozenset(o for o in objects if intent <= relation[o])
+        return frozenset(o for o in objects if intent <= rows[o])
 
-    def intent(extent: frozenset[str]) -> frozenset[str]:
-        if not extent:
-            return frozenset(attributes)
-        return frozenset.intersection(*(frozenset(relation[o]) for o in extent))
+    def intent(ext: frozenset[str]) -> frozenset[str]:
+        if not ext:
+            return attributes
+        return frozenset.intersection(*(rows[o] for o in ext))
 
-    concepts: set[tuple[frozenset[str], frozenset[str]]] = set()
-    for r in range(len(attributes) + 1):
-        for combo in combinations(attributes, r):
-            i = frozenset(combo)
-            e = extent(i)
-            ii = intent(e)
-            concepts.add((e, ii))
-    for o in objects:
-        e = extent(frozenset(relation[o]))
-        i = intent(e)
-        concepts.add((e, i))
+    # Meet-closure of the object rows: seed with every row + the top, then intersect
+    # each newly found intent with every row until no new intent appears (fixpoint).
+    intents: set[frozenset[str]] = {attributes}
+    intents.update(rows.values())
+    frontier = list(intents)
+    while frontier:
+        nxt: list[frozenset[str]] = []
+        for i in frontier:
+            for r in rows.values():
+                x = i & r
+                if x not in intents:
+                    intents.add(x)
+                    nxt.append(x)
+                    if len(intents) > max_concepts:
+                        return []  # pathological lattice — skip rather than wedge
+        frontier = nxt
 
+    concepts = {(e, intent(e)) for e in (extent(i) for i in intents)}
     return [
         FCAConcept(extent=e, intent=i)
         for e, i in sorted(concepts, key=lambda c: (-len(c[1]), -len(c[0])))
