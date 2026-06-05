@@ -1,129 +1,149 @@
 # slop
 
-A code quality linter for codebases where AI agents are writing most of the diffs.
+A code-quality linter for codebases where AI agents write most of the diffs.
 
 [![PyPI](https://img.shields.io/pypi/v/agent-slop-lint)](https://pypi.org/project/agent-slop-lint/)
 [![Python](https://img.shields.io/pypi/pyversions/agent-slop-lint)](https://pypi.org/project/agent-slop-lint/)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE)
 
-Static-analysis defaults were calibrated for codebases where a productive human wrote ~100 lines on a busy day and another human reviewed every one. An agent can drop that much into a single file before emitting its first status message, and the damage — deep coupling, WMC-heavy classes, duplicated handlers, files that grow 500 LOC in a week, identifier soup that bloats every downstream prompt — lands inside one session rather than over quarters. `slop` runs well-cited metrics across three substrates — structural (McCabe, Chidamber & Kemerer, Nejmeh, Martin, Tornhill, Campbell), information-theoretic (Halstead), and lexical (identifier vocabulary) — at thresholds tuned for that pace.
+> **Status: v3 (`3.0.0a0`) is a ground-up rebuild on a component model and is pre-release.**
+> `pip install` still serves the released 1.x line; install v3 from source (below).
+
+Static-analysis defaults were calibrated for a world where a productive human wrote ~100
+lines on a busy day and another human reviewed every one. An agent can drop that much into
+one file before its first status message — and the damage (deep coupling, god classes,
+duplicated handlers, files that grow 500 LOC in a week, identifier soup that bloats every
+downstream prompt) lands inside one session, not over quarters. `slop` runs well-cited
+metrics — structural (McCabe, Chidamber & Kemerer, Nejmeh, Martin, Tornhill, Campbell) and
+lexical (identifier vocabulary) — at thresholds tuned for that pace, and is built to be
+read by the agent: every finding is either a **directive** it can act on or **evidence** it
+should investigate.
 
 ## Example
 
 ```
-$ slop lint
+$ slop lint --root .
 
-slop 1.0.0 — scanning .
+VERDICTS
+  [error] complexity.cognitive  ·  doctor.run_doctor
+      cognitive complexity 20 exceeds threshold 15
+      → reduce-complexity: Flatten doctor.run_doctor: lift nested conditionals into guard
+        clauses or extract the deepest branch into a named helper (cognitive 20 > 15).
+  [warning] lexical.stutter  ·  config.load_config
+      'load_config' restates its module 'config'
+      → drop-redundant-tokens: drop the tokens the name shares with its scope.
 
-complexity
-  cyclomatic
-    ✗ src/pipeline/ingest.py:44 process_batch — CCX 18 exceeds 10
-    ✗ src/pipeline/ingest.py:112 _normalize_rows — CCX 14 exceeds 10
-  cognitive
-    ✗ src/pipeline/ingest.py:44 process_batch — CogC 26 exceeds 15
-  3 violations, 142 checked
+OBSERVATIONS
+  [info] lexical.cohesion  ·  grep
+      module 'grep' shares only 0% of its vocabulary with the rest of package 'text' —
+      a possible foreign body. Consider whether it belongs here.
 
-hotspots (14 days ago, 87 commits)
-  ✗ src/pipeline/transformation.py — CCX=45, growth +367 LOC
-  ✗ src/lifecycle/tasks/write.py — CCX=41, growth +556 LOC
-  2 violations
-
-duplication
-  ⚠ . — clone density 7.2% exceeds threshold 5.0% (12 cloned functions across 4 clusters)
-  ⚠ src/api/handlers/users.py:88 update_user — function 'update_user' is a Type-2 clone (fingerprint a3b1c4d2f001) — also at: src/api/handlers/orgs.py:74, src/api/handlers/teams.py:81
-  2 violations
-
-information.volume
-  ✗ src/pipeline/ingest.py:44 process_batch — Volume 2147 exceeds 1500
-  1 violation, 412 checked
-
-information.magic_literals
-  ⚠ src/billing/discount.py:31 apply_promo — 'apply_promo' contains 5 distinct magic numeric literals (threshold: 3): 7, 14, 30, 86400, 0.15
-  1 violation
-
-lexical.stutter
-  ⚠ src/services/user_service.py:47 user_update_user_profile — identifier 'user_update_user_profile' repeats tokens ['user'] from enclosing class 'UserService'
-  ⚠ src/services/user_service.py:91 get_user_user_id — identifier 'get_user_user_id' repeats tokens ['user'] from enclosing class 'UserService'
-  2 violations, 412 checked
-
-────────────────────────────────────────
-6 violations | 5 advisories | 22 rules checked | FAIL
+0 verdict(s) ... — exit 1
 ```
 
-Exit `0` clean, `1` on violations, `2` on error. Works in CI, pre-commit, and interactively.
+Exit `0` clean, `1` on any error-severity verdict, `2` on error (including a missing or
+source-free `--root`). Works in CI, pre-commit, and interactively; `--output json` for
+agents and pipelines.
 
 ## Install
 
+v3 is pre-release — install from source as a `uv` tool:
+
 ```bash
-pip install agent-slop-lint
+./scripts/install.sh          # installs `slop` system-wide via uv tool + checks deps
+# or, for development:
+uv sync                       # dev env in .venv (includes pytest, ruff)
+uv run slop lint --root .
 ```
 
-slop shells out to `rg`, `fd`, and `git`. Install via your system package manager (`apt install ripgrep fd-find git`, `brew install ripgrep fd git`, or equivalent) and run `slop doctor` to verify. Full per-platform steps, CI recipes, and pre-commit wiring are in the [setup guide](./docs/SETUP.md).
+slop shells out to `rg`, `fd`, and `git` for discovery and the churn signal. Install them
+with your package manager (`apt install ripgrep fd-find git`, `brew install ripgrep fd git`)
+and run `slop doctor` to verify.
+
+## How it works
+
+A parse of the sources is carved once into an ownership tree —
+**Corpus › Realm › Package › Module › Class › Callable** — and two read-only views project
+over any scope: `Structure` (control flow, coupling, duplication) and `Lexical` (naming and
+vocabulary). A dispatcher runs each rule at the scope it needs, and every finding attributes
+to the *narrowest scope it is about*, with a line where one applies.
+
+Findings come in three strengths, matched to how confidently slop can speak:
+
+- **Verdict** — a defect with a prescribed fix (`reduce-complexity`, `extract-helper`,
+  `break-dependency-cycle`). Error-severity verdicts fail the build.
+- **REVIEW** — slop is confident the structure is anomalous but the remedy is a judgment it
+  won't make for you (warning-capped, never fails the build).
+- **Observation** — a claim-free, evidence-backed nudge where no fix is honestly
+  prescribable (e.g. the identifier distribution, a foreign-body module). It makes no
+  precision claim, so it can't be a false positive.
 
 ## Rules
 
-slop ships 25 rules across two families:
+25 rules, language-agnostic across 11 grammars. `slop rules` lists them with altitude and
+disposition.
 
-- **Code shape** — every rule name carries an explicit scope prefix: `function.complexity.*` (cyclomatic, cognitive, NPath), `class.complexity.*` (per-class CK aggregations: WMC etc), `class.coupling`, `class.inheritance.*`, `function.difficulty.*` (Halstead V and D), `function.types.hidden_mutators`, `function.magic_literals`, `module.god_module`, `module.types.escape_hatches`, `parameter.types.sentinels`, `package.rigidity` / `package.uselessness` (Martin's distance-from-main-sequence). Cluster/whole-repo families (`lexical.*`, `hotspots`, `orphans`, `deps`, `redundancy`, `duplication`) are exempt from the scope prefix.
-- **`lexical.*`** — identifier verbosity, tersity, and stutter against the enclosing scope.
+- **Complexity** (per callable, error): `complexity.cyclomatic` (McCabe), `complexity.cognitive`
+  (Campbell), `complexity.combinatorial` (NPath, Nejmeh).
+- **Structure**: `structure.duplication` (Type-2 clones), `structure.dependency-cycles`
+  (Acyclic Dependencies Principle, error), `structure.god-module`, `structure.call-islands`,
+  `structure.redundancy`, `structure.runts`, `structure.rigidity` / `structure.uselessness`
+  (Martin's distance-from-main-sequence), `structure.escape-hatches`,
+  `structure.hidden-mutators`, `structure.sentinels`.
+- **Class**: `class-shape` — the Chidamber–Kemerer suite (CBO/DIT/NOC/WMC) as an observation.
+- **Lexical**: `lexical.stutter` (a name restating its scope), `lexical.verbosity`,
+  `lexical.sprawl` (a closed alphabet acting as an undeclared type), `lexical.imposters`
+  (a parameter that is really a receiver — a class in hiding), `lexical.slackers` (a real
+  cluster whose names don't align), `lexical.hammers` (institutionalised catch-all
+  vocabulary), `lexical.cohesion` (a module foreign to its package).
+- **Whole-corpus signals** (observations): `vocabulary` (identifier token distribution),
+  `hotspots` (churn × complexity, Tornhill), `orphans` (unreferenced top-level symbols).
 
-The full rule index with default thresholds, citations, and per-rule pages lives in [`docs/rules/`](./docs/rules/README.md). For threshold tuning and the `default` / `lax` / `strict` profiles, see the [configuration reference](./docs/CONFIG.md).
+`imposters`/`slackers` are observations on their own; they promote to a REVIEW verdict only
+when an independent structural signal (clones or redundant siblings) corroborates them.
 
 ## Languages
 
-| Language | Complexity | Hotspots | Packages | Deps | Class |
-|---|---|---|---|---|---|
-| Python, JavaScript, TypeScript, Go, Java, C# | yes | yes | yes | yes | yes |
-| Rust | yes | yes | yes | — | yes |
-| Julia | yes | yes | yes | yes | — |
-| C | yes | yes | yes (warn) | yes (best-effort) | — |
-| C++ | yes | yes | yes | yes (best-effort) | yes |
-| Ruby | yes | yes | yes (warn) | yes (best-effort) | yes |
-
-Language-specific caveats (JavaScript packages, Rust deps, Julia CK metrics, C class metrics, C/C++ `-I`-path resolution and out-of-line method attribution, Ruby type-discipline rules silent-skip and open-class WMC aggregation) are documented in [docs/C.md](./docs/C.md), [docs/CPP.md](./docs/CPP.md), [docs/JULIA.md](./docs/JULIA.md), [docs/RUBY.md](./docs/RUBY.md), and the relevant rule pages.
+Eleven tree-sitter grammars: Python, JavaScript, TypeScript, Go, Java, C#, Rust, Julia, C,
+C++, Ruby. Object-oriented metrics (class-shape, inheritance) apply where the language has
+classes; package/dependency metrics where it has a module system.
 
 ## CLI
 
 ```
-slop lint                         Run all enabled rules
-slop check <category|rule>        Run one category or rule
-slop init [default|lax|strict]    Generate .slop.toml
-slop doctor                       Check fd, rg, git are installed
-slop hook                         Install a git pre-commit hook
-slop skill <dir>                  Install the bundled agent skill
-slop rules                        List rules with thresholds
-slop schema                       Config schema as JSON
+slop lint --root <path>           Run all enabled rules
+slop check <family|rule> --root   Run one namespace family or rule
+slop rules                        List rules (name, disposition, altitude)
+slop schema                       Config schema as JSON (generated from the registry)
+slop init --root <path>           Write a .slop.toml template
+slop doctor                       Check tree-sitter / git availability
 ```
 
-Output formats are `--output human` (default), `--output json` (CI and agents), and `--output quiet`. Run `slop --help` for the full flag list.
+`--output human` (default) or `--output json`. Run `slop --help` for the full list.
 
 ## Configuration
 
-slop walks upward from CWD looking for `.slop.toml` first, then `pyproject.toml` with a `[tool.slop]` table — the same discovery ruff and mypy use. `root` resolves relative to the config file's directory. `--config` and `--root` on the CLI override both.
+slop walks upward from `--root` for a `.slop.toml`, or a `pyproject.toml` with a
+`[tool.slop]` table. Two sections:
 
-```bash
-slop init          # balanced defaults
-slop init lax      # legacy or gradual adoption
-slop init strict   # greenfield or quality-focused
+```toml
+[rules."complexity.cyclomatic"]
+enabled = true
+thresholds.callable = 12          # keyed by the rule's declared altitude
+
+[ignore]
+classes = ["LegacyAdapter"]       # scope-keyed exemptions: functions/classes/modules/packages
 ```
 
-Every threshold, profile, and waiver mechanism is documented in the [configuration reference](./docs/CONFIG.md).
-
-## Architecture
-
-slop ships its own discovery primitives and metric kernels. Each rule is a thin wrapper that loads config, calls a deterministic kernel, and emits `Violation` objects for threshold breaches. Primitives are organised by substrate — `_fs` (fd), `_text` (ripgrep), `_ast` (tree-sitter) — with cross-tool primitives in `_compose` and metric kernels in `_structural` and `_lexical`. One `pip install` gives you the whole thing; no companion runtime.
+A threshold keyed to an altitude the rule doesn't declare is a load error, not a silent
+no-op — so "not flagged" is verifiably clean. `slop schema` prints the exact shape. (The CLI
+takes `--root` directly; the config's keys are rule settings, not a scan path.)
 
 ## Acknowledgments
 
-slop implements metrics from McCabe, Halstead, Chidamber & Kemerer, Nejmeh, Martin, Lakos, Tornhill, and Campbell. Full bibliography in [NOTICE](NOTICE). AI assistance and contributor credits in [CITATIONS.md](CITATIONS.md).
-
-## Further reading
-
-- [Configuration reference](./docs/CONFIG.md) — thresholds, profiles, waivers.
-- [Setup guide](./docs/SETUP.md) — install, CI, pre-commit, agent skill.
-- [Rule index](./docs/rules/README.md) — every rule, every page.
-- [Design philosophy](./docs/philosophy/) — why these metrics, why external.
-- [Changelog](./CHANGELOG.md)
+slop implements metrics from McCabe, Chidamber & Kemerer, Nejmeh, Martin, Tornhill, and
+Campbell — full bibliography in [NOTICE](NOTICE). AI-assistance and contributor credits in
+[CITATIONS.md](CITATIONS.md). Changelog in [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 
