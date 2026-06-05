@@ -6,15 +6,13 @@ published research. These metrics are mathematical formulas computed from
 source code structure; slop implements them independently via tree-sitter
 AST traversal. No code from the original authors' implementations is used.
 
-VENDORED CODE
-=============
-
-The metric-kernel subpackages under src/cli/slop/ — _fs/, _text/, _ast/,
-_compose/, _structural/, _util/ — were originally vendored from
-aux-skills (https://github.com/JordanGunn/aux), also Copyright 2025
-Jordan Godau and licensed under Apache License 2.0. See
-src/cli/slop/KERNELS_LICENSE for the full Apache 2.0 text. slop owns
-this code directly.
+The v3 codebase (src/slop/) is a ground-up rebuild and is original work by
+the author, licensed under the project's Apache License 2.0 (see LICENSE).
+It contains no third-party code; the metric kernels are slop's own
+implementation (heritage: the author's aux-skills project,
+https://github.com/JordanGunn/aux, also Copyright 2025 Jordan Godau under
+Apache 2.0). The earlier vendored-kernel subpackages and their separate
+KERNELS_LICENSE are retired — there is no third-party code to attribute.
 
 ACADEMIC CITATIONS
 ==================
@@ -27,7 +25,7 @@ Cognitive Complexity (complexity.cognitive)
   Campbell, G.A. (2018). "Cognitive Complexity: A new way of measuring
   understandability." SonarSource SA. Technical report.
 
-Chidamber & Kemerer Object-Oriented Metrics (class.*, complexity.weighted)
+Chidamber & Kemerer Object-Oriented Metrics (class-shape)
   Chidamber, S.R. & Kemerer, C.F. (1994). "A Metrics Suite for Object
   Oriented Design." IEEE Transactions on Software Engineering, 20(6),
   476-493.
@@ -36,7 +34,7 @@ Chidamber & Kemerer Object-Oriented Metrics (class.*, complexity.weighted)
   of Inheritance Tree), NOC (Number of Children), WMC (Weighted Methods
   per Class).
 
-Distance from the Main Sequence (packages)
+Distance from the Main Sequence (structure.rigidity, structure.uselessness)
   Martin, R.C. (1994). "OO Design Quality Metrics: An Analysis of
   Dependencies." Proceedings of Workshop Pragmatic and Theoretical
   Directions in Object-Oriented Software Metrics, OOPSLA '94.
@@ -94,4 +92,4 @@ Stop-Word Principles for Software Engineering Text (lexical.*, design)
   default; rules opt in via per-query exclude= arguments. The paper's
   specific 200-word SE-domain list is not adopted directly: their corpus
   is Stack Overflow prose, not identifier streams. See
-  docs/research/identifier-vocabulary.md for the full discussion.
+  docs/.internal/identifier-vocabulary.md for the full discussion.
