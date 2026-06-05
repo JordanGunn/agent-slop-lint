@@ -35,7 +35,7 @@ from ..scope.identity import ScopeKind
 from ..scope.lexicon import build_lexicon
 from ..scope.selection import Selection
 from ..config import RuleConfig
-from ..finding import Evidence, Finding, Observation
+from ..finding import Evidence, Finding, Observation, Severity
 from ..lexicon import jaccard, js_similarity
 from ..rule import Rule
 
@@ -46,7 +46,8 @@ class CohesionRule(Rule):
 
     @classmethod
     def default_config(cls) -> RuleConfig:
-        return RuleConfig(name=cls.name, params={"max_cohesion": 0.10, "min_tokens": 8})
+        return RuleConfig(name=cls.name, severity=Severity.INFO,
+                          params={"max_cohesion": 0.10, "min_tokens": 8})
 
     def check(self, component: Scope, config: RuleConfig) -> Iterable[Finding]:
         max_cohesion = float(config.param("max_cohesion", 0.10))

@@ -24,7 +24,7 @@ from collections.abc import Iterable
 from ..scope.base import Scope
 from ..scope.identity import ScopeKind
 from ..config import RuleConfig
-from ..finding import Evidence, Finding, Observation
+from ..finding import Evidence, Finding, Observation, Severity
 from ..metrics.lexical import Lexical
 from ..metrics.lexical.affix import UNIVERSAL_NOISE
 from ..metrics.locus import narrowest_common_ancestor
@@ -61,7 +61,8 @@ class HammersRule(Rule):
 
     @classmethod
     def default_config(cls) -> RuleConfig:
-        return RuleConfig(name=cls.name, params={"min_spread": 3, "terms": sorted(_HAMMERS)})
+        return RuleConfig(name=cls.name, severity=Severity.INFO,
+                          params={"min_spread": 3, "terms": sorted(_HAMMERS)})
 
     def check(self, component: Scope, config: RuleConfig) -> Iterable[Finding]:
         min_spread = int(config.param("min_spread", 3))

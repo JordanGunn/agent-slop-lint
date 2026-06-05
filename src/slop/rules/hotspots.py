@@ -20,7 +20,7 @@ from collections.abc import Iterable
 from ..scope.base import Scope
 from ..scope.identity import ScopeKind
 from ..config import RuleConfig
-from ..finding import Evidence, Finding, Observation
+from ..finding import Evidence, Finding, Observation, Severity
 from ..metrics.structural.view import Structure
 from ..rule import Rule
 
@@ -32,7 +32,7 @@ class HotspotsRule(Rule):
     @classmethod
     def default_config(cls) -> RuleConfig:
         # Observation: severity/action pinned. The window is the only knob.
-        return RuleConfig(name=cls.name, params={"since": "14 days ago"})
+        return RuleConfig(name=cls.name, severity=Severity.INFO, params={"since": "14 days ago"})
 
     def check(self, component: Scope, config: RuleConfig) -> Iterable[Finding]:
         since = str(config.param("since", "14 days ago"))

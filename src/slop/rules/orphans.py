@@ -22,7 +22,7 @@ from collections.abc import Iterable
 from ..scope.base import Scope
 from ..scope.identity import ScopeKind
 from ..config import RuleConfig
-from ..finding import Evidence, Finding, Observation
+from ..finding import Evidence, Finding, Observation, Severity
 from ..metrics.structural.view import Structure
 from ..rule import Rule
 
@@ -37,7 +37,7 @@ class OrphansRule(Rule):
     def default_config(cls) -> RuleConfig:
         # Observation: severity/action are pinned by the type. The only knob is the
         # confidence floor that bounds the noise.
-        return RuleConfig(name=cls.name, params={"min_confidence": "high"})
+        return RuleConfig(name=cls.name, severity=Severity.INFO, params={"min_confidence": "high"})
 
     def check(self, component: Scope, config: RuleConfig) -> Iterable[Finding]:
         floor = _CONFIDENCE_ORDER.get(str(config.param("min_confidence", "high")), 3)
