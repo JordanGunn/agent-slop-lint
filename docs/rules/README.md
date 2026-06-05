@@ -1,107 +1,62 @@
 # slop rules
 
-slop rules are organised into three suites separated by measurement substrate, not by how serious a violation feels. Each suite has its own README; each leaf rule has its own page.
+slop ships **25 rules**, language-agnostic across 11 grammars. The authoritative,
+always-current reference is the tool itself:
 
-| Suite | Measures | Substrate |
-|---|---|---|
-| [`structural`](structural/README.md) | Shape and graph risk | AST, control flow, import graph, inheritance graph, package graph, git churn |
-| [`information`](information/README.md) | Information density and readability proxies | operator/operand counts, literal frequencies, comment markers |
-| [`lexical`](lexical/README.md) | Vocabulary discipline | identifier strings, AST scope names |
-
-Rule names are fully qualified and dot-separated. The hierarchy under `structural.*` reflects the measurement target:
-
-- `structural.complexity.*` — per-function control-flow metrics
-- `structural.class.*` — class-level CK metrics, including `structural.class.inheritance.*`
-- `structural.types.*` — type-discipline rules
-- `structural.{hotspots,packages,deps,...}` — single-rule structural categories
-
-## Full rule index
-
-### structural
-
-| Rule | Default | Page |
-|---|---|---|
-| `structural.complexity.cyclomatic` | CCX > 10 | [→](structural/complexity/cyclomatic.md) |
-| `structural.complexity.cognitive` | CogC > 15 | [→](structural/complexity/cognitive.md) |
-| `structural.complexity.npath` | NPath > 400 | [→](structural/complexity/npath.md) |
-| `structural.class.complexity` | WMC > 40 | [→](structural/class/complexity.md) |
-| `structural.class.coupling` | CBO > 8 | [→](structural/class/coupling.md) |
-| `structural.class.inheritance.depth` | DIT > 4 | [→](structural/class/inheritance/depth.md) |
-| `structural.class.inheritance.children` | NOC > 10 | [→](structural/class/inheritance/children.md) |
-| `structural.hotspots` | 14d window | [→](structural/hotspots.md) |
-| `structural.packages` | D' > 0.7 | [→](structural/packages.md) |
-| `structural.deps` | any cycle | [→](structural/deps.md) |
-| `structural.local_imports` | any (warning) | [→](structural/local_imports.md) |
-| `structural.redundancy` | ≥ 3 shared | [→](structural/redundancy.md) |
-| `structural.types.sentinels` | ≤ 8 values | [→](structural/types/sentinels.md) |
-| `structural.types.hidden_mutators` | any mutation | [→](structural/types/hidden_mutators.md) |
-| `structural.types.escape_hatches` | > 30% | [→](structural/types/escape_hatches.md) |
-| `structural.duplication` | > 5% | [→](structural/duplication.md) |
-| `structural.god_module` | > 20 | [→](structural/god_module.md) |
-| `structural.orphans` | disabled | [→](structural/orphans.md) |
-
-### information
-
-| Rule | Default | Page |
-|---|---|---|
-| `information.volume` | V > 1500 | [→](information/volume.md) |
-| `information.difficulty` | D > 30 | [→](information/difficulty.md) |
-| `information.magic_literals` | > 3 | [→](information/magic_literals.md) |
-| `information.section_comments` | > 2 | [→](information/section_comments.md) |
-
-### lexical
-
-| Rule | Default | Page |
-|---|---|---|
-| `lexical.stutter` | ≥ 2 tokens | [→](lexical/stutter.md) |
-| `lexical.verbosity` | > 3 tokens | [→](lexical/verbosity.md) |
-| `lexical.cowards` | any match | [→](lexical/cowards.md) |
-| `lexical.hammers` | banlist match | [→](lexical/hammers.md) |
-| `lexical.tautology` | suffix matches type | [→](lexical/tautology.md) |
-| `lexical.sprawl` | ≥ 3 alphabet × ≥ 2 ops | [→](lexical/sprawl.md) |
-| `lexical.imposters` | ≥ 3 fns sharing param | [→](lexical/imposters.md) |
-| `lexical.slackers` | < 30% template coverage | [→](lexical/slackers.md) |
-| `lexical.confusion` | ≥ 2 strong receivers in one file | [→](lexical/confusion.md) |
-
-## Naming principle
-
-Suite names describe **what is measured**, not the **technique used**. `structural` is named after its subject (program structure); `information` is named after its subject (information content); `lexical` is named after its subject (vocabulary).
-
-Subcategories follow the same principle: `structural.complexity` is a category of structural rules that measures complexity, not a category of complexity rules that happen to be structural.
-
-## Default severity and exit codes
-
-- `severity = "error"` (default for established rules) — violation fails the lint run, exit code 1.
-- `severity = "warning"` (default for advisory rules) — violation reports but does not fail.
-
-Adopt slop gradually by setting everything to `warning` first, reviewing for a week, then promoting rules to `error` one at a time.
-
-## Configuration
-
-Configuration is per-rule in `.slop.toml` (or `[tool.slop]` in `pyproject.toml`):
-
-```toml
-[rules.structural.complexity]
-cyclomatic_threshold = 10
-
-[rules.lexical.verbosity]
-max_mean_tokens = 3.0
+```bash
+slop rules     # name, disposition, altitude for every rule
+slop schema    # the exact config shape (thresholds + params), generated from the registry
 ```
 
-`enabled` and `severity` may also be set on any prefix table — `[rules.lexical]`, `[rules.structural.class]`, `[rules.structural]` — and they propagate to every rule under that prefix. More specific tables override broader ones.
+Each rule's rationale — what it measures, why, the citation, and why it carries the
+disposition it does — lives in its **module docstring** under `src/slop/rules/<name>.py`.
+That is the single source of truth; this page is only a map (per-rule prose pages were
+retired in v3 because hand-maintained copies of a docstring are exactly the drift slop
+flags).
 
-```toml
-# disable an entire suite
-[rules.lexical]
-enabled = false
+## Disposition
 
-# disable a group within a suite
-[rules.structural.class]
-enabled = false
-```
+Every finding is one of three strengths, chosen by how confidently slop can speak:
 
-See [`docs/CONFIG.md`](../CONFIG.md) for the full configuration reference, profiles (`default`, `lax`, `strict`), waivers, and severity levels.
+- **Verdict** — a defect with a prescribed fix. Error-severity verdicts fail the build.
+- **REVIEW** — the structure is anomalous but the remedy is a judgment slop won't make
+  (warning-capped; never fails the build).
+- **Observation** — a claim-free, evidence-backed nudge where no fix is honestly
+  prescribable. It makes no precision claim, so it cannot be a false positive.
 
-## Legacy rule names
+## The rules
 
-Pre-0.9.0 rule names (`complexity.*`, `halstead.*`, `npath`, `hotspots`, `class.*`, ...) and their matching `[rules.<old>]` TOML tables are still accepted via a compatibility shim that translates to the canonical names at config-load time. The shim is scheduled for removal in 1.1.0. See `CHANGELOG.md` for the full mapping.
+**Complexity** (per callable, error verdict)
+- `complexity.cyclomatic` — McCabe (1976)
+- `complexity.cognitive` — Campbell (2018)
+- `complexity.combinatorial` — NPath, Nejmeh (1988)
+
+**Structure**
+- `structure.duplication` — Type-2 clone clusters
+- `structure.dependency-cycles` — Acyclic Dependencies Principle (error)
+- `structure.god-module`, `structure.runts` — module/package size boundaries
+- `structure.rigidity`, `structure.uselessness` — Martin's distance from the main sequence
+- `structure.call-islands`, `structure.redundancy` — intra-module topology (REVIEW)
+- `structure.escape-hatches`, `structure.hidden-mutators`, `structure.sentinels` — type discipline
+
+**Class**
+- `class-shape` — the Chidamber–Kemerer suite (CBO/DIT/NOC/WMC), as an observation
+
+**Lexical**
+- `lexical.stutter` — a name restating its enclosing scope
+- `lexical.verbosity` — names compensating for a missing namespace
+- `lexical.sprawl` — a closed alphabet acting as an undeclared type (REVIEW)
+- `lexical.imposters` — a parameter that is really a receiver (a class in hiding)
+- `lexical.slackers` — a real cluster whose names don't align
+- `lexical.hammers` — institutionalised catch-all vocabulary (observation)
+- `lexical.cohesion` — a module foreign to its package's vocabulary (observation)
+
+`imposters` / `slackers` are observations alone, and promote to a REVIEW verdict only when
+an independent structural signal (clones or redundant siblings) corroborates the cluster.
+
+**Whole-corpus signals** (observations)
+- `vocabulary` — identifier token distribution (a Zipf near-invariant; deviation is the signal)
+- `hotspots` — churn × complexity, Tornhill (2015)
+- `orphans` — top-level symbols with no detected references
+
+See [the configuration reference](../CONFIG.md) for thresholds and exemptions.
