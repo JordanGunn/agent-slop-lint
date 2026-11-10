@@ -380,27 +380,34 @@ def find_view(root: str | Path, name: str | None, output: str = "human", *,
         return 2
     scope_kind = _parse_kind(kind)
     if collisions:
-        groups = discovery.collisions(corpus, kind=scope_kind or ScopeKind.CLASS)
+        collision_kind = scope_kind or ScopeKind.CLASS
+        groups = discovery.collisions(corpus, kind=collision_kind)
+        notes = discovery.caveats(corpus, collision_kind)
         if output == "json":
-            print(json.dumps({"kind": (scope_kind or ScopeKind.CLASS).value,
+            print(json.dumps({"kind": collision_kind.value,
                               "collisions": {n: [m.as_dict() for m in ms]
-                                             for n, ms in groups.items()}}, indent=2))
+                                             for n, ms in groups.items()},
+                              "caveats": notes}, indent=2))
             return 0
         lines = [_view_header("find", "collisions",
                               f"{len(groups)} name(s) defined more than once")]
         for n, ms in groups.items():
             lines.append(f"  {n}  x{len(ms)}")
             lines.extend(f"    {m.qualname}  {_where(m)}" for m in ms)
+        lines.extend(f"  note: {n}" for n in notes)
         print("\n".join(lines))
         return 0
     if name is None:
         raise ValueError("find needs a NAME, or --collisions")
     matches = discovery.find(corpus, name, kind=scope_kind)
+    notes = discovery.caveats(corpus, scope_kind)
     if output == "json":
-        print(json.dumps({"name": name, "matches": [m.as_dict() for m in matches]}, indent=2))
+        print(json.dumps({"name": name, "matches": [m.as_dict() for m in matches],
+                          "caveats": notes}, indent=2))
         return 0
     lines = [_view_header("find", name, f"{len(matches)} match(es)")]
     lines.extend(f"  {m.kind.value:<8} {m.qualname}  {_where(m)}" for m in matches)
+    lines.extend(f"  note: {n}" for n in notes)
     print("\n".join(lines))
     return 0
 
@@ -420,14 +427,16 @@ def tree_view(root: str | Path, output: str = "human", *, scope: str | None = No
     shown_kind = _parse_kind(kind)
     rows = discovery.outline(target, corpus.root, depth=depth,
                              kinds=frozenset({shown_kind}) if shown_kind else None)
+    notes = discovery.caveats(corpus, shown_kind)
     label = _rel_path(target.id, str(corpus.root)) or target.qualname or corpus.name
     if output == "json":
         print(json.dumps({"scope": label, "kind": target.id.kind.value,
-                          "rows": [{"level": level, **m.as_dict()} for level, m in rows]},
-                         indent=2))
+                          "rows": [{"level": level, **m.as_dict()} for level, m in rows],
+                          "caveats": notes}, indent=2))
         return 0
     lines = [_view_header("tree", f"{label} ({target.id.kind.value})", f"{len(rows)} scope(s)")]
     lines.extend(f"{'  ' * level}{m.kind.value} {m.name}  {_where(m)}" for level, m in rows)
+    lines.extend(f"  note: {n}" for n in notes)
     print("\n".join(lines))
     return 0
 
@@ -460,8 +469,10 @@ def vocab_view(root: str | Path, ontology: str | Path, output: str = "human", *,
     if corpus is None:
         return 2
     result = compare(discovery.find(corpus, kind=ScopeKind.CLASS), vocabulary)
+    notes = discovery.caveats(corpus, ScopeKind.CLASS)
     if output == "json":
-        print(json.dumps({"vocabulary": vocabulary.name, **result.as_dict()}, indent=2))
+        print(json.dumps({"vocabulary": vocabulary.name, **result.as_dict(),
+                          "caveats": notes}, indent=2))
         return 0
     lines = [_view_header("vocab", vocabulary.name,
                           f"{len(result.matched)} matched · {len(result.unknown)} unknown · "
@@ -472,6 +483,7 @@ def vocab_view(root: str | Path, ontology: str | Path, output: str = "human", *,
         lines.append(f"  unknown  {m.name}  {_where(m)}")
     for t in result.unused:
         lines.append(f"  unused   {t.name}")
+    lines.extend(f"  note: {n}" for n in notes)
     print("\n".join(lines))
     return 0
 

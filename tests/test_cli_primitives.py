@@ -189,3 +189,61 @@ def test_two_runs_print_identical_bytes(sample_project: Path, capsys):
         cli.main(["tree", "--root", str(sample_project), "--output", "json"])
         outputs.append(capsys.readouterr().out)
     assert outputs[0] == outputs[1]
+
+
+# ---- every grammar either answers or says it cannot ------------------------
+
+_WIDGET = {
+    "m.py": "class Widget:\n    pass\n",
+    "m.js": "class Widget {}\n",
+    "m.ts": "export class Widget {}\n",
+    "m.go": "package m\n\ntype Widget struct{}\n",
+    "Widget.java": "public class Widget {}\n",
+    "Widget.cs": "public class Widget {}\n",
+    "m.rs": "pub struct Widget {}\n",
+    "m.cpp": "class Widget {};\n",
+    "m.rb": "class Widget\nend\n",
+}
+
+
+@pytest.mark.parametrize("filename", sorted(_WIDGET))
+def test_class_bearing_grammars_find_a_defined_class(tmp_path: Path, capsys, filename: str):
+    (tmp_path / filename).write_text(_WIDGET[filename])
+    if filename.endswith(".go"):
+        (tmp_path / "go.mod").write_text("module example.com/m\ngo 1.21\n")
+    _, answer, _ = _ask(capsys, "find", "Widget", "--kind", "class", "--root", str(tmp_path),
+                        "--output", "json")
+    assert [m["name"] for m in answer["matches"]] == ["Widget"]
+    assert answer["caveats"] == []
+
+
+@pytest.mark.parametrize("filename,source", [
+    ("m.c", "struct Widget { int x; };\n"),
+    ("m.jl", "struct Widget\nend\n"),
+])
+def test_a_grammar_without_class_scopes_says_so_instead_of_answering_empty(
+        tmp_path: Path, capsys, filename: str, source: str):
+    # An empty 'matches' here would read as "Widget is not defined". It is defined; the
+    # grammar just carves no class scopes, so the answer must carry that caveat.
+    (tmp_path / filename).write_text(source)
+    _, answer, _ = _ask(capsys, "find", "Widget", "--root", str(tmp_path), "--output", "json")
+    assert answer["matches"] == []
+    assert len(answer["caveats"]) == 1 and "no class scopes" in answer["caveats"][0]
+    code, text, _ = _ask(capsys, "find", "Widget", "--root", str(tmp_path))
+    assert "note:" in text
+
+
+def test_caveats_apply_only_to_questions_about_classes(tmp_path: Path, capsys):
+    (tmp_path / "m.c").write_text("int run(void) { return 1; }\n")
+    _, answer, _ = _ask(capsys, "find", "run", "--kind", "callable", "--root", str(tmp_path),
+                        "--output", "json")
+    assert [m["name"] for m in answer["matches"]] == ["run"]
+    assert answer["caveats"] == []       # callables are discoverable in C
+
+
+def test_vocab_carries_the_caveat_for_a_polyglot_root(tmp_path: Path, capsys):
+    (tmp_path / "a.py").write_text("class Ticket:\n    pass\n")
+    (tmp_path / "b.c").write_text("struct Customer { int x; };\n")
+    _, answer, _ = _ask(capsys, "vocab", "--ontology", IR, "--root", str(tmp_path), "--output", "json")
+    assert [m["term"] for m in answer["matched"]] == ["Ticket"]
+    assert any(c.startswith("c:") for c in answer["caveats"])   # Customer may live in C

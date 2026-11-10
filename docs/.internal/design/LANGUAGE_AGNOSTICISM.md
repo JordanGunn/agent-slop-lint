@@ -36,9 +36,9 @@ Other Python assumptions found (work-list below): hardcoded `self`/`cls`, the
 `child_by_field_name("body")` walk, the `{python,javascript,ruby}` dynamic-language
 set + `__x__` dunder checks, and the `__init__.py` literals in `carve.py`/`graph/build.py`.
 
-**Separate (not a language-agnosticism bug):** the C# grammar does not parse at all —
-its tree-sitter wheel is not loading. Tracked apart; no grammar fact can help until it
-parses.
+**Resolved since the audit:** the C# tree-sitter wheel did not load at audit time. It
+loads and parses now; `tests/test_cli_primitives.py` pins discovery for every
+class-bearing grammar, C# included.
 
 ## Grammar-fact contract
 
@@ -89,12 +89,12 @@ A grammar supplies (defaults in `base.py`, override where the language differs):
 4. ✅ Delegated the `__init__.py` literals in `scope/carve` + `graph/build` to
    `package_init_name()`. Python behavior preserved (martin-zones import resolution
    stays green); non-Python correctly skips the init branch. Suite 210→212.
-5. (separate) C# grammar wheel not loading — parse-level, not a fact.
+5. ✅ C# grammar wheel loads (parse-level, not a fact); pinned by the all-grammar test.
 
 ### Status: the grammar-fact de-overfit pass is complete (#1, #3–#4).
 
 The remaining shared-code Python assumptions are cleared. **#2 (`resolve_packages`)
-stays open as a fidelity enhancement, not a de-overfit bug** (reframed above), and **#5
-(C# wheel) is a packaging issue, not a grammar fact.** Every shared algorithm in
+stays open as a fidelity enhancement, not a de-overfit bug**, and **#5 (C# wheel) was a
+packaging issue, not a grammar fact, and is resolved.** Every shared algorithm in
 `metrics/` + `scope/carve` + `graph/build` now reads per-language idioms from grammar
 facts; no `if lang ==` branch or hardcoded Python node-type/literal remains in them.

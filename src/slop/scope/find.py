@@ -17,6 +17,7 @@ from pathlib import Path
 
 from .base import Scope
 from .identity import ScopeId, ScopeKind
+from ..ast.paradigm import ObjectOriented
 
 
 @dataclass(frozen=True)
@@ -140,3 +141,20 @@ def collisions(corpus, *, kind: ScopeKind = ScopeKind.CLASS) -> dict[str, list[M
         for name, by_identity in sorted(groups.items())
         if len(by_identity) > 1
     }
+
+
+def caveats(corpus, kind: ScopeKind | None = None) -> list[str]:
+    """Reasons a class-related answer may be incomplete, one line per affected language.
+
+    A realm whose grammar is procedural (C, Julia) carves no class scopes, so its
+    ``struct``/type definitions are not discoverable and an empty answer there does not
+    mean "not defined". Empty unless the question involves classes (``kind`` is None or
+    CLASS)."""
+    if kind is not None and kind is not ScopeKind.CLASS:
+        return []
+    return sorted(
+        f"{realm.language}: procedural grammar carves no class scopes; "
+        "struct/type definitions are not discovered"
+        for realm in corpus.realms()
+        if not issubclass(realm.grammar, ObjectOriented)
+    )
