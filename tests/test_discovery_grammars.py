@@ -31,6 +31,20 @@ def test_enums_and_interfaces_are_discovered(tmp_path: Path, filename, source, e
     assert _names(tmp_path, ScopeKind.CLASS) == expected
 
 
+def test_typescript_type_aliases_are_discovered_with_their_generics(tmp_path: Path):
+    # `type X = ...` names a type exactly as `interface X` does (Go's `type Status int` is
+    # already discovered), generic or not, and adds no callables of its own.
+    (tmp_path / "m.ts").write_text(
+        "export type Point = { x: number; y: number }\n"
+        "type Id = string\n"
+        "export type Box<T> = { value: T }\n"
+        "export interface Shape {}\n"
+        "class Real { method() { return 1 } }\n"
+    )
+    assert _names(tmp_path, ScopeKind.CLASS) == {"Point", "Id", "Box", "Shape", "Real"}
+    assert _names(tmp_path, ScopeKind.CALLABLE) == {"method"}
+
+
 def test_csharp_discovers_the_constructs_a_real_file_uses(tmp_path: Path):
     # A namespace, a generic class with a property, an interface, a struct and an enum.
     (tmp_path / "Order.cs").write_text(

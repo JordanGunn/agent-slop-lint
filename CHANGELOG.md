@@ -132,6 +132,10 @@ below is recoverable from commit `b7ab8f7` (the tip of `dev` before this change)
   data file or an `exclude`d directory no longer enters with complexity 0 (a 400-day
   window on laszy gave 1,919 hotspot observations from this; it gives 36, all under
   `src/`).
+- **TypeScript type aliases were not discovered.** `type Point = {...}` and generic
+  `type Box<T> = ...` are now class-like scopes beside `interface` and `enum`, as Go's named
+  types already were, so `find`, `vocab` and `shape` see them (a `shape` row for an alias
+  has no methods and `lcom4` 0).
 - **Regression: `languages` was ignored since the v3 rebuild.** 1.x read the top-level
   `languages = [...]` key and passed it to the engine (restricting the scan to those
   languages); `850d77e` dropped it while generated configs kept it. It now restricts every
@@ -186,7 +190,6 @@ below is recoverable from commit `b7ab8f7` (the tip of `dev` before this change)
 
 ### Known limits
 
-- TypeScript type aliases are not discovered.
 - `orphans` matches by name, so an unreferenced function whose name is used elsewhere is
   not reported.
 - A class qualname is its module name plus its class name, without the package path, so

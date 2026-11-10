@@ -26,7 +26,7 @@ class TypeScript(EcmaScriptMembers, MultiPurpose):
     @classmethod
     def classes(cls) -> frozenset[str]:
         return frozenset({"class_declaration", "interface_declaration", "abstract_class_declaration",
-                          "enum_declaration"})
+                          "enum_declaration", "type_alias_declaration"})
 
     @classmethod
     def identifiers(cls) -> frozenset[str]:
