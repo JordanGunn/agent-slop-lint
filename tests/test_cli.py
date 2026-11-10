@@ -233,3 +233,27 @@ def test_init_writes_template(tmp_path: Path, capsys):
     assert "[rules." in cfg
     # second init refuses to overwrite
     assert cli.init(tmp_path) == 2
+
+
+def test_lint_and_check_drop_excluded_files(tmp_path: Path, capsys):
+    # tests/ holds the only branchy function; with threshold 1 it is a finding until the
+    # config excludes tests/**. Valid config (no stale rule), so this exercises `load`.
+    import json
+    (tmp_path / "app.py").write_text("def ok(x):\n    return x\n")
+    (tmp_path / "tests").mkdir()
+    (tmp_path / "tests" / "test_a.py").write_text(
+        "def branchy(x):\n    if x:\n        return 1\n    if x > 2:\n        return 2\n    return 3\n")
+    rule = '[rules."complexity.cyclomatic".thresholds]\ncallable = 2\n'
+
+    def findings(run) -> set[str]:
+        capsys.readouterr()
+        run()
+        return {f["path"] for f in json.loads(capsys.readouterr().out)["findings"]}
+
+    (tmp_path / ".slop.toml").write_text(rule)
+    assert findings(lambda: cli.lint(tmp_path, "json")) == {"tests/test_a.py"}
+    assert findings(lambda: cli.check("complexity.cyclomatic", tmp_path, "json")) == {"tests/test_a.py"}
+
+    (tmp_path / ".slop.toml").write_text('exclude = ["tests/**"]\n' + rule)
+    assert findings(lambda: cli.lint(tmp_path, "json")) == set()
+    assert findings(lambda: cli.check("complexity.cyclomatic", tmp_path, "json")) == set()
