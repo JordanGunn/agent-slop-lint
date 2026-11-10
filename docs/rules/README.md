@@ -1,6 +1,6 @@
 # slop rules
 
-slop ships **23 rules**, language-agnostic across 11 grammars. The authoritative,
+slop ships **12 rules**, language-agnostic across 11 grammars. The authoritative,
 always-current reference is the tool itself:
 
 ```bash
@@ -32,26 +32,19 @@ Every finding is one of three strengths, chosen by how confidently slop can spea
 - `complexity.combinatorial` — NPath, Nejmeh (1988)
 
 **Structure**
+- `structure.god-module` — module size boundaries
 - `structure.duplication` — Type-2 clone clusters
 - `structure.dependency-cycles` — Acyclic Dependencies Principle (error)
-- `structure.god-module`, `structure.runts` — module/package size boundaries
-- `structure.rigidity`, `structure.uselessness` — Martin's distance from the main sequence
-- `structure.call-islands`, `structure.redundancy` — intra-module topology (REVIEW)
-- `structure.escape-hatches`, `structure.hidden-mutators`, `structure.sentinels` — type discipline
+- `structure.rigidity`, `structure.uselessness` — Martin's distance from the main
+  sequence (REVIEW)
 
 **Class**
-- `class-shape` — the Chidamber–Kemerer suite (CBO/DIT/NOC/WMC), as an observation
+- `class-shape` — the Chidamber–Kemerer suite (CBO/DIT/NOC/NOM), as an observation
 
-**Lexical**
-- `lexical.stutter` — a name restating its enclosing scope
-- `lexical.verbosity` — names compensating for a missing namespace
-- `lexical.sprawl` — a closed alphabet acting as an undeclared type (REVIEW)
-- `lexical.hammers` — institutionalised catch-all vocabulary (observation)
-- `lexical.cohesion` — a module foreign to its package's vocabulary (observation)
-
-**Whole-corpus signals** (observations)
-- `vocabulary` — identifier token distribution (a Zipf near-invariant; deviation is the signal)
-- `hotspots` — churn × complexity, Tornhill (2015)
-- `orphans` — top-level symbols with no detected references
+**Whole-corpus signals**
+- `vocabulary` — identifier token distribution (a Zipf near-invariant; deviation is
+  the signal) (observation)
+- `hotspots` — churn × complexity, Tornhill (2015) (observation)
+- `orphans` — top-level symbols with no detected references (observation)
 
 See [the configuration reference](../CONFIG.md) for thresholds and exemptions.

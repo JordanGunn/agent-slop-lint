@@ -96,7 +96,7 @@ disposition. Each traces to a published source or a standard concept.
 - **Structure**: `structure.duplication` (Type-2 clones), `structure.dependency-cycles`
   (Acyclic Dependencies Principle, error), `structure.god-module`, and
   `structure.rigidity` / `structure.uselessness` (Martin's distance-from-main-sequence).
-- **Class**: `class-shape` — the Chidamber–Kemerer suite (CBO/DIT/NOC/WMC) as an observation.
+- **Class**: `class-shape` — the Chidamber–Kemerer suite (CBO/DIT/NOC and method count) as an observation.
 - **Whole-corpus signals** (observations): `vocabulary` (identifier token distribution, a
   Zipf near-invariant), `hotspots` (churn × complexity, Tornhill), `orphans` (unreferenced
   top-level symbols).

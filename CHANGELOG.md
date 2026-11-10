@@ -33,6 +33,14 @@ below is recoverable from commit `b7ab8f7` (the tip of `dev` before this change)
   `member_access_patterns`, `is_dynamic_type`. `extract_parameters` stays.
 - Kept without a rule, for the later structural-analysis layer: `Structure.lcom` (still a
   stub returning `None`), `method_count`, `halstead_density`, `magic_literals`.
+- **Documentation and research probes for the removed concepts (45 files):**
+  `docs/philosophy/naming-spec.md` and `composition-and-lexical.md`,
+  `docs/.internal/design/LITERALS.md`, `docs/.internal/roadmap.md`,
+  `scripts/research/composition_poc/`, `composition_poc_v2/`, `synonym_probe.py`,
+  `lexicon_affinity_probe.py`, and `.scratch/lexicon/` (the old `Lexicon` API). Design docs
+  that mixed removed and surviving material were trimmed. The frozen research record under
+  `docs/.internal/research/` and `docs/.internal/snapshots/` is untouched; its pointers to
+  the deleted scripts now dangle and resolve only in `b7ab8f7`.
 - 12 rules remain, each tracing to a citation or a standard concept: `complexity.*`
   (McCabe, Campbell, Nejmeh), `structure.dependency-cycles` (Lakos, Martin, Tarjan),
   `structure.rigidity` / `structure.uselessness` (Martin), `class-shape` (Chidamber-Kemerer),

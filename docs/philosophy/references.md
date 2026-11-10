@@ -6,38 +6,35 @@ Full bibliography of the research slop's metrics are built on.
 
 - **McCabe, T.J.** (1976). "A Complexity Measure." *IEEE Transactions on
   Software Engineering*, SE-2(4), 308-320.
-  → `structural.complexity.cyclomatic`
+  → `complexity.cyclomatic`
 
 - **Campbell, G.A.** (2018). "Cognitive Complexity: A new way of measuring
   understandability." SonarSource SA. Technical report.
-  → `structural.complexity.cognitive`
+  → `complexity.cognitive`
 
 - **Halstead, M.H.** (1977). *Elements of Software Science*. Elsevier.
-  → `information.volume`, `information.difficulty`
+  → `Callable.volume`, `Callable.halstead_density` (measures; no rule)
 
 - **Nejmeh, B.A.** (1988). "NPATH: A Measure of Execution Path Complexity
   and Its Applications." *Communications of the ACM*, 31(2), 188-200.
-  → `structural.complexity.npath`
+  → `complexity.combinatorial`
 
 - **Chidamber, S.R. & Kemerer, C.F.** (1994). "A Metrics Suite for Object
   Oriented Design." *IEEE Transactions on Software Engineering*, 20(6),
   476-493.
-  → `structural.class.complexity` (WMC),
-  `structural.class.coupling` (CBO),
-  `structural.class.inheritance.depth` (DIT),
-  `structural.class.inheritance.children` (NOC)
+  → `class-shape` (CBO, DIT, NOC, NOM; WMC as a weighting family)
 
 - **Martin, R.C.** (1994). "OO Design Quality Metrics: An Analysis of
   Dependencies." *Proceedings of Workshop Pragmatic and Theoretical
   Directions in Object-Oriented Software Metrics*, OOPSLA '94.
-  → `packages` (D', I, A)
+  → `structure.rigidity`, `structure.uselessness` (D', I, A)
 
 - **Martin, R.C.** (2002). *Agile Software Development: Principles,
   Patterns, and Practices*. Prentice Hall. Chapter 20.
-  → `packages` (expanded treatment), `deps` (Acyclic Dependencies Principle)
+  → `structure.rigidity`, `structure.uselessness` (expanded treatment), `structure.dependency-cycles` (Acyclic Dependencies Principle)
 
 - **Lakos, J.** (1996). *Large-Scale C++ Software Design*. Addison-Wesley.
-  → `deps` (Acyclic Dependencies Principle)
+  → `structure.dependency-cycles` (Acyclic Dependencies Principle)
 
 - **Tornhill, A.** (2015). *Your Code as a Crime Scene: Use Forensic
   Techniques to Arrest Defects, Bottlenecks, and Bad Design in Your
@@ -46,57 +43,20 @@ Full bibliography of the research slop's metrics are built on.
 
 - **Tarjan, R.E.** (1972). "Depth-First Search and Linear Graph
   Algorithms." *SIAM Journal on Computing*, 1(2), 146-160.
-  → `deps` (SCC detection algorithm)
+  → `structure.dependency-cycles` (SCC detection algorithm)
 
-- **Wille, R.** (1982). "Restructuring lattice theory: an approach
-  based on hierarchies of concepts." *Ordered Sets*, NATO Advanced
-  Study Institutes Series 83, 445-470.
-  → `composition.affix_polymorphism` (Formal Concept Analysis;
-  inheritance lattice extraction)
+- **Zipf, G.K.** (1949). *Human Behavior and the Principle of Least Effort*.
+  Addison-Wesley.
+  → `vocabulary` (identifier token distribution)
 
-- **Ganter, B. & Wille, R.** (1999). *Formal Concept Analysis:
-  Mathematical Foundations*. Springer.
-  → `composition.affix_polymorphism` (canonical FCA reference)
+## Secondary sources (cited in rationale)
 
-- **Caprile, B. & Tonella, P.** (2000). "Restructuring program
-  identifiers based on word usage and stop-word filtering."
-  *Proceedings of the 8th International Workshop on Program
-  Comprehension*, 97-104.
-  → `composition.affix_polymorphism` (identifier-pattern
-  restructuring; affix detection)
-
-- **Bavota, G., Oliveto, R., De Lucia, A., Antoniol, G., &
-  Guéhéneuc, Y-G.** (2014). "Methodbook: Recommending Move Method
-  Refactorings via Relational Topic Models." *IEEE Transactions on
-  Software Engineering*, 40(7), 671-694.
-  → `composition.first_parameter_drift` (Extract Class /
-  Move Method refactoring detection lineage)
-
-- **Harris, Z.S.** (1955). "From Phoneme to Morpheme." *Language*,
-  31(2), 190-222.
-  → `lexical.numbered_variants` (morpheme-boundary detection
-  on identifiers; the segmentation principle behind suffix
-  classification)
+- **Deissenboeck, F. & Pizka, M.** (2006). "Concise and Consistent
+  Naming." *Software Quality Journal*, 14(3), 261-282.
 
 - **Lawrie, D., Feild, H., & Binkley, D.** (2006). "Quantifying
   Identifier Quality: An Analysis of Trends." *Empirical Software
   Engineering*, 12(4), 359-388.
-  → `lexical.verbosity`, `lexical.tersity`, `lexical.name_verbosity`
-  (identifier-quality metrics)
-
-- **Deissenboeck, F. & Pizka, M.** (2006). "Concise and Consistent
-  Naming." *Software Quality Journal*, 14(3), 261-282.
-  → `lexical.weasel_words`, `lexical.boilerplate_docstrings`
-  (naming-discipline foundations; concise-and-consistent rule)
-
-- **Rissanen, J.** (1978). "Modeling by shortest data description."
-  *Automatica*, 14(5), 465-471.
-  → Methodology — MDL principle informs the
-  `composition.affix_polymorphism` cluster filtering (a cluster
-  earns its description length by reducing the codebase's
-  description length).
-
-## Secondary sources (cited in rationale)
 
 - **Bainbridge, L.** (1983). "Ironies of Automation." *Automatica*,
   19(6), 775-779.

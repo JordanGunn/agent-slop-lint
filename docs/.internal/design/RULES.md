@@ -13,11 +13,8 @@ ck.* (dit, noc, cbo, lcom, nom)                       -> Class        (OO capabi
 rigidity / instability / uselessness / abstractness   -> Package
 deps / cycles                                         -> DependencyGraph
 hotspots                                              -> Corpus/Module (+ git churn)
-redundancy / clones                                   -> Module
-call-islands (legacy "confusion", structural)         -> Module
-lexical concept-dispersion (the user's "confusion")   -> any-altitude lexicon (hapax residual vs Zipf baseline, maturity-gated)
-stutter / imposters / slackers / sprawl               -> SymbolContainer / Package lexicon
-vocabulary                                            -> any-altitude lexicon (Realm/Package/Module/Class)
+clones                                                -> Module
+vocabulary                                            -> Package lexicon (observation; Zipf/hapax distribution)
 ```
 
 Rule output may still expose a string `scope` for human and machine consumers,
@@ -53,7 +50,7 @@ the most-used cell — the prescriptive-but-non-gating warning.
 
 **The `REVIEW` action** is a verdict whose remedy is deferred: slop is confident the
 structure is anomalous, but the fix is disjunctive and depends on a judgment slop
-does not make (e.g. disjoint call-islands — split, or intentional facade?). It is a
+does not make (e.g. a package deep in Martin's Zone of Pain — introduce abstractions, or reduce inbound coupling?). It is a
 verdict, not a third disposition; the conditionality lives in the action. slop does
 **not** adjudicate intent — that is a separate concern. `REVIEW` verdicts **cap at
 `warning`** (never `error`/exit-1): if we cannot prescribe the fix, we do not
@@ -96,6 +93,6 @@ A rule never walks the corpus itself. Two consequences:
   downstream of this spine, not a prerequisite for the executable.)
 
 Declared altitudes mirror the targeting table above: complexity at
-`{Callable, Class}`, CK at `{Class}`, Martin at `{Package}`, god_module at
-`{Module}`, lexical dispersion scope-polymorphic at `{Class, Module, Package}`,
-cross-cutting (hotspots/cycles) at `{Corpus}`.
+`{Callable}`, class-shape (CK) at `{Class}`, Martin at `{Package}`, god-module at
+`{Module}`, vocabulary at `{Package}`, cross-cutting (hotspots/cycles/duplication/
+orphans) at `{Corpus}`.

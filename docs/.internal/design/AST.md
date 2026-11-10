@@ -281,9 +281,9 @@ than forcing false precision.
 ## AST Subsystem — first-class, tree-sitter-isolated
 
 The current `model/ast.py` is not an AST; it is a thin fragment built only to feed
-the component model. The actual AST *functionality* has no owner — it is sprawled
+the component model. The actual AST *functionality* has no owner — it is scattered
 across `parse.py`, `grammar/`, `model/ast.py`, and a single traversal vocabulary
-copy-pasted into ~12 metric modules. By slop's own thesis, that sprawl is the
+copy-pasted into ~12 metric modules. By slop's own thesis, that duplication is the
 fingerprint of slop, not a design to preserve. This subsystem gives the AST one
 owner.
 
@@ -476,8 +476,8 @@ spans) — it currently has **zero callers**, so the signature change is free.
 
 **Status: complete** (commits `307cda3`..`e138942`). The proxy was proven on
 cyclomatic (oracle: `test_multilang`), then every consumer migrated by
-attrition — cognitive/combinatorial/halstead, imports/annotations (via
-`Node.query`), relational/magic_literals/CK-coupling, `build_lexicon`, and
+attrition — cognitive/combinatorial/halstead, imports (via
+`Node.query`), clone detection/magic_literals/CK-coupling, `build_lexicon`, and
 `carve` — each oracle-checked against the full suite (63/63). `model/ast.py` is
 deleted and the dead `component.ast()` projection retired (the AST is the proxy;
 `Lexicon` stays the per-component projection). Residual raw-node access lives
@@ -503,9 +503,9 @@ Interfaces before implementation. No business logic until the spine is agreed.
    `SymbolContainer`, the six concrete kinds, `ComponentId`, `Extent`, and the
    capability interfaces (OO classes/CK). ABCs and signatures only; no bodies.
 2. **Validate against the hard rules** — prove the spine expresses, on paper,
-   the three rules that confuse us most today: class WMC (the all-classes-vs-one
-   question), Martin package rigidity/uselessness, and confusion's island
-   question. If any needs a scope string, the spine is wrong.
+   the rules that confuse us most today: class WMC (the all-classes-vs-one
+   question) and Martin package rigidity/uselessness. If any needs a scope string,
+   the spine is wrong.
 3. **Build the ComponentIndex** — carve `Corpus -> ... -> Callable` from
    parse results. Conservative and language-limited first (Python-shaped),
    establishing identity and ownership before chasing every language edge case.

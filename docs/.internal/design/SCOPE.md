@@ -48,9 +48,9 @@ span · identity                         primitives (zero-dep value types)
   ast   lexicon                         kernels — peers; neither imports the other
         \   │   /
          scope                          forest/ownership: regions + carve + analysis-context
-        /   │   \
-metrics/structural   metrics/lexical    slop's measurements over (region, context) · over lexicon
-         \   │   /
+           │
+   metrics/structural                   slop's measurements over (region, context)
+           │
           linter                        rules: thresholds + verdicts over metrics
 ```
 
@@ -114,28 +114,19 @@ The metric inventory is relocated, not redesigned. It splits by what it measures
 
 - `metrics/structural/` — computed over `ast` nodes + the analysis-context. Holds the
   result records (today's `metrics.py`) and the compute moved from `model/`
-  (`complexity`, `halstead`, `ck`←`class_index`, `martin`, `relational`, `orphans`,
-  `hotspots`, `annotations`, `imports`). No separate structural *kernel*: `ast` is the
+  (`complexity`, `halstead`, `ck`←`class_index`, `martin`, `clones`, `orphans`,
+  `hotspots`). No separate structural *kernel*: `ast` is the
   structural substrate, and these metrics have no out-of-linter reuse story (yet) to
   justify one.
-- `metrics/lexical/` — slop's invented lexical *signals* (sprawl, stutter-overlap,
-  hammers) composed over the `lexicon/` kernel. **Not** a rename of the kernel:
-  `lexicon/` stays the standalone linguistic library; `metrics/lexical/` is the slop
-  layer above it. (Empty/near-empty until the lexical rules are ported.)
 
-`metrics/` is an organizational umbrella over two independent families (a shared
-consumption pattern, not shared code) plus one thin contract:
+Vocabulary analysis lives in the standalone `lexicon/` kernel, not in `metrics/`.
 
 #### D — a metric registry
 
 A `Metric` descriptor (name, altitude(s), result type, additive?) and a registry,
 mirroring the rule registry, so config schema, docs, and the per-altitude capability
 map derive from one source rather than scattered hand-maintenance — extending the
-dispatcher's "no silent no-op" guarantee from rules to metrics. Cross-family
-**batteries are composite metrics**: the composite *measurement* (e.g. imposters'
-body-Jaccard × receiver-density, joined by `Span`) lives in `metrics/` consuming both
-families; only the threshold/verdict is a rule. The metric/rule line stays clean even
-for batteries.
+dispatcher's "no silent no-op" guarantee from rules to metrics.
 
 ### Package layout
 
@@ -185,7 +176,7 @@ is added before the old is removed:
 3. **Analysis-context + region protocol**; indexes move off entities; `ast.Node` grows
    `callables()`/`classes()`/`methods()`; lexicon projection inverted; capability →
    `ast.Paradigm`.
-4. **Rewire** the `cyclomatic`/`call-islands` rules onto `metrics/structural`, *then*
+4. **Rewire** the `cyclomatic` rule onto `metrics/structural`, *then*
    sever the metric methods from the entities.
 5. **Extract `scope/`**; re-point the blast-radius imports; retire `component/`/`model/`.
 6. **Prove granular scoping** — a `Selection` and tests for a view over one scope and

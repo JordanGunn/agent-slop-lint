@@ -7,7 +7,7 @@ it should investigate.
 
 ## Use it
 
-- [rules/README.md](rules/README.md) — the 23 rules at a glance. The always-current
+- [rules/README.md](rules/README.md) — the 12 rules at a glance. The always-current
   reference is `slop rules` (listing) and `slop schema` (config shape); each rule's full
   rationale lives in its module docstring under `src/slop/rules/`.
 - [CONFIG.md](CONFIG.md) — `.slop.toml` / `[tool.slop]`: per-rule thresholds keyed by
@@ -17,7 +17,7 @@ it should investigate.
 ## How it's built
 
 The architecture (the Corpus › Realm › Package › Module › Class › Callable component model,
-the `Structure` / `Lexical` views, the dispatcher, the finding ontology) is documented for
+the `Structure` view, the dispatcher, the finding ontology) is documented for
 contributors in the repo-root [CLAUDE.md](../CLAUDE.md). Durable internal design docs live
 under `docs/.internal/design/`.
 

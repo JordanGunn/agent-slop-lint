@@ -43,7 +43,7 @@ the same counts.
 So this is not "move Halstead to the lexicon" — it is the information-theoretic *idea*,
 applied properly, becoming a naming-entropy measure Halstead never computed.
 
-### Why it is an observation / battery input, not a verdict
+### Why it is an observation, not a verdict
 
 The identifier distribution is a **Zipf near-invariant** (see `distribution.py` and the
 `lexical-distribution-invariance` memory) — "population norms, not quality dials." Global
@@ -52,9 +52,9 @@ naming-entropy inherits that: no honest scalar threshold → an **observation** 
 
 The live signal is **normalized entropy at a *local* scope vs the corpus norm**:
 
-- low evenness in a scope → repetitive naming (stutter / sprawl territory)
-- high evenness + many word-types → grab-bag / low cohesion (confusion / grab-bag battery)
+- low evenness in a scope → repetitive naming
+- high evenness + many word-types → a grab-bag vocabulary
 
-That makes normalized scope-entropy a candidate **cohesion battery input** — corroborating
-the grab-bag and stutter signals — not a rule on its own. That intersection, not raw
-entropy, is the thing to investigate.
+Normalized scope-entropy is a candidate addition to the `vocabulary` narration, not a
+rule on its own. That local-vs-corpus comparison, not raw entropy, is the thing to
+investigate.
