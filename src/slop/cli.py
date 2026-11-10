@@ -252,7 +252,8 @@ def ast_view(path: str | Path, output: str = "human", *,
 
 
 def lexicon_view(root: str | Path, output: str = "human", *,
-                 scope: str | None = None, top: int = 15) -> int:
+                 scope: str | None = None, top: int = 15,
+                 scope_kind: str | None = None) -> int:
     """Print a scope's vocabulary distribution — the lexical skeleton.
 
     Precise (any scope via ``--scope``, not just the corpus), abstract (the Zipf
@@ -263,7 +264,7 @@ def lexicon_view(root: str | Path, output: str = "human", *,
         return 2
     target = corpus
     if scope is not None:
-        target = _select_scope(corpus, scope)
+        target = _select_scope(corpus, scope, _parse_kind(scope_kind))
         if target is None:
             return 2
     dist = target.lexicon().distribution(top=top)
@@ -574,6 +575,8 @@ def main(argv: list[str] | None = None) -> int:
     p_lex = sub.add_parser("lexicon", help="print a scope's vocabulary distribution")
     p_lex.add_argument("--root", default=".")
     p_lex.add_argument("--scope", default=None, help="qualname of a sub-scope (default: whole corpus)")
+    p_lex.add_argument("--scope-kind", default=None,
+                       help="pick one kind when --scope names several (a package and its __init__ module)")
     p_lex.add_argument("--top", type=int, default=15, help="number of top tokens to show")
     p_lex.add_argument("--output", choices=["human", "json"], default="human")
 
@@ -623,7 +626,8 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "ast":
             return ast_view(args.path, args.output, raw=args.raw, max_depth=args.max_depth)
         if args.command == "lexicon":
-            return lexicon_view(args.root, args.output, scope=args.scope, top=args.top)
+            return lexicon_view(args.root, args.output, scope=args.scope, top=args.top,
+                                scope_kind=args.scope_kind)
         if args.command == "deps":
             return deps_view(args.root, args.output, scope=args.scope, cycles_only=args.cycles)
         if args.command == "find":

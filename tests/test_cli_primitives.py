@@ -75,6 +75,13 @@ def test_a_package_and_its_init_module_are_told_apart_not_guessed(sample_project
                      "--scope-kind", "module"]) == 0
 
 
+def test_lexicon_takes_the_same_scope_kind_selector(sample_project: Path, capsys):
+    assert cli.main(["lexicon", "--root", str(sample_project), "--scope", "store"]) == 2
+    capsys.readouterr()
+    code, answer, _ = _ask(capsys, "lexicon", "--root", str(sample_project), "--scope", "store",
+                           "--scope-kind", "package", "--output", "json")
+    assert code == 0 and answer["kind"] == "package"
+
 
 def test_tree_depth_limits_levels(sample_project: Path, capsys):
     _, deep, _ = _ask(capsys, "tree", "--root", str(sample_project), "--output", "json")

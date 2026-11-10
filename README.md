@@ -13,11 +13,16 @@ Static-analysis defaults were calibrated for a world where a productive human wr
 lines on a busy day and another human reviewed every one. An agent can drop that much into
 one file before its first status message — and the damage (deep coupling, god classes,
 duplicated handlers, files that grow 500 LOC in a week, identifier soup that bloats every
-downstream prompt) lands inside one session, not over quarters. `slop` runs well-cited
-metrics — structural (McCabe, Chidamber & Kemerer, Nejmeh, Martin, Tornhill, Campbell) and
-lexical (identifier vocabulary) — at thresholds tuned for that pace, and is built to be
-read by the agent: every finding is either a **directive** it can act on or **evidence** it
-should investigate.
+downstream prompt) lands inside one session, not over quarters.
+
+slop is built from the bottom up. The foundation is a set of read-only **primitives** an
+agent can query for facts: a language-agnostic parse (tree-sitter), an ownership tree,
+discovery over that tree (`find`, `tree`), identifier statistics (`lexicon`), the import
+graph (`deps`), and a comparison of the names in code against a canonical vocabulary
+(`vocab`). On top of them sits a **lint** layer of well-cited metrics — McCabe, Campbell,
+Nejmeh, Martin, Chidamber & Kemerer, Tornhill, and Zipf for identifier distribution — at
+thresholds tuned for that pace. Every finding is either a **directive** the agent can act
+on or **evidence** it should investigate.
 
 ## Example
 
@@ -25,20 +30,22 @@ should investigate.
 $ slop lint --root .
 
 VERDICTS
-  [error] complexity.cognitive  ·  doctor.run_doctor
-      cognitive complexity 20 exceeds threshold 15
-      → reduce-complexity: Flatten doctor.run_doctor: lift nested conditionals into guard
-        clauses or extract the deepest branch into a named helper (cognitive 20 > 15).
-  [warning] lexical.stutter  ·  config.load_config
-      'load_config' restates its module 'config'
-      → drop-redundant-tokens: drop the tokens the name shares with its scope.
+  [error] structure.dependency-cycles  ·  python
+      import cycle across 2 modules: config → settings → config
+      → break-dependency-cycle: invert one dependency (depend on an abstraction, DIP),
+        extract the shared code into a module both can depend on, or merge the modules
+        if they are truly one concern.
+  [warning] structure.duplication  ·  app
+      2 Type-2 clones: app.grid_group, app.surface_group
+      → extract-helper-function: Extract a shared helper: 2 functions are Type-2 clones
+        (structurally identical bodies, 43 leaf nodes).
 
 OBSERVATIONS
-  [info] lexical.cohesion  ·  grep
-      module 'grep' shares only 0% of its vocabulary with the rest of package 'text' —
-      a possible foreign body. Consider whether it belongs here.
+  [info] class-shape  ·  params.Params
+      params.Params: CK profile — 11 direct subclasses (broad base — often a healthy
+      abstraction, but worth confirming it is not a god-base). (0 methods.)
 
-0 verdict(s) ... — exit 1
+40 verdict(s) (2 error, 38 warning), 31 observation(s) — exit 1
 ```
 
 Exit `0` clean, `1` on any error-severity verdict, `2` on error (including a missing or
@@ -63,10 +70,11 @@ and run `slop doctor` to verify.
 ## How it works
 
 A parse of the sources is carved once into an ownership tree —
-**Corpus › Realm › Package › Module › Class › Callable** — and two read-only views project
-over any scope: `Structure` (control flow, coupling, duplication) and `Lexical` (naming and
-vocabulary). A dispatcher runs each rule at the scope it needs, and every finding attributes
-to the *narrowest scope it is about*, with a line where one applies.
+**Corpus › Realm › Package › Module › Class › Callable** — keyed by stable logical
+identities. The primitives read that tree (`find`, `tree`, `lexicon`, `deps`, `vocab`);
+the `Structure` view projects control flow, coupling and duplication over any scope for
+the lint layer. A dispatcher runs each rule at the scope it needs, and every finding
+attributes to the *narrowest scope it is about*, with a line where one applies.
 
 Findings come in three strengths, matched to how confidently slop can speak:
 
@@ -80,23 +88,18 @@ Findings come in three strengths, matched to how confidently slop can speak:
 
 ## Rules
 
-23 rules, language-agnostic across 11 grammars. `slop rules` lists them with altitude and
-disposition.
+12 rules, language-agnostic across 11 grammars. `slop rules` lists them with altitude and
+disposition. Each traces to a published source or a standard concept.
 
 - **Complexity** (per callable, error): `complexity.cyclomatic` (McCabe), `complexity.cognitive`
   (Campbell), `complexity.combinatorial` (NPath, Nejmeh).
 - **Structure**: `structure.duplication` (Type-2 clones), `structure.dependency-cycles`
-  (Acyclic Dependencies Principle, error), `structure.god-module`, `structure.call-islands`,
-  `structure.redundancy`, `structure.runts`, `structure.rigidity` / `structure.uselessness`
-  (Martin's distance-from-main-sequence), `structure.escape-hatches`,
-  `structure.hidden-mutators`, `structure.sentinels`.
+  (Acyclic Dependencies Principle, error), `structure.god-module`, and
+  `structure.rigidity` / `structure.uselessness` (Martin's distance-from-main-sequence).
 - **Class**: `class-shape` — the Chidamber–Kemerer suite (CBO/DIT/NOC/WMC) as an observation.
-- **Lexical**: `lexical.stutter` (a name restating its scope), `lexical.verbosity`,
-  `lexical.sprawl` (a closed alphabet acting as an undeclared type), `lexical.hammers`
-  (institutionalised catch-all vocabulary), `lexical.cohesion` (a module foreign to its
-  package).
-- **Whole-corpus signals** (observations): `vocabulary` (identifier token distribution),
-  `hotspots` (churn × complexity, Tornhill), `orphans` (unreferenced top-level symbols).
+- **Whole-corpus signals** (observations): `vocabulary` (identifier token distribution, a
+  Zipf near-invariant), `hotspots` (churn × complexity, Tornhill), `orphans` (unreferenced
+  top-level symbols).
 
 ## Languages
 
@@ -107,21 +110,38 @@ classes; package/dependency metrics where it has a module system.
 ## CLI
 
 ```
-slop lint --root <path>           Run all enabled rules
-slop check <family|rule> --root   Run one namespace family or rule
-slop rules                        List rules (name, disposition, altitude)
-slop schema                       Config schema as JSON (generated from the registry)
-slop init --root <path>           Write a .slop.toml template
-slop doctor                       Check tree-sitter / git availability
-slop ast <file>                   Print a file's parse tree (named skeleton; --raw, --max-depth)
-slop lexicon [--scope Q]          Print a scope's vocabulary distribution (Zipf/hapax + head)
-slop deps [--scope Q] [--cycles]  Print the module dependency graph (resolved/unresolved edges)
-slop --version                    Print the installed version
+Primitives (read-only facts; exit 0 when the question was answered, 2 when it could not be)
+slop ast <file>                    Print a file's parse tree (named skeleton; --raw, --max-depth)
+slop tree [--scope Q]              Print the ownership tree beneath a scope (--depth, --kind, --scope-kind)
+slop find <name> | --collisions    Where a name is defined; or which names are defined more than once
+slop lexicon [--scope Q]           Print a scope's vocabulary distribution (Zipf/hapax + head)
+slop deps [--scope Q] [--cycles]   Print the module dependency graph (resolved/unresolved edges)
+slop vocab --ontology IR.json      Compare class names with a canonical vocabulary (--term NAME: one entry)
+
+Lint layer (exit 0 clean / 1 on any ERROR finding / 2 on error)
+slop lint --root <path>            Run all enabled rules
+slop check <family|rule> --root    Run one namespace family or rule
+slop rules                         List rules (name, disposition, altitude)
+
+Housekeeping
+slop schema                        Config schema as JSON (generated from the registry)
+slop init --root <path>            Write a .slop.toml template
+slop doctor                        Check tree-sitter / git availability
+slop --version                     Print the installed version
 ```
 
-The view commands (`ast`, `lexicon`, `deps`) are read-only structural inspectors —
-sub-file-resolution skeletons, regenerated from the current source each run. `--scope`
-takes a qualname or a file path; `--output json` emits the machine form.
+The primitives regenerate from the current source each run. `--scope` takes a qualname or
+a file path; a package shares its qualname with its `__init__` module, so `tree` and
+`lexicon` ask you to pick with `--scope-kind` instead of guessing. `find` matches the local
+name exactly and reports `path:line`; `--collisions` lists names defined by more than one
+scope of a kind (class by default).
+
+`vocab` reads the JSON IR that [Open Ontology](https://open-ontology.com) emits
+(`pnpm model:check <model> --json`; the bare IR and that command's wrapper are both
+accepted) and compares classes with the ontology's entities as matched, unknown, and
+unused. Matching is exact after case and separator folding (`escalate-ticket` equals
+`EscalateTicket`); a near miss such as `TicketManager` is reported as unknown, never
+accepted. Only the declared schema is read, not facts seeded at runtime.
 
 `--output human` (default) or `--output json`. Run `slop --help` for the full list.
 
