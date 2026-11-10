@@ -1,26 +1,22 @@
-"""Concrete rules. ``RULE_REGISTRY`` is the single flat list the dispatcher and
-config consume. Each entry is a stateless ``Rule`` instance; its ``name`` and
+"""Concrete rules. ``RULE_REGISTRY`` is the single flat list the dispatcher and config
+consume. Each entry is a stateless ``Rule`` instance; its ``name``, ``description`` and
 ``altitudes`` are class-level, and ``default_config`` ships its defaults.
 
-Every rule here implements a measure with a published source (McCabe, Campbell,
-Nejmeh, Martin, Lakos, Chidamber-Kemerer, Tornhill, Zipf) or a standard concept
-(Type-2 clones, god module, unreferenced symbols). Rules whose measure and name were
-slop's own invention were removed; see CHANGELOG.
+Every rule checks one measure that has a published source (McCabe, Campbell, Nejmeh,
+Martin, Lakos, Chidamber and Kemerer, Hitz and Montazeri) or a standard concept (Type-2
+clones, module size) against a limit. A rule is a threshold on a measure and nothing more.
 """
 from __future__ import annotations
 
 from ..rule import Rule
-from .class_shape import ClassShapeRule
+from .class_design import ChildrenRule, CohesionRule, CouplingRule, InheritanceDepthRule
 from .cognitive import CognitiveRule
 from .combinatorial import CombinatorialRule
 from .cyclomatic import CyclomaticRule
 from .dependency_cycles import DependencyCyclesRule
 from .duplication import DuplicationRule
 from .god_module import GodModuleRule
-from .hotspots import HotspotsRule
-from .orphans import OrphansRule
 from .rigidity import RigidityRule
-from .token_distribution import TokenDistributionRule
 from .uselessness import UselessnessRule
 
 RULE_REGISTRY: list[Rule] = [
@@ -32,24 +28,24 @@ RULE_REGISTRY: list[Rule] = [
     DependencyCyclesRule(),
     RigidityRule(),
     UselessnessRule(),
-    OrphansRule(),
-    HotspotsRule(),
-    ClassShapeRule(),
-    TokenDistributionRule(),
+    CouplingRule(),
+    InheritanceDepthRule(),
+    ChildrenRule(),
+    CohesionRule(),
 ]
 
 __all__ = [
     "RULE_REGISTRY",
-    "CyclomaticRule",
+    "ChildrenRule",
     "CognitiveRule",
+    "CohesionRule",
     "CombinatorialRule",
-    "GodModuleRule",
-    "DuplicationRule",
+    "CouplingRule",
+    "CyclomaticRule",
     "DependencyCyclesRule",
+    "DuplicationRule",
+    "GodModuleRule",
+    "InheritanceDepthRule",
     "RigidityRule",
     "UselessnessRule",
-    "OrphansRule",
-    "HotspotsRule",
-    "ClassShapeRule",
-    "TokenDistributionRule",
 ]

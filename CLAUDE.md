@@ -7,9 +7,10 @@ agent can query for facts, with no thresholds or judgment: a tree-sitter parse (
 ownership tree (`scope`), discovery over it (`scope/find.py`: `slop find`, `slop tree`),
 identifier statistics (`lexicon`), the import graph (`graph`: `slop deps`), and a
 comparison of code names against a canonical vocabulary (`ontology`: `slop vocab`). The
-**lint** layer (`rules`, `dispatch`, `finding`) sits on top and is the only place
-thresholds and verdicts live. Further analysis layers (vocabulary-distribution checks,
-adapted structural metrics) are built after the primitives are dependable. The target is
+**lint** layer (`rules`, `dispatch`, `violation`) sits on top: a plain linter in which a
+rule is a threshold on a measure and a violation is a location, a rule name and one
+factual sentence. It is the only place thresholds live. A later, separate **inference**
+layer (judgement over what the checks find) is not part of the lint. The target is
 an agent that can answer "where is X defined, what is in Y, which names collide, what is
 the canonical word for Z" from returned facts alone.
 
@@ -30,12 +31,14 @@ slop/                       <- repo root: pyproject.toml, uv.lock, README, LICEN
                                CHANGELOG, .slop.toml, docs/, scripts/, .github/
   pyproject.toml            <- name = "agent-slop-lint"; packages = ["src/slop"]; slop = "slop.cli:main"
   src/slop/                 <- the Python package (import slop)
-    cli.py                  CLI entry (slop.cli:main): primitives (ast/tree/find/lexicon/deps/vocab),
+    cli.py                  CLI entry (slop.cli:main): primitives (ast/tree/find/lexicon/deps/vocab/shape),
                               lint layer (lint/check/rules), housekeeping (init/schema/doctor)
-    dispatch.py             Dispatcher — altitude-driven rule execution; records zero_visited
-    finding.py              Finding ontology: Verdict / Observation / Evidence / Action / Severity / Disposition
-    config.py               AnalysisConfig + RuleConfig (per-altitude thresholds, scope-keyed ignore)
-    rule.py                 Rule ABC (name, altitudes, default_config, check)
+    dispatch.py             Dispatcher: altitude-driven rule execution; Report; inline `slop: ignore`
+                              suppression; records zero_visited
+    violation.py            Violation record (rule, path, line, column, message, value, threshold)
+    config.py               AnalysisConfig + RuleConfig (enabled, per-altitude thresholds, params);
+                              top-level keys exclude / languages / rules only
+    rule.py                 Rule ABC (name, description, altitudes, default_config, check)
     identity.py             ScopeId / ScopeKind / CallableKind / Extent (logical+physical identity)
     span.py                 Span — shared source-location value type
     ast/                    tree-sitter proxy: parse.py, nodes.py (Node), tree.py, grammar/*, paradigm/*
@@ -56,12 +59,12 @@ slop/                       <- repo root: pyproject.toml, uv.lock, README, LICEN
                               relational/orphans/hotspots/imports compute), locus.py
                               (narrowest-common-ancestor; duck-typed)
     graph/                  import/dependency graph: build.py, dependency.py, imports.py
-    rules/                  one rule per file → single flat RULE_REGISTRY (__init__.py)
+    rules/                  12 rules (complexity x3, structure x5, class_design.py: class.* x4) → single flat RULE_REGISTRY (__init__.py)
   tests/                    pytest suite (test_rule_*.py per rule, test_<view>.py, cross-cutting)
 ```
 
 Every rule declares its `altitudes` (e.g. `{ScopeKind.CORPUS}`) and a `check(component,
-rule_config) -> Iterable[Finding]`; the dispatcher invokes it at each component of that
+rule_config) -> Iterable[Violation]`; the dispatcher invokes it at each component of that
 altitude. The `Structure` view is constructed `Structure.over(region)` — a
 region is any scope, or a `Selection` union of scopes.
 
@@ -89,12 +92,12 @@ uv run slop tree --root /path --scope pkg --scope-kind package --depth 2
 uv run slop vocab --ontology ir.json --root /path   # code names vs canonical vocabulary
 ```
 
-Note: the `slop` CLI takes `--root` explicitly; the config loader reads only `[rules]`
-and `[ignore]` from `.slop.toml` (it does **not** read a `root` / `languages` key).
+Note: the `slop` CLI takes `--root` explicitly; the config loader reads only `exclude`,
+`languages` and `[rules]` from `.slop.toml` (any other top-level key is a load error).
 
 ## Adding a new rule
 
-Signature: `check(component, rule_config) -> Iterable[Finding]`, where `component` is the
+Signature: `check(component, rule_config) -> Iterable[Violation]`, where `component` is the
 scope at the rule's altitude.
 
 1. Create `src/slop/rules/<name>.py` with a `Rule` subclass (`name`, `altitudes`,
@@ -111,18 +114,16 @@ scope at the rule's altitude.
 - **Component model, not tool-substrate.** Discovery + ownership live in `scope` (carved
   once); `ast` parses; `metrics`/`lexicon` measure; `rules` threshold + emit. The spine is
   Corpus › Realm › Package › Module › Class › Callable.
-- **dispatch-altitude ≠ finding-altitude.** A rule runs at the altitude it needs to
-  *compute* (duplication needs the whole corpus to see clone families), but each finding
-  attributes to the **narrowest scope containing what it is about** — the entity for a
-  single-entity finding, the narrowest common ancestor (`metrics/locus.py`) for a group.
-  Records carry a canonical `ScopeId` locus; nothing collapses onto the corpus root.
-- **Finding ontology — Verdict vs Observation, driven by epistemic certainty.** A
-  `Verdict` is a defect with a prescribable fix (or `REVIEW`: confident pattern, deferred
-  remedy, WARNING-capped). An `Observation` is a claim-free evidential nudge (pinned INFO /
-  INVESTIGATE; no prescription — it makes no precision claim, so it cannot be a false
-  positive). The disposition policy: **exact** pattern → directive verdict; **certain
-  pattern, open remedy** → REVIEW; **inferred** pattern → observation. Certainty, not
-  which substrate the signal comes from, picks the disposition.
+- **dispatch-altitude ≠ violation-altitude.** A rule runs at the altitude it needs to
+  *compute* (duplication needs the whole corpus to see clone families), but each violation
+  is located at the **narrowest scope containing what it is about** (`Violation.at`): the
+  entity for a single-entity violation, the first member (by path) of a cycle or clone
+  cluster for a group.
+- **A rule is a threshold on a measure.** It emits a `Violation` when the measure is
+  strictly greater than the limit; the message is one factual sentence naming the unit and
+  the number. Nothing else is attached. Suppression is inline
+  (`slop: ignore[rule]` on the reported line), applied by the dispatcher. Judgement over
+  violations belongs to a later inference layer, not to the rules.
 - **Three layers: rule → view method → algorithm helper.** A rule thresholds + emits; a
   view method (`Structure.<m>()`) is the public measurement API; the
   compute lives inline (≤~30 LOC) or in `metrics/<substrate>/<name>.py`.
@@ -138,12 +139,12 @@ scope at the rule's altitude.
   `rules/__init__.py` builds a single `RULE_REGISTRY` (substrate grouping encoded nothing the
   imports don't already say).
 - **`zero_visited` safeguard.** The dispatcher records each rule's visited-count; a rule
-  that examined zero components surfaces as `zero_visited`, so "not flagged" is verifiably
-  clean rather than silently broken.
+  that examined zero components is listed under `zero_visited` in the JSON report, so "not
+  flagged" can be told from "not checked".
 - **Config:** thresholds keyed by altitude (validated against the rule's *declared*
-  altitudes — a stray key is a load error, not a silent no-op). Exemptions are scope-keyed
-  `ignore` lists matched on the finding's canonical `ScopeId` (kind + qualname).
-- **Exit codes:** 0 clean / 1 any ERROR-severity verdict / 2 error.
+  altitudes; a stray key is a load error, not a silent no-op); unknown top-level keys,
+  rule keys and params are load errors too.
+- **Exit codes:** 0 no violations / 1 any violation / 2 error.
 
 ## Release flow
 

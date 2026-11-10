@@ -425,7 +425,7 @@ def test_languages_applies_to_lint_too(tmp_path: Path, capsys):
     def paths() -> set[str]:
         capsys.readouterr()
         cli.lint(tmp_path, "json")
-        return {f["path"] for f in json.loads(capsys.readouterr().out)["findings"]
+        return {f["path"] for f in json.loads(capsys.readouterr().out)["violations"]
                 if f["rule"] == "complexity.cyclomatic"}
     (tmp_path / ".slop.toml").write_text(rule)
     assert paths() == {"b.ts"}

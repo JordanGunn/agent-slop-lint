@@ -1,73 +1,61 @@
-"""Dispatcher — altitude-driven rule execution.
+"""Dispatcher: runs each enabled rule at the components it is defined at.
 
-The dispatcher owns traversal: it walks the component tree once, indexes
-components by altitude, and invokes each enabled rule at every component of its
-*declared* altitudes. Rules never walk the corpus themselves.
+The dispatcher owns traversal. It walks the component tree once, indexes components by
+altitude, and calls each enabled rule at every component of its *declared* altitudes;
+rules never walk the corpus themselves. Two things follow:
 
-Two invariants fall out of this:
+- A rule runs only where it declares itself defined, so a misconfigured rule cannot
+  silently check nothing.
+- A rule that examined zero components (its altitude is absent, or everything was
+  excluded) is reported in ``zero_visited`` instead of passing as clean.
 
-- A rule runs only where it declares itself defined — the legacy "config keyed
-  wrong, rule silently checks nothing" failure cannot recur.
-- Every enabled rule's visited-count is recorded; a rule that examined zero
-  components (its altitude is absent, or all filtered) is surfaced as a
-  ``zero_visited`` diagnostic rather than passing silently as "clean".
+A violation on a line carrying ``slop: ignore`` is dropped, and ``slop: ignore[a, b]``
+drops only those rules (a family name such as ``complexity`` covers its rules), like a
+``noqa`` comment: the exemption sits beside the code it excuses, in whatever comment
+syntax the language has.
 
-Exit codes: 0 clean / 1 violations (any ERROR-severity finding) / 2 error
-(raised by the CLI, not here). WARNING verdicts and INFO observations are
-advisory — they never gate the build.
+Exit codes: 0 no violations, 1 at least one, 2 slop could not run (raised by the CLI).
 """
 from __future__ import annotations
 
 import os
+import re
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from typing import Any
 
-from .scope.identity import ScopeKind
 from .config import AnalysisConfig
-from .finding import Disposition, Finding, Severity
 from .rule import Rule
+from .scope.identity import ScopeKind
+from .violation import Violation
 
-
-def _with_relative_path(finding: dict[str, Any], root: str | None) -> dict[str, Any]:
-    """A finding's ``path`` relative to the scan root, so same-named scopes in different
-    files stay distinguishable without leaking an absolute machine path."""
-    path = finding.get("path")
-    if path and root:
-        try:
-            finding["path"] = os.path.relpath(path, root)
-        except ValueError:
-            pass
-    return finding
+_SUPPRESSION = re.compile(r"slop:\s*ignore(?:\[([^\]]*)\])?")
 
 
 @dataclass
 class Report:
-    findings: list[Finding]
+    violations: list[Violation]
     visited: dict[str, int] = field(default_factory=dict)
     zero_visited: list[str] = field(default_factory=list)
     root: str | None = None
 
-    def verdicts(self) -> list[Finding]:
-        return [f for f in self.findings if f.disposition is Disposition.VERDICT]
-
-    def observations(self) -> list[Finding]:
-        return [f for f in self.findings if f.disposition is Disposition.OBSERVATION]
-
     def exit_code(self) -> int:
-        return 1 if any(f.severity is Severity.ERROR for f in self.findings) else 0
+        return 1 if self.violations else 0
+
+    def relative_path(self, violation: Violation) -> str | None:
+        """The violation's path relative to the scan root, so a report does not leak an
+        absolute machine path."""
+        if violation.path and self.root:
+            try:
+                return os.path.relpath(violation.path, self.root)
+            except ValueError:
+                pass
+        return violation.path
 
     def as_dict(self) -> dict[str, Any]:
-        verdicts = self.verdicts()
         return {
-            "summary": {
-                "verdicts": len(verdicts),
-                "observations": len(self.observations()),
-                "errors": sum(1 for f in self.findings if f.severity is Severity.ERROR),
-                "warnings": sum(1 for f in self.findings if f.severity is Severity.WARNING),
-                "exit_code": self.exit_code(),
-            },
-            "findings": [_with_relative_path(f.as_dict(), self.root) for f in self.findings],
+            "summary": {"violations": len(self.violations), "exit_code": self.exit_code()},
+            "violations": [{**v.as_dict(), "path": self.relative_path(v)} for v in self.violations],
             "zero_visited": self.zero_visited,
         }
 
@@ -79,7 +67,7 @@ class Dispatcher:
 
     def run(self, corpus: Any) -> Report:
         by_kind = _index_by_kind(corpus)
-        findings: list[Finding] = []
+        found: list[Violation] = []
         visited: dict[str, int] = {}
         zero_visited: list[str] = []
 
@@ -91,16 +79,43 @@ class Dispatcher:
             for kind in rule.altitudes:
                 for component in by_kind.get(kind, ()):
                     count += 1
-                    findings.extend(
-                        f for f in rule.check(component, rc)
-                        if not self._config.is_ignored(f.component)
-                    )
+                    found.extend(rule.check(component, rc))
             visited[rule.name] = count
             if count == 0:
                 zero_visited.append(rule.name)
 
-        return Report(findings=findings, visited=visited, zero_visited=zero_visited,
+        lines = _Lines()
+        kept = [v for v in found if not lines.suppresses(v)]
+        kept.sort(key=lambda v: (v.path or "", v.line, v.column, v.rule))
+        return Report(violations=kept, visited=visited, zero_visited=zero_visited,
                       root=str(corpus.root) if hasattr(corpus, "root") else None)
+
+
+class _Lines:
+    """The source lines of each file a violation points into, read once."""
+
+    def __init__(self) -> None:
+        self._files: dict[str, list[str]] = {}
+
+    def suppresses(self, violation: Violation) -> bool:
+        if not violation.path:
+            return False
+        if violation.path not in self._files:
+            try:
+                with open(violation.path, encoding="utf-8", errors="replace") as f:
+                    self._files[violation.path] = f.read().splitlines()
+            except OSError:
+                self._files[violation.path] = []
+        lines = self._files[violation.path]
+        if not 1 <= violation.line <= len(lines):
+            return False
+        match = _SUPPRESSION.search(lines[violation.line - 1])
+        if match is None:
+            return False
+        if match.group(1) is None:
+            return True
+        named = {name.strip() for name in match.group(1).split(",") if name.strip()}
+        return any(violation.rule == n or violation.rule.startswith(n + ".") for n in named)
 
 
 def _index_by_kind(root: Any) -> dict[ScopeKind, list[Any]]:

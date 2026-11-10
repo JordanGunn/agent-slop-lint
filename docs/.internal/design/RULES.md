@@ -1,98 +1,66 @@
-## Rule Targeting Model (validation centerpiece)
+## Rules
 
-Each rule declares the entity kind it targets, and each metric resolves to
-exactly one home altitude. This table is how we validate the interface: if every
-existing rule maps cleanly onto a kind without inventing scope strings, the spine
-holds.
+A rule is a threshold on a measure. It declares the scope kinds ("altitudes") it is defined
+at, the dispatcher calls it once per component of that kind, and it returns zero or more
+`Violation` records. A violation is emitted when the measure is **strictly greater** than
+the limit. Nothing else (no ranking, no advice) is part of a rule's output.
 
-```text
-complexity.cyclomatic / cognitive / npath / volume   -> Callable (aggregated upward; summed at every container)
-WMC                                                   -> NOT a metric: weighting family. weight=cyclomatic => class.cyclomatic(); weight=1 => method_count()
-god_module                                            -> Module
-ck.* (dit, noc, cbo, lcom, nom)                       -> Class        (OO capability)
-rigidity / instability / uselessness / abstractness   -> Package
-deps / cycles                                         -> DependencyGraph
-hotspots                                              -> Corpus/Module (+ git churn)
-clones                                                -> Module
-vocabulary                                            -> Package lexicon (observation; Zipf/hapax distribution)
-```
+## Targeting table
 
-Rule output may still expose a string `scope` for human and machine consumers,
-but internally the target is an entity kind with identity.
+Each rule resolves to exactly one altitude. Limits are the defaults; `slop schema` prints
+the live values.
 
-## Finding Ontology
+| Rule | Altitude | Measure | Limit | Source |
+|---|---|---|---|---|
+| `complexity.cyclomatic` | callable | cyclomatic complexity | 10 | McCabe 1976 |
+| `complexity.cognitive` | callable | cognitive complexity | 15 | Campbell 2018 |
+| `complexity.combinatorial` | callable | NPath (acyclic paths) | 400 | Nejmeh 1988 |
+| `structure.god-module` | module | top-level definitions | 20 | size boundary |
+| `structure.rigidity` | package | Martin D', stable and concrete | 0.7 | Martin 1994, 2002 |
+| `structure.uselessness` | package | Martin D', unstable and abstract | 0.7 | Martin 1994, 2002 |
+| `structure.dependency-cycles` | corpus | strongly connected module sets | none | Acyclic Dependencies Principle (Martin 2002, Lakos 1996) |
+| `structure.duplication` | corpus | Type-2 clone clusters (`params.min_leaf_nodes` = 10) | 2 clones | Type-2 clone taxonomy |
+| `class.coupling` | class | CBO | 8 | Chidamber & Kemerer 1994 |
+| `class.inheritance-depth` | class | DIT | 4 | Chidamber & Kemerer 1994 |
+| `class.children` | class | NOC | 10 | Chidamber & Kemerer 1994 |
+| `class.cohesion` (off by default) | class | LCOM4 group count | 1 | Hitz & Montazeri 1995 |
 
-A finding has two **orthogonal** axes. Collapsing them (the legacy mistake) loses
-the most-used cell — the prescriptive-but-non-gating warning.
+Metrics resolve to a home altitude: complexity is computed per callable; CK and LCOM4 per
+class; Martin's metrics per package; the import graph and clone detection need the whole
+corpus. WMC is not a metric of its own but a weighting family (weight = cyclomatic gives
+`class.cyclomatic()`, weight = 1 gives `method_count()`).
 
-**Disposition (epistemic — what slop claims):**
+Measures that no rule reports (`Structure.hotspots`, churn x complexity after Tornhill;
+`Structure.orphans`, unreferenced top-level symbols) stay on the `Structure` view as dormant
+measures.
 
-- **Verdict** — a defect reverse-engineered from sloppy code: the action is agreed
-  and the fix is prescribable deterministically. Carries a `prescription`.
-- **Observation** — a claim-free empirical nudge ("look here; this may be a symptom
-  of something larger"). Carries `evidence`, no prescription. Used where a
-  measurement is informative but no remedy can be honestly prescribed (e.g. the
-  token distribution is a Zipf near-invariant, so no scalar threshold is honest). An
-  observation makes no precision claim, so it *cannot* be a false positive.
+## Dispatch
 
-**Severity (operational — what it does to the build):** `error` (exit 1) > `warning`
-(advisory) > `info` > `off`. A separate dimension layered on disposition.
-
-**Coherence invariants (enforced by type, not runtime-validated):**
-
-- Observation ⟹ severity `info`, action `INVESTIGATE`, no prescription, carries
-  evidence. (A build failure is itself a precision claim; an observation makes none,
-  so it cannot gate.)
-- Verdict ⟹ severity `warning|error`, carries a prescription, no evidence.
-- `Verdict` and `Observation` are **distinct types** sharing a `Finding` protocol —
-  *not* one dataclass with a disposition discriminator and half-inert optional
-  fields. Illegal states are unrepresentable by construction.
-
-**The `REVIEW` action** is a verdict whose remedy is deferred: slop is confident the
-structure is anomalous, but the fix is disjunctive and depends on a judgment slop
-does not make (e.g. a package deep in Martin's Zone of Pain — introduce abstractions, or reduce inbound coupling?). It is a
-verdict, not a third disposition; the conditionality lives in the action. slop does
-**not** adjudicate intent — that is a separate concern. `REVIEW` verdicts **cap at
-`warning`** (never `error`/exit-1): if we cannot prescribe the fix, we do not
-hard-fail the build on it — the same logic that pins observations to `info`, one
-tier up.
-
-`confidence` is a verdict-internal scalar (how sure the prescription applies), not a
-third axis; an observation has no prescription, so confidence is inert. A
-sub-floor-confidence verdict is better demoted to an observation.
-
-## Rule Dispatch and Scope
-
-Scope is **navigable altitude**, not a string tag. Because `ast()` and `lexicon()`
-exist on every component (see Per-Entity Projections), a metric is projectable at
-any altitude, and the altitudes nest. This unlocks asking the same question at
-different scopes — token repetition within one Callable vs. across a whole Package —
-which the legacy flat views could not express cleanly.
-
-**Dispatcher-driven, not rule-driven.** A rule *declares* the altitude(s) it is
-defined at; the dispatcher walks the component tree and invokes the rule at every
-component of that altitude:
+A rule never walks the corpus itself:
 
 ```text
 for kind in rule.altitudes:
     for component of that kind in corpus:
-        rule.check(component, config)     # dispatcher asserts >0 components visited
+        rule.check(component, config)
 ```
 
-A rule never walks the corpus itself. Two consequences:
+Consequences:
 
-- **The silent-no-op bug class becomes unrepresentable.** A rule runs only where it
-  declares itself defined, and the dispatcher asserts it visited >0 components — the
-  "enabled-but-zero-checked" safeguard is now the dispatch invariant, not a bolt-on.
-  The legacy failure (config keyed by category not name, so a rule silently checked
-  nothing) cannot recur.
-- **Altitude is a false-positive discriminator.** A token dense across a Package is
-  domain vocabulary; the same token dense inside one Callable is slop. The signal's
-  altitude *profile* corroborates it. (Cross-altitude suppression — mute a
-  low-altitude verdict when a higher-altitude observation explains it — is research
-  downstream of this spine, not a prerequisite for the executable.)
+- A rule runs only where it declares itself defined, and a threshold keyed to an altitude
+  the rule does not declare is a config load error, so a mis-keyed config cannot make a rule
+  silently check nothing.
+- The dispatcher records how many components each rule visited; a rule that visited zero is
+  listed under `zero_visited` in the JSON report.
 
-Declared altitudes mirror the targeting table above: complexity at
-`{Callable}`, class-shape (CK) at `{Class}`, Martin at `{Package}`, god-module at
-`{Module}`, vocabulary at `{Package}`, cross-cutting (hotspots/cycles/duplication/
-orphans) at `{Corpus}`.
+## Violation
+
+`Violation(rule, path, line, column, message, value=None, threshold=None)` is a frozen
+record. `Violation.at(scope, rule, message, value=, threshold=)` places it at the module,
+class or callable that owns it (line and column of its syntax node, 1-based), or at a
+package's directory. Corpus-altitude rules place a violation at the first member (by path)
+of the cycle or clone cluster they report.
+
+The dispatcher sorts violations by (path, line, column, rule) and drops any whose reported
+line contains `slop: ignore` (all rules) or `slop: ignore[rule, family]` (the named rules;
+a family prefix such as `complexity` covers `complexity.cyclomatic`). The exit code is 1 if
+any violation remains, else 0.

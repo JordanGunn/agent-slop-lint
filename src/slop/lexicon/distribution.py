@@ -3,14 +3,11 @@
 An identifier vocabulary is a frequency distribution, and engineered code sits at a
 remarkably tight near-invariant: a Zipf exponent around 0.9 with R² around 0.93, and
 roughly half the vocabulary appearing exactly once. Those are *population norms*, not
-quality dials — so this module measures the shape and narrates it against the norm,
-and never emits a verdict. That claim-free posture is why the ``vocabulary`` rule can
-surface this object as an Observation: a measurement an agent investigates, not a
-defect the linter asserts.
+limits, so this module measures the shape and reports it beside the norm; it checks
+nothing against it.
 
 This is lexicography a corpus linguist would recognise (Zipf/Heaps, hapax legomena),
-so it lives in the kernel. The norm constants and the prose comparison bands are
-descriptive, carrying no severity and no pass/fail threshold.
+so it lives in the kernel. The norm constants are reference values, not thresholds.
 """
 from __future__ import annotations
 
@@ -55,8 +52,7 @@ def _zipf_fit(counts: list[int]) -> tuple[float, float]:
 class TokenDistribution:
     """The identifier token-space as a measured distribution.
 
-    The hapax ratio is one bucket (``spectrum["1"]``) of this richer object;
-    ``narrate()`` turns the whole thing into the prose an agent investigates.
+    The hapax ratio is one bucket (``spectrum["1"]``) of this richer object.
     JSON-serialisable via ``as_dict``.
     """
 
@@ -91,75 +87,6 @@ class TokenDistribution:
                 "hapax_ratio": HAPAX_RATIO_NORM,
             },
         }
-
-    def narrate(self) -> str:
-        """Natural-language transform of the distribution.
-
-        Deliberately prose, not a stats dump: an agent reads this and decides
-        whether to look closer. Compares against population norms without asserting
-        a defect — an investigative nudge, never a verdict.
-        """
-        if self.distinct == 0:
-            return "No identifier vocabulary to analyze (empty corpus)."
-
-        parts: list[str] = [
-            f"Identifier vocabulary: {self.distinct} distinct tokens across "
-            f"{self.n} uses."
-        ]
-
-        # Reuse gradient (Zipf fit) vs the typical ~0.9 / R^2~0.93.
-        if self.zipf_r2 >= 0.85 and abs(self.zipf_alpha - ZIPF_ALPHA_NORM) <= 0.15:
-            parts.append(
-                f"Reuse follows a healthy Zipfian gradient "
-                f"(α={self.zipf_alpha:.2f}, R²={self.zipf_r2:.2f}), "
-                f"typical of engineered code."
-            )
-        elif self.zipf_r2 < 0.80:
-            parts.append(
-                f"Reuse fits Zipf poorly (R²={self.zipf_r2:.2f} vs the "
-                f"~{ZIPF_R2_NORM} norm) — a lumpy vocabulary without a "
-                f"clean reuse gradient; worth a look at how concepts are named."
-            )
-        elif self.zipf_alpha < ZIPF_ALPHA_NORM - 0.15:
-            parts.append(
-                f"The reuse gradient is unusually flat (α={self.zipf_alpha:.2f} "
-                f"vs ~{ZIPF_ALPHA_NORM}): few concepts are reused while many "
-                f"appear once — possible vocabulary fragmentation."
-            )
-        else:
-            parts.append(
-                f"Reuse gradient α={self.zipf_alpha:.2f}, "
-                f"R²={self.zipf_r2:.2f} (norm ~{ZIPF_ALPHA_NORM})."
-            )
-
-        # Hapax floor.
-        pct = round(self.hapax_ratio * 100)
-        if self.hapax_ratio > HAPAX_RATIO_NORM + 0.15:
-            parts.append(
-                f"{pct}% of tokens appear exactly once — above the ~"
-                f"{round(HAPAX_RATIO_NORM * 100)}% long-tail floor, a fatter "
-                f"one-off tail than usual."
-            )
-        else:
-            parts.append(
-                f"{pct}% of tokens appear exactly once (the expected "
-                f"long-tail floor)."
-            )
-
-        # Dominant concept.
-        if self.top:
-            lead, lead_n = self.top[0]
-            if len(self.top) > 1 and lead_n >= 2 * self.top[1][1]:
-                parts.append(
-                    f"The vocabulary centers hard on `{lead}` ({lead_n} uses), "
-                    f"far ahead of `{self.top[1][0]}` ({self.top[1][1]}) — "
-                    f"this is the codebase's dominant concept."
-                )
-            else:
-                lead_str = ", ".join(f"`{t}` ({c})" for t, c in self.top[:3])
-                parts.append(f"Most-used concepts: {lead_str}.")
-
-        return " ".join(parts)
 
 
 def token_distribution(freq: Mapping[str, int], *, top: int = 15) -> TokenDistribution:

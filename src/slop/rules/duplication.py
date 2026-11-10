@@ -1,63 +1,49 @@
-"""structure.duplication — Type-2 clone clusters across the corpus (verdict).
+"""structure.duplication: callables with structurally identical bodies (Type-2 clones).
 
-Defined at ``{Corpus}``. A Type-2 clone is a set of callables with structurally
-identical bodies (same AST leaf-type fingerprint) differing only in identifiers
-and literals — the copy-paste-then-rename signature. Each cluster is independently
-actionable regardless of overall codebase size, so the rule emits one
-``EXTRACT_HELPER`` verdict per cluster (the legacy emitted per-cluster findings
-unconditionally; its separate corpus-density summary line does not map to a
-per-component verdict and is dropped — a candidate future observation).
+Defined at the corpus altitude. A Type-2 clone is a set of callables whose bodies have the
+same AST leaf-type fingerprint, differing only in identifiers and literals: the
+copy-paste-then-rename signature. The rule reports one violation per cluster, at its first
+member (by path, then line), and names every member as ``path:line qualname``.
 
-``min_leaf_nodes`` (default 10) skips trivial one-liner bodies — a noise floor,
-not a claim. Cluster size is structurally floored at 2 (a clone needs two members);
-it is not a config knob (a min_cluster_size=1 would be meaningless).
-
-Each member is named by ``path:line qualname``: two same-named modules in different
-packages would otherwise read as one function.
+``min_leaf_nodes`` (default 10) skips trivial bodies. A cluster has at least two members by
+construction, so there is no minimum-size setting.
 """
 from __future__ import annotations
 
 from collections.abc import Iterable
 
-from ..scope.base import Scope
-from ..identity import relative_path
-from ..scope.identity import ScopeKind
 from ..config import RuleConfig
-from ..finding import Action, Finding, Severity, Verdict
+from ..identity import relative_path
 from ..metrics.structural.view import Structure
 from ..rule import Rule
+from ..scope.base import Scope
+from ..scope.identity import ScopeKind
+from ..violation import Violation
 
 
 class DuplicationRule(Rule):
     name = "structure.duplication"
+    description = "callables have structurally identical bodies (Type-2 clones)"
     altitudes = frozenset({ScopeKind.CORPUS})
 
     @classmethod
     def default_config(cls) -> RuleConfig:
-        return RuleConfig(
-            name=cls.name,
-            severity=Severity.WARNING,
-            params={"min_leaf_nodes": 10},
-        )
+        return RuleConfig(name=cls.name, params={"min_leaf_nodes": 10})
 
-    def check(self, component: Scope, config: RuleConfig) -> Iterable[Finding]:
+    def check(self, component: Scope, config: RuleConfig) -> Iterable[Violation]:
         min_leaf_nodes = int(config.param("min_leaf_nodes", 10))
-        clusters = Structure.over(component).clone_clusters(min_leaf_nodes=min_leaf_nodes)
-        for cluster in clusters:
+        for cluster in Structure.over(component).clone_clusters(min_leaf_nodes=min_leaf_nodes):
             members = ", ".join(
                 f"{relative_path(m.scope, component.root) or '?'}:{m.line} {m.qualname}"
                 for m in cluster.members)
-            yield Verdict(
+            first = cluster.members[0]
+            span = first.scope.spans[0] if first.scope.spans else None
+            yield Violation(
                 rule=self.name,
-                component=cluster.locus or component.id,
-                action=Action.EXTRACT_HELPER,
-                prescription=(
-                    f"Extract a shared helper: {len(cluster.members)} functions are Type-2 "
-                    f"clones (structurally identical bodies, {cluster.leaf_count} leaf nodes) "
-                    f"— {members}."
-                ),
-                severity=config.severity,
+                path=span.path if span else None,
+                line=first.line or 1,
+                column=1,
+                message=f"{len(cluster.members)} Type-2 clones ({cluster.leaf_count} leaf nodes): {members}",
                 value=len(cluster.members),
                 threshold=2,
-                message=f"{len(cluster.members)} Type-2 clones: {members}",
             )

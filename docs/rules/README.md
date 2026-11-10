@@ -1,52 +1,49 @@
 # slop rules
 
-slop ships **12 rules**, language-agnostic across 11 grammars. The authoritative,
-always-current reference is the tool itself:
+slop ships **12 rules**, language-agnostic across 11 grammars. A rule is a threshold on a
+published measure: it reports a violation when the measure is strictly greater than the
+limit. The authoritative, always-current reference is the tool itself:
 
 ```bash
-slop rules     # name, disposition, altitude for every rule
+slop rules     # name, enabled state, altitude, description for every rule
 slop schema    # the exact config shape (thresholds + params), generated from the registry
 ```
 
-Each rule's rationale — what it measures, why, the citation, and why it carries the
-disposition it does — lives in its **module docstring** under `src/slop/rules/<name>.py`.
-That is the single source of truth; this page is only a map (per-rule prose pages were
-retired in v3 because hand-maintained copies of a docstring are exactly the drift slop
-flags).
-
-## Disposition
-
-Every finding is one of three strengths, chosen by how confidently slop can speak:
-
-- **Verdict** — a defect with a prescribed fix. Error-severity verdicts fail the build.
-- **REVIEW** — the structure is anomalous but the remedy is a judgment slop won't make
-  (warning-capped; never fails the build).
-- **Observation** — a claim-free, evidence-backed nudge where no fix is honestly
-  prescribable. It makes no precision claim, so it cannot be a false positive.
+Each rule's rationale (what it measures, why, the citation) lives in its **module
+docstring** under `src/slop/rules/`. That is the single source of truth; this page is only
+a map.
 
 ## The rules
 
-**Complexity** (per callable, error verdict)
-- `complexity.cyclomatic` — McCabe (1976)
-- `complexity.cognitive` — Campbell (2018)
-- `complexity.combinatorial` — NPath, Nejmeh (1988)
+| Rule | Altitude | Default limit | Source |
+|---|---|---|---|
+| `complexity.cyclomatic` | callable | 10 | McCabe (1976) |
+| `complexity.cognitive` | callable | 15 | Campbell (2018) |
+| `complexity.combinatorial` | callable | 400 | NPath, Nejmeh (1988) |
+| `structure.god-module` | module | 20 top-level definitions | module size boundary |
+| `structure.rigidity` | package | D' 0.7 | Martin (1994, 2002), Zone of Pain |
+| `structure.uselessness` | package | D' 0.7 | Martin (1994, 2002), Zone of Uselessness |
+| `structure.dependency-cycles` | corpus | none (any cycle) | Acyclic Dependencies Principle |
+| `structure.duplication` | corpus | 2 clones (`params.min_leaf_nodes` = 10) | Type-2 clones |
+| `class.coupling` | class | CBO 8 | Chidamber & Kemerer (1994) |
+| `class.inheritance-depth` | class | DIT 4 | Chidamber & Kemerer (1994) |
+| `class.children` | class | NOC 10 | Chidamber & Kemerer (1994) |
+| `class.cohesion` (**off by default**) | class | LCOM4 groups 1 | Hitz & Montazeri (1995) |
 
-**Structure**
-- `structure.god-module` — module size boundaries
-- `structure.duplication` — Type-2 clone clusters
-- `structure.dependency-cycles` — Acyclic Dependencies Principle (error)
-- `structure.rigidity`, `structure.uselessness` — Martin's distance from the main
-  sequence (REVIEW)
+`class.cohesion` counts the groups of methods joined through shared instance members and
+lists them. It is measured for Python, JavaScript and TypeScript; elsewhere a bare `x` can
+mean `this.x`, which syntax alone cannot resolve. Enable it with
+`[rules."class.cohesion"] enabled = true`. `slop shape` prints the CK profile and cohesion
+groups of every class regardless of these rules.
 
-**Class**
-- `class-shape` — the Chidamber–Kemerer suite (CBO/DIT/NOC/NOM) plus cohesion as LCOM4
-  (the groups of methods joined through shared instance members; Python, JavaScript and
-  TypeScript), as an observation. `slop shape` prints the same numbers for every class.
+## Output and exit codes
 
-**Whole-corpus signals**
-- `vocabulary` — identifier token distribution (a Zipf near-invariant; deviation is
-  the signal) (observation)
-- `hotspots` — churn × complexity, Tornhill (2015) (observation)
-- `orphans` — top-level symbols with no detected references (observation)
+```
+src/app/config.py:12:1: complexity.cyclomatic app.config.load has cyclomatic complexity 14 (limit 10)
+Found 1 violation.
+```
 
-See [the configuration reference](../CONFIG.md) for thresholds and exemptions.
+One `path:line:column: rule message` line per violation. Exit `0` none, `1` any violation,
+`2` error. Suppress a violation inline with `slop: ignore[rule]` on its line.
+
+See [the configuration reference](../CONFIG.md) for thresholds, params and suppression.

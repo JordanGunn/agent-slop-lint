@@ -5,9 +5,9 @@ file contents. The carved corpus already holds every module's bytes, so we count
 references in-memory — same signal, no subprocess, no external dependency. This
 is a deliberate improvement, not a port of the rg plumbing.
 
-Advisory by nature (the legacy emits it as an observation): static analysis can't
-see plugin registration, reflection, or cross-language calls. Confidence
-heuristics (short names, common verbs, dynamic languages, dunders) are ported.
+Heuristic by nature: static analysis can't see plugin registration, reflection, or
+cross-language calls. Confidence heuristics (short names, common verbs, dynamic
+languages, dunders) are ported. No rule reports orphans today; the measure is kept.
 """
 from __future__ import annotations
 

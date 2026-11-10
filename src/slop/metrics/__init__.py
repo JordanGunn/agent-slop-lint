@@ -7,7 +7,7 @@ Vocabulary analysis lives in the standalone ``slop.lexicon`` kernel, not here. T
 former ``metrics.lexical`` package held slop-invented signals and was removed; see
 CHANGELOG for the commit it can be recovered from.
 
-Metrics are *measurements*. Thresholds and verdicts live above, in ``linter``. A
+Metrics are *measurements*. Limits live above, in the rules. A
 metric takes plain inputs — an addressable region plus the corpus-global context —
 never a scope object, so ``metrics`` never imports ``scope``.
 """

@@ -1,11 +1,14 @@
 """LCOM4: groups of methods joined through shared instance members."""
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
 
+from slop.config import RuleConfig
 from slop.metrics.structural.view import Structure
+from slop.rules.class_design import CohesionRule
 from slop.scope import scan_corpus
 
 
@@ -124,19 +127,25 @@ def test_languages_with_implicit_this_are_unmeasurable_not_zero(tmp_path: Path, 
     assert _groups(tmp_path, name, src) is None
 
 
-def test_class_shape_narrates_the_groups(tmp_path: Path):
-    from slop.rules.class_shape import ClassShapeRule
+_ENABLED = RuleConfig(name="class.cohesion", enabled=True, thresholds={"class": 1})
+
+
+def _first_class(root: Path):
+    module = scan_corpus(root, config=None).realms()[0].packages()[0].modules()[0]
+    return next(c for c in module.children() if c.KIND.name == "CLASS")
+
+
+def test_cohesion_rule_lists_the_groups_in_its_message(tmp_path: Path):
     (tmp_path / "m.py").write_text(
         "class A:\n"
         "    def f(self): return self.a\n"
         "    def g(self): return self.b\n"
     )
-    module = scan_corpus(tmp_path, config=None).realms()[0].packages()[0].modules()[0]
-    cls = next(c for c in module.children() if c.KIND.name == "CLASS")
-    [obs] = list(ClassShapeRule().check(cls, ClassShapeRule.default_config()))
-    assert obs.evidence.data["lcom4"] == 2
-    assert obs.evidence.data["method_groups"] == [["f"], ["g"]]
-    assert "{f}; {g}" in obs.message
+    cls = _first_class(tmp_path)
+    [v] = list(CohesionRule().check(cls, _ENABLED))
+    assert (v.rule, v.value, v.threshold) == ("class.cohesion", 2, 1)
+    assert "{f}; {g}" in v.message
+    assert (v.line, v.column) == (1, 1)
 
 
 def test_methods_reaching_no_instance_state_are_detached_not_groups(tmp_path: Path):
@@ -162,16 +171,22 @@ def test_a_callee_that_touches_no_state_is_attached_to_its_caller(tmp_path: Path
     assert (c.groups, c.detached) == ((("run", "step"),), ())
 
 
-def test_class_shape_is_silent_for_a_class_with_only_detached_methods(tmp_path: Path):
-    from slop.rules.class_shape import ClassShapeRule
+def test_cohesion_rule_is_silent_for_a_class_with_only_detached_methods(tmp_path: Path):
     (tmp_path / "m.py").write_text(
         "class A:\n"
         "    def save(self): raise NotImplementedError\n"
         "    def load(self): raise NotImplementedError\n"
     )
-    module = scan_corpus(tmp_path, config=None).realms()[0].packages()[0].modules()[0]
-    cls = next(c for c in module.children() if c.KIND.name == "CLASS")
-    assert list(ClassShapeRule().check(cls, ClassShapeRule.default_config())) == []
+    cls = _first_class(tmp_path)
+    assert list(CohesionRule().check(cls, _ENABLED)) == []
+
+
+def test_cohesion_rule_respects_its_limit(tmp_path: Path):
+    (tmp_path / "m.py").write_text(
+        "class A:\n    def f(self): return self.a\n    def g(self): return self.b\n")
+    cls = _first_class(tmp_path)
+    assert list(CohesionRule().check(cls, replace(_ENABLED, thresholds={"class": 2}))) == []
+    assert len(list(CohesionRule().check(cls, _ENABLED))) == 1
 
 
 def test_class_field_arrow_functions_are_distinct_methods(tmp_path: Path):

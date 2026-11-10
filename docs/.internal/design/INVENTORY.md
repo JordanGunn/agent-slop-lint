@@ -38,7 +38,7 @@ Status legend:
 | hotspots | churn × complexity | `Corpus.hotspots` | done |
 | orphans | unreferenced symbols | `Corpus.orphans` | done |
 | import cycles | Tarjan SCC | `DependencyGraph.cycles` / `Corpus.dependency_cycles` | done |
-| Zipf/hapax distribution | identifier token shape (observation) | rule consuming `Lexicon` (`distribution`, `narrate`) at `Package` | done |
+| Zipf/hapax distribution | identifier token shape | `Lexicon` (`distribution`) via `slop lexicon`; no rule consumes it | done |
 
 ## Carried but not in legacy
 
@@ -50,4 +50,4 @@ Status legend:
 ## Open placement questions
 
 - **WMC weighting.** CK leave the method weight open; legacy used cyclomatic-sum (which collapses WMC into `class.cyclomatic`). New `wmc()` must pick a real definition (unweighted method count, or configurable weight) to stay distinct.
-- **Package carving — resolved.** Carving now uses `grammar.resolve_packages` (flat, `__init__`-gated, rel-path-named, matching the legacy package model), with a per-directory fallback for loose scripts. Verified: package boundaries + Ca/Ce/I/A match the oracle exactly on `src/slop` (15 packages). Residual: for **class-less packages** the legacy reports `A=None`/`distance=None`/zone `unknown`, while `PackageMetrics`'s non-optional float fields show `A=0.0` and a computed `distance`. Zone verdicts (`in_zone_of_pain`/`uselessness`) guard on definedness and are correct. Closing this exactly needs `PackageMetrics.{instability,abstractness,distance}: float | None` — a `metrics/structural/records.py` change (the protected interfaces), deferred pending approval.
+- **Package carving — resolved.** Carving now uses `grammar.resolve_packages` (flat, `__init__`-gated, rel-path-named, matching the legacy package model), with a per-directory fallback for loose scripts. Verified: package boundaries + Ca/Ce/I/A match the oracle exactly on `src/slop` (15 packages). Residual: for **class-less packages** the legacy reports `A=None`/`distance=None`/zone `unknown`, while `PackageMetrics`'s non-optional float fields show `A=0.0` and a computed `distance`. Zone predicates (`in_zone_of_pain`/`uselessness`) guard on definedness and are correct. Closing this exactly needs `PackageMetrics.{instability,abstractness,distance}: float | None` — a `metrics/structural/records.py` change (the protected interfaces), deferred pending approval.

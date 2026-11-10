@@ -13,9 +13,9 @@ vocabulary-analysis library over a corpus of identifier tokens. It tokenizes,
 counts, measures distribution, and compares — in the vocabulary of lexicography,
 not of slop. The governing test for every member: *would a corpus linguist
 recognize this concept independent of slop?* Hapax ratio, type/token counts, Zipf
-shape — yes. Threshold verdicts — no; those are slop's policies and live at a
+shape — yes. Lint thresholds — no; those are slop's policies and live at a
 higher layer. The litmus is hard: **`lexicon/` must be importable and
-usable outside the linter** (it powers the claim-free `vocabulary` observation),
+usable outside the linter** (it powers `slop lexicon`),
 so it imports nothing from `component`, `rules`, or `linter`.
 
 This is the same discipline as `ast/`, but `lexicon/` is a *domain* package, not a
@@ -33,7 +33,7 @@ neutralization layer — a lowercased token is already language-agnostic, so the
                         \        /
                      component/             (wires AST identifiers → (text,role,span); unions fs names)
                           ↑
-                       linter/              (rules; thresholds + verdicts)
+                       linter/              (rules; thresholds over measures)
 ```
 
 `Span` moves down once more — out of `ast/` to a shared base both `ast/` and
@@ -100,7 +100,7 @@ lexicon/
   tokenize.py      split_tokens (camel/snake) + Lexeme
   roles.py         Role enum
   corpus.py        Lexicon: tokens, counts, hapax_ratio, most_common, frequencies, slice
-  distribution.py  Zipf fit + TokenDistribution + narrate() (claim-free evidence)
+  distribution.py  Zipf fit + TokenDistribution (token_distribution)
   comparison.py    jaccard / containment / cosine / js_divergence over frequency maps
 ```
 
@@ -109,12 +109,12 @@ lexicon/
 The AST line was "navigation vs math." The lexicon line is:
 
 > **Lexicon owns the token-space and its descriptive linguistic measurements.
-> Slop's named metrics, thresholds, and verdicts live above it.**
+> Slop's named metrics and thresholds live above it.**
 
 `lexicon/` provides the Zipf shape, the hapax ratio, and the frequency counts. The
-rule layer composes them into slop's signals — the `vocabulary` observation's
-narration is the shipped consumer. The risk to avoid is the lexical form of the v2
-sin — the kernel absorbing rule policy. A threshold or a verdict in `lexicon/` is
+rule layer composes measures into slop's rules; today no rule consumes the
+distribution (`slop lexicon` reports it). The risk to avoid is the lexical form of the v2
+sin — the kernel absorbing rule policy. A threshold in `lexicon/` is
 the tell.
 
 ### Dependency posture — zero new runtime deps
@@ -137,8 +137,8 @@ future hand-roll, not a port requirement.
 
 `Span` moved to the shared base; `ast` grew `Node.identifiers()`; `lexicon/` stood
 up from the string-pure inventory (`distribution.py` ports verbatim); the component
-bridge (`scope/lexicon.py`) wires them. The kernel is proven on the `vocabulary`
-observation; anything further migrates by attrition, lifting slop's named metrics
+bridge (`scope/lexicon.py`) wires them. The kernel is proven by `slop lexicon`;
+anything further migrates by attrition, lifting slop's named metrics
 up as rules.
 
 ### Inventory Ledger
@@ -150,7 +150,7 @@ layer that consumed the rest of the legacy lexicon was cut with the coined rules
 (see CHANGELOG), so this ledger records the shipped surface plus the deferred
 remainder, not planned ports.
 
-**The boundary** is sharper than "descriptive vs verdict": it is **general
+**The boundary** is sharper than "descriptive vs thresholded": it is **general
 linguistic concept → lexicon; slop-invented metric → higher layer.** Litmus for
 every row: *would a corpus linguist recognize this concept independent of slop?*
 If yes → lexicon (renamed to lexicographic language). If it is slop's coinage,
@@ -165,12 +165,12 @@ composition, or threshold → higher layer. The hard requirement behind the boun
 | `stopwords.py` | `STOP_WORDS` — Newman-14 universal noise + identifier glue; injectable |
 | `roles.py` | `Role` enum (`REALM / PACKAGE / MODULE / CLASS / CALLABLE / PARAMETER / BODY_REF`) |
 | `corpus.py` | `Lexicon` — the analysable token-space: `tokens`, `significant_token_count`, `total_token_count`, `hapax_ratio`, `most_common`, `frequencies`, `slice` |
-| `distribution.py` | `_zipf_fit` (α, R²) + `TokenDistribution` (spectrum, hapax, head concentration) + `narrate()` — the claim-free evidence the `vocabulary` observation emits |
+| `distribution.py` | `_zipf_fit` (α, R²) + `TokenDistribution` (spectrum, hapax, head concentration) via `token_distribution()` |
 | `comparison.py` | `jaccard` / `containment` / `cosine` / `js_divergence` / `js_similarity` over frequency maps |
 
 ## Deferred
 
-| Item | Disposition |
+| Item | Status |
 |---|---|
 | Ronin / abbreviation splitting | optional future hand-roll; no maintained permissive lib (`spiral` is archived/GPL-3/NLTK-bound) |
 

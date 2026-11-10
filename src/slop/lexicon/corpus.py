@@ -8,8 +8,7 @@ reusing the parent's tokenisation.
 
 Boundary discipline: this module measures the token-space and nothing more. Type and
 token counts, hapax ratio, and frequency are descriptive lexicostatistics a corpus
-linguist would recognise. Thresholds, verdicts, and slop's named metrics live in the
-rule layer above; none belong here.
+linguist would recognise. Limits and checks belong to the rule layer above, not here.
 
 Input is plain data — a stream of ``(text, role, span)`` — so the lexicon imports
 nothing from ``component``/``rules``/``linter`` and stays usable on its own. ``slice``
@@ -95,8 +94,7 @@ class Lexicon:
         return {token: len(paths) for token, paths in files.items()}
 
     def distribution(self, *, top: int = 15) -> TokenDistribution:
-        """This token-space as a measured Zipfian distribution (claim-free; the
-        object the ``vocabulary`` observation surfaces). See
+        """This token-space as a measured Zipfian distribution. See
         :mod:`slop.lexicon.distribution`."""
         return token_distribution(self._counter, top=top)
 

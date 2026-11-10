@@ -4,10 +4,10 @@ Single-lexicon measurement (Zipf/hapax) lives in ``distribution``; this module a
 the *pairwise* primitive the kernel previously lacked: how alike are two
 vocabularies? A corpus linguist would recognise every member here — set overlap
 (Jaccard), directional containment, frequency cosine, and Jensen-Shannon divergence
-between the two distributions. No slop-invented metric and no verdict: the rule layer
-above decides what a given similarity *means* (a scope whose vocabulary fits a sibling
-package better than its own is a relocation candidate; one that barely overlaps its
-container is a foreign body) — this layer only measures the likeness.
+between the two distributions. No slop-invented metric and no limit: a caller decides
+what a given similarity *means* (a scope whose vocabulary fits a sibling package better
+than its own is a relocation candidate; one that barely overlaps its container is a
+foreign body); this layer only measures the likeness.
 
 All functions take token -> count mappings (``Lexicon.frequencies()``) and return a
 value in a documented range. They are symmetric unless named otherwise

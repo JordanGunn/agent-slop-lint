@@ -12,14 +12,12 @@ from __future__ import annotations
 
 import argparse
 import json
-import shutil
 import sys
 from importlib.metadata import PackageNotFoundError, version as _pkg_version
 from pathlib import Path
 
 from .config import AnalysisConfig
 from .dispatch import Dispatcher, Report
-from .finding import Severity
 from .scope import scan_corpus
 from .scope.identity import ScopeKind
 from .rules import RULE_REGISTRY
@@ -156,27 +154,24 @@ def check(target: str, root: str | Path, output: str = "human") -> int:
 
 
 def rules_cmd(output: str = "human") -> int:
-    """List the rule registry: name, altitudes, disposition."""
-    rows = []
-    for r in sorted(RULE_REGISTRY, key=lambda x: x.name):
-        rc = r.default_config()
-        alts = ",".join(sorted(k.value for k in r.altitudes))
-        # A rule whose default severity is INFO emits observations; otherwise verdicts.
-        dispo = "observation" if rc.severity is Severity.INFO else f"verdict/{rc.severity.label()}"
-        rows.append((r.name, alts, dispo))
+    """List the rule registry: name, altitudes, whether it is on by default."""
+    rows = [(r.name, ",".join(sorted(k.value for k in r.altitudes)),
+             r.default_config().enabled, r.description)
+            for r in sorted(RULE_REGISTRY, key=lambda x: x.name)]
     if output == "json":
-        print(json.dumps([{"name": n, "altitudes": a, "disposition": d} for n, a, d in rows], indent=2))
+        print(json.dumps([{"name": n, "altitudes": a.split(","), "enabled": on, "description": d}
+                          for n, a, on, d in rows], indent=2))
         return 0
-    width = max((len(n) for n, _, _ in rows), default=4)
+    width = max((len(n) for n, *_ in rows), default=4)
     print(f"{len(rows)} rules\n")
-    for n, a, d in rows:
-        print(f"  {n:<{width}}  {d:<18}  [{a}]")
+    for n, a, on, d in rows:
+        print(f"  {n:<{width}}  {'on ' if on else 'off'}  [{a}]  {d}")
     return 0
 
 
 def schema_cmd(output: str = "json") -> int:
-    """Emit the config shape, generated from the registry (so it cannot drift from
-    the rules it describes — unlike a hand-maintained asset)."""
+    """Emit the config shape, generated from the registry (so it cannot drift from the
+    rules it describes)."""
     rules_schema = []
     for r in sorted(RULE_REGISTRY, key=lambda x: x.name):
         rc = r.default_config()
@@ -184,28 +179,22 @@ def schema_cmd(output: str = "json") -> int:
             "name": r.name,
             "altitudes": sorted(k.value for k in r.altitudes),
             "enabled": rc.enabled,
-            "severity": rc.severity.label(),
             "thresholds": dict(rc.thresholds),
             "params": dict(rc.params),
         })
-    schema = {
-        "version": "v1",
-        "ignore": {"functions": [], "classes": [], "modules": [], "packages": []},
-        "rules": rules_schema,
-    }
+    schema = {"version": "v2", "exclude": [], "languages": [], "rules": rules_schema}
     if output == "json":
         print(json.dumps(schema, indent=2))
     else:
-        print(f"slop config schema v1 — {len(rules_schema)} rules")
-        print("  [ignore] scopes: functions, classes, modules, packages")
+        print(f"slop config schema v2: exclude, languages, and {len(rules_schema)} rules")
         for r in rules_schema:
             keys = sorted({*r["thresholds"], *r["params"]})
-            print(f"  {r['name']}: severity={r['severity']} keys={keys}")
+            print(f"  {r['name']}: keys={keys}")
     return 0
 
 
 def doctor() -> int:
-    """Report the tools slop relies on. Missing optional tools degrade gracefully."""
+    """Report the tools slop relies on."""
     print("slop doctor\n")
     ok = True
     try:
@@ -214,10 +203,6 @@ def doctor() -> int:
     except Exception as exc:  # noqa: BLE001
         print(f"  [FAIL] tree-sitter not importable: {exc}")
         ok = False
-    if shutil.which("git"):
-        print("  [ok]   git (hotspots churn signal)")
-    else:
-        print("  [warn] git not found — the hotspots rule will be silent")
     print("\nready" if ok else "\nmissing required tooling")
     return 0 if ok else 2
 
@@ -266,8 +251,8 @@ def lexicon_view(root: str | Path, output: str = "human", *,
 
     Precise (any scope via ``--scope``, not just the corpus), abstract (the Zipf
     distribution + head, not a token dump), current (regenerated from the fresh carve).
-    The same measured object the ``vocabulary`` observation surfaces. With ``--ontology``,
-    also compares the observed tokens with a canonical vocabulary (see ``slop.lexical``)."""
+    With ``--ontology``, also compares the observed tokens with a canonical vocabulary
+    (see ``slop.lexical``)."""
     corpus = _scan_root(root)
     if corpus is None:
         return 2
@@ -521,9 +506,9 @@ def vocab_view(root: str | Path, ontology: str | Path, output: str = "human", *,
 def shape_view(root: str | Path, output: str = "human", *, scope: str | None = None,
                scope_kind: str | None = None) -> int:
     """The shape of every class beneath a scope: its Chidamber-Kemerer profile and its
-    method groups (LCOM4), unfiltered. No floors, no verdicts: ``class-shape`` narrates only
-    the classes past an attention floor, this answers for any class. ``lcom4`` is ``null``
-    where the language's instance member access cannot be read from syntax."""
+    method groups (LCOM4), unfiltered: no limits are applied, so it answers for any class
+    (the ``class.*`` rules apply limits to the same numbers). ``lcom4`` is ``null`` where
+    the language's instance member access cannot be read from syntax."""
     corpus = _scan_root(root)
     if corpus is None:
         return 2
@@ -569,14 +554,14 @@ def init(root: str | Path) -> int:
 
 
 def _template() -> str:
-    lines = ["# slop configuration — generated by `slop init`.",
-             "# Uncomment and edit to override a rule's defaults.\n"]
+    lines = ["# slop configuration, generated by `slop init`.",
+             "# Uncomment and edit to change a rule's defaults.\n",
+             '# exclude = ["tests/**"]       # files slop never reads',
+             '# languages = ["python"]       # carve only these languages\n']
     for r in sorted(RULE_REGISTRY, key=lambda x: x.name):
         rc = r.default_config()
         lines.append(f'# [rules."{r.name}"]')
         lines.append(f"# enabled = {str(rc.enabled).lower()}")
-        if rc.severity is not Severity.INFO:
-            lines.append(f'# severity = "{rc.severity.label()}"')
         for k, v in rc.thresholds.items():
             lines.append(f"# thresholds.{k} = {json.dumps(v)}")
         for k, v in rc.params.items():
@@ -585,52 +570,20 @@ def _template() -> str:
     return "\n".join(lines)
 
 
-def _at(component, root: str | None, line: int | None) -> str:
-    """`  path:line` for a finding, so same-named scopes in different files are told apart."""
-    path = _rel_path(component, root) if root else None
-    if not path:
-        return ""
-    return f"  {path}:{line}" if line else f"  {path}"
-
-
 def _human(report: Report) -> str:
-    lines: list[str] = []
-    verdicts = report.verdicts()
-    observations = report.observations()
-
-    if verdicts:
-        lines.append("VERDICTS")
-        for v in sorted(verdicts, key=lambda f: (-int(f.severity), f.rule)):
-            lines.append(f"  [{v.severity.label()}] {v.rule}  ·  {v.component.qualname}"
-                         f"{_at(v.component, report.root, v.line)}")
-            lines.append(f"      {v.message}")
-            lines.append(f"      → {v.action.value}: {v.prescription}")
-        lines.append("")
-
-    if observations:
-        lines.append("OBSERVATIONS")
-        for o in observations:
-            lines.append(f"  [info] {o.rule}  ·  {o.component.qualname}"
-                         f"{_at(o.component, report.root, o.line)}")
-            lines.append(f"      {o.message}")
-        lines.append("")
-
-    if report.zero_visited:
-        lines.append(f"note: {len(report.zero_visited)} enabled rule(s) examined 0 components: "
-                     f"{', '.join(report.zero_visited)}")
-        lines.append("")
-
-    s = report.as_dict()["summary"]
-    summary = (f"{s['verdicts']} verdict(s) ({s['errors']} error, {s['warnings']} warning), "
-               f"{s['observations']} observation(s) — exit {s['exit_code']}")
-    if not report.findings:
-        return "clean — no findings\n\n" + summary
-    lines.append(summary)
+    """One ``path:line:column: rule message`` line per violation, the shape editors and
+    other tools already parse, then a summary."""
+    lines = [
+        f"{report.relative_path(v) or '<corpus>'}:{v.line}:{v.column}: {v.rule} {v.message}"
+        for v in report.violations
+    ]
+    count = len(report.violations)
+    lines.append(f"Found {count} violation{'s' if count != 1 else ''}." if count else "No violations.")
     return "\n".join(lines)
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="slop", description="agentic code-quality linter")
+    parser = argparse.ArgumentParser(prog="slop", description="a linter and code-structure query tool")
     parser.add_argument("--version", action="version", version=f"slop {_version()}")
     sub = parser.add_subparsers(dest="command", required=True)
 

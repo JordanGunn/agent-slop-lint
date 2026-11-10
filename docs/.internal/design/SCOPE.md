@@ -51,7 +51,7 @@ span · identity                         primitives (zero-dep value types)
            │
    metrics/structural                   slop's measurements over (region, context)
            │
-          linter                        rules: thresholds + verdicts over metrics
+          linter                        rules: thresholds over metrics
 ```
 
 One rule keeps it acyclic — the same rule that made `lexicon/` work: **views take
@@ -157,7 +157,7 @@ the `Span` move.
 ### Boundary — scope identifies, views measure, the linter judges
 
 > **`scope/` owns the entity tree, its identity, and its extent. Measurements live in
-> `metrics/`; verdicts live in `linter/`. A metric method on a scope entity is the
+> `metrics/`; thresholds live in `linter/`. A metric method on a scope entity is the
 > tell.**
 
 The risk to avoid is the structural form of the v2 sin — the ownership model absorbing

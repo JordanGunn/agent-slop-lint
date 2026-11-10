@@ -1,6 +1,7 @@
 """CLI subcommands — rules / check / doctor / init (plus the existing lint)."""
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -35,20 +36,41 @@ def test_rules_lists_registry(capsys):
 
 def test_rules_json(capsys):
     rc = cli.rules_cmd("json")
-    out = capsys.readouterr().out
+    data = json.loads(capsys.readouterr().out)
     assert rc == 0
-    import json
-    data = json.loads(out)
-    names = {r["name"] for r in data}
-    assert "complexity.cyclomatic" in names and "orphans" in names
+    by_name = {r["name"]: r for r in data}
+    assert "complexity.cyclomatic" in by_name and "class.coupling" in by_name
+    assert not {"orphans", "hotspots", "vocabulary", "class-shape"} & set(by_name)
+    assert by_name["class.cohesion"]["enabled"] is False
+    assert by_name["complexity.cyclomatic"]["altitudes"] == ["callable"]
+
+
+def test_rules_human_marks_default_off_rules(capsys):
+    cli.rules_cmd("human")
+    lines = capsys.readouterr().out.splitlines()
+    [cohesion] = [ln for ln in lines if "class.cohesion" in ln]
+    [cyclomatic] = [ln for ln in lines if "complexity.cyclomatic" in ln]
+    assert " off " in cohesion and " on " in cyclomatic
+
+
+def test_schema_json_is_v2(capsys):
+    assert cli.schema_cmd("json") == 0
+    data = json.loads(capsys.readouterr().out)
+    assert data["version"] == "v2" and {"exclude", "languages", "rules"} <= set(data)
+    cohesion = next(r for r in data["rules"] if r["name"] == "class.cohesion")
+    assert cohesion["enabled"] is False and cohesion["thresholds"] == {"class": 1}
 
 
 def test_check_unknown_target_errors(capsys):
     assert cli.check("nonsense.rule", ".", "human") == 2
 
 
+def test_a_name_that_only_prefixes_a_rule_is_not_a_family(capsys):
+    assert cli.check("complex", ".", "human") == 2
+
+
 def test_nonexistent_root_errors(tmp_path: Path, capsys):
-    # A missing root must error (exit 2), not report "clean" — the CLI-boundary form
+    # A missing root must error (exit 2), not report "clean": the CLI-boundary form
     # of "not-flagged != clean".
     missing = tmp_path / "does-not-exist"
     assert cli.lint(missing, "human") == 2
@@ -63,16 +85,70 @@ def test_empty_root_errors(tmp_path: Path, capsys):
     assert "no source files" in capsys.readouterr().err
 
 
-def test_check_filters_to_family(tmp_path: Path, capsys):
-    (tmp_path / "m.py").write_text(
-        "def f(a, b):\n" + "".join(f"    if a == {i}: b += {i}\n" for i in range(15)) + "    return b\n"
-    )
-    assert cli.check("complexity", tmp_path, "json") in (0, 1)
-    out = capsys.readouterr().out
-    import json
-    data = json.loads(out)
-    rules_fired = {f["rule"] for f in data["findings"]} if data.get("findings") else set()
-    assert all(r.startswith("complexity.") for r in rules_fired)
+_TANGLED = "def f(a, b):\n" + "".join(f"    if a == {i}: b += {i}\n" for i in range(15)) + "    return b\n"
+
+
+def test_lint_human_output_is_one_located_line_per_violation(tmp_path: Path, capsys):
+    (tmp_path / "m.py").write_text(_TANGLED)
+    assert cli.lint(tmp_path, "human") == 1
+    lines = capsys.readouterr().out.splitlines()
+    cyclomatic = [ln for ln in lines if " complexity.cyclomatic " in ln]
+    assert len(cyclomatic) == 1
+    assert cyclomatic[0].startswith("m.py:1:1: complexity.cyclomatic ")
+    assert "16" in cyclomatic[0] and "limit 10" in cyclomatic[0]
+    assert lines[-1] == f"Found {len(lines) - 1} violations."
+
+
+def test_lint_human_output_uses_the_singular_for_one_violation(tmp_path: Path, capsys):
+    (tmp_path / "m.py").write_text(_BRANCHY)
+    (tmp_path / ".slop.toml").write_text(_LOW)
+    assert cli.lint(tmp_path, "human") == 1
+    lines = capsys.readouterr().out.splitlines()
+    assert len(lines) == 2 and lines[0].startswith("m.py:1:1: complexity.cyclomatic ")
+    assert lines[1] == "Found 1 violation."
+
+
+def test_lint_clean_source_exits_zero_with_no_violations(tmp_path: Path, capsys):
+    (tmp_path / "m.py").write_text("def f(x):\n    return x\n")
+    assert cli.lint(tmp_path, "human") == 0
+    assert capsys.readouterr().out.strip() == "No violations."
+
+
+def test_lint_json_shape(tmp_path: Path, capsys):
+    (tmp_path / "m.py").write_text(_TANGLED)
+    code, doc = _lint_json(tmp_path, capsys)
+    assert code == 1 and set(doc) == {"summary", "violations", "zero_visited"}
+    assert doc["summary"] == {"violations": len(doc["violations"]), "exit_code": 1}
+    assert "findings" not in doc
+    v = next(v for v in doc["violations"] if v["rule"] == "complexity.cyclomatic")
+    assert v == {"rule": "complexity.cyclomatic", "path": "m.py", "line": 1, "column": 1,
+                 "message": v["message"], "value": 16, "threshold": 10}
+
+
+def test_lint_json_of_clean_source(tmp_path: Path, capsys):
+    (tmp_path / "m.py").write_text("def f(x):\n    return x\n")
+    code, doc = _lint_json(tmp_path, capsys)
+    assert code == 0 and doc["violations"] == [] and doc["summary"] == {"violations": 0, "exit_code": 0}
+
+
+def test_check_filters_to_a_family(tmp_path: Path, capsys):
+    (tmp_path / "m.py").write_text(_TANGLED)
+    code, doc = _lint_json(tmp_path, capsys, check="complexity")
+    assert code == 1
+    fired = {v["rule"] for v in doc["violations"]}
+    assert "complexity.cyclomatic" in fired and all(r.startswith("complexity.") for r in fired)
+
+
+def test_check_filters_to_one_rule(tmp_path: Path, capsys):
+    (tmp_path / "m.py").write_text(_TANGLED)
+    code, doc = _lint_json(tmp_path, capsys, check="complexity.cyclomatic")
+    assert code == 1 and {v["rule"] for v in doc["violations"]} == {"complexity.cyclomatic"}
+
+
+def test_check_exits_zero_when_its_rules_are_clean_though_others_are_not(tmp_path: Path, capsys):
+    (tmp_path / "m.py").write_text(_TANGLED)
+    code, doc = _lint_json(tmp_path, capsys, check="structure")
+    assert code == 0 and doc["violations"] == []
 
 
 def test_check_with_ancestor_config_for_other_rule(tmp_path: Path, capsys):
@@ -81,8 +157,32 @@ def test_check_with_ancestor_config_for_other_rule(tmp_path: Path, capsys):
     # full registry, dispatch only the subset).
     (tmp_path / ".slop.toml").write_text('[rules."structure.god-module"]\nenabled = false\n')
     (tmp_path / "m.py").write_text("def f(x): return x\n")
-    rc = cli.check("complexity", tmp_path, "json")
-    assert rc in (0, 1)  # ran cleanly, did not error (2)
+    assert cli.check("complexity", tmp_path, "json") == 0
+
+
+def test_an_invalid_config_is_exit_two_not_a_clean_run(tmp_path: Path, capsys):
+    (tmp_path / "m.py").write_text(_TANGLED)
+    (tmp_path / ".slop.toml").write_text('[rules."complexity.cyclomatic"]\nseverity = "warning"\n')
+    assert cli.main(["lint", "--root", str(tmp_path)]) == 2
+    assert "severity" in capsys.readouterr().err
+
+
+def test_a_disabled_rule_reports_nothing(tmp_path: Path, capsys):
+    (tmp_path / "m.py").write_text(_TANGLED)
+    (tmp_path / ".slop.toml").write_text('[rules."complexity.cyclomatic"]\nenabled = false\n')
+    _, doc = _lint_json(tmp_path, capsys)
+    assert "complexity.cyclomatic" not in {v["rule"] for v in doc["violations"]}
+
+
+def test_class_cohesion_is_reported_once_enabled(tmp_path: Path, capsys):
+    (tmp_path / "m.py").write_text(
+        "class A:\n    def f(self): return self.a\n    def g(self): return self.b\n")
+    _, doc = _lint_json(tmp_path, capsys)
+    assert doc["violations"] == []
+    (tmp_path / ".slop.toml").write_text('[rules."class.cohesion"]\nenabled = true\n')
+    _, doc = _lint_json(tmp_path, capsys)
+    [v] = doc["violations"]
+    assert (v["rule"], v["path"], v["value"], v["threshold"]) == ("class.cohesion", "m.py", 2, 1)
 
 
 def test_doctor_runs(capsys):
@@ -230,73 +330,73 @@ def test_deps_unknown_scope_errors(tmp_path: Path, capsys):
 def test_init_writes_template(tmp_path: Path, capsys):
     assert cli.init(tmp_path) == 0
     cfg = (tmp_path / ".slop.toml").read_text()
-    assert "[rules." in cfg
+    assert '[rules."complexity.cyclomatic"]' in cfg
+    assert "thresholds.callable = 10" in cfg
+    assert "# exclude" in cfg and "# languages" in cfg
+    assert "severity" not in cfg and "ignore" not in cfg.replace("slop: ignore", "")
     # second init refuses to overwrite
     assert cli.init(tmp_path) == 2
 
 
 def test_lint_and_check_drop_excluded_files(tmp_path: Path, capsys):
-    # tests/ holds the only branchy function; with threshold 1 it is a finding until the
+    # tests/ holds the only branchy function; with threshold 2 it is a violation until the
     # config excludes tests/**. Valid config (no stale rule), so this exercises `load`.
-    import json
     (tmp_path / "app.py").write_text("def ok(x):\n    return x\n")
     (tmp_path / "tests").mkdir()
     (tmp_path / "tests" / "test_a.py").write_text(
         "def branchy(x):\n    if x:\n        return 1\n    if x > 2:\n        return 2\n    return 3\n")
     rule = '[rules."complexity.cyclomatic".thresholds]\ncallable = 2\n'
 
-    def findings(run) -> set[str]:
-        capsys.readouterr()
-        run()
-        return {f["path"] for f in json.loads(capsys.readouterr().out)["findings"]}
+    def paths(check: str | None = None) -> set[str]:
+        return {v["path"] for v in _lint_json(tmp_path, capsys, check=check)[1]["violations"]}
 
     (tmp_path / ".slop.toml").write_text(rule)
-    assert findings(lambda: cli.lint(tmp_path, "json")) == {"tests/test_a.py"}
-    assert findings(lambda: cli.check("complexity.cyclomatic", tmp_path, "json")) == {"tests/test_a.py"}
+    assert paths() == {"tests/test_a.py"}
+    assert paths("complexity.cyclomatic") == {"tests/test_a.py"}
 
     (tmp_path / ".slop.toml").write_text('exclude = ["tests/**"]\n' + rule)
-    assert findings(lambda: cli.lint(tmp_path, "json")) == set()
-    assert findings(lambda: cli.check("complexity.cyclomatic", tmp_path, "json")) == set()
+    assert paths() == set()
+    assert paths("complexity.cyclomatic") == set()
 
 
 _BRANCHY = "def f(v):\n    if v:\n        return 1\n    if v > 2:\n        return 2\n    return 3\n"
+_LOW = '[rules."complexity.cyclomatic".thresholds]\ncallable = 2\n'
+
+
+def _lint_json(root: Path, capsys, *, check: str | None = None) -> tuple[int, dict]:
+    capsys.readouterr()
+    code = cli.check(check, root, "json") if check else cli.lint(root, "json")
+    return code, json.loads(capsys.readouterr().out)
 
 
 def _cyclomatic_paths(root: Path, capsys) -> set[str]:
-    import json
-    cli.lint(root, "json")
-    findings = json.loads(capsys.readouterr().out)["findings"]
-    return {f["path"] for f in findings if f["rule"] == "complexity.cyclomatic"}
+    _, doc = _lint_json(root, capsys)
+    return {v["path"] for v in doc["violations"] if v["rule"] == "complexity.cyclomatic"}
 
 
-def _two_same_named_branchy_functions(root: Path, ignore: str) -> None:
-    """`a/x.py:f` and `b/x.py:f` are both `x.f` and both over the cyclomatic threshold."""
+def test_same_named_functions_in_two_files_are_both_reported_at_their_own_paths(tmp_path: Path, capsys):
+    # `a/x.py:f` and `b/x.py:f` are both `x.f`; each violation must carry its own file.
     for pkg in ("a", "b"):
-        (root / pkg).mkdir()
-        (root / pkg / "__init__.py").write_text("")
-        (root / pkg / "x.py").write_text(_BRANCHY)
-    (root / ".slop.toml").write_text(
-        '[rules."complexity.cyclomatic".thresholds]\ncallable = 2\n' + ignore)
-
-
-def test_without_an_ignore_both_same_named_functions_are_flagged(tmp_path: Path, capsys):
-    _two_same_named_branchy_functions(tmp_path, "")
+        (tmp_path / pkg).mkdir()
+        (tmp_path / pkg / "__init__.py").write_text("")
+        (tmp_path / pkg / "x.py").write_text(_BRANCHY)
+    (tmp_path / ".slop.toml").write_text(_LOW)
     assert _cyclomatic_paths(tmp_path, capsys) == {"a/x.py", "b/x.py"}
 
 
-def test_a_plain_ignore_entry_exempts_every_unit_of_that_name(tmp_path: Path, capsys):
-    _two_same_named_branchy_functions(tmp_path, '[ignore]\nfunctions = ["f"]\n')
-    assert _cyclomatic_paths(tmp_path, capsys) == set()
+def test_an_ignore_table_is_now_a_config_error(tmp_path: Path, capsys):
+    (tmp_path / "m.py").write_text(_BRANCHY)
+    (tmp_path / ".slop.toml").write_text(_LOW + '[ignore]\nfunctions = ["f"]\n')
+    assert cli.main(["lint", "--root", str(tmp_path)]) == 2
+    err = capsys.readouterr().err
+    assert "unknown key" in err and "ignore" in err
+    assert cli.main(["check", "complexity", "--root", str(tmp_path)]) == 2
 
 
-def test_a_path_qualified_ignore_entry_exempts_only_that_file(tmp_path: Path, capsys):
-    _two_same_named_branchy_functions(tmp_path, '[ignore]\nfunctions = ["a/x.py::f"]\n')
+def test_an_inline_ignore_comment_exempts_only_its_own_function(tmp_path: Path, capsys):
+    (tmp_path / "a").mkdir()
+    (tmp_path / "a" / "x.py").write_text(_BRANCHY.replace("def f(v):", "def f(v):  # slop: ignore"))
+    (tmp_path / "b").mkdir()
+    (tmp_path / "b" / "x.py").write_text(_BRANCHY)
+    (tmp_path / ".slop.toml").write_text(_LOW)
     assert _cyclomatic_paths(tmp_path, capsys) == {"b/x.py"}
-
-
-def test_ignore_path_matches_at_a_directory_boundary(tmp_path: Path, capsys):
-    # "x.py" must not exempt a file called "ax.py"; the path matches whole segments.
-    (tmp_path / "ax.py").write_text(_BRANCHY)
-    (tmp_path / ".slop.toml").write_text(
-        '[rules."complexity.cyclomatic".thresholds]\ncallable = 2\n[ignore]\nfunctions = ["x.py::f"]\n')
-    assert _cyclomatic_paths(tmp_path, capsys) == {"ax.py"}

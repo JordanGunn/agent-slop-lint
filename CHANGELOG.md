@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed (breaking)
+
+The lint layer was rewritten as a plain linter (like ruff or flake8); the earlier finding
+ontology is gone. Git history keeps the old design.
+
+- **Removed** `Verdict`, `Observation`, `Evidence`, `Action`, `Disposition`, the `REVIEW`
+  action, prescriptions and `confidence` (`slop/finding.py` is replaced by
+  `slop/violation.py`: `Violation(rule, path, line, column, message, value, threshold)`),
+  and per-rule `severity` (a `severity` key in a rule table is now a config error).
+- **Removed** the scope-keyed `[ignore]` table and its `path::name` form. Suppress inline
+  with `slop: ignore` (every rule on that line) or `slop: ignore[rule, family]` on the
+  reported line.
+- **Removed rules:** `hotspots`, `orphans`, `vocabulary` and `class-shape`. `class-shape`
+  is replaced by `class.coupling` (CBO, limit 8), `class.inheritance-depth` (DIT, 4),
+  `class.children` (NOC, 10) and `class.cohesion` (LCOM4 group count, limit 1, **off by
+  default**). There are now 12 rules. The hotspots and orphans measures remain as dormant
+  measures on `Structure`; `slop shape` is unchanged.
+- **Output:** human output is one `path:line:column: rule message` line per violation,
+  then `Found N violations.` or `No violations.`; the verdict/observation sections and the
+  `zero_visited` note are gone from it. JSON is `{"summary": {"violations", "exit_code"},
+  "violations": [...], "zero_visited": [...]}`; the `findings` key is gone. A rule reports
+  a violation when its measure is strictly greater than its limit.
+- **Exit codes:** `slop lint` / `slop check` exit 1 on any violation (was: any
+  error-severity verdict), 0 when none, 2 on error.
+- **Config:** only the top-level keys `exclude`, `languages` and `rules` are accepted; any
+  other (e.g. `[ignore]`) is a load error for `lint`/`check`. A rule table accepts
+  `enabled`, `thresholds` and `params`. `slop schema` is now version `v2`; `slop init`
+  writes a template without severity.
+- Entries below that describe `[ignore]`, `path::name`, severities, observations or the
+  deleted rules are superseded by this entry.
+
 ### Removed
 
 Direction change: build dependable primitives (AST search, hierarchy, vocabulary

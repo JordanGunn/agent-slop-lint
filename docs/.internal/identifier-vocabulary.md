@@ -115,7 +115,7 @@ C/C++ corpus implicitly — their finding that only 14 identifiers
 appear in *all* 50 systems is itself a Zipf consequence.
 
 The v1.2.0 snapshot of slop confirms the shape on our own corpus
-(see `docs/.internal/research/observations/05-diagnostic-suite-and-thresholds.md`):
+(see note 05 in `docs/.internal/research/`):
 177 of 475 distinct tokens (37%) appear exactly once, while a
 single token (`node`) appears 144 times.
 
@@ -149,11 +149,11 @@ Both sources are actively used:
 - **Newman 14** ships as `STOP_WORDS` in `slop.lexicon.stopwords` and is the
   default stop-word set on `Lexicon` — every descriptive measurement (`tokens`,
   `significant_token_count`, `most_common`, `frequencies`, `distribution`) counts
-  over the filtered token space. Observation 06 surfaced the need for a Layer-4
+  over the filtered token space. Research note 06 surfaced the need for a Layer-4
   per-language idiom list (Python builtins) as a separate filter for
   body-identifier analysis; that list is the natural next addition.
 - **Zipf** ships as `TokenDistribution` (`slop.lexicon.distribution`): the fitted
-  (α, R², hapax) spectrum behind the `vocabulary` observation's narration. A
+  (α, R², hapax) spectrum behind `slop lexicon`'s distribution output. A
   per-token **Zipf-residual signal** (actual frequency vs the corpus's fitted
   expectation — large positive residuals mark over-represented vocabulary worth
   investigating) is a candidate future use.
@@ -189,7 +189,7 @@ reference.
 
 > Zipf, G. K. (1949). *Human Behavior and the Principle of Least
 > Effort: An Introduction to Human Ecology*. Addison-Wesley,
-> Cambridge, MA. The original observation; subsequent literature
+> Cambridge, MA. The original finding; subsequent literature
 > ("Zipf's law") refers back to this work.
 
 > Pierret, D., & Poshyvanyk, D. (2009). "An empirical exploration

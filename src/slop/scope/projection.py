@@ -71,8 +71,7 @@ class Lexicon(Protocol):
         ...
 
     def distribution(self, *, top: int = 15) -> TokenDistribution:
-        """The token-space as a measured Zipfian distribution (claim-free) — the
-        object the ``vocabulary`` observation surfaces."""
+        """The token-space as a measured Zipfian distribution."""
         ...
 
     def slice(self, extent: Extent) -> Lexicon:

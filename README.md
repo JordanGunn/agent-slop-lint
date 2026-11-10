@@ -19,37 +19,22 @@ slop is built from the bottom up. The foundation is a set of read-only **primiti
 agent can query for facts: a language-agnostic parse (tree-sitter), an ownership tree,
 discovery over that tree (`find`, `tree`), identifier statistics (`lexicon`), the import
 graph (`deps`), and a comparison of the names in code against a canonical vocabulary
-(`vocab`). On top of them sits a **lint** layer of well-cited metrics — McCabe, Campbell,
-Nejmeh, Martin, Chidamber & Kemerer, Tornhill, and Zipf for identifier distribution — at
-thresholds tuned for that pace. Every finding is either a **directive** the agent can act
-on or **evidence** it should investigate.
+(`vocab`). On top of them sits a plain **lint** layer: 12 rules, each a threshold on a
+well-cited measure (McCabe, Campbell, Nejmeh, Martin, Chidamber & Kemerer), at limits
+tuned for that pace. Judgement over what the checks find (which violations matter, what
+to do about them) is a separate, later inference layer; it is not part of slop's lint.
 
 ## Example
 
 ```
 $ slop lint --root .
-
-VERDICTS
-  [error] structure.dependency-cycles  ·  python
-      import cycle across 2 modules: config → settings → config
-      → break-dependency-cycle: invert one dependency (depend on an abstraction, DIP),
-        extract the shared code into a module both can depend on, or merge the modules
-        if they are truly one concern.
-  [warning] structure.duplication  ·  app  src/cli/app.py
-      2 Type-2 clones: app.grid_group, app.surface_group
-      → extract-helper-function: Extract a shared helper: 2 functions are Type-2 clones
-        (structurally identical bodies, 43 leaf nodes).
-
-OBSERVATIONS
-  [info] vocabulary  ·  src/laszy/project/scan
-      src/laszy/project/scan: Identifier vocabulary: 94 distinct tokens across 399 uses.
-      Reuse follows a healthy Zipfian gradient (α=0.93, R²=0.92), typical of engineered
-      code. …
-
-40 verdict(s) (2 error, 38 warning), 27 observation(s) — exit 1
+src/app/config.py:12:1: complexity.cyclomatic app.config.load has cyclomatic complexity 14 (limit 10)
+src/app/grid.py:40:1: structure.duplication 2 Type-2 clones (43 leaf nodes): src/app/grid.py:40 grid.a, src/app/grid.py:61 grid.b
+Found 2 violations.
 ```
 
-Exit `0` clean, `1` on any error-severity verdict, `2` on error (including a missing or
+One `path:line:column: rule message` line per violation, then `Found N violations.` (or
+`No violations.`). Exit `0` none, `1` any violation, `2` error (including a missing or
 source-free `--root`). Works in CI, pre-commit, and interactively; `--output json` for
 agents and pipelines.
 
@@ -74,44 +59,51 @@ A parse of the sources is carved once into an ownership tree —
 **Corpus › Realm › Package › Module › Class › Callable** — keyed by stable logical
 identities. The primitives read that tree (`find`, `tree`, `lexicon`, `deps`, `vocab`);
 the `Structure` view projects control flow, coupling and duplication over any scope for
-the lint layer. A dispatcher runs each rule at the scope it needs, and every finding
-attributes to the *narrowest scope it is about*, with a line where one applies.
+the lint layer. A dispatcher runs each rule at the scope it needs, and every violation
+is reported at the narrowest scope it is about, with the line and column of that scope's
+definition.
 
-Findings come in three strengths, matched to how confidently slop can speak:
-
-- **Verdict** — a defect with a prescribed fix (`reduce-complexity`, `extract-helper`,
-  `break-dependency-cycle`). Error-severity verdicts fail the build.
-- **REVIEW** — slop is confident the structure is anomalous but the remedy is a judgment it
-  won't make for you (warning-capped, never fails the build).
-- **Observation** — a claim-free, evidence-backed nudge where no fix is honestly
-  prescribable (e.g. the identifier distribution, a foreign-body module). It makes no
-  precision claim, so it can't be a false positive.
+A rule is a threshold on a measure: it reports a violation when the measure is strictly
+greater than its limit. A violation is a location, a rule name and one factual sentence
+naming the unit and the number; nothing else is attached.
 
 ## Rules
 
 12 rules, language-agnostic across 11 grammars. `slop rules` lists them with altitude and
-disposition. Each traces to a published source or a standard concept.
+enabled state. Each traces to a published source or a standard concept. Limits are the
+defaults; a violation needs the measure to be strictly greater.
 
-- **Complexity** (per callable, error): `complexity.cyclomatic` (McCabe), `complexity.cognitive`
-  (Campbell), `complexity.combinatorial` (NPath, Nejmeh).
-- **Structure**: `structure.duplication` (Type-2 clones), `structure.dependency-cycles`
-  (Acyclic Dependencies Principle, error), `structure.god-module`, and
-  `structure.rigidity` / `structure.uselessness` (Martin's distance-from-main-sequence).
-- **Class**: `class-shape` — the Chidamber–Kemerer suite (CBO/DIT/NOC and method count) plus
-  cohesion as LCOM4 (Hitz and Montazeri), as an observation. LCOM4 counts the groups of
-  methods joined through shared instance members (`self.x`, `this.x`) and names them; a
-  class with several groups may be several classes. Constructors, static and class methods
-  are left out, and methods that reach no instance state are listed as detached, not as
-  groups. Measured for Python, JavaScript and TypeScript; Java, C# and C++ report
-  `lcom4: null` because a bare `x` can mean `this.x`, which syntax alone cannot resolve.
-- **Whole-corpus signals** (observations): `vocabulary` (identifier token distribution, a
-  Zipf near-invariant), `hotspots` (churn × complexity, Tornhill), `orphans` (unreferenced
-  top-level symbols).
+| Rule | Altitude | Default limit | Source |
+|---|---|---|---|
+| `complexity.cyclomatic` | callable | 10 | McCabe (1976) |
+| `complexity.cognitive` | callable | 15 | Campbell (2018) |
+| `complexity.combinatorial` | callable | 400 | NPath, Nejmeh (1988) |
+| `structure.god-module` | module | 20 top-level definitions | module size boundary |
+| `structure.rigidity` | package | D' 0.7 | Martin, Zone of Pain |
+| `structure.uselessness` | package | D' 0.7 | Martin, Zone of Uselessness |
+| `structure.dependency-cycles` | corpus | none (any cycle) | Acyclic Dependencies Principle |
+| `structure.duplication` | corpus | 2 clones (`params.min_leaf_nodes` = 10) | Type-2 clones |
+| `class.coupling` | class | CBO 8 | Chidamber & Kemerer (1994) |
+| `class.inheritance-depth` | class | DIT 4 | Chidamber & Kemerer (1994) |
+| `class.children` | class | NOC 10 | Chidamber & Kemerer (1994) |
+| `class.cohesion` (off by default) | class | LCOM4 groups 1 | Hitz & Montazeri (1995) |
+
+`class.cohesion` counts the groups of methods joined through shared instance members
+(`self.x`, `this.x`) and lists them; a class with several groups may be several classes.
+Constructors, static and class methods are left out, and methods that reach no instance
+state are listed as detached, not as groups. Measured for Python, JavaScript and
+TypeScript; Java, C# and C++ report `lcom4: null` because a bare `x` can mean `this.x`,
+which syntax alone cannot resolve. `slop shape` prints every class's CK profile and
+cohesion groups regardless of these rules.
+
+Suppress a violation inline, on the line it is reported at (any comment syntax):
+`# slop: ignore[complexity.cyclomatic]`. `slop: ignore` alone drops every rule on that
+line; a family prefix (`slop: ignore[complexity]`) covers its rules.
 
 ## Languages
 
 Eleven tree-sitter grammars: Python, JavaScript, TypeScript, Go, Java, C#, Rust, Julia, C,
-C++, Ruby. Object-oriented metrics (class-shape, inheritance) apply where the language has
+C++, Ruby. Object-oriented metrics (the `class.*` rules, inheritance) apply where the language has
 classes; package/dependency metrics where it has a module system.
 
 ## CLI
@@ -126,15 +118,15 @@ slop deps [--scope Q] [--cycles]   Print the module dependency graph (resolved/u
 slop vocab --ontology IR.json      Compare class names with a canonical vocabulary (--term NAME: one entry)
 slop shape [--scope Q]             Each class's CK profile and cohesion groups (LCOM4), unfiltered
 
-Lint layer (exit 0 clean / 1 on any ERROR finding / 2 on error)
+Lint (exit 0 no violations / 1 any violation / 2 on error)
 slop lint --root <path>            Run all enabled rules
 slop check <family|rule> --root    Run one namespace family or rule
-slop rules                         List rules (name, disposition, altitude)
+slop rules                         List rules (name, altitude, enabled)
 
 Housekeeping
 slop schema                        Config schema as JSON (generated from the registry)
 slop init --root <path>            Write a .slop.toml template
-slop doctor                        Check tree-sitter / git availability
+slop doctor                        Check that tree-sitter is available
 slop --version                     Print the installed version
 ```
 
@@ -177,27 +169,31 @@ branches. There are no thresholds: the undefined list is ordered, not filtered.
 ## Configuration
 
 slop walks upward from `--root` for a `.slop.toml`, or a `pyproject.toml` with a
-`[tool.slop]` table. Keys:
+`[tool.slop]` table. Only three top-level keys are accepted; anything else (including the
+removed `[ignore]` table) is a load error:
 
 ```toml
 exclude = ["tests/**", "**/vendor/**"]   # files never carved; globs relative to the config's directory
 languages = ["python", "typescript"]     # optional: carve only these languages (default: all supported)
 
 [rules."complexity.cyclomatic"]
-enabled = true
+enabled = true                    # class.cohesion is the only rule off by default
 thresholds.callable = 12          # keyed by the rule's declared altitude
 
-[ignore]
-classes = ["LegacyAdapter"]       # scope-keyed exemptions: functions/classes/modules/packages
+[rules."structure.duplication"]
+params.min_leaf_nodes = 20        # rule-specific noise floor
 ```
 
-`exclude` and `languages` apply to every command. The read-only commands (`find`, `tree`,
-`lexicon`, `deps`, `vocab`, `shape`) read only those two; `[rules]` and `[ignore]` matter to
-`lint` and `check` alone, so a stale rule name there cannot block a question about the code.
+A rule table accepts only `enabled`, `thresholds` and `params`. `exclude` and `languages`
+apply to every command. The read-only commands (`find`, `tree`, `lexicon`, `deps`,
+`vocab`, `shape`) read only those two; `[rules]` matters to `lint` and `check` alone, so a
+stale rule name there cannot block a question about the code.
 
-A threshold keyed to an altitude the rule doesn't declare is a load error, not a silent
-no-op — so "not flagged" is verifiably clean. `slop schema` prints the exact shape. (The CLI
-takes `--root` directly; the config's keys are not a scan path.)
+A threshold keyed to an altitude the rule doesn't declare, or a param the rule doesn't
+declare, is a load error, not a silent no-op, so "not flagged" is verifiably clean.
+`slop schema` prints the exact shape and `slop init` writes a commented template. (The CLI
+takes `--root` directly; the config's keys are not a scan path.) Details in
+[docs/CONFIG.md](docs/CONFIG.md).
 
 ## Acknowledgments
 

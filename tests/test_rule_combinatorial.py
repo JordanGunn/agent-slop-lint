@@ -1,15 +1,9 @@
-"""complexity.combinatorial rule — threshold gating + emission, and the
-deliberate Callable-only altitude (no class gate, the complexity-family decision).
-
-Metric values are oracle-pinned in test_complexity (m.h NPath == 9,
-m.branchy == 3); this asserts the *rule* turns them into the right verdict.
-"""
+"""complexity.combinatorial: threshold gating and violation location (values pinned in test_complexity)."""
 from __future__ import annotations
 
 from pathlib import Path
 
 from slop.config import RuleConfig
-from slop.finding import Action, Disposition, Severity
 from slop.rules import RULE_REGISTRY
 from slop.rules.combinatorial import CombinatorialRule
 from slop.scope import scan_corpus
@@ -41,10 +35,13 @@ def _callables(tmp_path: Path) -> dict:
     return {c.qualname: c for c in corpus._iter_callables()}
 
 
-def test_default_config_is_nejmeh_400_callable_only():
+def _cfg(limit) -> RuleConfig:
+    return RuleConfig(name=CombinatorialRule.name, thresholds={ScopeKind.CALLABLE.value: limit})
+
+
+def test_default_config_is_callable_400():
     rc = CombinatorialRule.default_config()
     assert rc.thresholds == {ScopeKind.CALLABLE.value: 400}
-    assert rc.severity is Severity.ERROR
     assert CombinatorialRule.altitudes == frozenset({ScopeKind.CALLABLE})
 
 
@@ -52,24 +49,35 @@ def test_registered():
     assert any(isinstance(r, CombinatorialRule) for r in RULE_REGISTRY)
 
 
-def test_fires_above_threshold(tmp_path: Path):
+def test_violation_fields_and_location(tmp_path: Path):
     cs = _callables(tmp_path)
-    rc = RuleConfig(name=CombinatorialRule.name, severity=Severity.ERROR,
-                    thresholds={ScopeKind.CALLABLE.value: 5})
-    findings = list(CombinatorialRule().check(cs["m.h"], rc))
-    assert len(findings) == 1
-    f = findings[0]
-    assert f.disposition is Disposition.VERDICT
-    assert f.action is Action.REDUCE_COMPLEXITY
-    assert f.value == 9 and f.threshold == 5
-    assert f.severity is Severity.ERROR
+    [v] = list(CombinatorialRule().check(cs["m.h"], _cfg(5)))
+    assert v.rule == "complexity.combinatorial"
+    assert v.path == str(tmp_path / "m.py")
+    assert (v.line, v.column) == (1, 1)
+    assert v.value == 9 and v.threshold == 5
+    assert "m.h" in v.message and "9" in v.message and "5" in v.message
+    assert v.as_dict()["value"] == 9
 
 
-def test_silent_at_or_below_threshold(tmp_path: Path):
+def test_located_at_the_callable_not_the_file_start(tmp_path: Path):
     cs = _callables(tmp_path)
-    rc = RuleConfig(name=CombinatorialRule.name,
-                    thresholds={ScopeKind.CALLABLE.value: 5})
-    # branchy NPath == 3 (< 5); h == 9 but the default 400 clears it too.
-    assert list(CombinatorialRule().check(cs["m.branchy"], rc)) == []
-    default_rc = CombinatorialRule.default_config()
-    assert list(CombinatorialRule().check(cs["m.h"], default_rc)) == []
+    [v] = list(CombinatorialRule().check(cs["m.branchy"], _cfg(2)))
+    assert (v.line, v.column) == (10, 1)
+
+
+def test_strictly_greater_than_limit(tmp_path: Path):
+    cs = _callables(tmp_path)
+    assert list(CombinatorialRule().check(cs["m.h"], _cfg(9))) == []
+    assert len(list(CombinatorialRule().check(cs["m.h"], _cfg(8)))) == 1
+
+
+def test_below_threshold_and_default_are_silent(tmp_path: Path):
+    cs = _callables(tmp_path)
+    assert list(CombinatorialRule().check(cs["m.branchy"], _cfg(5))) == []
+    assert list(CombinatorialRule().check(cs["m.h"], CombinatorialRule.default_config())) == []
+
+
+def test_no_threshold_configured_is_silent(tmp_path: Path):
+    cs = _callables(tmp_path)
+    assert list(CombinatorialRule().check(cs["m.h"], RuleConfig(name=CombinatorialRule.name))) == []

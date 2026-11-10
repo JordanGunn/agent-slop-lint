@@ -1,18 +1,16 @@
 """Rule contract.
 
-A rule **declares** the altitude(s) it is defined at (``altitudes``); the
-dispatcher (``slop.dispatch``) walks the component tree and invokes the rule at
-every component of that altitude. A rule **never walks the corpus itself** — it
-inspects the single component it is handed. This is what makes the
-"enabled-but-checks-nothing" bug class unrepresentable: a rule cannot run where it
-is undefined, and the dispatcher asserts it visited >0 components.
+A rule **declares** the altitude(s) it is defined at (``altitudes``); the dispatcher
+(``slop.dispatch``) walks the component tree and calls the rule at every component of
+that altitude. A rule never walks the corpus itself, so it cannot run where it is
+undefined, and the dispatcher reports a rule that examined nothing instead of letting it
+pass as clean.
 
-A rule is *only* a threshold check + finding emission over a metric. It does not
-re-derive a metric — every measurement lives on a metric view constructed over the
-component (``Structure.over(component)`` for structural signals, or
-``component.lexicon()`` for the raw
-token space). The scope entities themselves are metric-free (the scope/metrics
-sever); ``slop.model`` no longer exists.
+A rule is a threshold check over a measure. It does not compute the measure: that lives
+on a metric view (``Structure.over(component)``), which the ``find``, ``shape`` and
+``lexicon`` commands read too. Keeping the measure out of the rule is what lets one
+number serve both a question ("what is this class's cohesion?") and a check ("cohesion is
+over 2").
 """
 from __future__ import annotations
 
@@ -20,27 +18,29 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from typing import ClassVar
 
+from .config import RuleConfig
 from .scope.base import Scope
 from .scope.identity import ScopeKind
-from .config import RuleConfig
-from .finding import Finding
+from .violation import Violation
 
 
 class Rule(ABC):
-    #: dotted rule name (e.g. ``"complexity.cyclomatic"``).
+    #: dotted rule name (``complexity.cyclomatic``): family, then the rule.
     name: ClassVar[str]
+    #: one line saying what the rule checks, for ``slop rules``.
+    description: ClassVar[str]
     #: the altitudes this rule is defined at; the dispatcher visits exactly these.
     altitudes: ClassVar[frozenset[ScopeKind]]
 
     @classmethod
     @abstractmethod
     def default_config(cls) -> RuleConfig:
-        """The rule's shipped defaults. Threshold keys MUST be a subset of
-        ``altitudes`` (config validation enforces this at load)."""
+        """The rule's shipped defaults. Threshold keys MUST be a subset of ``altitudes``
+        (config validation enforces this at load)."""
         ...
 
     @abstractmethod
-    def check(self, component: Scope, config: RuleConfig) -> Iterable[Finding]:
-        """Inspect ONE component — guaranteed to be of a declared altitude — and
-        yield findings. Must not traverse beyond the given component."""
+    def check(self, component: Scope, config: RuleConfig) -> Iterable[Violation]:
+        """Inspect ONE component, guaranteed to be of a declared altitude, and yield a
+        violation for each way it breaks the rule. Must not traverse beyond it."""
         ...

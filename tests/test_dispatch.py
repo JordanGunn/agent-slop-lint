@@ -1,112 +1,120 @@
-"""Dispatcher — altitude-driven execution, the zero-visited safeguard, exit
-codes, and that all three representative rules fire (one per ontology cell)."""
+"""Dispatcher: runs each enabled rule at its declared altitudes, records what it visited,
+orders violations deterministically, and gates the exit code on any violation."""
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 
 from slop.config import AnalysisConfig, RuleConfig
 from slop.dispatch import Dispatcher
-from slop.finding import Action, Disposition, Severity
-from slop.scope import scan_corpus
+from slop.rule import Rule
 from slop.rules import RULE_REGISTRY
-from slop.rules.rigidity import RigidityRule
+from slop.rules.cyclomatic import CyclomaticRule
+from slop.scope import scan_corpus
+from slop.scope.identity import ScopeKind
+from slop.violation import Violation
 
-# Branching source (cyclomatic > 1) with enough distinct identifiers for the vocabulary
-# floor. A separate three-package fixture puts one package in Martin's Zone of Pain, so
-# the REVIEW cell of the finding ontology is exercised by a rule with a published source.
-SAMPLE_SOURCE = '''\
-def alpha(first_value):
-    if first_value:
-        return alpha_helper(first_value)
-    return 0
-
-def alpha_helper(value):
-    return value + 1
-
-def beta(second_value):
-    while second_value > 0:
-        second_value = beta_helper(second_value)
-    return second_value
-
-def beta_helper(value):
-    return value - 1
-'''
+BRANCHY = "def {n}(v):\n    if v:\n        return 1\n    if v > 2:\n        return 2\n    return 3\n"
 
 
-def _tuned_config() -> AnalysisConfig:
-    """Thresholds lowered so the tiny fixture deterministically trips each rule."""
-    return AnalysisConfig({
-        "complexity.cyclomatic": RuleConfig(
-            name="complexity.cyclomatic", severity=Severity.ERROR,
-            thresholds={"callable": 1}),
-        "structure.rigidity": RigidityRule.default_config(),
-        "vocabulary": RuleConfig(
-            name="vocabulary", severity=Severity.INFO,
-            params={"package_min_distinct": 1, "top_tokens": 5}),
-    })
+class _Recorder(Rule):
+    """Flags every component it is handed, and remembers which kinds that was."""
+
+    name = "test.recorder"
+    description = "records visits"
+    altitudes = frozenset({ScopeKind.MODULE, ScopeKind.CLASS})
+    seen: list[ScopeKind] = []
+
+    @classmethod
+    def default_config(cls) -> RuleConfig:
+        return RuleConfig(name=cls.name, thresholds={"module": 0, "class": 0})
+
+    def check(self, component, config):
+        type(self).seen.append(component.id.kind)
+        yield Violation.at(component, self.name, f"saw {component.qualname}")
 
 
-def _martin_packages(root: Path) -> None:
-    """``core`` is concrete and depended on by ``a`` and ``b``: I=0, A=0 -> Zone of Pain."""
-    for name, body in (
-        ("core", "class Impl:\n    pass\n"),
-        ("a", "import core.thing\n"),
-        ("b", "from core import thing\n"),
-    ):
-        (root / name).mkdir()
-        (root / name / "__init__.py").write_text("")
-        (root / name / ("thing.py" if name == "core" else "mod.py")).write_text(body)
+def _config(rule_cls: type[Rule], **kw) -> AnalysisConfig:
+    return AnalysisConfig({rule_cls.name: replace(rule_cls.default_config(), **kw)})
 
 
-def _run(tmp_path: Path, source: str, config: AnalysisConfig):
-    (tmp_path / "sample.py").write_text(source)
-    _martin_packages(tmp_path)
-    corpus = scan_corpus(tmp_path, config=config)
-    return Dispatcher(RULE_REGISTRY, config).run(corpus)
+def _cyclomatic(tmp_path: Path, limit: int = 2):
+    cfg = _config(CyclomaticRule, thresholds={"callable": limit})
+    return Dispatcher([CyclomaticRule()], cfg).run(scan_corpus(tmp_path, cfg))
 
 
-def test_all_three_cells_fire(tmp_path: Path):
-    report = _run(tmp_path, SAMPLE_SOURCE, _tuned_config())
-    fired = {f.rule for f in report.findings}
-    assert {"complexity.cyclomatic", "structure.rigidity", "vocabulary"} <= fired
+def test_a_rule_is_only_called_at_its_declared_altitudes(tmp_path: Path):
+    (tmp_path / "m.py").write_text("class A:\n    def f(self):\n        return 1\n")
+    _Recorder.seen = []
+    cfg = AnalysisConfig({_Recorder.name: _Recorder.default_config()})
+    report = Dispatcher([_Recorder()], cfg).run(scan_corpus(tmp_path, cfg))
+    assert set(_Recorder.seen) == {ScopeKind.MODULE, ScopeKind.CLASS}
+    assert report.visited[_Recorder.name] == len(_Recorder.seen) == 2
+    assert not report.zero_visited
 
 
-def test_every_ontology_cell_is_exercised(tmp_path: Path):
-    report = _run(tmp_path, SAMPLE_SOURCE, _tuned_config())
-    dispositions = {f.disposition for f in report.findings}
-    actions = {f.action for f in report.findings}
-    assert dispositions == {Disposition.VERDICT, Disposition.OBSERVATION}
-    assert Action.REDUCE_COMPLEXITY in actions   # ordinary verdict
-    assert Action.REVIEW in actions              # deferred-remedy verdict
-    assert Action.INVESTIGATE in actions         # observation
+def test_a_disabled_rule_is_neither_run_nor_recorded(tmp_path: Path):
+    (tmp_path / "m.py").write_text(BRANCHY.format(n="f"))
+    cfg = _config(CyclomaticRule, enabled=False, thresholds={"callable": 1})
+    report = Dispatcher([CyclomaticRule()], cfg).run(scan_corpus(tmp_path, cfg))
+    assert report.violations == [] and report.visited == {} and report.zero_visited == []
 
 
-def test_review_finding_is_warning_pinned(tmp_path: Path):
-    report = _run(tmp_path, SAMPLE_SOURCE, _tuned_config())
-    review = [f for f in report.findings if f.rule == "structure.rigidity"]
-    assert review and all(f.severity is Severity.WARNING for f in review)
-    assert all(f.disposition is Disposition.VERDICT for f in review)
+def test_a_rule_missing_from_the_config_is_not_run(tmp_path: Path):
+    (tmp_path / "m.py").write_text(BRANCHY.format(n="f"))
+    report = Dispatcher([CyclomaticRule()], AnalysisConfig({})).run(scan_corpus(tmp_path, None))
+    assert report.violations == [] and report.visited == {}
 
 
-def test_error_verdict_drives_exit_code_one(tmp_path: Path):
-    report = _run(tmp_path, SAMPLE_SOURCE, _tuned_config())
-    assert any(f.severity is Severity.ERROR for f in report.findings)
-    assert report.exit_code() == 1
-
-
-def test_observations_alone_do_not_gate(tmp_path: Path):
-    # vocabulary only — an observation must never produce a non-zero exit.
-    cfg = AnalysisConfig({"vocabulary": RuleConfig(
-        name="vocabulary", severity=Severity.INFO, params={"package_min_distinct": 1})})
-    report = _run(tmp_path, SAMPLE_SOURCE, cfg)
-    assert report.observations()
+def test_a_rule_that_visited_nothing_is_reported_not_passed_as_clean(tmp_path: Path):
+    (tmp_path / "m.py").write_text("x = 1\ny = 2\n")        # no callable for cyclomatic
+    report = _cyclomatic(tmp_path)
+    assert report.zero_visited == ["complexity.cyclomatic"]
+    assert report.visited["complexity.cyclomatic"] == 0
     assert report.exit_code() == 0
 
 
-def test_zero_visited_safeguard(tmp_path: Path):
-    # A module with no callables/classes: cyclomatic (altitude {callable, class})
-    # visits nothing and must be surfaced, not pass silently as clean.
-    cfg = AnalysisConfig({"complexity.cyclomatic": RuleConfig(
-        name="complexity.cyclomatic", thresholds={"callable": 1, "class": 1})})
-    report = _run(tmp_path, "x = 1\ny = 2\n", cfg)
-    assert "complexity.cyclomatic" in report.zero_visited
+def test_visited_counts_every_component_at_the_altitude(tmp_path: Path):
+    (tmp_path / "m.py").write_text(BRANCHY.format(n="a") + BRANCHY.format(n="b") + "class C:\n    def m(self):\n        return 1\n")
+    report = _cyclomatic(tmp_path)
+    assert report.visited["complexity.cyclomatic"] == 3        # a, b, C.m
+
+
+def test_exit_code_is_one_if_and_only_if_there_is_a_violation(tmp_path: Path):
+    (tmp_path / "m.py").write_text(BRANCHY.format(n="f"))    # cyclomatic 3
+    assert _cyclomatic(tmp_path, limit=2).exit_code() == 1
+    assert _cyclomatic(tmp_path, limit=3).exit_code() == 0   # strictly greater than the limit
+
+
+def test_violations_are_sorted_by_path_line_column_rule(tmp_path: Path):
+    (tmp_path / "b.py").write_text(BRANCHY.format(n="late"))
+    (tmp_path / "a.py").write_text(BRANCHY.format(n="first") + "\n" + BRANCHY.format(n="second"))
+    report = _cyclomatic(tmp_path)
+    got = [(v.path, v.line) for v in report.violations]
+    assert got == sorted(got)
+    assert [Path(p).name for p, _ in got] == ["a.py", "a.py", "b.py"]
+    assert [ln for _, ln in got] == [1, 8, 1]
+
+
+def test_as_dict_paths_are_relative_to_the_root(tmp_path: Path):
+    (tmp_path / "pkg").mkdir()
+    (tmp_path / "pkg" / "__init__.py").write_text("")
+    (tmp_path / "pkg" / "m.py").write_text(BRANCHY.format(n="f"))
+    doc = _cyclomatic(tmp_path).as_dict()
+    assert doc["summary"] == {"violations": 1, "exit_code": 1}
+    [v] = doc["violations"]
+    assert v["path"] == "pkg/m.py" and (v["line"], v["column"]) == (1, 1)
+    assert set(v) == {"rule", "path", "line", "column", "message", "value", "threshold"}
+    assert (v["value"], v["threshold"]) == (3, 2)
+    assert doc["zero_visited"] == []
+
+
+def test_the_default_registry_runs_end_to_end_and_flags_a_tangled_function(tmp_path: Path):
+    (tmp_path / "m.py").write_text(
+        "def f(a, b):\n" + "".join(f"    if a == {i}: b += 1\n" for i in range(15)) + "    return b\n")
+    cfg = AnalysisConfig.defaults(RULE_REGISTRY)
+    report = Dispatcher(RULE_REGISTRY, cfg).run(scan_corpus(tmp_path, cfg))
+    fired = {v.rule for v in report.violations}
+    assert "complexity.cyclomatic" in fired
+    assert report.exit_code() == 1
+    assert "class.cohesion" not in report.visited      # off by default, so never dispatched

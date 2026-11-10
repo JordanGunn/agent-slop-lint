@@ -1,8 +1,5 @@
-# slop — config for dogfooding slop on this repo / the v1.2.0 research snapshot.
+# slop's own config, for running slop on this repo (`slop lint --root src`).
 #
-# v3 takes the scan target from the CLI's --root (the config holds rule settings only),
-# so the former `root` / `languages` keys are gone. Threshold tweaks are intentionally
-# absent: signal suppression defeats the purpose of measuring distributions.
-
-[rules.hotspots]
-enabled = false                 # the snapshot corpus has no git history — structurally N/A
+# Defaults apply. The v1.2.0 research snapshot under docs/.internal is a frozen corpus, not
+# code to hold to limits, so it is excluded.
+exclude = ["docs/.internal/snapshots/**", "docs/.internal/research/**"]

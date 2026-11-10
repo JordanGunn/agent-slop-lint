@@ -104,40 +104,6 @@ class CKMetrics:
     def lcom4(self) -> int | None:
         return None if self.cohesion is None else self.cohesion.lcom4
 
-    def narrate(self, *, cbo_floor: int, dit_floor: int, noc_floor: int, lcom4_floor: int) -> str:
-        """Claim-free prose over the CK profile, naming only the metrics past their
-        attention-floor. Descriptive, never a verdict — the floors mark "worth a
-        look", not "defect". NOC in particular is framed as ambiguous: a broad base
-        is frequently a healthy abstraction, not a god-base.
-        """
-        parts: list[str] = []
-        if self.cbo > cbo_floor:
-            parts.append(
-                f"couples to {self.cbo} other classes (high — typical ≤ {cbo_floor}; "
-                f"resists isolated testing and change)"
-            )
-        if self.dit > dit_floor:
-            parts.append(
-                f"inheritance depth {self.dit} (deep — typical ≤ {dit_floor}; many "
-                f"inherited behaviours to reason about)"
-            )
-        if self.noc > noc_floor:
-            parts.append(
-                f"{self.noc} direct subclasses (broad base — often a healthy "
-                f"abstraction, but worth confirming it is not a god-base)"
-            )
-        if self.cohesion is not None and self.cohesion.lcom4 > lcom4_floor:
-            groups = "; ".join("{" + ", ".join(g) + "}" for g in self.cohesion.groups)
-            parts.append(
-                f"{self.cohesion.lcom4} method groups share no instance member ({groups}) — "
-                f"may be {self.cohesion.lcom4} classes under one name, or one coordinator "
-                f"of independent operations"
-            )
-        note = f" Caveat: {'; '.join(self.caveats)}." if self.caveats else ""
-        if not parts:
-            return f"CK profile within typical bounds ({self.nom} methods).{note}"
-        return f"CK profile — {'; '.join(parts)}. ({self.nom} methods.){note}"
-
 
 # --- Package altitude (Robert C. Martin 1994) -------------------------------
 

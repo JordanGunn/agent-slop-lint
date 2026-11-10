@@ -65,4 +65,3 @@ def test_distribution_degenerate_is_zeroed_not_an_error():
     dist = token_distribution({})
     assert dist.distinct == 0 and dist.n == 0
     assert dist.zipf_alpha == 0.0 and dist.zipf_r2 == 0.0
-    assert dist.narrate() == "No identifier vocabulary to analyze (empty corpus)."
