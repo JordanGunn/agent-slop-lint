@@ -1,9 +1,9 @@
 """Language-agnostic parameter extraction — the root fix for the v3 Python-overfit.
 
 Before this, only Python extracted parameters; every other grammar returned () (the
-base helper matched Python tree-sitter node types), silently deadening sentinels /
-hidden-mutators and dropping parameter tokens from the lexicon
-on all non-Python code. Each case below asserts the parameter NAMES are recovered.
+base helper matched Python tree-sitter node types), silently dropping every parameter
+token from the lexicon on all non-Python code. Each case below asserts the parameter
+NAMES are recovered.
 """
 from __future__ import annotations
 

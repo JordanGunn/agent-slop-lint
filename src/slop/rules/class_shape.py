@@ -7,9 +7,7 @@ NOC (number of children), NOM (number of methods) — for any class whose profil
 
 - NOC is genuinely ambiguous — a class with many direct subclasses is frequently a
   healthy abstraction (an ABC with many implementers), not a god-base.
-- DIT/NOC are inputs to the future taxonomic-degradation battery (NA-default base
-  method + strict-subset override + directional churn); a standalone threshold would
-  be both false precision and premature, subsumed once the battery lands.
+- DIT and NOC are descriptive, so a standalone threshold would be false precision.
 
 So this surfaces the evidence and lets the consuming agent judge. The legacy CK
 thresholds (CBO>8, DIT>4, NOC>10) survive as **attention floors** — they gate output

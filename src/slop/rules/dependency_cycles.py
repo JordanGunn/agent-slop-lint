@@ -7,8 +7,7 @@ of, or extraction of any module in the loop — every change ripples around the 
 cycle. ``Structure.dependency_cycles`` runs Tarjan's (1972) SCC algorithm over the
 resolved module import graph; this rule emits one verdict per cycle.
 
-Disposition: unlike call-islands (where slop cannot tell if there is even a problem),
-a cycle is an *unambiguous* defect with a *singular goal* — break it. Only the
+Disposition: a cycle is an *unambiguous* defect with a *singular goal* — break it. Only the
 mechanism is open (invert one edge via DIP, extract a shared interface, or merge the
 modules). That is the shape of a directed corrective (cf. ``REDUCE_COMPLEXITY``: a
 named goal with the exact decomposition left to the implementer), not a REVIEW. So

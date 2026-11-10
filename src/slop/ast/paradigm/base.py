@@ -96,8 +96,7 @@ class Grammar(ABC):
         are excluded. This covers Python/Go/Rust/Java/TS/JS/Ruby unchanged. Grammars
         whose parameter names nest deeper (C/C++ declarators) or live elsewhere (Julia
         signatures) override this. Annotation is left ``None`` — the only caller
-        (carve) uses names; string-typing for the sentinels rule is a separate fact
-        (``string_annotated_parameters``)."""
+        (carve) uses names."""
         plist = node.child_by_field_name(cls.parameter_list_field())
         if plist is None:
             return ()
@@ -220,8 +219,6 @@ class Grammar(ABC):
         """Leaf node types counted as Halstead operands."""
         return frozenset()
 
-    # ---- mutation / sentinel / type vocabulary ------------------------
-
     # ---- call-site vocabulary -----------------------------------------
 
     @classmethod
@@ -251,7 +248,7 @@ class Grammar(ABC):
         """True if ``name`` is a language-special method/symbol invoked *implicitly*
         by the runtime rather than called by name (Python's ``__dunder__``). Such a
         name looks orphaned (no explicit caller) and is not a domain-meaningful callee,
-        so the orphan and sibling-redundancy signals discount it. Default ``False`` —
+        so the orphan signal discounts it. Default ``False`` —
         most languages have no name-pattern convention for implicit dispatch; Python
         overrides with the dunder rule."""
         del name
@@ -297,8 +294,7 @@ class Grammar(ABC):
     def package_init_name(cls) -> str | None:
         """The filename whose presence makes a directory a package (e.g. Python's
         ``__init__.py``), or ``None`` for languages with no init-file package
-        convention. Used by the runt-package signal, which is structurally N/A
-        where this is ``None``."""
+        convention. Used when carving packages and resolving imports."""
         return None
 
 

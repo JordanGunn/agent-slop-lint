@@ -45,8 +45,7 @@ class Lexicon(Protocol):
 
     Derived from the ``slop.ast`` proxy (walk → tokenize → split → strip noise)
     unioned with the component names in the extent. Exposes distribution
-    *primitives*; the lexical metrics/rules (dispersion, stutter, sprawl, …)
-    consume these and live in the metric/rule layer, not here.
+    *primitives*; any lexical analysis built on them lives in a layer above, not here.
     """
 
     def tokens(self) -> tuple[str, ...]:

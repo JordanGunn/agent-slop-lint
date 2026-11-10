@@ -19,10 +19,9 @@ class Callable(SymbolContainer):
     """A function or method — the leaf of the hierarchy and the home altitude
     for the primitive structural metrics.
 
-    Owns its parameters, locals, and nested callables. ``cyclomatic`` etc. come
-    from ``ComplexityMeasures`` (via Scope); the non-aggregatable extras
-    (full Halstead, density, magic literals, mutations, sentinels) come from
-    ``CallableMeasures``.
+    Owns its parameters, locals, and nested callables. Measurements are taken over it
+    with ``Structure.over(callable)`` (``metrics/structural``); the entity stays pure
+    ownership.
     """
 
     KIND: ClassVar[ScopeKind] = ScopeKind.CALLABLE

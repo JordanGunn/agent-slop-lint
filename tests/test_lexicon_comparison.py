@@ -1,8 +1,8 @@
 """Pairwise comparison primitives — the relational lexicostatistics layer.
 
 These are pure functions over token-frequency maps; the tests pin their range,
-symmetry, and the directional vs symmetric contract so the measurement probe (and any
-future cohesion/relocation rule) can trust them.
+symmetry, and the directional vs symmetric contract so the measurement probe can
+trust them.
 """
 from __future__ import annotations
 

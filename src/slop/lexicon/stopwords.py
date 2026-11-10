@@ -6,8 +6,8 @@ Two reasons this is hand-curated rather than a library list:
    suppress identifier-common words (``id``, ``index``, ``key``) only by accident and
    would miss the software-engineering boilerplate that actually drowns signal.
 2. SE boilerplate is deliberately **not** noise here. ``manager`` / ``helper`` /
-   ``handler`` carry the over-abstraction signal a future ``hammers``-style rule
-   wants; stripping them would erase exactly what we measure.
+   ``handler`` are real vocabulary in code; stripping them would erase exactly what a
+   distribution measurement is meant to see.
 
 ``STOP_WORDS`` is the default; it is injectable — a :class:`~slop.lexicon.corpus.Lexicon`
 takes a ``stopwords`` set, so a caller analysing a different vocabulary can substitute

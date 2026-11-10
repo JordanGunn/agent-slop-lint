@@ -55,19 +55,9 @@ class Action(StrEnum):
     """
 
     # deterministic correctives
-    EXTRACT_CLASS = "extract-class"
     EXTRACT_HELPER = "extract-helper-function"
-    EXTRACT_CONSTANT = "extract-shared-constant"
     SPLIT_MODULE = "split-module"
-    EXTRACT_SUBPACKAGE = "extract-subpackage"
-    FLATTEN_PACKAGE = "flatten-package"
     BREAK_DEPENDENCY_CYCLE = "break-dependency-cycle"
-    NARROW_SCOPE = "narrow-scope-or-rename"
-    DROP_REDUNDANT_TOKENS = "drop-redundant-tokens"
-    RENAME_BY_TEMPLATE = "rename-by-template"
-    REPLACE_WITH_DOMAIN_TERM = "replace-with-domain-term"
-    REPLACE_ESCAPE_TYPE = "replace-escape-hatch-type"
-    REPLACE_SENTINEL_TYPE = "replace-sentinel-with-literal-or-enum"
     REDUCE_COMPLEXITY = "reduce-complexity"
     # intent-deferred verdict (caps at WARNING — see Verdict.__post_init__)
     REVIEW = "review"

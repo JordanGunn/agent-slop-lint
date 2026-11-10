@@ -1,6 +1,6 @@
 """Analysis config — per-rule enable + per-altitude thresholds.
 
-Config holds **battery/verdict thresholds keyed by altitude**, never algorithm
+Config holds **verdict thresholds keyed by altitude**, never algorithm
 primitives (those are module constants on the view) — see DESIGN.md "Config
 Model". Thresholds are validated at load against each rule's *declared*
 altitudes: a threshold key the rule does not declare is a **load error**, not a

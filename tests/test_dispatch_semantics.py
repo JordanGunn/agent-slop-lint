@@ -1,6 +1,6 @@
 """is_dynamic_language() + is_special_method() are per-grammar facts (language-
 agnosticism #39), not a hardcoded {python,javascript,ruby} set + __x__ check buried
-in the shared orphan / sibling-redundancy compute.
+in the shared orphan compute.
 
 Before the facts, orphans._confidence keyed the dynamic-dispatch penalty off a
 hardcoded language set and treated *any* __x__ name as special regardless of
