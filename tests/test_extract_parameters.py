@@ -45,18 +45,3 @@ def test_parameters_extracted_per_language(tmp_path: Path, fname, case):
     src, expected = case
     got = _params(tmp_path, fname, src)
     assert any(p == expected for p in got), f"{fname}: expected {expected} in {got}"
-
-
-def test_go_first_param_clustering_now_works(tmp_path: Path):
-    # Downstream win: first_param_clusters was dead on Go because parameters were
-    # empty. Three Go funcs sharing a first param.
-    from slop.metrics.lexical import Lexical
-    (tmp_path / "m.go").write_text(
-        "package m\n"
-        "func LoadCfg(cfg *Config, p string) string { return cfg.path }\n"
-        "func SaveCfg(cfg *Config, d string) string { return cfg.dest }\n"
-        "func ResetCfg(cfg *Config) string { return cfg.value }\n"
-    )
-    corpus = scan_corpus(tmp_path, config=None)
-    clusters = Lexical.over(corpus).first_param_clusters(min_cluster=3, root=str(tmp_path))
-    assert any(c.parameter_name == "cfg" for c in clusters)

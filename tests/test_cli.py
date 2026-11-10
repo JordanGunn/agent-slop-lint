@@ -40,7 +40,7 @@ def test_rules_json(capsys):
     import json
     data = json.loads(out)
     names = {r["name"] for r in data}
-    assert "lexical.stutter" in names and "orphans" in names
+    assert "complexity.cyclomatic" in names and "orphans" in names
 
 
 def test_check_unknown_target_errors(capsys):

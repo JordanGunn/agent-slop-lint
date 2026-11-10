@@ -8,6 +8,5 @@ duck-typed region) — never a scope/component object — so this package depend
 without a cycle.
 
 ``ast`` is the structural substrate; there is no separate structural *kernel* (these
-metrics have no out-of-linter reuse story to justify one), which is the asymmetry with
-the lexical side, where ``lexicon`` is a kernel beneath ``metrics.lexical``.
+metrics have no out-of-linter reuse story to justify one).
 """

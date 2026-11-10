@@ -9,11 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-- **`lexical.imposters`, `lexical.slackers` and the cross-rule corroboration module
-  (`rules/_battery.py`)**, with their tests and documentation. The names were slop-coined,
-  not drawn from prior art. The lexical primitive they consumed
-  (`Lexical.first_param_clusters`) remains. No rule now reaches across the lexical and
-  structural boundary.
+Direction change: build dependable primitives (AST search, hierarchy, vocabulary
+governance) before any analysis layer. A rule stays only if its measure has a published
+source; a rule whose measure *and* name were slop's own invention is removed. Everything
+below is recoverable from commit `b7ab8f7` (the tip of `dev` before this change).
+
+- **Rules (13):** `lexical.imposters`, `lexical.slackers`, `lexical.stutter`,
+  `lexical.verbosity`, `lexical.sprawl`, `lexical.hammers`, `lexical.cohesion`,
+  `structure.call-islands`, `structure.redundancy`, `structure.escape-hatches`,
+  `structure.hidden-mutators`, `structure.sentinels`, `structure.runts`.
+- **`rules/_battery.py`** (cross-rule corroboration) and the "battery" concept.
+- **`metrics/lexical/`** (first-parameter clusters, profile classifier, affix patterns,
+  class-ownership packets and the `Lexical` view): its only callers were the rules above.
+  The prior-art vocabulary kernel `slop.lexicon` is unchanged.
+- 12 rules remain, each tracing to a citation or a standard concept: `complexity.*`
+  (McCabe, Campbell, Nejmeh), `structure.dependency-cycles` (Lakos, Martin, Tarjan),
+  `structure.rigidity` / `structure.uselessness` (Martin), `class-shape` (Chidamber-Kemerer),
+  `hotspots` (Tornhill), `vocabulary` (Zipf), `structure.duplication` (Type-2 clones),
+  `structure.god-module`, `orphans`.
+- No rule now reaches across the lexical and structural boundary.
 
 ## [3.0.0a0] - 2026-06-04
 

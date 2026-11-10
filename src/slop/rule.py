@@ -9,8 +9,8 @@ is undefined, and the dispatcher asserts it visited >0 components.
 
 A rule is *only* a threshold check + finding emission over a metric. It does not
 re-derive a metric — every measurement lives on a metric view constructed over the
-component (``Structure.over(component)`` for structural signals,
-``Lexical.over(component)`` for lexical ones, or ``component.lexicon()`` for the raw
+component (``Structure.over(component)`` for structural signals, or
+``component.lexicon()`` for the raw
 token space). The scope entities themselves are metric-free (the scope/metrics
 sever); ``slop.model`` no longer exists.
 """

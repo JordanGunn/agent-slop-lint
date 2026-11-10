@@ -12,7 +12,6 @@ from __future__ import annotations
 from pathlib import Path
 
 from slop.rules.duplication import DuplicationRule
-from slop.rules.stutter import StutterRule
 from slop.scope import scan_corpus
 from slop.scope.identity import ScopeKind
 
@@ -20,21 +19,6 @@ _CLONE_BODY = (
     "    a = 1\n    b = 2\n    c = a + b\n    d = c * 2\n"
     "    e = d - a\n    f = e + b\n    g = f * c\n    return g + a + b + c + d\n"
 )
-
-
-def test_stutter_attributes_to_the_offending_entity(tmp_path: Path):
-    # 'load_config' / 'save_config' restate their module 'config'.
-    (tmp_path / "config.py").write_text(
-        "def load_config():\n    return 1\n"
-        "def save_config():\n    return 2\n"
-    )
-    corpus = scan_corpus(tmp_path, config=None)
-    findings = list(StutterRule().check(corpus, StutterRule.default_config()))
-    assert findings, "fixture should stutter"
-    for f in findings:
-        assert f.component.kind is not ScopeKind.CORPUS
-        assert f.component.kind in (ScopeKind.CALLABLE, ScopeKind.CLASS)
-        assert f.line, "a localized stutter finding carries a line"
 
 
 def test_duplication_attributes_below_corpus(tmp_path: Path):
