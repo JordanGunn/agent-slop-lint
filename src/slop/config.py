@@ -67,6 +67,8 @@ class AnalysisConfig:
     rules: dict[str, RuleConfig]
     ignore: dict[str, frozenset[str]] = field(default_factory=dict)
     exclusion: "Exclusion" = field(default_factory=lambda: Exclusion())
+    #: Language ids to carve (``python``, ``typescript`` ...); empty means all of them.
+    languages: frozenset[str] = frozenset()
 
     def for_rule(self, name: str) -> RuleConfig | None:
         return self.rules.get(name)
@@ -104,19 +106,19 @@ class AnalysisConfig:
 
     @classmethod
     def scan(cls, root: Path, rule_types: Any) -> "AnalysisConfig":
-        """Default rules plus the discovered config's *scan* settings (``exclude``), for
-        commands that read the corpus but never judge it. ``[rules]`` and ``[ignore]`` are
-        not read, so a config naming a rule slop no longer has cannot block them; ``load``
-        is the strict path for ``lint`` and ``check``."""
+        """Default rules plus the discovered config's *scan* settings (``exclude``,
+        ``languages``), for commands that read the corpus but never judge it. ``[rules]``
+        and ``[ignore]`` are not read, so a config naming a rule slop no longer has cannot
+        block them; ``load`` is the strict path for ``lint`` and ``check``."""
         doc, anchor = _discover(Path(root))
-        return replace(cls.defaults(rule_types), exclusion=_parse_exclusion(doc, anchor))
+        return replace(cls.defaults(rule_types), **_scan_settings(doc, anchor))
 
     @classmethod
     def load(cls, root: Path, rule_types: Any) -> "AnalysisConfig":
         """Defaults, with discovered config (``.slop.toml`` or ``pyproject[tool.slop]``,
         found by walking up from ``root``) merged on top: ``[rules]`` overrides
         validated against each rule's declared altitudes, plus scope-keyed ``[ignore]``
-        and ``exclude``."""
+        and the scan settings (``exclude``, ``languages``)."""
         rule_types = list(rule_types)
         base = {rt.name: rt.default_config() for rt in rule_types}
         altitudes = {rt.name: {k.value for k in rt.altitudes} for rt in rule_types}
@@ -130,7 +132,7 @@ class AnalysisConfig:
         for name, rc in merged.items():
             _validate_threshold_keys(name, rc.thresholds, altitudes[name])
         ignore = _parse_ignore(doc.get("ignore", {}))
-        return cls(merged, ignore=ignore, exclusion=_parse_exclusion(doc, anchor))
+        return cls(merged, ignore=ignore, **_scan_settings(doc, anchor))
 
 
 @dataclass(frozen=True)
@@ -162,6 +164,25 @@ def _parse_exclusion(doc: dict[str, Any], anchor: Path | None) -> Exclusion:
     if not isinstance(raw, list) or not all(isinstance(p, str) for p in raw):
         raise ValueError("config 'exclude' must be a list of glob strings")
     return Exclusion(tuple(raw), anchor)
+
+
+def _parse_languages(doc: dict[str, Any]) -> frozenset[str]:
+    """The language ids to carve; empty means every supported language."""
+    from .ast import GRAMMARS_BY_ID
+    raw = doc.get("languages", [])
+    if not isinstance(raw, list) or not all(isinstance(x, str) for x in raw):
+        raise ValueError("config 'languages' must be a list of language ids")
+    unknown = sorted(set(raw) - set(GRAMMARS_BY_ID))
+    if unknown:
+        raise ValueError(
+            f"config 'languages' names unknown language(s) {unknown}; supported: "
+            f"{sorted(GRAMMARS_BY_ID)}")
+    return frozenset(raw)
+
+
+def _scan_settings(doc: dict[str, Any], anchor: Path | None) -> dict[str, Any]:
+    """What the config says about which files the corpus carves, for ``AnalysisConfig``."""
+    return {"exclusion": _parse_exclusion(doc, anchor), "languages": _parse_languages(doc)}
 
 
 def _apply_override(base: RuleConfig, ov: dict[str, Any], allowed: set[str]) -> RuleConfig:

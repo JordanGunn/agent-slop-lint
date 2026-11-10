@@ -132,6 +132,11 @@ below is recoverable from commit `b7ab8f7` (the tip of `dev` before this change)
   data file or an `exclude`d directory no longer enters with complexity 0 (a 400-day
   window on laszy gave 1,919 hotspot observations from this; it gives 36, all under
   `src/`).
+- **Regression: `languages` was ignored since the v3 rebuild.** 1.x read the top-level
+  `languages = [...]` key and passed it to the engine (restricting the scan to those
+  languages); `850d77e` dropped it while generated configs kept it. It now restricts every
+  command to the listed language ids (`python`, `typescript`, ...), and an id slop does not
+  have is an error that lists the supported ones, not an empty corpus.
 - **Same-named modules were conflated in cycles and clone clusters.** Module qualnames are
   bare file stems, so `a/x.py` and `b/x.py` are both `x`. A cycle between them read
   `x → x → x`, its finding collapsed onto one of the two (a `{qualname: module}` lookup
@@ -189,8 +194,6 @@ below is recoverable from commit `b7ab8f7` (the tip of `dev` before this change)
   yield `index.Index`). Identity is the `ScopeId` (it includes the file), and the places
   that name a module or a clone show a path; a plain `[ignore]` entry still matches by
   name, so exempting one of two same-named classes needs the `path::name` form.
-- The config key `languages` (generated configs carry it, commented) is read by nothing;
-  not yet checked against 1.x.
 
 ## [3.0.0a0] - 2026-06-04
 

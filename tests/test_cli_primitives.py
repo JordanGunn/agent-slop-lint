@@ -369,3 +369,46 @@ def test_shape_explains_a_null_lcom4_in_the_row(tmp_path: Path, capsys):
     assert any("cohesion not measured" in c and "lcom4 is null" in c for c in thing["caveats"])
     measured = next(r for r in answer["classes"] if r["name"] == "Whole")
     assert not any("cohesion not measured" in c for c in measured["caveats"])
+
+
+# ---- `languages` restricts what is carved -------------------------------------------
+
+def _mixed_project(tmp_path: Path) -> Path:
+    (tmp_path / "a.py").write_text("class FromPython:\n    pass\n")
+    (tmp_path / "b.ts").write_text("class FromTypeScript {}\n")
+    return tmp_path
+
+
+def test_languages_restricts_the_read_only_commands(tmp_path: Path, capsys):
+    root = _mixed_project(tmp_path)
+    _, all_classes, _ = _ask(capsys, "shape", "--root", str(root), "--output", "json")
+    assert {r["name"] for r in all_classes["classes"]} == {"FromPython", "FromTypeScript"}
+    (root / ".slop.toml").write_text('languages = ["python"]\n')
+    code, only_python, err = _ask(capsys, "shape", "--root", str(root), "--output", "json")
+    assert code == 0, err
+    assert {r["name"] for r in only_python["classes"]} == {"FromPython"}
+
+
+def test_an_unknown_language_is_an_error_not_an_empty_corpus(tmp_path: Path, capsys):
+    root = _mixed_project(tmp_path)
+    (root / ".slop.toml").write_text('languages = ["pyhton"]\n')
+    code, _, err = _ask(capsys, "shape", "--root", str(root), "--output", "json")
+    assert code == 2
+    assert "unknown language" in err and "pyhton" in err
+
+
+def test_languages_applies_to_lint_too(tmp_path: Path, capsys):
+    import json
+    (tmp_path / "a.py").write_text("def ok(x):\n    return x\n")
+    (tmp_path / "b.ts").write_text(
+        "function branchy(x) {\n  if (x) { return 1 }\n  if (x > 2) { return 2 }\n  return 3\n}\n")
+    rule = '[rules."complexity.cyclomatic".thresholds]\ncallable = 2\n'
+    def paths() -> set[str]:
+        capsys.readouterr()
+        cli.lint(tmp_path, "json")
+        return {f["path"] for f in json.loads(capsys.readouterr().out)["findings"]
+                if f["rule"] == "complexity.cyclomatic"}
+    (tmp_path / ".slop.toml").write_text(rule)
+    assert paths() == {"b.ts"}
+    (tmp_path / ".slop.toml").write_text('languages = ["python"]\n' + rule)
+    assert paths() == set()

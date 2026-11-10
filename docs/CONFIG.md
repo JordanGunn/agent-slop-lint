@@ -19,7 +19,19 @@ Globs over POSIX paths **relative to the directory holding the config file** (`*
 `/`, so `tests/**` covers everything beneath `tests/`; a leading `**/` also matches the top
 level). Excluded files are never carved, so they appear in no command: `lint`, `find`,
 `tree`, `lexicon`, `vocab`, `shape` and `hotspots` all see the same corpus. The read-only
-commands read only `exclude` from the config, so a stale `[rules]` section cannot stop them.
+commands read only `exclude` and `languages` from the config, so a stale `[rules]` section
+cannot stop them.
+
+## `languages` — which languages slop reads
+
+```toml
+languages = ["python", "typescript"]
+```
+
+Language ids to carve; omitted or empty means every supported language (`c`, `c_sharp`,
+`cpp`, `go`, `java`, `javascript`, `julia`, `python`, `ruby`, `rust`, `typescript`). An
+unknown id is a load error that lists the supported ones. Like `exclude`, it applies to every
+command, and the read-only commands read it from the config (see below).
 
 ## `[rules]` — per-rule settings
 
