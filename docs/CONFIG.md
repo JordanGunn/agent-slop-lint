@@ -66,6 +66,17 @@ methods' callable-level findings. An unknown scope key (e.g. `any`) is a load er
 Suppression is silent; the exemption is auditable in config, not the output. There is no
 expiry or allowance ceiling.
 
+A plain entry exempts **every** unit of that name, so `classes = ["Params"]` silences all
+classes called `Params`. To exempt one, write `path::name`:
+
+```toml
+[ignore]
+classes = ["transform/grid/params.py::Params"]
+```
+
+The path matches the end of the unit's source path at a `/` boundary (`params.py` would also
+match `grid/params.py`, but not `myparams.py`); the name is the qualified or leaf name.
+
 ## Exit codes
 
 `0` clean · `1` any error-severity verdict · `2` error (bad config, or a nonexistent /

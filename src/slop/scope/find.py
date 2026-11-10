@@ -10,13 +10,13 @@ re-parses, thresholds or ranks.
 """
 from __future__ import annotations
 
-import os
 from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from pathlib import Path
 
 from .base import Scope
-from .identity import ScopeId, ScopeKind
+from .identity import ScopeKind
+from ..identity import relative_path
 from ..ast.paradigm import ObjectOriented
 
 
@@ -48,19 +48,6 @@ def walk(scope: Scope) -> Iterator[Scope]:
     yield scope
     for child in scope.children():
         yield from walk(child)
-
-
-def relative_path(scope_id: ScopeId, root: Path | str) -> str | None:
-    """A scope's first source file relative to ``root``, or None if it carries no span.
-
-    Module bare-stem qualnames collide across packages, so the path is what
-    disambiguates them."""
-    if scope_id.spans and scope_id.spans[0].path:
-        try:
-            return os.path.relpath(scope_id.spans[0].path, root)
-        except ValueError:
-            return scope_id.spans[0].path
-    return None
 
 
 class _Lines:

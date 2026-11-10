@@ -257,3 +257,46 @@ def test_lint_and_check_drop_excluded_files(tmp_path: Path, capsys):
     (tmp_path / ".slop.toml").write_text('exclude = ["tests/**"]\n' + rule)
     assert findings(lambda: cli.lint(tmp_path, "json")) == set()
     assert findings(lambda: cli.check("complexity.cyclomatic", tmp_path, "json")) == set()
+
+
+_BRANCHY = "def f(v):\n    if v:\n        return 1\n    if v > 2:\n        return 2\n    return 3\n"
+
+
+def _cyclomatic_paths(root: Path, capsys) -> set[str]:
+    import json
+    cli.lint(root, "json")
+    findings = json.loads(capsys.readouterr().out)["findings"]
+    return {f["path"] for f in findings if f["rule"] == "complexity.cyclomatic"}
+
+
+def _two_same_named_branchy_functions(root: Path, ignore: str) -> None:
+    """`a/x.py:f` and `b/x.py:f` are both `x.f` and both over the cyclomatic threshold."""
+    for pkg in ("a", "b"):
+        (root / pkg).mkdir()
+        (root / pkg / "__init__.py").write_text("")
+        (root / pkg / "x.py").write_text(_BRANCHY)
+    (root / ".slop.toml").write_text(
+        '[rules."complexity.cyclomatic".thresholds]\ncallable = 2\n' + ignore)
+
+
+def test_without_an_ignore_both_same_named_functions_are_flagged(tmp_path: Path, capsys):
+    _two_same_named_branchy_functions(tmp_path, "")
+    assert _cyclomatic_paths(tmp_path, capsys) == {"a/x.py", "b/x.py"}
+
+
+def test_a_plain_ignore_entry_exempts_every_unit_of_that_name(tmp_path: Path, capsys):
+    _two_same_named_branchy_functions(tmp_path, '[ignore]\nfunctions = ["f"]\n')
+    assert _cyclomatic_paths(tmp_path, capsys) == set()
+
+
+def test_a_path_qualified_ignore_entry_exempts_only_that_file(tmp_path: Path, capsys):
+    _two_same_named_branchy_functions(tmp_path, '[ignore]\nfunctions = ["a/x.py::f"]\n')
+    assert _cyclomatic_paths(tmp_path, capsys) == {"b/x.py"}
+
+
+def test_ignore_path_matches_at_a_directory_boundary(tmp_path: Path, capsys):
+    # "x.py" must not exempt a file called "ax.py"; the path matches whole segments.
+    (tmp_path / "ax.py").write_text(_BRANCHY)
+    (tmp_path / ".slop.toml").write_text(
+        '[rules."complexity.cyclomatic".thresholds]\ncallable = 2\n[ignore]\nfunctions = ["x.py::f"]\n')
+    assert _cyclomatic_paths(tmp_path, capsys) == {"ax.py"}

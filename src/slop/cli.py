@@ -27,7 +27,8 @@ from .ontology import OntologyIR, compare
 from .metrics.structural.view import Structure
 from .lexical import coverage as lexical_coverage
 from .scope import find as discovery
-from .scope.find import relative_path as _rel_path, walk as _walk
+from .identity import relative_path as _rel_path
+from .scope.find import walk as _walk
 from .scope.lexicon import build_declared_lexicon
 
 

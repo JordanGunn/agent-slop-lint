@@ -15,6 +15,7 @@ additional accessor, not a change to identity semantics.
 """
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
@@ -87,3 +88,16 @@ class ScopeId:
         spans drift under edits. Full ``ScopeId`` equality still includes spans
         (to disambiguate overloads / reopened classes within one analysis)."""
         return (self.kind, self.qualname)
+
+
+def relative_path(scope_id: ScopeId, root: Path | str) -> str | None:
+    """A scope's first source file relative to ``root``, or None if it carries no span.
+
+    Module bare-stem qualnames collide across packages (``octree/index.py`` and
+    ``quadtree/index.py`` are both ``index``), so the path is what addresses a module."""
+    if scope_id.spans and scope_id.spans[0].path:
+        try:
+            return os.path.relpath(scope_id.spans[0].path, root)
+        except ValueError:
+            return scope_id.spans[0].path
+    return None

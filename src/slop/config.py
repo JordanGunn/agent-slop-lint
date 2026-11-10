@@ -51,7 +51,8 @@ class RuleConfig:
 
 # Exemptions are scope-keyed name lists: a finding is suppressed when the unit it
 # judges (its component) is named in the ignore list for that scope. Keys are the
-# four nameable scopes; an unknown key is a load error (the legacy "any" footgun).
+# four nameable scopes; an unknown key is a load error (the legacy "any" footgun). An
+# entry ``path::name`` limits the exemption to the unit of that name in that file.
 _IGNORE_KEY = {
     ScopeKind.CALLABLE: "functions",
     ScopeKind.CLASS: "classes",
@@ -71,13 +72,27 @@ class AnalysisConfig:
         return self.rules.get(name)
 
     def is_ignored(self, component_id: Any) -> bool:
-        """True if ``component_id`` (a finding's judged unit) is exempted — its
-        qualname (or leaf) is in the ignore list for its scope kind."""
+        """True if ``component_id`` (a finding's judged unit) is exempted.
+
+        A plain entry names the unit by qualname or leaf, so it exempts every unit of that
+        name. An entry written ``path::name`` exempts only the unit of that name defined
+        in that file (``path`` matches the end of the source path at a ``/`` boundary)."""
         key = _IGNORE_KEY.get(component_id.kind)
         if key is None:
             return False
-        names = self.ignore.get(key, frozenset())
-        return component_id.qualname in names or component_id.qualname.split(".")[-1] in names
+        qualname = component_id.qualname
+        leaf = qualname.split(".")[-1]
+        spans = component_id.spans
+        source = Path(spans[0].path).as_posix() if spans and spans[0].path else None
+        for entry in self.ignore.get(key, frozenset()):
+            where, qualified, name = entry.rpartition("::")
+            if not qualified:
+                if name in (qualname, leaf):
+                    return True
+            elif name in (qualname, leaf) and source is not None and where \
+                    and (source == where or source.endswith("/" + where)):
+                return True
+        return False
 
     @classmethod
     def defaults(cls, rule_types: Any) -> "AnalysisConfig":

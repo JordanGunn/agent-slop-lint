@@ -11,7 +11,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from ..identity import ScopeId, ScopeKind, Span
+from ..identity import ScopeId, ScopeKind, Span, relative_path
 from .dependency import DependencyCycle
 from .dependency import DependencyEdge, DependencyGraph
 from .imports import module_imports
@@ -75,7 +75,9 @@ class ConcreteDependencyGraph(DependencyGraph):
                     if w == v:
                         break
                 if len(comp) > 1:
-                    out.append(DependencyCycle(members=tuple(sorted(self._label[c] for c in comp))))
+                    ordered = sorted(comp, key=lambda c: (self._label[c], c.spans))
+                    out.append(DependencyCycle(
+                        members=tuple(self._label[c] for c in ordered), scopes=tuple(ordered)))
 
         for v in self._efferent:
             if v not in indexes:
@@ -85,7 +87,7 @@ class ConcreteDependencyGraph(DependencyGraph):
 
 def build(corpus: Any) -> ConcreteDependencyGraph:
     modules = list(_iter_modules(corpus))
-    label: dict[ScopeId, str] = {m.id: m.qualname for m in modules}
+    label: dict[ScopeId, str] = {m.id: relative_path(m.id, corpus.root) or m.qualname for m in modules}
     module_ids = set(label)
     index: dict[str, ScopeId] = {}
     for m in modules:

@@ -40,8 +40,22 @@ def test_fires_on_cycle(tmp_path: Path):
     assert f.action is Action.BREAK_DEPENDENCY_CYCLE
     assert f.severity is Severity.ERROR              # cycles fail the build
     assert f.value == 2
-    assert sorted(f.metadata["cycle"]) == ["a", "b"]
-    assert "a" in f.message and "b" in f.message
+    assert sorted(f.metadata["cycle"]) == ["a.py", "b.py"]
+    assert "a.py" in f.message and "b.py" in f.message
+
+
+def test_same_named_modules_are_attributed_to_their_common_scope(tmp_path: Path):
+    # Two `x` modules in different packages: the finding must name both by path and sit
+    # at their narrowest common ancestor, not at whichever `x` the lookup found last.
+    for pkg, other in (("a", "b"), ("b", "a")):
+        (tmp_path / pkg).mkdir()
+        (tmp_path / pkg / "__init__.py").write_text("")
+        (tmp_path / pkg / "x.py").write_text(f"from {other}.x import f\n")
+    corpus = scan_corpus(tmp_path, config=None)
+    [f] = list(DependencyCyclesRule().check(corpus, DependencyCyclesRule.default_config()))
+    assert f.metadata["cycle"] == ["a/x.py", "b/x.py"]
+    assert "a/x.py → b/x.py → a/x.py" in f.message
+    assert f.component.kind is ScopeKind.REALM
 
 
 def test_silent_without_cycle(tmp_path: Path):

@@ -17,9 +17,14 @@ from ..identity import ScopeId, Span
 
 @dataclass(frozen=True)
 class DependencyCycle:
-    """A strongly-connected component in the import graph (Tarjan SCC, >1 node)."""
+    """A strongly-connected component in the import graph (Tarjan SCC, >1 node).
+
+    ``scopes`` are the modules' identities and ``members`` their labels (root-relative
+    path), in the same order: two modules with one name (``a/x.py``, ``b/x.py``) stay two
+    modules."""
 
     members: tuple[str, ...]
+    scopes: tuple[ScopeId, ...]
 
 
 @dataclass(frozen=True)

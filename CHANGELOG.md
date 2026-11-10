@@ -132,6 +132,19 @@ below is recoverable from commit `b7ab8f7` (the tip of `dev` before this change)
   data file or an `exclude`d directory no longer enters with complexity 0 (a 400-day
   window on laszy gave 1,919 hotspot observations from this; it gives 36, all under
   `src/`).
+- **Same-named modules were conflated in cycles and clone clusters.** Module qualnames are
+  bare file stems, so `a/x.py` and `b/x.py` are both `x`. A cycle between them read
+  `x → x → x`, its finding collapsed onto one of the two (a `{qualname: module}` lookup
+  kept the last), and its metadata was `['x', 'x']`; clone clusters listed members by
+  qualname only, so two `m.f` read as one function. `DependencyCycle` now carries the
+  modules' `ScopeId`s and labels them by root-relative path (`a/x.py → b/x.py → a/x.py`),
+  the rule resolves modules by identity and attributes the finding to the members'
+  narrowest common ancestor (the realm here), and `CloneCluster.members` are
+  `CloneMember(scope, qualname, line)` shown as `path:line qualname`, which also removes the
+  "members have no locations" limit the duplication rule documented. `[ignore]` accepts
+  `path::name` (`functions = ["a/x.py::f"]`) to exempt one file's unit; the path matches
+  whole segments at the end of the source path. `relative_path` moved to
+  `slop.identity` so the graph layer can use it.
 - **`class-shape` merged homonymous classes.** The CK class index was keyed by simple
   name ("last wins on clash"), so every class named `Params` (or `Store`, `Index`, `Key`)
   reported the combined subclass count and could chain depth through the wrong parent. A
@@ -170,14 +183,12 @@ below is recoverable from commit `b7ab8f7` (the tip of `dev` before this change)
 
 - TypeScript type aliases are not discovered.
 - `orphans` matches by name, so an unreferenced function whose name is used elsewhere is
-  not reported. `structure.duplication` lists clone members by qualname only, so two
-  packages with identical module and function names repeat the label.
-- `[ignore]` entries match kind plus qualname, so `classes = ["Params"]` silences every
-  class of that name; a per-instance exemption needs path-qualified ignores.
+  not reported.
 - A class qualname is its module name plus its class name, without the package path, so
   distinct classes can share one (laszy's `octree/index.py` and `quadtree/index.py` both
-  yield `index.Index`). `find` reports the path as well, so its answers stay distinct;
-  anything keyed on qualname alone (`[ignore]`, duplication labels) does not.
+  yield `index.Index`). Identity is the `ScopeId` (it includes the file), and the places
+  that name a module or a clone show a path; a plain `[ignore]` entry still matches by
+  name, so exempting one of two same-named classes needs the `path::name` form.
 - The config key `languages` (generated configs carry it, commented) is read by nothing;
   not yet checked against 1.x.
 

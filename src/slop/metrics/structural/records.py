@@ -157,10 +157,21 @@ class PackageMetrics:
 # --- Relational / analysis-wide findings ------------------------------------
 
 @dataclass(frozen=True)
+class CloneMember:
+    """One callable in a clone cluster: its identity (which file it is in), its dotted name
+    and its 1-based line. The name alone does not say which of two same-named modules it
+    is in."""
+
+    scope: ScopeId
+    qualname: str
+    line: int
+
+
+@dataclass(frozen=True)
 class CloneCluster:
     """Type-2 clone cluster (identical AST leaf-type fingerprint). Legacy: duplication."""
 
-    members: tuple[str, ...]
+    members: tuple[CloneMember, ...]
     leaf_count: int
     #: Narrowest scope containing all clone members (module if co-located, else
     #: package/realm) — the attribution target. ``None`` if unresolvable.

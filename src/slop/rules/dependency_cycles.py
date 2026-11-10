@@ -48,13 +48,13 @@ class DependencyCyclesRule(Rule):
         return RuleConfig(name=cls.name, severity=Severity.ERROR)
 
     def check(self, component: Scope, config: RuleConfig) -> Iterable[Finding]:
-        mod_by_qn = {m.qualname: m for m in _modules(component)}
+        mod_by_id = {m.id: m for m in _modules(component)}
         for cycle in Structure.over(component).dependency_cycles():
             members = list(cycle.members)
             loop = " → ".join(members + members[:1])  # close the loop visually
             # A cycle spans modules; attribute it to their narrowest common scope
             # (the package if co-located) so it converges with other findings there.
-            cycle_scopes = [mod_by_qn[m] for m in members if m in mod_by_qn]
+            cycle_scopes = [mod_by_id[s] for s in cycle.scopes if s in mod_by_id]
             nca = narrowest_common_ancestor(cycle_scopes) if cycle_scopes else None
             yield Verdict(
                 rule=self.name,

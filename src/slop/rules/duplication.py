@@ -12,15 +12,15 @@ per-component verdict and is dropped — a candidate future observation).
 not a claim. Cluster size is structurally floored at 2 (a clone needs two members);
 it is not a config knob (a min_cluster_size=1 would be meaningless).
 
-Limitation: the CloneCluster record carries member qualnames, not locations, so the
-verdict names the members rather than pinpointing one — addressable when the record
-grows a ScopeId/line.
+Each member is named by ``path:line qualname``: two same-named modules in different
+packages would otherwise read as one function.
 """
 from __future__ import annotations
 
 from collections.abc import Iterable
 
 from ..scope.base import Scope
+from ..identity import relative_path
 from ..scope.identity import ScopeKind
 from ..config import RuleConfig
 from ..finding import Action, Finding, Severity, Verdict
@@ -44,7 +44,9 @@ class DuplicationRule(Rule):
         min_leaf_nodes = int(config.param("min_leaf_nodes", 10))
         clusters = Structure.over(component).clone_clusters(min_leaf_nodes=min_leaf_nodes)
         for cluster in clusters:
-            members = ", ".join(cluster.members)
+            members = ", ".join(
+                f"{relative_path(m.scope, component.root) or '?'}:{m.line} {m.qualname}"
+                for m in cluster.members)
             yield Verdict(
                 rule=self.name,
                 component=cluster.locus or component.id,
