@@ -36,3 +36,70 @@ def test_ck_record(tmp_path: Path):
     cs = _classes(tmp_path)
     ck = Structure.over(cs["Leaf"]).ck()
     assert (ck.dit, ck.noc, ck.cbo, ck.nom, ck.lcom) == (2, 0, 2, 1, None)
+
+
+# ---- homonymous classes must not merge ------------------------------------
+#
+# Base classes are written as simple names. Two packages that each define ``Params`` used
+# to be merged into one index entry ("last wins"), so every ``Params`` reported the
+# combined subclass count and ``Deep`` could chain through the wrong parent.
+
+def _homonyms(tmp_path: Path) -> dict:
+    files = {
+        "a/__init__.py": "",
+        "a/params.py": "class Params:\n    pass\n\nclass A1(Params):\n    pass\n\n"
+                       "class A2(Params):\n    pass\n\nclass Deep(A1):\n    pass\n",
+        "b/__init__.py": "",
+        "b/params.py": "class Params:\n    pass\n\nclass B1(Params):\n    pass\n",
+        "c/__init__.py": "",
+        "c/use.py": "class Stray(Params):\n    pass\n",
+    }
+    for rel, body in files.items():
+        (tmp_path / rel).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / rel).write_text(body)
+    corpus = scan_corpus(tmp_path, config=None)
+    return {
+        (c.id.spans[0].path.removeprefix(str(tmp_path) + "/"), c.name): c
+        for c in corpus._iter_classes()
+    }
+
+
+def test_homonym_classes_count_only_their_own_subclasses(tmp_path: Path):
+    cs = _homonyms(tmp_path)
+    assert Structure.over(cs[("a/params.py", "Params")]).noc() == 2   # A1, A2
+    assert Structure.over(cs[("b/params.py", "Params")]).noc() == 1   # B1
+
+
+def test_a_base_with_no_nearer_match_is_left_unresolved_not_guessed(tmp_path: Path):
+    # c/use.py's Stray names 'Params', which matches both packages equally. Counting it
+    # for either would be a guess, so neither Params gains a child.
+    cs = _homonyms(tmp_path)
+    assert Structure.over(cs[("a/params.py", "Params")]).noc() == 2
+    assert Structure.over(cs[("b/params.py", "Params")]).noc() == 1
+    assert Structure.over(cs[("c/use.py", "Stray")]).dit() == 0
+
+
+def test_depth_follows_the_nearest_parent(tmp_path: Path):
+    cs = _homonyms(tmp_path)
+    assert Structure.over(cs[("a/params.py", "Deep")]).dit() == 2     # Deep -> A1 -> Params
+    assert Structure.over(cs[("b/params.py", "B1")]).dit() == 1
+
+
+def test_ck_says_when_its_numbers_may_not_be_exact(tmp_path: Path):
+    cs = _homonyms(tmp_path)
+    twin = Structure.over(cs[("a/params.py", "Params")]).ck().caveats
+    assert len(twin) == 1 and "shares its name with 1 other class" in twin[0]
+    stray = Structure.over(cs[("c/use.py", "Stray")]).ck().caveats
+    assert len(stray) == 1 and "Params" in stray[0] and "not resolved" in stray[0]
+    assert Structure.over(cs[("a/params.py", "Deep")]).ck().caveats == ()   # unique name, exact
+
+
+def test_class_shape_finding_carries_the_caveat(tmp_path: Path):
+    from slop.config import RuleConfig
+    from slop.rules.class_shape import ClassShapeRule
+    cs = _homonyms(tmp_path)
+    cfg = RuleConfig(name="class-shape", params={"cbo_attention": 99, "dit_attention": 99,
+                                                "noc_attention": 1})
+    (finding,) = list(ClassShapeRule().check(cs[("a/params.py", "Params")], cfg))
+    assert "2 direct subclasses" in finding.message
+    assert "Caveat: shares its name with 1 other class" in finding.message

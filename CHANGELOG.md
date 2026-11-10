@@ -58,6 +58,22 @@ below is recoverable from commit `b7ab8f7` (the tip of `dev` before this change)
 - **Modules:** `scope/find.py` (discovery) and `ontology/` (`Vocabulary` interface,
   `OntologyIR` reader, `compare`).
 - `tests/test_layers.py` pins the import boundaries between layers.
+- **Caveats on class questions.** `find`, `tree` and `vocab` carry a `caveats` list (JSON)
+  or `note:` lines (human) when a realm's grammar carves no class scopes (C, Julia), so
+  "no match" there is not read as "not defined".
+- **Findings carry a root-relative `path`** (JSON), and the human output shows
+  `path:line`, so same-named scopes in different files can be told apart.
+
+### Fixed
+
+- **`class-shape` merged homonymous classes.** The CK class index was keyed by simple
+  name ("last wins on clash"), so every class named `Params` (or `Store`, `Index`, `Key`)
+  reported the combined subclass count and could chain depth through the wrong parent. A
+  base name now resolves to the nearest class of that name (same module, then same
+  package), is left unresolved when still ambiguous, and the finding says so (`Caveat:`).
+  On the laszy codebase this removed four spurious "11 direct subclasses" observations
+  (the real counts were 3, 3, 3 and 2).
+- The stale note that the C# grammar wheel does not load (it loads and parses).
 
 ## [3.0.0a0] - 2026-06-04
 

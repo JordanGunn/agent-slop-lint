@@ -516,6 +516,14 @@ def _template() -> str:
     return "\n".join(lines)
 
 
+def _at(component, root: str | None, line: int | None) -> str:
+    """`  path:line` for a finding, so same-named scopes in different files are told apart."""
+    path = _rel_path(component, root) if root else None
+    if not path:
+        return ""
+    return f"  {path}:{line}" if line else f"  {path}"
+
+
 def _human(report: Report) -> str:
     lines: list[str] = []
     verdicts = report.verdicts()
@@ -524,7 +532,8 @@ def _human(report: Report) -> str:
     if verdicts:
         lines.append("VERDICTS")
         for v in sorted(verdicts, key=lambda f: (-int(f.severity), f.rule)):
-            lines.append(f"  [{v.severity.label()}] {v.rule}  ·  {v.component.qualname}")
+            lines.append(f"  [{v.severity.label()}] {v.rule}  ·  {v.component.qualname}"
+                         f"{_at(v.component, report.root, v.line)}")
             lines.append(f"      {v.message}")
             lines.append(f"      → {v.action.value}: {v.prescription}")
         lines.append("")
@@ -532,7 +541,8 @@ def _human(report: Report) -> str:
     if observations:
         lines.append("OBSERVATIONS")
         for o in observations:
-            lines.append(f"  [info] {o.rule}  ·  {o.component.qualname}")
+            lines.append(f"  [info] {o.rule}  ·  {o.component.qualname}"
+                         f"{_at(o.component, report.root, o.line)}")
             lines.append(f"      {o.message}")
         lines.append("")
 

@@ -149,7 +149,7 @@ class Class(_Base, ClassABC):
         idx = self.context.class_index
         if idx is None:
             return ()
-        return tuple(idx.by_name[b] for b in self._base_names if b in idx.by_name)
+        return idx.parents.get(self.id, ())
     def nested_classes(self): return tuple(c for c in self._children if c.KIND == ScopeKind.CLASS)
     def symbols(self): return self._children
 

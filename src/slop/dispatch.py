@@ -18,6 +18,7 @@ advisory — they never gate the build.
 """
 from __future__ import annotations
 
+import os
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from typing import Any
@@ -28,11 +29,24 @@ from .finding import Disposition, Finding, Severity
 from .rule import Rule
 
 
+def _with_relative_path(finding: dict[str, Any], root: str | None) -> dict[str, Any]:
+    """A finding's ``path`` relative to the scan root, so same-named scopes in different
+    files stay distinguishable without leaking an absolute machine path."""
+    path = finding.get("path")
+    if path and root:
+        try:
+            finding["path"] = os.path.relpath(path, root)
+        except ValueError:
+            pass
+    return finding
+
+
 @dataclass
 class Report:
     findings: list[Finding]
     visited: dict[str, int] = field(default_factory=dict)
     zero_visited: list[str] = field(default_factory=list)
+    root: str | None = None
 
     def verdicts(self) -> list[Finding]:
         return [f for f in self.findings if f.disposition is Disposition.VERDICT]
@@ -53,7 +67,7 @@ class Report:
                 "warnings": sum(1 for f in self.findings if f.severity is Severity.WARNING),
                 "exit_code": self.exit_code(),
             },
-            "findings": [f.as_dict() for f in self.findings],
+            "findings": [_with_relative_path(f.as_dict(), self.root) for f in self.findings],
             "zero_visited": self.zero_visited,
         }
 
@@ -85,7 +99,8 @@ class Dispatcher:
             if count == 0:
                 zero_visited.append(rule.name)
 
-        return Report(findings=findings, visited=visited, zero_visited=zero_visited)
+        return Report(findings=findings, visited=visited, zero_visited=zero_visited,
+                      root=str(corpus.root) if hasattr(corpus, "root") else None)
 
 
 def _index_by_kind(root: Any) -> dict[ScopeKind, list[Any]]:

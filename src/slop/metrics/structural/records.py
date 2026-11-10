@@ -63,10 +63,13 @@ class CKMetrics:
     noc: int        # number of children
     cbo: int        # coupling between objects
     lcom: int | None  # lack of cohesion in methods — future
+    #: Reasons the inheritance numbers may not be exact (a class that shares its name with
+    #: another, or an unresolvable base name). Empty when the numbers are exact.
+    caveats: tuple[str, ...] = ()
 
     def as_dict(self) -> dict[str, Any]:
         return {"nom": self.nom, "dit": self.dit, "noc": self.noc,
-                "cbo": self.cbo, "lcom": self.lcom}
+                "cbo": self.cbo, "lcom": self.lcom, "caveats": list(self.caveats)}
 
     def narrate(self, *, cbo_floor: int, dit_floor: int, noc_floor: int) -> str:
         """Claim-free prose over the CK profile, naming only the metrics past their
@@ -90,9 +93,10 @@ class CKMetrics:
                 f"{self.noc} direct subclasses (broad base — often a healthy "
                 f"abstraction, but worth confirming it is not a god-base)"
             )
+        note = f" Caveat: {'; '.join(self.caveats)}." if self.caveats else ""
         if not parts:
-            return f"CK profile within typical bounds ({self.nom} methods)."
-        return f"CK profile — {'; '.join(parts)}. ({self.nom} methods.)"
+            return f"CK profile within typical bounds ({self.nom} methods).{note}"
+        return f"CK profile — {'; '.join(parts)}. ({self.nom} methods.){note}"
 
 
 # --- Package altitude (Robert C. Martin 1994) -------------------------------

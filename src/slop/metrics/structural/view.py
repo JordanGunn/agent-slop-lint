@@ -81,7 +81,8 @@ class Structure:
     # ---- Class measures: Chidamber-Kemerer (dit/noc/cbo via the class index) --
     def ck(self) -> CKMetrics:
         return CKMetrics(nom=self.method_count(), dit=self.dit(), noc=self.noc(),
-                         cbo=self.cbo(), lcom=self.lcom())
+                         cbo=self.cbo(), lcom=self.lcom(),
+                         caveats=class_index.caveats(self._r, self._class_index()))
 
     def method_count(self) -> int:
         return len(self._r.methods())
