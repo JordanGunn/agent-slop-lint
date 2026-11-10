@@ -18,7 +18,7 @@ from .scope.identity import ScopeKind
 
 @dataclass(frozen=True)
 class Violation:
-    #: The rule's name (``complexity.cyclomatic``), the one identifier used in config,
+    #: The rule's name (``cyclomatic-complexity``), the one identifier used in config,
     #: in ``slop check`` and in an inline ``slop: ignore[...]`` comment.
     rule: str
     #: Absolute path of the source file (or package directory), None when there is none.
