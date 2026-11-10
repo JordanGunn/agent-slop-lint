@@ -51,6 +51,25 @@ class Python(MultiPurpose):
         return frozenset({"__init__", "__new__"})
 
     @classmethod
+    def class_fields(cls, node: Any, content: bytes) -> tuple[str, ...]:
+        """Names assigned or annotated directly in the class body (``x: int = 1``, ``y = 2``,
+        ``z: str``); a tuple target (``a, b = ...``) names several and is not read."""
+        body = node.child_by_field_name("body")
+        names: list[str] = []
+        for stmt in body.named_children if body is not None else ():
+            if stmt.type != "expression_statement" or not stmt.named_children:
+                continue
+            assignment = stmt.named_children[0]
+            target = assignment.child_by_field_name("left") if assignment.type == "assignment" else None
+            if target is not None and target.type == "identifier":
+                names.append(content[target.start_byte:target.end_byte].decode())
+        return tuple(names)
+
+    @classmethod
+    def assignment_nodes(cls) -> frozenset[str]:
+        return frozenset({"assignment", "augmented_assignment"})
+
+    @classmethod
     def callable(cls) -> frozenset[str]:
         return frozenset({"function_definition", "async_function_definition", "lambda"})
 

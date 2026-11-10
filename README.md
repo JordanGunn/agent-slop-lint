@@ -165,10 +165,11 @@ It reports the share of declared-name occurrences the ontology covers, the decla
 it does not define (most used first, with their file spread), the canonical tokens the
 code never uses, and the canonical tokens the noise list strips before measurement
 (`key`, `index`, `by` ...), which can never be observed and so are not called unused.
-"Declared names" are modules, packages, classes, callables and their parameters; builtin
-and library references (`self`, `np`, `int`), special methods and implicit receivers are
-excluded by grammar facts, not by language branches. There are no thresholds: the
-undefined list is ordered, not filtered.
+"Declared names" are modules, packages, classes, their properties (class-body fields and
+members assigned through `self`/`this`; Python, JavaScript and TypeScript), callables and
+their parameters; builtin and library references (`self`, `np`, `int`), special methods,
+implicit receivers and local variables are excluded by grammar facts, not by language
+branches. There are no thresholds: the undefined list is ordered, not filtered.
 
 `--output human` (default) or `--output json`. Run `slop --help` for the full list.
 

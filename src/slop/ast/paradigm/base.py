@@ -300,6 +300,20 @@ class Grammar(ABC):
         initialises, so it would join every method into one group and hide a split."""
         return frozenset()
 
+    @classmethod
+    def class_fields(cls, node: Any, content: bytes) -> tuple[str, ...]:
+        """Names a class body declares itself (a Python class-level assignment, a
+        TypeScript field), from the raw class ``node``. Empty where the grammar does not say."""
+        del node, content
+        return ()
+
+    @classmethod
+    def assignment_nodes(cls) -> frozenset[str]:
+        """Node types that assign to the expression in their ``left`` field. A member
+        assigned through the instance receiver (``self.x = ...``) is a property the class
+        declares by use. Empty where the grammar cannot say."""
+        return frozenset()
+
     # ---- class / package vocabulary -----------------------------------
 
     @classmethod

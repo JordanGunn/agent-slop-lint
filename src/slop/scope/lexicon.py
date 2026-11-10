@@ -58,11 +58,12 @@ _UNNAMED = frozenset({"<anonymous>", "<lambda>"})
 def build_declared_lexicon(component: Any) -> Lexicon:
     """Build a Lexicon of the names the code *declares*, not every identifier it mentions.
 
-    Modules, packages and realms (from the filesystem), classes, callables and callable
-    parameters, each tagged with its own role. References to builtins and libraries
-    (``self``, ``np``, ``int``) are not chosen vocabulary, so they are absent; so are
-    unnamed scopes, a grammar's special methods (``__init__``) and implicit receivers.
-    Those exclusions are grammar facts, not language branches here.
+    Modules, packages and realms (from the filesystem), classes, their properties,
+    callables and callable parameters, each tagged with its own role. References to
+    builtins and libraries (``self``, ``np``, ``int``) are not chosen vocabulary, so they
+    are absent; so are unnamed scopes, a grammar's special methods (``__init__``),
+    implicit receivers and local variables. Those exclusions are grammar facts, not
+    language branches here.
 
     This is the vocabulary a canonical vocabulary governs: it is chosen where a name is
     declared. ``build_lexicon`` keeps the undifferentiated occurrence stream."""
@@ -74,6 +75,7 @@ def build_declared_lexicon(component: Any) -> Lexicon:
             units.append((comp.name, _FS_ROLE[kind], Span(str(path) if path is not None else "", 0, 0)))
         elif kind is ScopeKind.CLASS and comp.name not in _UNNAMED:
             units.append((comp.name, Role.CLASS, comp.id.spans[0]))
+            units.extend((p, Role.PROPERTY, comp.id.spans[0]) for p in comp.properties())
         elif kind is ScopeKind.CALLABLE:
             grammar = comp._grammar
             if comp.name not in _UNNAMED and not grammar.is_special_method(comp.name):

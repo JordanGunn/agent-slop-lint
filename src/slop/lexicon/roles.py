@@ -17,8 +17,10 @@ Emission status (kept honest with the consumer-driven build):
   (filesystem-derived names) and ``BODY_REF`` (every identifier the AST walk yields — the
   undifferentiated occurrence bucket).
 - ``build_declared_lexicon`` (the declared names) emits ``REALM``/``PACKAGE``/``MODULE``
-  plus ``CLASS``/``CALLABLE``/``PARAMETER``, split out by what each name declares; it has
-  no ``BODY_REF``, because a reference to a builtin or library is not chosen vocabulary.
+  plus ``CLASS``/``CALLABLE``/``PARAMETER``/``PROPERTY``, split out by what each name
+  declares; it has no ``BODY_REF``, because a reference to a builtin or library is not
+  chosen vocabulary. Local variables are not emitted: they are implementation detail, not
+  vocabulary a canonical model governs.
 """
 from __future__ import annotations
 
@@ -34,4 +36,5 @@ class Role(Enum):
     CLASS = "class"
     CALLABLE = "callable"
     PARAMETER = "parameter"
+    PROPERTY = "property"
     BODY_REF = "body_ref"

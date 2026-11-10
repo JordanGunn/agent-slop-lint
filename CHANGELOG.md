@@ -132,6 +132,18 @@ below is recoverable from commit `b7ab8f7` (the tip of `dev` before this change)
   data file or an `exclude`d directory no longer enters with complexity 0 (a 400-day
   window on laszy gave 1,919 hotspot observations from this; it gives 36, all under
   `src/`).
+- **The declared-names lexicon had no class properties.** `Class.properties()` was always
+  empty, so a field an ontology defines (`address/handle`) could not be matched to the
+  attribute that carries it. A class's properties are now its class-body fields plus the
+  members its methods assign through the instance receiver (`self.x = ...`, `this.x =
+  ...`, constructors included), read through new grammar facts `class_fields()` and
+  `assignment_nodes()`; a member only read, a member of another object, a dunder and a
+  `cls.x` in a class method are not. They enter the lexicon with a new `PROPERTY` role. On
+  laszy against `laszy-core`, declared occurrences went from 2,790 to 3,233 and covered
+  ones from 513 to 630. Python, JavaScript and TypeScript only (the same grammars that
+  have `member_access`): other languages yield no properties, not a guess. Local variables
+  are deliberately not declared names: they are implementation detail, not vocabulary a
+  canonical model governs, and `Callable.locals()` stays unimplemented.
 - **TypeScript type aliases were not discovered.** `type Point = {...}` and generic
   `type Box<T> = ...` are now class-like scopes beside `interface` and `enum`, as Go's named
   types already were, so `find`, `vocab` and `shape` see them (a `shape` row for an alias
