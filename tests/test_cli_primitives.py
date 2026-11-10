@@ -431,3 +431,19 @@ def test_languages_applies_to_lint_too(tmp_path: Path, capsys):
     assert paths() == {"b.ts"}
     (tmp_path / ".slop.toml").write_text('languages = ["python"]\n' + rule)
     assert paths() == set()
+
+
+def test_a_name_clashing_in_two_languages_is_one_entry_with_every_definition_labelled(
+        tmp_path: Path, capsys):
+    # Two `Store`s in Python and two in TypeScript: one entry for the name, four matches, and
+    # each match says its language so the reader can split them into the two clashes.
+    for lang, ext, body in (("py", "py", "class Store:\n    pass\n"),
+                            ("ts", "ts", "export class Store {}\n")):
+        for pkg in ("one", "two"):
+            (tmp_path / lang / pkg).mkdir(parents=True)
+            (tmp_path / lang / pkg / f"store.{ext}").write_text(body)
+    _, answer, _ = _ask(capsys, "find", "--collisions", "--root", str(tmp_path), "--output", "json")
+    assert set(answer["collisions"]) == {"Store"}
+    assert sorted((m["language"], m["path"]) for m in answer["collisions"]["Store"]) == [
+        ("python", "py/one/store.py"), ("python", "py/two/store.py"),
+        ("typescript", "ts/one/store.ts"), ("typescript", "ts/two/store.ts")]

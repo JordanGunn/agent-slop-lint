@@ -31,7 +31,7 @@ languages = ["python", "typescript"]
 Language ids to carve; omitted or empty means every supported language (`c`, `c_sharp`,
 `cpp`, `go`, `java`, `javascript`, `julia`, `python`, `ruby`, `rust`, `typescript`). An
 unknown id is a load error that lists the supported ones. Like `exclude`, it applies to every
-command, and the read-only commands read it from the config (see below).
+command, and the read-only commands read it from the config.
 
 ## `[rules]` — per-rule settings
 
@@ -87,7 +87,10 @@ classes = ["transform/grid/params.py::Params"]
 ```
 
 The path matches the end of the unit's source path at a `/` boundary (`params.py` would also
-match `grid/params.py`, but not `myparams.py`); the name is the qualified or leaf name.
+match `grid/params.py`, but not `myparams.py`); the name is the qualified or leaf name. A bare
+file name matches every file of that name, so when two files share one, write the path from
+the config's directory (`transform/grid/params.py`). An entry that matches nothing is not an
+error, as with a plain name.
 
 ## Exit codes
 
@@ -97,5 +100,6 @@ source-free `--root`).
 ## What changed from v1.x
 
 There are no `default` / `lax` / `strict` **profiles** and no `[[waivers]]` array. Tune
-thresholds directly and exempt via `[ignore]`. The config file holds rule settings and the
-`exclude` list only — the scan target is the CLI's `--root`, not a config key.
+thresholds directly and exempt via `[ignore]`. The config file holds rule settings,
+`[ignore]`, and the scan settings `exclude` and `languages` — the scan target itself is the
+CLI's `--root`, not a config key.

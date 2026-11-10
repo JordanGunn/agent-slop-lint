@@ -36,14 +36,25 @@ def test_python_properties_are_fields_plus_members_assigned_through_self(tmp_pat
     )
     # Class-body fields first, then assigned members; a name once; no dunder, no other
     # object's attribute, and a member that is only read (`self.read`, or `self.fetched` on
-    # the right of an assignment) is not declared.
-    assert _props(tmp_path, "m.py", src) == ("x", "y", "z", "w", "v")
+    # the right of an assignment) or only updated (`self.v += 2`) is not declared.
+    assert _props(tmp_path, "m.py", src) == ("x", "y", "z", "w")
+
+
+def test_an_augmented_assignment_alone_declares_nothing_but_does_not_hide_a_declaration(tmp_path: Path):
+    src = (
+        "class A:\n"
+        "    def f(self):\n"
+        "        self.updated_only += 1\n"
+        "        self.declared = 0\n"
+        "        self.declared += 1\n"
+    )
+    assert _props(tmp_path, "m.py", src) == ("declared",)
 
 
 def test_typescript_properties(tmp_path: Path):
     ts = ("class A {\n  x: number = 1;\n  private y = 2;\n  constructor() { this.w = 1 }\n"
           "  f() { this.v += 1; return this.readonly }\n}\n")
-    assert _props(tmp_path, "m.ts", ts) == ("x", "y", "w", "v")
+    assert _props(tmp_path, "m.ts", ts) == ("x", "y", "w")
 
 
 def test_javascript_properties(tmp_path: Path):

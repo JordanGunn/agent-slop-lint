@@ -37,4 +37,5 @@ class EcmaScriptMembers:
 
     @classmethod
     def assignment_nodes(cls) -> frozenset[str]:
-        return frozenset({"assignment_expression", "augmented_assignment_expression"})
+        # ``this.v += 1`` can only update a member that exists, so it declares nothing.
+        return frozenset({"assignment_expression"})

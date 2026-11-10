@@ -67,7 +67,9 @@ class Python(MultiPurpose):
 
     @classmethod
     def assignment_nodes(cls) -> frozenset[str]:
-        return frozenset({"assignment", "augmented_assignment"})
+        # Augmented assignment (``self.v += 1``) is absent on purpose: it can only update an
+        # attribute that already exists, so it declares nothing.
+        return frozenset({"assignment"})
 
     @classmethod
     def callable(cls) -> frozenset[str]:

@@ -144,16 +144,21 @@ below is recoverable from commit `b7ab8f7` (the tip of `dev` before this change)
   members its methods assign through the instance receiver (`self.x = ...`, `this.x =
   ...`, constructors included), read through new grammar facts `class_fields()` and
   `assignment_nodes()`; a member only read, a member of another object, a dunder and a
-  `cls.x` in a class method are not. They enter the lexicon with a new `PROPERTY` role. On
-  laszy against `laszy-core`, declared occurrences went from 2,790 to 3,233 and covered
-  ones from 513 to 630. Python, JavaScript and TypeScript only (the same grammars that
-  have `member_access`): other languages yield no properties, not a guess. Local variables
-  are deliberately not declared names: they are implementation detail, not vocabulary a
-  canonical model governs, and `Callable.locals()` stays unimplemented.
+  `cls.x` in a class method are not; nor is an augmented assignment (`self.v += 1`), which
+  can only update a member that already exists. They enter the lexicon with a new
+  `PROPERTY` role. Measured on one tree (laszy's `slop-config` checkout, its `exclude`
+  applied, against the laszy-core IR) with `PROPERTY` emission off and on: declared
+  occurrences 2,790 to 3,233, covered 513 to 630, observed tokens 567 to 649. Python,
+  JavaScript and TypeScript only (the same grammars that have `member_access`): other
+  languages yield no properties, not a guess. Local variables are deliberately not declared
+  names: they are implementation detail, not vocabulary a canonical model governs, and
+  `Callable.locals()` stays unimplemented.
 - **TypeScript type aliases were not discovered.** `type Point = {...}` and generic
   `type Box<T> = ...` are now class-like scopes beside `interface` and `enum`, as Go's named
-  types already were, so `find`, `vocab` and `shape` see them (a `shape` row for an alias
-  has no methods and `lcom4` 0).
+  types already were, so `find`, `vocab` and `shape` see them. Every alias counts, including
+  `type Id = string` and unions (`type C = A | B`); there is no object-shaped-only filter, so
+  a name repeated across files (React's `Props`) is a same-language collision like any
+  other. A `shape` row for an alias has no methods and `lcom4` 0.
 - **Regression: `languages` was ignored since the v3 rebuild.** 1.x read the top-level
   `languages = [...]` key and passed it to the engine (restricting the scan to those
   languages); `850d77e` dropped it while generated configs kept it. It now restricts every
