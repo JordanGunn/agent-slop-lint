@@ -124,6 +124,7 @@ slop find <name> | --collisions    Where a name is defined; or which names are d
 slop lexicon [--scope Q] [--ontology IR.json]   Vocabulary distribution (Zipf/hapax + head); with an ontology, coverage of declared names
 slop deps [--scope Q] [--cycles]   Print the module dependency graph (resolved/unresolved edges)
 slop vocab --ontology IR.json      Compare class names with a canonical vocabulary (--term NAME: one entry)
+slop shape [--scope Q]             Each class's CK profile and cohesion groups (LCOM4), unfiltered
 
 Lint layer (exit 0 clean / 1 on any ERROR finding / 2 on error)
 slop lint --root <path>            Run all enabled rules

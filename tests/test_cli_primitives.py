@@ -292,3 +292,56 @@ def test_without_exclude_the_same_files_are_carved(sample_project: Path, capsys)
     (sample_project / "tests" / "test_address.py").write_text("class Address:\n    pass\n")
     _, answer, _ = _ask(capsys, "find", "Address", "--root", str(sample_project), "--output", "json")
     assert sorted(m["path"] for m in answer["matches"]) == ["store/address.py", "tests/test_address.py"]
+
+
+# ---- Q: what is the shape of a class? ---------------------------------------
+
+def _shape_project(tmp_path: Path) -> Path:
+    (tmp_path / "pkg").mkdir()
+    (tmp_path / "pkg" / "__init__.py").write_text("")
+    (tmp_path / "pkg" / "split.py").write_text(
+        "class Split:\n"
+        "    def f(self): return self.a\n"
+        "    def g(self): return self.b\n"
+        "    def h(self): return 1\n"
+    )
+    (tmp_path / "pkg" / "whole.py").write_text(
+        "class Whole:\n    def f(self): return self.a\n    def g(self): return self.a\n")
+    (tmp_path / "Thing.java").write_text("class Thing { int x; int f() { return x; } }")
+    return tmp_path
+
+
+def test_shape_reports_every_class_unfiltered(tmp_path: Path, capsys):
+    root = _shape_project(tmp_path)
+    code, answer, err = _ask(capsys, "shape", "--root", str(root), "--output", "json")
+    assert code == 0, err
+    rows = {r["name"]: r for r in answer["classes"]}
+    # No floors: the cohesive class and the one-method class are answered too.
+    assert set(rows) == {"Split", "Whole", "Thing"}
+    assert (rows["Split"]["lcom4"], rows["Split"]["method_groups"], rows["Split"]["detached"]) == \
+        (2, [["f"], ["g"]], ["h"])
+    assert (rows["Whole"]["lcom4"], rows["Whole"]["method_groups"]) == (1, [["f", "g"]])
+    assert rows["Split"]["path"] == "pkg/split.py" and rows["Split"]["line"] == 1
+    assert {"nom", "dit", "noc", "cbo"} <= set(rows["Split"])
+
+
+def test_shape_says_null_not_zero_where_cohesion_is_unmeasurable(tmp_path: Path, capsys):
+    root = _shape_project(tmp_path)
+    _, answer, _ = _ask(capsys, "shape", "--root", str(root), "--output", "json")
+    thing = next(r for r in answer["classes"] if r["name"] == "Thing")
+    assert (thing["lcom4"], thing["method_groups"], thing["detached"]) == (None, None, None)
+
+
+def test_shape_scope_narrows_to_one_module(tmp_path: Path, capsys):
+    root = _shape_project(tmp_path)
+    code, answer, err = _ask(capsys, "shape", "--root", str(root), "--scope", "pkg/whole.py",
+                             "--output", "json")
+    assert code == 0, err
+    assert [r["name"] for r in answer["classes"]] == ["Whole"]
+
+
+def test_shape_human_output_lists_the_groups(tmp_path: Path, capsys):
+    root = _shape_project(tmp_path)
+    code, out, _ = _ask(capsys, "shape", "--root", str(root), "--scope", "pkg/split.py")
+    assert code == 0
+    assert "lcom4 2" in out and "groups: {f} {g}" in out and "detached: h" in out

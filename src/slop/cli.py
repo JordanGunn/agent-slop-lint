@@ -24,6 +24,7 @@ from .scope import scan_corpus
 from .scope.identity import ScopeKind
 from .rules import RULE_REGISTRY
 from .ontology import OntologyIR, compare
+from .metrics.structural.view import Structure
 from .lexical import coverage as lexical_coverage
 from .scope import find as discovery
 from .scope.find import relative_path as _rel_path, walk as _walk
@@ -516,6 +517,45 @@ def vocab_view(root: str | Path, ontology: str | Path, output: str = "human", *,
     return 0
 
 
+def shape_view(root: str | Path, output: str = "human", *, scope: str | None = None,
+               scope_kind: str | None = None) -> int:
+    """The shape of every class beneath a scope: its Chidamber-Kemerer profile and its
+    method groups (LCOM4), unfiltered. No floors, no verdicts: ``class-shape`` narrates only
+    the classes past an attention floor, this answers for any class. ``lcom4`` is ``null``
+    where the language's instance member access cannot be read from syntax."""
+    corpus = _scan_root(root)
+    if corpus is None:
+        return 2
+    target = corpus
+    if scope is not None:
+        target = _select_scope(corpus, scope, _parse_kind(scope_kind))
+        if target is None:
+            return 2
+    located = discovery.locate(
+        (s for s in _walk(target) if s.id.kind is ScopeKind.CLASS), corpus.root)
+    rows = [{**match.as_dict(), **Structure.over(cls).ck().as_dict()} for cls, match in located]
+    notes = discovery.caveats(corpus, ScopeKind.CLASS, under=target)
+    label = _rel_path(target.id, str(corpus.root)) or target.qualname or corpus.name
+    if output == "json":
+        print(json.dumps({"scope": label, "kind": target.id.kind.value, "classes": rows,
+                          "caveats": notes}, indent=2))
+        return 0
+    lines = [_view_header("shape", f"{label} ({target.id.kind.value})", f"{len(rows)} class(es)")]
+    for row in rows:
+        lcom4 = "n/a" if row["lcom4"] is None else row["lcom4"]
+        where = f"{row['path']}:{row['line']}" if row["path"] and row["line"] else (row["path"] or "-")
+        lines.append(f"  {row['name']}  {where}  nom {row['nom']} dit {row['dit']} "
+                     f"noc {row['noc']} cbo {row['cbo']} lcom4 {lcom4}")
+        if row["method_groups"]:
+            lines.append("    groups: " + " ".join("{" + ", ".join(g) + "}" for g in row["method_groups"]))
+        if row["detached"]:
+            lines.append("    detached: " + ", ".join(row["detached"]))
+        lines.extend(f"    note: {c}" for c in row["caveats"])
+    lines.extend(f"  note: {n}" for n in notes)
+    print("\n".join(lines))
+    return 0
+
+
 def init(root: str | Path) -> int:
     """Emit a ``.slop.toml`` template from each rule's default config."""
     path = Path(root) / ".slop.toml"
@@ -660,6 +700,13 @@ def main(argv: list[str] | None = None) -> int:
     p_vocab.add_argument("--term", default=None, help="print this term's canonical entry instead of comparing")
     p_vocab.add_argument("--output", choices=["human", "json"], default="human")
 
+    p_shape = sub.add_parser("shape", help="print each class's CK profile and cohesion groups")
+    p_shape.add_argument("--root", default=".")
+    p_shape.add_argument("--scope", default=None, help="qualname or path of the scope to report beneath")
+    p_shape.add_argument("--scope-kind", default=None,
+                         help="pick one kind when --scope names several (a package and its __init__ module)")
+    p_shape.add_argument("--output", choices=["human", "json"], default="human")
+
     args = parser.parse_args(argv)
     try:
         if args.command == "lint":
@@ -689,6 +736,8 @@ def main(argv: list[str] | None = None) -> int:
                              depth=args.depth, kind=args.kind, scope_kind=args.scope_kind)
         if args.command == "vocab":
             return vocab_view(args.root, args.ontology, args.output, term=args.term)
+        if args.command == "shape":
+            return shape_view(args.root, args.output, scope=args.scope, scope_kind=args.scope_kind)
     except Exception as exc:  # noqa: BLE001 — top-level boundary: any failure is exit 2
         print(f"slop: error: {exc}", file=sys.stderr)
         return 2

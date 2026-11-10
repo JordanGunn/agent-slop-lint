@@ -70,6 +70,14 @@ below is recoverable from commit `b7ab8f7` (the tip of `dev` before this change)
   counted, named `<anonymous>:<line>` so two of them never merge. `lcom4` 0 means nothing
   was measurable (no instance methods, or all detached), not perfect cohesion. LCOM4 is
   credited to Hitz and Montazeri (1995) in `NOTICE` and `CITATIONS.md`.
+- **`slop shape [--scope Q]`.** Prints every class beneath a scope with its Chidamber-Kemerer
+  profile and its cohesion groups, with no floors: `class-shape` narrates only classes past
+  an attention floor, `shape` answers for any class. JSON rows carry the `find` fields
+  (`name`, `qualname`, `path`, `line`) plus `nom`, `dit`, `noc`, `cbo`, `lcom4`,
+  `method_groups`, `detached` and `caveats`; `lcom4`, `method_groups` and `detached` are
+  `null` where the language's instance member access is unreadable. Like the other
+  primitives it needs no rule config, so it runs on a repository whose `lint` cannot.
+  New `scope.find.locate` pairs scopes with their `Match`.
 - **Primitives:** `slop find <name>` / `--collisions` (where a name is defined; which class
   names are defined more than once), `slop tree` (ownership tree beneath a scope) and
   `slop vocab --ontology IR.json` (class names against a canonical vocabulary from an Open

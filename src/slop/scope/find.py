@@ -11,7 +11,7 @@ re-parses, thresholds or ranks.
 from __future__ import annotations
 
 import os
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -106,6 +106,14 @@ def find(corpus, name: str | None = None, *, kind: ScopeKind | None = None,
         and (name is None or s.name == name)
     ]
     return sorted(found, key=Match.sort_key)
+
+
+def locate(scopes: Iterable[Scope], root: Path | str) -> list[tuple[Scope, Match]]:
+    """Each of ``scopes`` paired with where it is defined, in :class:`Match` order, for
+    callers that need the component as well as the fact (a measure over each class)."""
+    lines = _Lines()
+    located = [(s, _match(s, root, lines)) for s in scopes]
+    return sorted(located, key=lambda pair: pair[1].sort_key())
 
 
 def outline(scope: Scope, root: Path | str, *, depth: int | None = None,
