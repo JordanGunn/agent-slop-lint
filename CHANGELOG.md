@@ -106,7 +106,7 @@ below is recoverable from commit `b7ab8f7` (the tip of `dev` before this change)
   `typedef struct {...} Point;` is named `Point`, and `union` and `enum` are discovered.
 - The stale note that the C# grammar wheel does not load (it loads and parses).
 - **A stale `.slop.toml` blocked the read-only commands.** `find`, `tree`, `lexicon`,
-  `deps`, `vocab` and `ast` loaded and validated rule overrides they never use, so a config
+  `deps` and `vocab` loaded and validated rule overrides they never use, so a config
   naming a rule slop no longer has (laszy's names slop 1.x rules such as `complexity`)
   made them exit 2. They now take the default rule config; `lint` and `check` still reject
   an unknown rule name.
