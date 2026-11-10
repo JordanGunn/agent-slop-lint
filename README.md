@@ -142,8 +142,8 @@ structs, enums and traits as the language has them. That includes C `struct`/`un
 definitions (a specifier counts only with a body, and `typedef struct {...} Name;` is named
 `Name`) and Julia `struct`, `abstract type` and parametric types. Answers carry a `caveats`
 list (JSON) or `note:` lines (human) when they may be incomplete: files with syntax errors
-are still carved but may have lost definitions. Known gaps: C++ enums and TypeScript type
-aliases are not discovered.
+are still carved but may have lost definitions. A known gap: TypeScript type aliases are
+not discovered.
 
 `vocab` reads the JSON IR that [Open Ontology](https://open-ontology.com) emits
 (`pnpm model:check <model> --json`; the bare IR and that command's wrapper are both

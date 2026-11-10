@@ -326,6 +326,17 @@ def _child_of_type(node: Any, type_name: str) -> Any:
     return None
 
 
+def type_specifier_name(node: Any, content: bytes) -> str:
+    """A C/C++ struct/union/enum/class specifier's tag, else the name of the ``typedef``
+    that wraps an anonymous one (``typedef struct { ... } Point;`` is ``Point``)."""
+    name = node.child_by_field_name("name")
+    if name is None and node.parent is not None and node.parent.type == "type_definition":
+        name = node.parent.child_by_field_name("declarator")
+    if name is None or name.type not in ("type_identifier", "identifier"):
+        return "<anonymous>"
+    return content[name.start_byte:name.end_byte].decode("utf-8", errors="replace")
+
+
 def c_style_parameters(node: Any, content: bytes) -> tuple[tuple[str, str | None], ...]:
     """C/C++ parameter extraction: the parameter list hangs off the function
     *declarator*, and each parameter's name nests inside its own declarator

@@ -15,7 +15,14 @@ class Cpp(MultiPurpose):
 
     @classmethod
     def classes(cls) -> frozenset[str]:
-        return frozenset({"class_specifier", "struct_specifier"})
+        return frozenset({"class_specifier", "struct_specifier", "union_specifier",
+                          "enum_specifier"})
+
+    @classmethod
+    def is_class_definition(cls, node: Any) -> bool:
+        # Only a specifier with a body defines the type; ``class Widget;``,
+        # ``struct Node *head;`` and ``struct Node *alt;`` inside a body are references.
+        return node.child_by_field_name("body") is not None
 
     @classmethod
     def identifiers(cls) -> frozenset[str]:
@@ -147,6 +154,9 @@ class Cpp(MultiPurpose):
 
     @classmethod
     def extract_name(cls, node: Any, content: bytes) -> str:
+        if node.type in cls.classes():
+            from ..paradigm.base import type_specifier_name
+            return type_specifier_name(node, content)
         if node.type == "lambda_expression":
             return "<lambda>"
         if node.type != "function_definition":

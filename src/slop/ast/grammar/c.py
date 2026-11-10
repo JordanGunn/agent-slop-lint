@@ -130,7 +130,8 @@ class C(MultiPurpose):
     @classmethod
     def extract_name(cls, node: Any, content: bytes) -> str:
         if node.type in cls.classes():
-            return _type_name(node, content)
+            from ..paradigm.base import type_specifier_name
+            return type_specifier_name(node, content)
         if node.type != "function_definition":
             return super().extract_name(node, content)
         declarator = node.child_by_field_name("declarator")
@@ -168,12 +169,3 @@ def _decl_ident(decl: Any, content: bytes) -> str | None:
         cur = inner
     return None
 
-
-def _type_name(node: Any, content: bytes) -> str:
-    """A struct/union/enum's tag, else the name of the ``typedef`` that wraps it."""
-    name = node.child_by_field_name("name")
-    if name is None and node.parent is not None and node.parent.type == "type_definition":
-        name = node.parent.child_by_field_name("declarator")
-    if name is None or name.type not in ("type_identifier", "identifier"):
-        return "<anonymous>"
-    return content[name.start_byte:name.end_byte].decode("utf-8", errors="replace")

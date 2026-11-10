@@ -95,6 +95,32 @@ def test_c_defines_a_type_only_where_the_specifier_has_a_body(tmp_path: Path):
     assert {m.name for m in find(corpus, kind=ScopeKind.CALLABLE)} == {"run"}
 
 
+_CPP_SOURCE = (
+    "struct Node;                                   // forward declaration\n"
+    "struct Node { int v; Node *next; struct Node *alt; };   // definition\n"
+    "class Widget { public: int run() { return 1; } };\n"
+    "class Widget;                                  // redeclaration\n"
+    "struct Node *head;                             // file-scope usage\n"
+    "Widget *w;                                     // file-scope usage\n"
+    "enum Color { Red };\n"
+    "enum class Mode { Fast };\n"
+    "typedef struct { int x; } Point;\n"
+    "int use(struct Node *n) { return n->v; }\n"
+)
+
+
+def test_cpp_defines_a_type_only_where_the_specifier_has_a_body(tmp_path: Path):
+    # Before the has-body check, 'Node' came out four times and 'Widget' twice (every
+    # forward declaration and usage was a class), so --collisions reported false collisions.
+    (tmp_path / "m.cpp").write_text(_CPP_SOURCE)
+    corpus = scan_corpus(tmp_path, config=None)
+    classes = find(corpus, kind=ScopeKind.CLASS)
+    assert sorted(m.name for m in classes) == ["Color", "Mode", "Node", "Point", "Widget"]
+    assert [m.line for m in classes if m.name == "Node"] == [2]
+    assert [m.line for m in classes if m.name == "Widget"] == [3]
+    assert not collisions(corpus)
+
+
 def test_c_names_an_anonymous_struct_from_its_typedef_not_as_anonymous(tmp_path: Path):
     (tmp_path / "m.c").write_text("typedef struct { int x; } Point;\n")
     assert _names(tmp_path, ScopeKind.CLASS) == {"Point"}

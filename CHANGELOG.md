@@ -89,12 +89,16 @@ below is recoverable from commit `b7ab8f7` (the tip of `dev` before this change)
   come out as `<anonymous>`). Ruby's empty-bodied classes no longer grow a phantom
   `<anonymous>` child (the `class` keyword token shares its node type with the node);
   unnamed scopes are no longer reported as collisions.
+- **C++ invented phantom classes.** `struct_specifier` is both a definition and a type
+  reference, so every forward declaration, file-scope usage and `struct Node *alt;` inside a
+  body became a class: `Node` came out four times and `--collisions` reported false
+  collisions. A C++ specifier now counts only with a body (as in C), an anonymous
+  `typedef struct {...} Point;` is named `Point`, and `union` and `enum` are discovered.
 - The stale note that the C# grammar wheel does not load (it loads and parses).
 
 ### Known limits
 
-- C++ enums and TypeScript type aliases are not discovered. C++ needs the same has-body
-  check C now has.
+- TypeScript type aliases are not discovered.
 - `orphans` matches by name, so an unreferenced function whose name is used elsewhere is
   not reported. `structure.duplication` lists clone members by qualname only, so two
   packages with identical module and function names repeat the label.
