@@ -52,6 +52,38 @@ def build_lexicon(component: Any) -> Lexicon:
     return Lexicon(units)
 
 
+_UNNAMED = frozenset({"<anonymous>", "<lambda>"})
+
+
+def build_declared_lexicon(component: Any) -> Lexicon:
+    """Build a Lexicon of the names the code *declares*, not every identifier it mentions.
+
+    Modules, packages and realms (from the filesystem), classes, callables and callable
+    parameters, each tagged with its own role. References to builtins and libraries
+    (``self``, ``np``, ``int``) are not chosen vocabulary, so they are absent; so are
+    unnamed scopes, a grammar's special methods (``__init__``) and implicit receivers.
+    Those exclusions are grammar facts, not language branches here.
+
+    This is the vocabulary a canonical vocabulary governs: it is chosen where a name is
+    declared. ``build_lexicon`` keeps the undifferentiated occurrence stream."""
+    units: list[tuple[str, Role, Span]] = []
+    for comp in _iter_all(component):
+        kind = comp.KIND
+        if kind in _FS_ROLE:
+            path = comp.files[0] if comp.files else None
+            units.append((comp.name, _FS_ROLE[kind], Span(str(path) if path is not None else "", 0, 0)))
+        elif kind is ScopeKind.CLASS and comp.name not in _UNNAMED:
+            units.append((comp.name, Role.CLASS, comp.id.spans[0]))
+        elif kind is ScopeKind.CALLABLE:
+            grammar = comp._grammar
+            if comp.name not in _UNNAMED and not grammar.is_special_method(comp.name):
+                units.append((comp.name, Role.CALLABLE, comp.id.spans[0]))
+            receivers = grammar.implicit_receiver_names()
+            units.extend((p, Role.PARAMETER, comp.id.spans[0])
+                         for p in comp.parameters() if p not in receivers)
+    return Lexicon(units)
+
+
 def _node_holding_nodes(component: Any):
     """Yield the ``ast.Node`` of each node-holding component in the extent.
     Node-holding components (Module/Class/Callable) own a subtree; aggregates

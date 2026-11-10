@@ -48,6 +48,9 @@ slop/                       <- repo root: pyproject.toml, uv.lock, README, LICEN
                               (jaccard/containment/cosine/js), tokenize.py, roles.py, stopwords.py
     ontology/               canonical-vocabulary layer: interface.py (Vocabulary ABC, Term, normalize),
                               ir.py (OntologyIR: Open Ontology JSON IR reader), compare.py (matched/unknown/unused)
+    lexical/                lexical analysis: coverage.py (coverage(Lexicon, Vocabulary): covered /
+                              undefined / unused / unmeasurable, no thresholds); scope/lexicon.py
+                              builds the declared-names Lexicon it is fed
     metrics/                slop's measurements over a scope/region:
                               structural/ (view.py + complexity/halstead/ck/martin/relational/
                               orphans/hotspots/imports compute), locus.py (narrowest-common-ancestor;

@@ -84,6 +84,16 @@ class Lexicon:
         """Significant token -> occurrence count."""
         return dict(self._counter)
 
+    def spread(self) -> dict[str, int]:
+        """Significant token -> number of distinct files it occurs in (document
+        frequency). Units with no file (a fileless component name) count in
+        ``frequencies`` but in no file."""
+        files: dict[str, set[str]] = {}
+        for token, _role, span in self._tokens:
+            if span.path:
+                files.setdefault(token, set()).add(span.path)
+        return {token: len(paths) for token, paths in files.items()}
+
     def distribution(self, *, top: int = 15) -> TokenDistribution:
         """This token-space as a measured Zipfian distribution (claim-free; the
         object the ``vocabulary`` observation surfaces). See

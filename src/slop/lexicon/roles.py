@@ -13,13 +13,12 @@ clustering wants ``PARAMETER``, scope-overlap wants ``BODY_REF``.
 
 Emission status (kept honest with the consumer-driven build):
 
-- Emitted today: ``REALM``/``PACKAGE``/``MODULE`` (filesystem-derived names) and
-  ``BODY_REF`` (every identifier the AST walk yields — the undifferentiated
-  occurrence bucket).
-- Reserved: ``CLASS``/``CALLABLE``/``PARAMETER``. The vocabulary they describe is
-  fixed here so the interface is stable, but the bridge does not yet split them out
-  of ``BODY_REF`` — that finer partition is wired when the first rule that
-  distinguishes them lands and the bridge gains name/parameter span information.
+- ``build_lexicon`` (the occurrence stream) emits ``REALM``/``PACKAGE``/``MODULE``
+  (filesystem-derived names) and ``BODY_REF`` (every identifier the AST walk yields — the
+  undifferentiated occurrence bucket).
+- ``build_declared_lexicon`` (the declared names) emits ``REALM``/``PACKAGE``/``MODULE``
+  plus ``CLASS``/``CALLABLE``/``PARAMETER``, split out by what each name declares; it has
+  no ``BODY_REF``, because a reference to a builtin or library is not chosen vocabulary.
 """
 from __future__ import annotations
 

@@ -25,12 +25,13 @@ ALLOWED: dict[str, set[str]] = {
     "ast": {"span"},
     "metrics": {"ast", "identity", "span"},          # never scope
     "ontology": {"lexicon", "scope", "span"},
+    "lexical": {"lexicon", "ontology", "span"},      # never scope, rules or cli
 }
 
 #: package -> internal packages it must never import (everything else is unconstrained).
 FORBIDDEN: dict[str, set[str]] = {
-    "scope": {"rules", "rule", "dispatch", "cli", "ontology"},
-    "rules": {"cli", "ontology"},
+    "scope": {"rules", "rule", "dispatch", "cli", "ontology", "lexical"},
+    "rules": {"cli", "ontology", "lexical"},
 }
 
 

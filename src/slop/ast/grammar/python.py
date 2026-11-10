@@ -18,6 +18,10 @@ class Python(MultiPurpose):
         return name.startswith("__") and name.endswith("__")
 
     @classmethod
+    def implicit_receiver_names(cls) -> frozenset[str]:
+        return frozenset({"self", "cls"})
+
+    @classmethod
     def callable(cls) -> frozenset[str]:
         return frozenset({"function_definition", "async_function_definition", "lambda"})
 

@@ -254,6 +254,13 @@ class Grammar(ABC):
         del name
         return False
 
+    @classmethod
+    def implicit_receiver_names(cls) -> frozenset[str]:
+        """Parameter names that are the implicit receiver rather than a chosen name
+        (Python's ``self`` / ``cls``, which its grammar lists among a method's parameters).
+        Default empty: most grammars do not list the receiver as a parameter at all."""
+        return frozenset()
+
     # ---- class / package vocabulary -----------------------------------
 
     @classmethod

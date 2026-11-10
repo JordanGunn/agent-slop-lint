@@ -24,8 +24,10 @@ from .scope import scan_corpus
 from .scope.identity import ScopeKind
 from .rules import RULE_REGISTRY
 from .ontology import OntologyIR, compare
+from .lexical import coverage as lexical_coverage
 from .scope import find as discovery
 from .scope.find import relative_path as _rel_path, walk as _walk
+from .scope.lexicon import build_declared_lexicon
 
 
 def _version() -> str:
@@ -252,12 +254,13 @@ def ast_view(path: str | Path, output: str = "human", *,
 
 def lexicon_view(root: str | Path, output: str = "human", *,
                  scope: str | None = None, top: int = 15,
-                 scope_kind: str | None = None) -> int:
+                 scope_kind: str | None = None, ontology: str | Path | None = None) -> int:
     """Print a scope's vocabulary distribution — the lexical skeleton.
 
     Precise (any scope via ``--scope``, not just the corpus), abstract (the Zipf
     distribution + head, not a token dump), current (regenerated from the fresh carve).
-    The same measured object the ``vocabulary`` observation surfaces."""
+    The same measured object the ``vocabulary`` observation surfaces. With ``--ontology``,
+    also compares the observed tokens with a canonical vocabulary (see ``slop.lexical``)."""
     corpus = _scan_root(root)
     if corpus is None:
         return 2
@@ -266,11 +269,17 @@ def lexicon_view(root: str | Path, output: str = "human", *,
         target = _select_scope(corpus, scope, _parse_kind(scope_kind))
         if target is None:
             return 2
-    dist = target.lexicon().distribution(top=top)
+    vocabulary = OntologyIR.load(ontology) if ontology is not None else None
+    lexicon = target.lexicon()
+    dist = lexicon.distribution(top=top)
+    cov = (lexical_coverage(build_declared_lexicon(target), vocabulary)
+           if vocabulary is not None else None)
     label = _rel_path(target.id, str(corpus.root)) or target.qualname or corpus.name
     if output == "json":
-        print(json.dumps({"scope": label, "kind": target.id.kind.value,
-                          **dist.as_dict()}, indent=2))
+        payload = {"scope": label, "kind": target.id.kind.value, **dist.as_dict()}
+        if cov is not None:
+            payload["canonical"] = {"basis": "declared names", **cov.as_dict(top=top)}
+        print(json.dumps(payload, indent=2))
     else:
         header = _view_header("lexicon", f"{label} ({target.id.kind.value})",
                               f"{dist.distinct} tokens · {dist.n} occ")
@@ -286,7 +295,21 @@ def lexicon_view(root: str | Path, output: str = "human", *,
             stat = (f"  hapax {dist.hapax_ratio:.2f} · Zipf α{dist.zipf_alpha:.2f} "
                     f"R²{dist.zipf_r2:.2f} · small sample (norms suppressed)")
         top_line = "  top: " + " ".join(f"{t}({c})" for t, c in dist.top) if dist.top else "  top: —"
-        print("\n".join([header, stat, top_line]))
+        lines = [header, stat, top_line]
+        if cov is not None:
+            pct = 100 * cov.occurrences_covered / cov.occurrences_total
+            lines.append(f"  vocabulary {cov.vocabulary}, over declared names: "
+                         f"{cov.occurrences_covered}/{cov.occurrences_total} occurrences "
+                         f"({pct:.0f}%) · "
+                         f"{len(cov.covered)}/{len(cov.covered) + len(cov.undefined)} tokens defined")
+            lines.append(f"  undefined (most used first, top {min(top, len(cov.undefined))} of "
+                         f"{len(cov.undefined)}): "
+                         + (" ".join(f"{o.token}({o.count}×,{o.files}f)" for o in cov.undefined[:top])
+                            or "—"))
+            lines.append("  unused canonical: " + (" ".join(cov.unused) or "—"))
+            if cov.unmeasurable:
+                lines.append("  unmeasurable (stripped as noise): " + " ".join(cov.unmeasurable))
+        print("\n".join(lines))
     return 0
 
 
@@ -599,6 +622,8 @@ def main(argv: list[str] | None = None) -> int:
     p_lex.add_argument("--scope-kind", default=None,
                        help="pick one kind when --scope names several (a package and its __init__ module)")
     p_lex.add_argument("--top", type=int, default=15, help="number of top tokens to show")
+    p_lex.add_argument("--ontology", default=None,
+                       help="Open Ontology IR JSON: also report coverage of the observed tokens")
     p_lex.add_argument("--output", choices=["human", "json"], default="human")
 
     p_deps = sub.add_parser("deps", help="print the module dependency graph")
@@ -648,7 +673,7 @@ def main(argv: list[str] | None = None) -> int:
             return ast_view(args.path, args.output, raw=args.raw, max_depth=args.max_depth)
         if args.command == "lexicon":
             return lexicon_view(args.root, args.output, scope=args.scope, top=args.top,
-                                scope_kind=args.scope_kind)
+                                scope_kind=args.scope_kind, ontology=args.ontology)
         if args.command == "deps":
             return deps_view(args.root, args.output, scope=args.scope, cycles_only=args.cycles)
         if args.command == "find":

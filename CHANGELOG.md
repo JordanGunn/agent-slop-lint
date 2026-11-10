@@ -58,6 +58,16 @@ below is recoverable from commit `b7ab8f7` (the tip of `dev` before this change)
 - **Modules:** `scope/find.py` (discovery) and `ontology/` (`Vocabulary` interface,
   `OntologyIR` reader, `compare`).
 - `tests/test_layers.py` pins the import boundaries between layers.
+- **Lexical analysis: `slop lexicon --ontology IR.json`.** Compares the words the code
+  declares (modules, packages, classes, callables, parameters) with the words an ontology
+  defines: coverage of declared-name occurrences, undefined tokens ordered by use and file
+  spread, unused canonical tokens, and canonical tokens the noise list strips (reported as
+  unmeasurable, not unused). No thresholds. New: `slop/lexical/`, `Lexicon.spread()`, the
+  `implicit_receiver_names()` grammar fact (Python: `self`, `cls`), and
+  `scope.lexicon.build_declared_lexicon`, which emits the `CLASS`/`CALLABLE`/`PARAMETER`
+  roles the lexicon kernel had reserved. Comparing every identifier occurrence was tried
+  first and rejected: it ranked `self`, `np`, `float` and `int` as the top undefined
+  vocabulary.
 - **Caveats on questions the primitives cannot fully answer.** `find`, `tree` and `vocab`
   carry a `caveats` list (JSON) or `note:` lines (human) for files with syntax errors,
   which are still carved but may have lost definitions, and for a grammar that carves no

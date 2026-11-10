@@ -115,7 +115,7 @@ Primitives (read-only facts; exit 0 when the question was answered, 2 when it co
 slop ast <file>                    Print a file's parse tree (named skeleton; --raw, --max-depth)
 slop tree [--scope Q]              Print the ownership tree beneath a scope (--depth, --kind, --scope-kind)
 slop find <name> | --collisions    Where a name is defined; or which names are defined more than once
-slop lexicon [--scope Q]           Print a scope's vocabulary distribution (Zipf/hapax + head)
+slop lexicon [--scope Q] [--ontology IR.json]   Vocabulary distribution (Zipf/hapax + head); with an ontology, coverage of declared names
 slop deps [--scope Q] [--cycles]   Print the module dependency graph (resolved/unresolved edges)
 slop vocab --ontology IR.json      Compare class names with a canonical vocabulary (--term NAME: one entry)
 
@@ -151,6 +151,17 @@ accepted) and compares classes with the ontology's entities as matched, unknown,
 unused. Matching is exact after case and separator folding (`escalate-ticket` equals
 `EscalateTicket`); a near miss such as `TicketManager` is reported as unknown, never
 accepted. Only the declared schema is read, not facts seeded at runtime.
+
+`lexicon --ontology IR.json` compares the *words* the code declares with the words the
+ontology defines (term names and field keys; descriptions are prose and are not tokenised).
+It reports the share of declared-name occurrences the ontology covers, the declared tokens
+it does not define (most used first, with their file spread), the canonical tokens the
+code never uses, and the canonical tokens the noise list strips before measurement
+(`key`, `index`, `by` ...), which can never be observed and so are not called unused.
+"Declared names" are modules, packages, classes, callables and their parameters; builtin
+and library references (`self`, `np`, `int`), special methods and implicit receivers are
+excluded by grammar facts, not by language branches. There are no thresholds: the
+undefined list is ordered, not filtered.
 
 `--output human` (default) or `--output json`. Run `slop --help` for the full list.
 
