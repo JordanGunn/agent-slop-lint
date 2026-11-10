@@ -16,9 +16,9 @@ from ..ast import AST, GRAMMARS_BY_ID
 from ..ast.paradigm import ObjectOriented
 from ..ast.parse import detect_language, parse_file
 from . import components as C
+from .discover import source_files
 from .properties import class_properties
 
-_SKIP_DIRS = {".git", ".venv", "venv", "__pycache__", "node_modules", ".mypy_cache", ".ruff_cache"}
 _LAMBDA_TYPES = {"lambda", "arrow_function", "lambda_expression", "func_literal", "function_expression"}
 _METHOD_ONLY_TYPES = {"method_declaration", "method_definition", "singleton_method"}
 
@@ -29,7 +29,7 @@ def scan_corpus(root: Path, config: Any) -> C.Corpus:
     (``config=None`` excludes nothing)."""
     root = Path(root)
     files_by_lang: dict[str, list[Path]] = {}
-    for path in _iter_source_files(root):
+    for path in source_files(root):
         if config is not None and config.excludes(path):
             continue
         lang = detect_language(path)
@@ -266,23 +266,6 @@ def _callable_kind(node_type: str, in_class: bool) -> CallableKind:
 
 
 # ---- discovery + aggregate-extent helpers --------------------------------
-
-def _iter_source_files(root: Path):
-    if root.is_file():
-        yield root
-        return
-    for path in root.rglob("*"):
-        if not path.is_file():
-            continue
-        # Skip hidden directories (any component starting with '.') and the explicit
-        # denylist — as ripgrep/fd do. Checked on the path *relative to root* and on
-        # directory components only: the root may itself sit under a hidden ancestor
-        # (don't skip the whole scan), and a leading-dot filename is left alone.
-        dir_parts = path.relative_to(root).parts[:-1]
-        if any(part in _SKIP_DIRS or part.startswith(".") for part in dir_parts):
-            continue
-        yield path
-
 
 def _rel_name(directory: Path, root: Path) -> str:
     try:

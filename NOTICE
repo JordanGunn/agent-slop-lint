@@ -52,7 +52,7 @@ Distance from the Main Sequence (rigid-package, useless-package)
   Metrics implemented: Instability (I), Abstractness (A), Distance from
   the Main Sequence (D').
 
-Hotspot Analysis (measure Structure.hotspots; no rule reports it)
+Hotspot Analysis (slop hotspots)
   Tornhill, A. (2015). "Your Code as a Crime Scene." Pragmatic Bookshelf.
 
 Software Science (measure metrics/structural/halstead.py; no rule reports it)

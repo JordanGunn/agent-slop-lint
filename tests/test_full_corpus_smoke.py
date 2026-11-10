@@ -10,7 +10,6 @@ def test_every_non_graph_metric_answers_on_real_corpus():
     # aggregatable complexity at the top
     assert Structure.over(corpus).cyclomatic() >= 0 and Structure.over(corpus).volume() >= 0.0
     # analysis-wide
-    assert isinstance(Structure.over(corpus).orphans(), list)
     assert isinstance(Structure.over(corpus).duplication(), list)
     callables = list(corpus._iter_callables())
     classes = list(corpus._iter_classes())

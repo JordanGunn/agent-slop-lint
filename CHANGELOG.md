@@ -28,6 +28,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `class-cohesion` (LCOM4, 1, off by default): 12 rules.
 - Suppression matches exact rule names only: `slop: ignore[a, b]`.
 - `scripts/` removed.
+- File discovery is one mechanism: inside a git work tree, tracked files plus untracked files
+  `.gitignore` does not ignore; elsewhere every file except `.git`. The hard-coded skip list
+  and the dot-directory rule are gone, so hidden directories are now read; use `exclude`.
+- `Structure.orphans` and the orphan measure are removed (name matching with no reference
+  resolution, no published source).
+- `slop hotspots` replaces the unexposed hotspot measure. The window is revisions
+  (`--since REV`, `--last N`, default 10) plus uncommitted changes, not calendar time; the
+  quadrant classifier is gone; outside a git work tree it exits 2.
 
 ### Added
 

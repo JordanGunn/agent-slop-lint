@@ -38,6 +38,7 @@ Read-only (exit `0` answered, `2` could not answer):
 | `slop deps` | the module dependency graph (`--cycles`) |
 | `slop vocab --ontology IR.json` | class names compared with an [Open Ontology](https://open-ontology.com) JSON IR |
 | `slop shape` | each class's CK profile and cohesion groups |
+| `slop hotspots` | files changed in a revision window (`--since REV`, `--last N`, plus uncommitted changes), ranked by churn × complexity |
 
 Lint:
 

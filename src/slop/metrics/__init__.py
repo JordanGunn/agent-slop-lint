@@ -1,7 +1,7 @@
 """slop.metrics — slop's measurements over the substrate.
 
 - ``metrics.structural`` — structural metrics computed over ``ast`` nodes + the
-  analysis-context (cyclomatic, Halstead, CK, Martin, clones, hotspots, orphans, …).
+  analysis-context (cyclomatic, Halstead, CK, Martin, clones, hotspots, …).
 
 Vocabulary analysis lives in the standalone ``slop.lexicon`` kernel, not here. The
 former ``metrics.lexical`` package held slop-invented signals and was removed; see

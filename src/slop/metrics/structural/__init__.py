@@ -2,7 +2,7 @@
 
 The relocated metric inventory: the result records (``records``) and the compute
 (``complexity``, ``halstead``, ``callable_measures``, ``annotations``, ``class_index``,
-``relational``, ``orphans``, ``hotspots``). Compute takes plain ``ast`` nodes (or a
+``relational``, ``hotspots``). Compute takes plain ``ast`` nodes (or a
 duck-typed region) — never a scope/component object — so this package depends only on
 ``ast`` + ``identity`` + its own ``records``, and ``scope`` is free to depend on it
 without a cycle.

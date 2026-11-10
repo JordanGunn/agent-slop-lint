@@ -145,25 +145,12 @@ class CloneCluster:
 
 
 @dataclass(frozen=True)
-class Orphan:
-    """An unreferenced top-level symbol (advisory). Legacy: orphans."""
-
-    qualname: str
-    kind: str
-    confidence: str
-    #: The orphaned symbol's own ScopeId — the attribution target. ``None`` if unresolvable.
-    locus: ScopeId | None = None
-    #: 1-based definition line of the orphaned symbol (0 if unknown).
-    line: int = 0
-
-
-@dataclass(frozen=True)
 class Hotspot:
-    """Churn x complexity for one file (Tornhill 2015). Legacy: hotspots."""
+    """Lines changed (added plus removed) in a revision window, and cyclomatic complexity,
+    for one file (Tornhill 2015)."""
 
     path: str
     churn: int
     complexity: int
-    quadrant: str
     #: The Module ScopeId for ``path`` — the attribution target. ``None`` if unresolvable.
     locus: ScopeId | None = None

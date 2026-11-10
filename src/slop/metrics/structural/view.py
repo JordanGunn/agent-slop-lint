@@ -25,8 +25,7 @@ from typing import Any
 from ...identity import ScopeKind
 from . import callable_measures, class_index, complexity, halstead
 from .cohesion import cohesion as _cohesion
-from .hotspots import _DEFAULT_WINDOW as _HOTSPOT_WINDOW, hotspots as _hotspots
-from .orphans import orphans as _orphans
+from .hotspots import DEFAULT_LAST as _HOTSPOT_LAST, hotspots as _hotspots
 from .records import CKMetrics, Cohesion, PackageMetrics
 from .clones import clone_clusters as _clone_clusters
 
@@ -168,14 +167,11 @@ class Structure:
         return (ce / (ca + ce)) > 0.7 and (na / (na + nc)) > 0.7
 
     # ---- Corpus measures: analysis-wide -----------------------------------
-    def orphans(self):
-        return _orphans(self._r)
-
     def duplication(self):
         return _clone_clusters(list(self._r._iter_callables()))
 
-    def hotspots(self, *, since: str = _HOTSPOT_WINDOW):
-        return _hotspots(self._r, since=since)
+    def hotspots(self, *, since: str | None = None, last: int = _HOTSPOT_LAST):
+        return _hotspots(self._r, since=since, last=last)
 
     def dependency_cycles(self):
         ctx = self._r.context

@@ -11,14 +11,6 @@ class TypeScript(EcmaScriptMembers, MultiPurpose):
     id: ClassVar[str] = "typescript"
 
     @classmethod
-    def is_dynamic_language(cls) -> bool:
-        # TS erases to JS at runtime: string-keyed access, `any`, dynamic import and
-        # reflect-metadata defeat static reference counting exactly as they do in JS,
-        # so a TS orphan is no more certain than a JS one. (The legacy set listed only
-        # python/js/ruby; treating TS as static while JS is dynamic would be incoherent.)
-        return True
-
-    @classmethod
     def callable(cls) -> frozenset[str]:
         return frozenset({"function_declaration", "function_expression", "arrow_function",
                           "method_definition", "generator_function_declaration"})

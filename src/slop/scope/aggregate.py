@@ -3,8 +3,8 @@
 These own components, not declarations. Their lexicon/ast projections are the
 composition of their children's; measurements over them come from
 ``Structure.over(region)`` (the entity stays pure ownership). Package owns Martin's
-package measures; Corpus owns the analysis-wide measures (orphans, duplication,
-hotspots, cycles). Realm is a pure aggregate plus the grammar adapter and the resolver
+package measures; Corpus owns the analysis-wide measures (duplication,
+cycles). Realm is a pure aggregate plus the grammar adapter and the resolver
 root.
 
 Ownership of cross-cutting state, settled here:

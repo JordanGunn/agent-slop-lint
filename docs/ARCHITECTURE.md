@@ -11,7 +11,7 @@ slop is a linter on top of read-only primitives. Source: `src/slop/`.
 | Measures | `metrics/`, `lexicon/`, `graph/` | read-only views over a component |
 | Vocabulary | `ontology/`, `lexical/` | canonical vocabulary (Open Ontology JSON IR) and the comparison with names in code |
 | Lint | `rule.py`, `rules/`, `dispatch.py`, `violation.py`, `config.py` | rules compare a measure with a limit |
-| CLI | `cli.py` | `ast`, `tree`, `find`, `lexicon`, `deps`, `vocab`, `shape` (primitives); `lint`, `check`, `rules` (lint); `init`, `doctor` |
+| CLI | `cli.py` | `ast`, `tree`, `find`, `lexicon`, `deps`, `vocab`, `shape`, `hotspots` (primitives); `lint`, `check`, `rules` (lint); `init`, `doctor` |
 
 Primitive commands return facts and apply no limits. Only `rules/` and rule `limit` options
 encode limits.
@@ -24,9 +24,9 @@ encode limits.
 - `Scope` (`scope/base.py`) is the shared interface: `id`, `name`, `qualname`, `extent`,
   `files`, `owner`, `children()`, `lexicon()`. `AggregateContainer` covers Corpus, Realm and
   Package; `SymbolContainer` covers Module, Class and Callable.
-- `scope.scan_corpus(root, config)` (`scope/carve.py`) skips `.git`, `.venv`, `venv`,
-  `__pycache__`, `node_modules`, `.mypy_cache`, `.ruff_cache` and directories whose name
-  starts with `.`, plus files matched by `exclude`. Owners
+- `scope.scan_corpus(root, config)` (`scope/carve.py`) reads the files `scope/discover.py`
+  lists, minus those matched by `exclude`. Inside a git work tree that list is tracked plus
+  untracked-and-not-ignored files; elsewhere it is every file under the root except `.git`. Owners
   are set while the tree is built.
 - Corpus-wide derived state (class hierarchy, module dependency graph) is built once at carve
   time and held in `AnalysisContext` (`scope/context.py`), reached through `component.context`.

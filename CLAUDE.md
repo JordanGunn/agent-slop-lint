@@ -7,10 +7,11 @@ root (src-layout; package `agent-slop-lint`, import `slop`, CLI `slop.cli:main`)
 
 - `src/slop/ast/`: tree-sitter parse (`parse.py`, `nodes.py`, `tree.py`, `grammar/`, `paradigm/`).
 - `src/slop/scope/`: ownership tree Corpus › Realm › Package › Module › Class › Callable,
-  carved once from the parse (`carve.py`); `find.py` is discovery (`slop find`, `slop tree`).
+  carved once from the parse (`carve.py`); `discover.py` lists the files to read; `find.py`
+  is name discovery (`slop find`, `slop tree`).
 - `src/slop/metrics/`: measures over a scope. `Structure.over(region)` in
   `metrics/structural/view.py` is the view rules and commands read.
-  `Structure.hotspots`/`Structure.orphans` are measures no rule uses.
+  `Structure.hotspots` backs `slop hotspots`; no rule reads it.
 - `src/slop/graph/`: module import graph (`slop deps`).
 - `src/slop/lexicon/`, `src/slop/lexical/`: identifier statistics and coverage against a
   vocabulary (`slop lexicon`).

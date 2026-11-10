@@ -11,10 +11,6 @@ class Python(MultiPurpose):
     id: ClassVar[str] = "python"
 
     @classmethod
-    def is_dynamic_language(cls) -> bool:
-        return True
-
-    @classmethod
     def is_special_method(cls, name: str) -> bool:
         return name.startswith("__") and name.endswith("__")
 

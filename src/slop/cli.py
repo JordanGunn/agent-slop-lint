@@ -26,6 +26,7 @@ from .ontology import OntologyIR, compare
 from .metrics.structural.view import Structure
 from .lexical import coverage as lexical_coverage
 from .scope import find as discovery
+from .metrics.structural.hotspots import DEFAULT_LAST
 from .identity import relative_path as _rel_path
 from .scope.find import walk as _walk
 from .scope.lexicon import build_declared_lexicon
@@ -484,7 +485,7 @@ def shape_view(root: str | Path, output: str = "human", *, scope: str | None = N
                scope_kind: str | None = None) -> int:
     """The shape of every class beneath a scope: its Chidamber-Kemerer profile and its
     method groups (LCOM4), unfiltered: no limits are applied, so it answers for any class
-    (the ``class.*`` rules apply limits to the same numbers). ``lcom4`` is ``null`` where
+    (the ``class-*`` rules apply limits to the same numbers). ``lcom4`` is ``null`` where
     the language's instance member access cannot be read from syntax."""
     corpus = _scan_root(root)
     if corpus is None:
@@ -515,6 +516,31 @@ def shape_view(root: str | Path, output: str = "human", *, scope: str | None = N
             lines.append("    detached: " + ", ".join(row["detached"]))
         lines.extend(f"    note: {c}" for c in row["caveats"])
     lines.extend(f"  note: {n}" for n in notes)
+    print("\n".join(lines))
+    return 0
+
+
+def hotspots_view(root: str | Path, output: str = "human", *, since: str | None = None,
+                  last: int | None = None) -> int:
+    """Files changed in a revision window, ranked by churn x complexity (Tornhill 2015).
+
+    The window is revisions, not time: ``--since REV`` or ``--last N`` commits, plus every
+    uncommitted change. No limit is applied; the list is the answer."""
+    corpus = _scan_root(root)
+    if corpus is None:
+        return 2
+    if last is None:
+        last = DEFAULT_LAST
+    rows = Structure.over(corpus).hotspots(since=since, last=last)
+    window = f"{since}..HEAD + uncommitted" if since is not None else f"last {last} commits + uncommitted"
+    if output == "json":
+        print(json.dumps({"window": window, "files": [
+            {"path": h.path, "churn": h.churn, "complexity": h.complexity,
+             "product": h.churn * h.complexity} for h in rows]}, indent=2))
+        return 0
+    lines = [_view_header("hotspots", window, f"{len(rows)} file(s) changed")]
+    lines.extend(f"  {h.path}  churn {h.churn} x complexity {h.complexity} = {h.churn * h.complexity}"
+                 for h in rows)
     print("\n".join(lines))
     return 0
 
@@ -632,6 +658,15 @@ def main(argv: list[str] | None = None) -> int:
                          help="pick one kind when --scope names several (a package and its __init__ module)")
     p_shape.add_argument("--output", choices=["human", "json"], default="human")
 
+    p_hot = sub.add_parser("hotspots", help="files ranked by recent churn x complexity")
+    p_hot.add_argument("--root", default=".")
+    window = p_hot.add_mutually_exclusive_group()
+    window.add_argument("--since", default=None, metavar="REV",
+                        help="commits in REV..HEAD plus uncommitted changes (HEAD = uncommitted only)")
+    window.add_argument("--last", type=int, default=None, metavar="N",
+                        help=f"the last N commits plus uncommitted changes (default {DEFAULT_LAST})")
+    p_hot.add_argument("--output", choices=["human", "json"], default="human")
+
     args = parser.parse_args(argv)
     try:
         if args.command == "lint":
@@ -661,6 +696,8 @@ def main(argv: list[str] | None = None) -> int:
             return vocab_view(args.root, args.ontology, args.output, term=args.term)
         if args.command == "shape":
             return shape_view(args.root, args.output, scope=args.scope, scope_kind=args.scope_kind)
+        if args.command == "hotspots":
+            return hotspots_view(args.root, args.output, since=args.since, last=args.last)
     except Exception as exc:  # noqa: BLE001 — top-level boundary: any failure is exit 2
         print(f"slop: error: {exc}", file=sys.stderr)
         return 2
