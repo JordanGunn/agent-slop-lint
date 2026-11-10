@@ -345,3 +345,27 @@ def test_shape_human_output_lists_the_groups(tmp_path: Path, capsys):
     code, out, _ = _ask(capsys, "shape", "--root", str(root), "--scope", "pkg/split.py")
     assert code == 0
     assert "lcom4 2" in out and "groups: {f} {g}" in out and "detached: h" in out
+
+
+def test_shape_scoped_to_a_class_returns_it_and_what_it_nests(tmp_path: Path, capsys):
+    # The start scope itself is reported; a same-named class elsewhere is not.
+    (tmp_path / "pkg").mkdir()
+    (tmp_path / "pkg" / "__init__.py").write_text("")
+    (tmp_path / "pkg" / "split.py").write_text(
+        "class Split:\n    def f(self): return self.a\n    class Inner:\n        def g(self): return self.b\n")
+    (tmp_path / "pkg" / "other.py").write_text("class Split:\n    pass\n")
+    code, answer, err = _ask(capsys, "shape", "--root", str(tmp_path), "--scope", "split.Split",
+                             "--output", "json")
+    assert code == 0, err
+    assert answer["kind"] == "class"
+    assert [(r["qualname"], r["path"]) for r in answer["classes"]] == [
+        ("split.Split", "pkg/split.py"), ("split.Split.Inner", "pkg/split.py")]
+
+
+def test_shape_explains_a_null_lcom4_in_the_row(tmp_path: Path, capsys):
+    root = _shape_project(tmp_path)
+    _, answer, _ = _ask(capsys, "shape", "--root", str(root), "--output", "json")
+    thing = next(r for r in answer["classes"] if r["name"] == "Thing")
+    assert any("cohesion not measured" in c and "lcom4 is null" in c for c in thing["caveats"])
+    measured = next(r for r in answer["classes"] if r["name"] == "Whole")
+    assert not any("cohesion not measured" in c for c in measured["caveats"])

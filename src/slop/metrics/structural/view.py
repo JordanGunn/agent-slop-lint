@@ -81,9 +81,13 @@ class Structure:
 
     # ---- Class measures: Chidamber-Kemerer (dit/noc/cbo via the class index) --
     def ck(self) -> CKMetrics:
+        cohesion = self.cohesion()
+        caveats = class_index.caveats(self._r, self._class_index())
+        if cohesion is None:
+            caveats += (f"cohesion not measured: the {self._r._grammar.id} grammar does not say how "
+                        f"instance members are accessed, so lcom4 is null, not 0",)
         return CKMetrics(nom=self.method_count(), dit=self.dit(), noc=self.noc(),
-                         cbo=self.cbo(), cohesion=self.cohesion(),
-                         caveats=class_index.caveats(self._r, self._class_index()))
+                         cbo=self.cbo(), cohesion=cohesion, caveats=caveats)
 
     def method_count(self) -> int:
         return len(self._r.methods())

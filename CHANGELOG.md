@@ -75,7 +75,9 @@ below is recoverable from commit `b7ab8f7` (the tip of `dev` before this change)
   an attention floor, `shape` answers for any class. JSON rows carry the `find` fields
   (`name`, `qualname`, `path`, `line`) plus `nom`, `dit`, `noc`, `cbo`, `lcom4`,
   `method_groups`, `detached` and `caveats`; `lcom4`, `method_groups` and `detached` are
-  `null` where the language's instance member access is unreadable. Like the other
+  `null` where the language's instance member access is unreadable, and the row's
+  `caveats` then say so (this also reaches `class-shape` evidence). `--scope` names a
+  scope and reports it if it is a class, plus every class beneath it. Like the other
   primitives it needs no rule config, so it runs on a repository whose `lint` cannot.
   New `scope.find.locate` pairs scopes with their `Match`.
 - **Primitives:** `slop find <name>` / `--collisions` (where a name is defined; which class
