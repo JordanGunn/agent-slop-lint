@@ -112,19 +112,6 @@ class Grammar(ABC):
                         out.append((_node_text(child, content), None))
         return tuple(out)
 
-    @classmethod
-    def member_access_patterns(cls) -> tuple[tuple[str, str], ...]:
-        """``(node_type, receiver_field)`` pairs for member access — ``recv.attr`` and
-        ``recv[k]`` — where ``receiver_field`` is the ``child_by_field_name`` key
-        holding the accessed object. Used to measure whether a parameter is treated as
-        a receiver (the first-param-cluster ``missing_class`` signal). Empty default: a
-        grammar with no member-access concept reports a receiver density of 0 (an honest
-        "not measured"), never a mismeasurement. Every concrete grammar with member
-        access overrides this — the node types are language-specific (Python
-        ``attribute``, Go ``selector_expression``, Rust ``field_expression``, …), so a
-        single hardcoded set would silently read 0 on every other language."""
-        return ()
-
     # ---- cyclomatic / cognitive vocabulary ----------------------------
 
     @classmethod
@@ -235,42 +222,12 @@ class Grammar(ABC):
 
     # ---- mutation / sentinel / type vocabulary ------------------------
 
-    @classmethod
-    def parameter_mutations(cls, fn_node: Any, content: bytes) -> list[tuple[str, str, int]]:
-        """``(param, method, line)`` for each in-place parameter mutation this language
-        can detect — a fact; the rule decides what is worth flagging. Default empty."""
-        del fn_node, content
-        return []
-
-    @classmethod
-    def string_annotated_parameters(cls, fn_node: Any, content: bytes) -> list[tuple[str, bool]]:
-        """``(param, has_string_annotation)`` pairs. Default empty."""
-        del fn_node, content
-        return []
-
-    @classmethod
-    def type_annotation_queries(cls) -> tuple[tuple[str, str], ...]:
-        """``(query, kind)`` tree-sitter pairs capturing type annotations as ``@annotation``."""
-        return ()
-
-    @classmethod
-    def is_dynamic_type(cls, text: str) -> bool:
-        """True if annotation text is the language's escape-hatch type (Any/interface{}/dynamic)."""
-        del text
-        return False
-
     # ---- call-site vocabulary -----------------------------------------
 
     @classmethod
     def call_node_types(cls) -> frozenset[str]:
         """Node types representing a call expression."""
         return frozenset()
-
-    @classmethod
-    def extract_callee_name(cls, call_node: Any, content: bytes) -> str | None:
-        """Final identifier of a call's callee, or None."""
-        del call_node, content
-        return None
 
     @classmethod
     def language_builtins(cls) -> frozenset[str]:

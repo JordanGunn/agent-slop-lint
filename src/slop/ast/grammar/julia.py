@@ -10,10 +10,6 @@ class Julia(Procedural):
     id: ClassVar[str] = "julia"
 
     @classmethod
-    def member_access_patterns(cls) -> tuple[tuple[str, str], ...]:
-        return (("field_expression", "value"),)
-
-    @classmethod
     def callable(cls) -> frozenset[str]:
         return frozenset({"function_definition", "arrow_function_expression"})
 
@@ -88,15 +84,6 @@ class Julia(Procedural):
             ("(import_statement (scoped_identifier) @module)", "julia_import"),
             ("(import_statement (selected_import . (identifier) @module))", "julia_import"),
         )
-
-    @classmethod
-    def type_annotation_queries(cls) -> tuple[tuple[str, str], ...]:
-        return (("(typed_expression . (_) (_) @annotation)", "annotation"),)
-
-    @classmethod
-    def is_dynamic_type(cls, text: str) -> bool:
-        cleaned = text.strip().lstrip(":").strip()
-        return cleaned == "Any" or cleaned.endswith(".Any")
 
     @classmethod
     def extract_name(cls, node: Any, content: bytes) -> str:

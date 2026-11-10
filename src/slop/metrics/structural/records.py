@@ -44,27 +44,6 @@ class MagicLiteral:
     line: int
 
 
-@dataclass(frozen=True)
-class ParameterMutation:
-    """An in-place mutation of a collection/reference parameter. Legacy: types.hidden_mutators."""
-
-    parameter: str
-    kind: str       # deref-assign / field-assign / subscript-assign / collection-method
-    line: int
-
-
-@dataclass(frozen=True)
-class SentinelParameter:
-    """A stringly-typed parameter with a sentinel name. Legacy: types.sentinels.
-
-    ``observed_literals`` are the call-site strings that flowed into it, the
-    evidence it should be a Literal/Enum.
-    """
-
-    name: str
-    observed_literals: tuple[str, ...]
-
-
 # --- Class altitude (Chidamber-Kemerer 1994) --------------------------------
 
 @dataclass(frozen=True)
@@ -134,15 +113,6 @@ class PackageMetrics:
 # --- Relational / analysis-wide findings ------------------------------------
 
 @dataclass(frozen=True)
-class RedundancyPair:
-    """Two sibling callables sharing non-trivial callees. Legacy: redundancy."""
-
-    left: str
-    right: str
-    shared_callees: tuple[str, ...]
-
-
-@dataclass(frozen=True)
 class CloneCluster:
     """Type-2 clone cluster (identical AST leaf-type fingerprint). Legacy: duplication."""
 
@@ -151,13 +121,6 @@ class CloneCluster:
     #: Narrowest scope containing all clone members (module if co-located, else
     #: package/realm) — the attribution target. ``None`` if unresolvable.
     locus: ScopeId | None = None
-
-
-@dataclass(frozen=True)
-class CallIsland:
-    """One connected component of a module's intra-file call graph. Legacy: lexical.confusion."""
-
-    members: tuple[str, ...]
 
 
 @dataclass(frozen=True)

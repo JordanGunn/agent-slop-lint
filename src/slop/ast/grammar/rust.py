@@ -18,10 +18,6 @@ class Rust(MultiPurpose):
     id: ClassVar[str] = "rust"
 
     @classmethod
-    def member_access_patterns(cls) -> tuple[tuple[str, str], ...]:
-        return (("field_expression", "value"),)
-
-    @classmethod
     def callable(cls) -> frozenset[str]:
         return frozenset({"function_item"})
 
@@ -117,17 +113,6 @@ class Rust(MultiPurpose):
             ("(use_declaration argument: (scoped_use_list path: (scoped_identifier) @module))", "use"),
             ("(use_declaration argument: (scoped_use_list path: (identifier) @module))", "use"),
         )
-
-    @classmethod
-    def type_annotation_queries(cls) -> tuple[tuple[str, str], ...]:
-        return (
-            ("(parameter type: (_) @annotation)", "param"),
-            ("(function_item return_type: (_) @annotation)", "return"),
-        )
-
-    @classmethod
-    def is_dynamic_type(cls, text: str) -> bool:
-        return "dyn Any" in text or "dyn std::any::Any" in text
 
     @classmethod
     def is_abstract_scope(cls, node: Any, content: bytes) -> bool | None:

@@ -18,10 +18,6 @@ class TypeScript(MultiPurpose):
         return True
 
     @classmethod
-    def member_access_patterns(cls) -> tuple[tuple[str, str], ...]:
-        return (("member_expression", "object"), ("subscript_expression", "object"))
-
-    @classmethod
     def callable(cls) -> frozenset[str]:
         return frozenset({"function_declaration", "function_expression", "arrow_function",
                           "method_definition", "generator_function_declaration"})
@@ -124,16 +120,6 @@ class TypeScript(MultiPurpose):
         )
 
     @classmethod
-    def type_annotation_queries(cls) -> tuple[tuple[str, str], ...]:
-        return (("(type_annotation (_) @annotation)", "annotation"),)
-
-    @classmethod
-    def is_dynamic_type(cls, text: str) -> bool:
-        cleaned = text.strip().lstrip(":").strip()
-        from .javascript import _type_tokens
-        return cleaned == "any" or "any" in _type_tokens(cleaned)
-
-    @classmethod
     def is_abstract_scope(cls, node: Any, content: bytes) -> bool | None:
         if node.type == "interface_declaration":
             return True
@@ -159,12 +145,3 @@ class TypeScript(MultiPurpose):
                             if c.type in ("type_identifier", "identifier"):
                                 out.append(content[c.start_byte:c.end_byte].decode("utf-8", errors="replace"))
         return out
-
-    @classmethod
-    def parameter_mutations(cls, fn_node: Any, content: bytes) -> list[tuple[str, str, int]]:
-        from .javascript import _js_walk_mutations, _ts_collection_param_names
-        params = _ts_collection_param_names(fn_node, content)
-        if not params:
-            return []
-        body = fn_node.child_by_field_name("body") or fn_node
-        return _js_walk_mutations(body, content, params)

@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import shutil
 import sys
 from importlib.metadata import PackageNotFoundError, version as _pkg_version

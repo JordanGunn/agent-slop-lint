@@ -18,13 +18,11 @@ def test_every_non_graph_metric_answers_on_real_corpus():
     assert callables and classes
     for c in callables[:50]:
         Structure.over(c).cyclomatic(); Structure.over(c).cognitive(); Structure.over(c).combinatorial(); Structure.over(c).volume(); Structure.over(c).halstead_density()
-        Structure.over(c).magic_literals(); Structure.over(c).mutated_parameters(); Structure.over(c).sentinel_parameters()
+        Structure.over(c).magic_literals()
     for k in classes[:50]:
         Structure.over(k).dit(); Structure.over(k).noc(); Structure.over(k).cbo(); Structure.over(k).method_count(); Structure.over(k).ck()
     for r in corpus.realms():
         for pkg in r.packages():
-            Structure.over(pkg).is_runt()
             for mod in pkg.modules():
-                Structure.over(mod).definition_count(); Structure.over(mod).escape_hatch_density()
-                Structure.over(mod).redundant_siblings(); Structure.over(mod).call_islands(); Structure.over(mod).clone_clusters()
+                Structure.over(mod).definition_count(); Structure.over(mod).clone_clusters()
                 mod.lexicon().hapax_ratio()

@@ -10,10 +10,6 @@ class Ruby(MultiPurpose):
     id: ClassVar[str] = "ruby"
 
     @classmethod
-    def member_access_patterns(cls) -> tuple[tuple[str, str], ...]:
-        return (("call", "receiver"), ("element_reference", "object"))
-
-    @classmethod
     def is_dynamic_language(cls) -> bool:
         return True
 
@@ -141,13 +137,6 @@ class Ruby(MultiPurpose):
         return frozenset({"call"})
 
     @classmethod
-    def extract_callee_name(cls, call_node: Any, content: bytes) -> str | None:
-        method = call_node.child_by_field_name("method")
-        if method is not None and method.type in ("identifier", "constant"):
-            return content[method.start_byte:method.end_byte].decode("utf-8", errors="replace")
-        return None
-
-    @classmethod
     def language_builtins(cls) -> frozenset[str]:
         return frozenset({
             "puts", "print", "pp", "raise", "require", "require_relative", "load",
@@ -168,23 +157,6 @@ class Ruby(MultiPurpose):
         if node.type == "class":
             return False
         return None
-
-    @classmethod
-    def string_annotated_parameters(cls, fn_node: Any, content: bytes) -> list[tuple[str, bool]]:
-        params = fn_node.child_by_field_name("parameters")
-        if params is None:
-            return []
-        out: list[tuple[str, bool]] = []
-        for child in params.children:
-            if child.type == "identifier":
-                out.append((content[child.start_byte:child.end_byte].decode("utf-8", errors="replace"), False))
-            elif child.type in ("optional_parameter", "keyword_parameter"):
-                name_n = child.child_by_field_name("name") or next(
-                    (c for c in child.children if c.type == "identifier"), None,
-                )
-                if name_n is not None:
-                    out.append((content[name_n.start_byte:name_n.end_byte].decode("utf-8", errors="replace"), False))
-        return out
 
     @classmethod
     def extract_superclasses(cls, node: Any, content: bytes) -> list[str]:

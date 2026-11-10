@@ -10,10 +10,6 @@ class Python(MultiPurpose):
     id: ClassVar[str] = "python"
 
     @classmethod
-    def member_access_patterns(cls) -> tuple[tuple[str, str], ...]:
-        return (("attribute", "object"), ("subscript", "value"))
-
-    @classmethod
     def is_dynamic_language(cls) -> bool:
         return True
 
@@ -119,19 +115,6 @@ class Python(MultiPurpose):
         )
 
     @classmethod
-    def type_annotation_queries(cls) -> tuple[tuple[str, str], ...]:
-        return (
-            ("(typed_parameter type: (_) @annotation)", "param"),
-            ("(typed_default_parameter type: (_) @annotation)", "param"),
-            ("(function_definition return_type: (_) @annotation)", "return"),
-            ("(assignment type: (_) @annotation)", "variable"),
-        )
-
-    @classmethod
-    def is_dynamic_type(cls, text: str) -> bool:
-        return text.strip() == "Any" or "Any" in _python_type_tokens(text)
-
-    @classmethod
     def extract_superclasses(cls, node: Any, content: bytes) -> list[str]:
         sc_node = node.child_by_field_name("superclasses")
         if sc_node is None:
@@ -159,19 +142,6 @@ class Python(MultiPurpose):
         return frozenset({"call"})
 
     @classmethod
-    def extract_callee_name(cls, call_node: Any, content: bytes) -> str | None:
-        fn_child = call_node.child_by_field_name("function")
-        if fn_child is None:
-            return None
-        if fn_child.type == "identifier":
-            return content[fn_child.start_byte:fn_child.end_byte].decode("utf-8", errors="replace")
-        if fn_child.type == "attribute":
-            attr = fn_child.child_by_field_name("attribute")
-            if attr is not None:
-                return content[attr.start_byte:attr.end_byte].decode("utf-8", errors="replace")
-        return None
-
-    @classmethod
     def language_builtins(cls) -> frozenset[str]:
         return frozenset({
             "print", "len", "range", "sorted", "reversed", "enumerate", "zip",
@@ -187,67 +157,6 @@ class Python(MultiPurpose):
         })
 
     @classmethod
-    def parameter_mutations(cls, fn_node: Any, content: bytes) -> list[tuple[str, str, int]]:
-        params_node = fn_node.child_by_field_name("parameters")
-        if params_node is None:
-            return []
-        # Candidates: parameters annotated as a mutable collection type.
-        candidates: set[str] = set()
-        for child in params_node.children:
-            if child.type not in ("typed_parameter", "typed_default_parameter"):
-                continue
-            name_n = child.child_by_field_name("name") or next(
-                (c for c in child.children if c.type == "identifier"), None,
-            )
-            if name_n is None:
-                continue
-            type_n = child.child_by_field_name("type")
-            if type_n is not None and (
-                _python_type_tokens(_text(type_n, content)) & _PYTHON_COLLECTION_TYPES
-            ):
-                candidates.add(_text(name_n, content))
-        if not candidates:
-            return []
-        body = fn_node.child_by_field_name("body") or fn_node
-        out: list[tuple[str, str, int]] = []
-        stack = [body]
-        while stack:
-            n = stack.pop()
-            if n.type == "call":
-                fn_child = n.child_by_field_name("function")
-                if fn_child is not None and fn_child.type == "attribute":
-                    obj_n = fn_child.child_by_field_name("object")
-                    attr_n = fn_child.child_by_field_name("attribute")
-                    if obj_n is not None and attr_n is not None and obj_n.type == "identifier":
-                        obj_name = _text(obj_n, content)
-                        method = _text(attr_n, content)
-                        if obj_name in candidates and method in _PYTHON_MUTATIONS:
-                            out.append((obj_name, method, n.start_point[0] + 1))
-            stack.extend(n.children)
-        return out
-
-    @classmethod
-    def string_annotated_parameters(cls, fn_node: Any, content: bytes) -> list[tuple[str, bool]]:
-        params_node = fn_node.child_by_field_name("parameters")
-        if params_node is None:
-            return []
-        out: list[tuple[str, bool]] = []
-        for child in params_node.children:
-            ptype = child.type
-            if ptype == "identifier":
-                out.append((_text(child, content), False))
-            elif ptype in ("typed_parameter", "typed_default_parameter"):
-                name_n = child.child_by_field_name("name") or next(
-                    (c for c in child.children if c.type == "identifier"), None,
-                )
-                if name_n is None:
-                    continue
-                type_n = child.child_by_field_name("type")
-                has_str = type_n is not None and "str" in _python_type_tokens(_text(type_n, content))
-                out.append((_text(name_n, content), has_str))
-        return out
-
-    @classmethod
     def resolve_packages(cls, root, files):
         """A Python package is a directory containing ``__init__.py``."""
         from pathlib import Path as _Path
@@ -261,35 +170,3 @@ class Python(MultiPurpose):
     @classmethod
     def package_init_name(cls) -> str | None:
         return "__init__.py"
-
-
-_PYTHON_COLLECTION_TYPES: frozenset[str] = frozenset({
-    "list", "List", "dict", "Dict", "set", "Set",
-    "MutableSequence", "MutableMapping", "MutableSet", "Sequence", "Mapping",
-    "deque", "Deque", "defaultdict", "Counter",
-})
-
-_PYTHON_MUTATIONS: frozenset[str] = frozenset({
-    "append", "extend", "insert", "remove", "pop", "clear", "sort", "reverse",
-    "update", "setdefault", "popitem", "add", "discard",
-    "intersection_update", "difference_update", "symmetric_difference_update",
-})
-
-
-def _text(node: Any, content: bytes) -> str:
-    return content[node.start_byte:node.end_byte].decode("utf-8", errors="replace")
-
-
-def _python_type_tokens(text: str) -> set[str]:
-    """Split a type annotation into identifier-like tokens."""
-    out: set[str] = set()
-    buf: list[str] = []
-    for ch in text:
-        if ch.isalnum() or ch == "_":
-            buf.append(ch)
-        elif buf:
-            out.add("".join(buf))
-            buf = []
-    if buf:
-        out.add("".join(buf))
-    return out

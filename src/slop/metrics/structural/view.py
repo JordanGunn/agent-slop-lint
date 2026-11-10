@@ -14,7 +14,7 @@ measure mixins required. Methods that need cross-scope data read it from
 Like the rest of ``metrics/structural``, it reads the region's duck-typed surface
 (``_ast_node``/``_grammar``/``_node``/``_content``/``_iter_callables``/``_iter_classes``
 + the public scope accessors ``children``/``methods``/``modules``/``id``/``context``) —
-the same surface ``relational`` uses — and imports no concrete scope class, so ``scope``
+the same surface ``clones`` uses — and imports no concrete scope class, so ``scope``
 depends on this layer without a cycle and this layer stays a pure consumer of
 ``(region, context)``.
 """
@@ -24,19 +24,10 @@ from typing import Any
 
 from ...identity import ScopeKind
 from . import callable_measures, class_index, complexity, halstead
-from .annotations import (
-    escape_hatch_counts as _escape_hatch_counts,
-    escape_hatch_density as _escape_hatch_density,
-)
 from .hotspots import _DEFAULT_WINDOW as _HOTSPOT_WINDOW, hotspots as _hotspots
 from .orphans import orphans as _orphans
 from .records import CKMetrics, PackageMetrics
-from .runts import is_runt as _is_runt
-from .relational import (
-    call_islands as _call_islands,
-    clone_clusters as _clone_clusters,
-    redundant_siblings as _redundant_siblings,
-)
+from .clones import clone_clusters as _clone_clusters
 
 
 def _todo(what: str, why: str) -> NotImplementedError:
@@ -87,14 +78,6 @@ class Structure:
         r = self._r
         return callable_measures.magic_literals(r._ast_node(), r._grammar)
 
-    def mutated_parameters(self):
-        r = self._r
-        return callable_measures.mutated_parameters(r._node, r._content, r._grammar)
-
-    def sentinel_parameters(self):
-        r = self._r
-        return callable_measures.sentinel_parameters(r._node, r._content, r._grammar)
-
     # ---- Class measures: Chidamber-Kemerer (dit/noc/cbo via the class index) --
     def ck(self) -> CKMetrics:
         return CKMetrics(nom=self.method_count(), dit=self.dit(), noc=self.noc(),
@@ -125,25 +108,6 @@ class Structure:
     def definition_count(self) -> int:
         return sum(1 for c in self._r.children()
                    if c.KIND in (ScopeKind.CALLABLE, ScopeKind.CLASS))
-
-    def escape_hatch_density(self) -> float:
-        r = self._r
-        return _escape_hatch_density(r._ast_node(), r._grammar)
-
-    def escape_hatch_counts(self) -> tuple[int, int]:
-        """``(escape-hatch annotations, total annotations)`` — the raw counts the
-        escape-hatches rule gates on (density plus the min-annotations floor)."""
-        r = self._r
-        return _escape_hatch_counts(r._ast_node(), r._grammar)
-
-    def redundant_siblings(self, *, min_shared: int = 3, min_score: float = 0.5,
-                           exclude: frozenset[str] = frozenset()):
-        return _redundant_siblings(self._r, min_shared=min_shared, min_score=min_score,
-                                   exclude=exclude)
-
-    def call_islands(self):
-        """Disjoint components of the module's intra-file call graph."""
-        return _call_islands(self._r)
 
     def clone_clusters(self, *, min_leaf_nodes: int = 10):
         return _clone_clusters(list(self._r._iter_callables()), min_leaf_nodes=min_leaf_nodes)
@@ -193,9 +157,6 @@ class Structure:
         if not (ca + ce) or not (na + nc):
             return False
         return (ce / (ca + ce)) > 0.7 and (na / (na + nc)) > 0.7
-
-    def is_runt(self) -> bool:
-        return _is_runt(self._r)
 
     # ---- Corpus measures: analysis-wide -----------------------------------
     def orphans(self):

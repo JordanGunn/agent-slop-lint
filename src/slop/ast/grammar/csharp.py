@@ -10,15 +10,6 @@ class CSharp(ObjectOriented):
     id: ClassVar[str] = "c_sharp"
 
     @classmethod
-    def member_access_patterns(cls) -> tuple[tuple[str, str], ...]:
-        # Unverified: the tree-sitter-c-sharp wheel does not load in this environment,
-        # so this is from the grammar's node-type names, not a live parse. Revisit when
-        # C# parses. Field names per tree-sitter-c-sharp: member/element access expose
-        # the receiver on the `expression` field.
-        return (("member_access_expression", "expression"),
-                ("element_access_expression", "expression"))
-
-    @classmethod
     def callable(cls) -> frozenset[str]:
         return frozenset({"method_declaration", "constructor_declaration", "local_function_statement"})
 
@@ -110,21 +101,6 @@ class CSharp(ObjectOriented):
             ("(using_directive (identifier) @module)", "csharp_using"),
             ("(using_directive (qualified_name) @module)", "csharp_using"),
         )
-
-    @classmethod
-    def type_annotation_queries(cls) -> tuple[tuple[str, str], ...]:
-        return (
-            ("(parameter type: (_) @annotation)", "param"),
-            ("(method_declaration returns: (_) @annotation)", "return"),
-        )
-
-    @classmethod
-    def is_dynamic_type(cls, text: str) -> bool:
-        cleaned = text.strip()
-        if cleaned in ("object", "dynamic"):
-            return True
-        toks = _word_tokens(cleaned)
-        return "object" in toks or "dynamic" in toks
 
     @classmethod
     def is_abstract_scope(cls, node: Any, content: bytes) -> bool | None:

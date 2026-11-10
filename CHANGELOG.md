@@ -22,12 +22,34 @@ below is recoverable from commit `b7ab8f7` (the tip of `dev` before this change)
 - **`metrics/lexical/`** (first-parameter clusters, profile classifier, affix patterns,
   class-ownership packets and the `Lexical` view): its only callers were the rules above.
   The prior-art vocabulary kernel `slop.lexicon` is unchanged.
+- **Measures only those rules used:** `Structure.call_islands`, `redundant_siblings`,
+  `is_runt`, `sentinel_parameters`, `mutated_parameters`, `escape_hatch_density` and
+  `escape_hatch_counts`, with `metrics/structural/{annotations,runts}.py`, the redundancy
+  and call-island code in `relational.py`, `AnalysisContext.callable_names`, and four
+  record types. `relational.py` is now `clones.py` (clone detection only).
+- **Six grammar facts nothing called any more** (about 770 lines across the 11 grammars and
+  the paradigm base, with their helpers): `parameter_mutations`,
+  `string_annotated_parameters`, `extract_callee_name`, `type_annotation_queries`,
+  `member_access_patterns`, `is_dynamic_type`. `extract_parameters` stays.
+- Kept without a rule, for the later structural-analysis layer: `Structure.lcom` (still a
+  stub returning `None`), `method_count`, `halstead_density`, `magic_literals`.
 - 12 rules remain, each tracing to a citation or a standard concept: `complexity.*`
   (McCabe, Campbell, Nejmeh), `structure.dependency-cycles` (Lakos, Martin, Tarjan),
   `structure.rigidity` / `structure.uselessness` (Martin), `class-shape` (Chidamber-Kemerer),
   `hotspots` (Tornhill), `vocabulary` (Zipf), `structure.duplication` (Type-2 clones),
   `structure.god-module`, `orphans`.
 - No rule now reaches across the lexical and structural boundary.
+
+### Added
+
+- **Primitives:** `slop find <name>` / `--collisions` (where a name is defined; which class
+  names are defined more than once), `slop tree` (ownership tree beneath a scope) and
+  `slop vocab --ontology IR.json` (class names against a canonical vocabulary from an Open
+  Ontology JSON IR: matched, unknown, unused). `tree` and `lexicon` take `--scope-kind`
+  because a package shares its qualname with its `__init__` module.
+- **Modules:** `scope/find.py` (discovery) and `ontology/` (`Vocabulary` interface,
+  `OntologyIR` reader, `compare`).
+- `tests/test_layers.py` pins the import boundaries between layers.
 
 ## [3.0.0a0] - 2026-06-04
 

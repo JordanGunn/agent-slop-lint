@@ -10,10 +10,6 @@ class Java(ObjectOriented):
     id: ClassVar[str] = "java"
 
     @classmethod
-    def member_access_patterns(cls) -> tuple[tuple[str, str], ...]:
-        return (("field_access", "object"), ("array_access", "array"))
-
-    @classmethod
     def callable(cls) -> frozenset[str]:
         return frozenset({"method_declaration", "constructor_declaration"})
 
@@ -98,20 +94,6 @@ class Java(ObjectOriented):
             ("(import_declaration (scoped_identifier) @module)", "java_import"),
             ("(import_declaration (identifier) @module)", "java_import"),
         )
-
-    @classmethod
-    def type_annotation_queries(cls) -> tuple[tuple[str, str], ...]:
-        return (
-            ("(formal_parameter type: (_) @annotation)", "param"),
-            ("(method_declaration type: (_) @annotation)", "return"),
-        )
-
-    @classmethod
-    def is_dynamic_type(cls, text: str) -> bool:
-        cleaned = text.strip()
-        if cleaned == "Object":
-            return True
-        return "Object" in _word_tokens(cleaned)
 
     @classmethod
     def is_abstract_scope(cls, node: Any, content: bytes) -> bool | None:
