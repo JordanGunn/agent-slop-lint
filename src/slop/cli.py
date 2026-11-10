@@ -73,12 +73,17 @@ def _select_scope(corpus, ident: str, kind: ScopeKind | None = None):
 
 def _scan_root(root: str | Path):
     """Carve ``root`` into a corpus for a view command, or print an error and return
-    None (the shared lint-boundary guard: a missing or source-free root is exit 2)."""
+    None (the shared lint-boundary guard: a missing or source-free root is exit 2).
+
+    View commands answer questions and never judge, so they take the default rule
+    config rather than the discovered one: a ``.slop.toml`` that names a rule slop no
+    longer has (or a bad threshold) is a ``lint`` error, not a reason to refuse to
+    print a name's definitions."""
     root = Path(root)
     if not root.exists():
         print(f"slop: error: root path does not exist: {root}", file=sys.stderr)
         return None
-    corpus = scan_corpus(root, AnalysisConfig.load(root, RULE_REGISTRY))
+    corpus = scan_corpus(root, AnalysisConfig.defaults(RULE_REGISTRY))
     if not _has_source(corpus):
         print(f"slop: error: no source files found under {root}", file=sys.stderr)
         return None

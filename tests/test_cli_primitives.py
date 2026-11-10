@@ -269,3 +269,16 @@ def test_a_file_with_syntax_errors_is_named_instead_of_silently_losing_its_defin
 def test_a_clean_project_has_no_caveats(sample_project: Path, capsys):
     _, answer, _ = _ask(capsys, "find", "Store", "--root", str(sample_project), "--output", "json")
     assert answer["caveats"] == []
+
+
+# ---- A config naming a rule slop no longer has must not block the primitives -------
+
+def test_primitives_ignore_rule_config_they_do_not_use(sample_project: Path, capsys):
+    # Primitives never judge, so rule overrides (here a rule name from slop 1.x) are
+    # irrelevant to them. `lint` still rejects the same config, where it matters.
+    (sample_project / ".slop.toml").write_text("[rules.complexity]\nenabled = true\n")
+    code, answer, err = _ask(capsys, "find", "Address", "--root", str(sample_project), "--output", "json")
+    assert code == 0, err
+    assert [m["qualname"] for m in answer["matches"]] == ["address.Address"]
+    with pytest.raises(ValueError, match="unknown rule 'complexity'"):
+        cli.lint(sample_project, "json")

@@ -105,6 +105,11 @@ below is recoverable from commit `b7ab8f7` (the tip of `dev` before this change)
   collisions. A C++ specifier now counts only with a body (as in C), an anonymous
   `typedef struct {...} Point;` is named `Point`, and `union` and `enum` are discovered.
 - The stale note that the C# grammar wheel does not load (it loads and parses).
+- **A stale `.slop.toml` blocked the read-only commands.** `find`, `tree`, `lexicon`,
+  `deps`, `vocab` and `ast` loaded and validated rule overrides they never use, so a config
+  naming a rule slop no longer has (laszy's names slop 1.x rules such as `complexity`)
+  made them exit 2. They now take the default rule config; `lint` and `check` still reject
+  an unknown rule name.
 
 ### Known limits
 
@@ -114,6 +119,13 @@ below is recoverable from commit `b7ab8f7` (the tip of `dev` before this change)
   packages with identical module and function names repeat the label.
 - `[ignore]` entries match kind plus qualname, so `classes = ["Params"]` silences every
   class of that name; a per-instance exemption needs path-qualified ignores.
+- A class qualname is its module name plus its class name, without the package path, so
+  distinct classes can share one (laszy's `octree/index.py` and `quadtree/index.py` both
+  yield `index.Index`). `find` reports the path as well, so its answers stay distinct;
+  anything keyed on qualname alone (`[ignore]`, duplication labels) does not.
+- The top-level `exclude = [...]` key that generated configs carry is not read by anything.
+  A config that excludes `tests/**` still analyses `tests/`; the read-only commands take
+  `--root src` to narrow instead.
 
 ## [3.0.0a0] - 2026-06-04
 
