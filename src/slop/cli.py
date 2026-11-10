@@ -1,8 +1,12 @@
-"""slop CLI — ``lint`` / ``check`` / ``rules`` / ``doctor`` / ``init``.
+"""slop CLI.
 
-Scans a root into a Corpus, runs the rule dispatcher, renders findings (human or
-JSON), and returns an exit code: 0 clean / 1 violations (any ERROR finding) /
-2 error.
+Primitives (read-only views over the layers): ``ast`` / ``tree`` / ``find`` / ``lexicon`` /
+``deps`` / ``vocab``. Lint layer: ``lint`` / ``check`` / ``rules``. Housekeeping:
+``doctor`` / ``init`` / ``schema``.
+
+The primitives answer questions and exit 0 whenever they answered (an empty result is an
+answer); 2 means the question could not be answered. The lint layer exits 0 clean /
+1 on any ERROR finding / 2 on error.
 """
 from __future__ import annotations
 
@@ -20,6 +24,9 @@ from .finding import Severity
 from .scope import scan_corpus
 from .scope.identity import ScopeKind
 from .rules import RULE_REGISTRY
+from .ontology import OntologyIR, compare
+from .scope import find as discovery
+from .scope.find import relative_path as _rel_path, walk as _walk
 
 
 def _version() -> str:
@@ -31,47 +38,34 @@ def _version() -> str:
         return "unknown"
 
 
-def _walk(component):
-    """Every scope in the tree, root-first (Corpus → … → Callable)."""
-    yield component
-    for child in component.children():
-        yield from _walk(child)
-
-
-def _rel_path(scope_id, root: str) -> str | None:
-    """A scope's first source file relative to the scan root, or None if it carries no
-    span (module bare-stem qualnames collide across packages — the path disambiguates)."""
-    if scope_id.spans and scope_id.spans[0].path:
-        try:
-            return os.path.relpath(scope_id.spans[0].path, root)
-        except ValueError:
-            return scope_id.spans[0].path
-    return None
-
-
-def _resolve_scope(corpus, ident: str) -> list:
-    """Scopes matching ``ident`` by qualname or by relative file path. A list, since a
-    bare qualname can repeat (``view`` in two packages, overloads). Empty if none match."""
+def _resolve_scope(corpus, ident: str, kind: ScopeKind | None = None) -> list:
+    """Scopes matching ``ident`` by qualname or by relative file path, optionally of one
+    ``kind``. A list, since a bare qualname can repeat (``view`` in two packages,
+    overloads) and a package shares its qualname with its ``__init__`` module. Empty if
+    none match."""
     root = str(corpus.root)
     # qualname matches any kind; a path identifies a file, so it matches the MODULE only
     # (every callable/class in the file shares that path, but the file *is* the module).
     return [c for c in _walk(corpus)
-            if c.qualname == ident
-            or (c.id.kind is ScopeKind.MODULE and _rel_path(c.id, root) == ident)]
+            if (c.qualname == ident
+                or (c.id.kind is ScopeKind.MODULE and _rel_path(c.id, root) == ident))
+            and (kind is None or c.id.kind is kind)]
 
 
-def _select_scope(corpus, ident: str):
+def _select_scope(corpus, ident: str, kind: ScopeKind | None = None):
     """Resolve ``ident`` to a single scope, or print an error and return None: nothing
-    matched, or it was ambiguous (in which case the candidate paths are listed)."""
-    matches = _resolve_scope(corpus, ident)
+    matched, or it was ambiguous (in which case each candidate and its kind is listed, and
+    ``--scope-kind`` or a path picks one)."""
+    matches = _resolve_scope(corpus, ident, kind)
     if not matches:
         print(f"slop: error: no scope with qualname or path '{ident}'", file=sys.stderr)
         return None
     if len(matches) > 1:
         print(f"slop: error: '{ident}' is ambiguous ({len(matches)} matches); "
-              "disambiguate by path:", file=sys.stderr)
+              "disambiguate with --scope-kind or by path:", file=sys.stderr)
         for m in matches:
-            print(f"  {_rel_path(m.id, str(corpus.root)) or m.qualname}", file=sys.stderr)
+            print(f"  {m.id.kind.value:<8} {_rel_path(m.id, str(corpus.root)) or m.qualname}",
+                  file=sys.stderr)
         return None
     return matches[0]
 
@@ -361,6 +355,127 @@ def deps_view(root: str | Path, output: str = "human", *,
     return 0
 
 
+def _parse_kind(kind: str | None) -> ScopeKind | None:
+    if kind is None:
+        return None
+    try:
+        return ScopeKind(kind)
+    except ValueError:
+        raise ValueError(
+            f"unknown kind '{kind}' (choose from {', '.join(k.value for k in ScopeKind)})"
+        ) from None
+
+
+def _where(match) -> str:
+    return f"{match.path}:{match.line}" if match.path and match.line else (match.path or "-")
+
+
+def find_view(root: str | Path, name: str | None, output: str = "human", *,
+              kind: str | None = None, collisions: bool = False) -> int:
+    """Where is a name defined, or (``--collisions``) which names are defined twice.
+
+    A fact lookup: exact local name, optional kind. No match is an answer (exit 0)."""
+    corpus = _scan_root(root)
+    if corpus is None:
+        return 2
+    scope_kind = _parse_kind(kind)
+    if collisions:
+        groups = discovery.collisions(corpus, kind=scope_kind or ScopeKind.CLASS)
+        if output == "json":
+            print(json.dumps({"kind": (scope_kind or ScopeKind.CLASS).value,
+                              "collisions": {n: [m.as_dict() for m in ms]
+                                             for n, ms in groups.items()}}, indent=2))
+            return 0
+        lines = [_view_header("find", "collisions",
+                              f"{len(groups)} name(s) defined more than once")]
+        for n, ms in groups.items():
+            lines.append(f"  {n}  x{len(ms)}")
+            lines.extend(f"    {m.qualname}  {_where(m)}" for m in ms)
+        print("\n".join(lines))
+        return 0
+    if name is None:
+        raise ValueError("find needs a NAME, or --collisions")
+    matches = discovery.find(corpus, name, kind=scope_kind)
+    if output == "json":
+        print(json.dumps({"name": name, "matches": [m.as_dict() for m in matches]}, indent=2))
+        return 0
+    lines = [_view_header("find", name, f"{len(matches)} match(es)")]
+    lines.extend(f"  {m.kind.value:<8} {m.qualname}  {_where(m)}" for m in matches)
+    print("\n".join(lines))
+    return 0
+
+
+def tree_view(root: str | Path, output: str = "human", *, scope: str | None = None,
+              depth: int | None = None, kind: str | None = None,
+              scope_kind: str | None = None) -> int:
+    """What a scope holds: the ownership tree beneath it, one row per scope."""
+    corpus = _scan_root(root)
+    if corpus is None:
+        return 2
+    target = corpus
+    if scope is not None:
+        target = _select_scope(corpus, scope, _parse_kind(scope_kind))
+        if target is None:
+            return 2
+    shown_kind = _parse_kind(kind)
+    rows = discovery.outline(target, corpus.root, depth=depth,
+                             kinds=frozenset({shown_kind}) if shown_kind else None)
+    label = _rel_path(target.id, str(corpus.root)) or target.qualname or corpus.name
+    if output == "json":
+        print(json.dumps({"scope": label, "kind": target.id.kind.value,
+                          "rows": [{"level": level, **m.as_dict()} for level, m in rows]},
+                         indent=2))
+        return 0
+    lines = [_view_header("tree", f"{label} ({target.id.kind.value})", f"{len(rows)} scope(s)")]
+    lines.extend(f"{'  ' * level}{m.kind.value} {m.name}  {_where(m)}" for level, m in rows)
+    print("\n".join(lines))
+    return 0
+
+
+def vocab_view(root: str | Path, ontology: str | Path, output: str = "human", *,
+               term: str | None = None) -> int:
+    """The canonical vocabulary against the code.
+
+    ``--term NAME`` answers what NAME is canonically (no scan needed). Otherwise the
+    classes found under ``--root`` are compared with the ontology's entities: matched,
+    unknown to the ontology, and declared but unused. Exit 0 whenever the comparison ran;
+    gating on mismatches belongs to the lint layer."""
+    vocabulary = OntologyIR.load(ontology)
+    if term is not None:
+        found = vocabulary.term(term)
+        if output == "json":
+            print(json.dumps({"vocabulary": vocabulary.name, "query": term,
+                              "canonical": found.as_dict() if found else None}, indent=2))
+        elif found is None:
+            print(_view_header("vocab", term, f"not canonical in {vocabulary.name}"))
+        else:
+            lines = [_view_header("vocab", term, f"{found.kind.value} {found.name} in {vocabulary.name}")]
+            if found.description:
+                lines.append(f"  {found.description}")
+            if found.fields:
+                lines.append("  fields: " + ", ".join(found.fields))
+            print("\n".join(lines))
+        return 0
+    corpus = _scan_root(root)
+    if corpus is None:
+        return 2
+    result = compare(discovery.find(corpus, kind=ScopeKind.CLASS), vocabulary)
+    if output == "json":
+        print(json.dumps({"vocabulary": vocabulary.name, **result.as_dict()}, indent=2))
+        return 0
+    lines = [_view_header("vocab", vocabulary.name,
+                          f"{len(result.matched)} matched · {len(result.unknown)} unknown · "
+                          f"{len(result.unused)} unused")]
+    for t, ms in result.matched:
+        lines.append(f"  matched  {t.name}  <- " + ", ".join(m.qualname for m in ms))
+    for m in result.unknown:
+        lines.append(f"  unknown  {m.name}  {_where(m)}")
+    for t in result.unused:
+        lines.append(f"  unused   {t.name}")
+    print("\n".join(lines))
+    return 0
+
+
 def init(root: str | Path) -> int:
     """Emit a ``.slop.toml`` template from each rule's default config."""
     path = Path(root) / ".slop.toml"
@@ -468,6 +583,29 @@ def main(argv: list[str] | None = None) -> int:
     p_deps.add_argument("--cycles", action="store_true", help="show only import cycles")
     p_deps.add_argument("--output", choices=["human", "json"], default="human")
 
+    p_find = sub.add_parser("find", help="where a name is defined (or which names collide)")
+    p_find.add_argument("name", nargs="?", default=None, help="exact local name to look up")
+    p_find.add_argument("--root", default=".")
+    p_find.add_argument("--kind", default=None, help="restrict to one scope kind (class, callable, ...)")
+    p_find.add_argument("--collisions", action="store_true",
+                        help="list names defined by more than one scope of --kind (default class)")
+    p_find.add_argument("--output", choices=["human", "json"], default="human")
+
+    p_tree = sub.add_parser("tree", help="print the ownership tree beneath a scope")
+    p_tree.add_argument("--root", default=".")
+    p_tree.add_argument("--scope", default=None, help="qualname or path of a sub-scope (default: whole corpus)")
+    p_tree.add_argument("--depth", type=int, default=None, help="levels below the scope to show")
+    p_tree.add_argument("--kind", default=None, help="show only scopes of this kind")
+    p_tree.add_argument("--scope-kind", default=None,
+                        help="pick one kind when --scope names several (a package and its __init__ module)")
+    p_tree.add_argument("--output", choices=["human", "json"], default="human")
+
+    p_vocab = sub.add_parser("vocab", help="compare code names with a canonical ontology (JSON IR)")
+    p_vocab.add_argument("--ontology", required=True, help="Open Ontology IR JSON file")
+    p_vocab.add_argument("--root", default=".")
+    p_vocab.add_argument("--term", default=None, help="print this term's canonical entry instead of comparing")
+    p_vocab.add_argument("--output", choices=["human", "json"], default="human")
+
     args = parser.parse_args(argv)
     try:
         if args.command == "lint":
@@ -488,6 +626,14 @@ def main(argv: list[str] | None = None) -> int:
             return lexicon_view(args.root, args.output, scope=args.scope, top=args.top)
         if args.command == "deps":
             return deps_view(args.root, args.output, scope=args.scope, cycles_only=args.cycles)
+        if args.command == "find":
+            return find_view(args.root, args.name, args.output,
+                             kind=args.kind, collisions=args.collisions)
+        if args.command == "tree":
+            return tree_view(args.root, args.output, scope=args.scope,
+                             depth=args.depth, kind=args.kind, scope_kind=args.scope_kind)
+        if args.command == "vocab":
+            return vocab_view(args.root, args.ontology, args.output, term=args.term)
     except Exception as exc:  # noqa: BLE001 — top-level boundary: any failure is exit 2
         print(f"slop: error: {exc}", file=sys.stderr)
         return 2
