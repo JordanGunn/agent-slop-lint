@@ -9,6 +9,18 @@ so it cannot drift from the rules it describes.
 slop is built to be tuned, not disabled: prefer adjusting a threshold or exempting a
 specific scope over turning a rule off wholesale.
 
+## `exclude` — files slop does not read
+
+```toml
+exclude = ["tests/**", "**/vendor/**"]
+```
+
+Globs over POSIX paths **relative to the directory holding the config file** (`*` crosses
+`/`, so `tests/**` covers everything beneath `tests/`; a leading `**/` also matches the top
+level). Excluded files are never carved, so they appear in no command: `lint`, `find`,
+`tree`, `lexicon`, `vocab`, `shape` and `hotspots` all see the same corpus. The read-only
+commands read only `exclude` from the config, so a stale `[rules]` section cannot stop them.
+
 ## `[rules]` — per-rule settings
 
 Each rule is configured under `[rules."<name>"]` (the quotes matter — rule names contain
@@ -28,7 +40,10 @@ thresholds.callable = 12       # keyed by the rule's declared ALTITUDE, not a fl
   accepts your config, the rule is actually applying it. `slop rules` shows each rule's
   altitude; `slop schema` shows its threshold keys.
 - **`params`** (`params.<key> = <value>`) are noise floors and significance gates — they
-  govern output volume, not the verdict. Configurable even for observations.
+  govern output volume, not the verdict. Configurable even for observations. A param the
+  rule does not declare is a *load error* (a misspelt name would otherwise do nothing), and
+  `slop schema` lists each rule's params. They must sit in the `params` table: a bare
+  `<key> = <value>` on a rule is also an error.
 - **`severity`** applies to verdict rules. Observation rules pin `info` and ignore it (an
   observation never gates the build). A `REVIEW` verdict caps at `warning`.
 
@@ -59,5 +74,5 @@ source-free `--root`).
 ## What changed from v1.x
 
 There are no `default` / `lax` / `strict` **profiles** and no `[[waivers]]` array. Tune
-thresholds directly and exempt via `[ignore]`. The config file holds rule settings only —
-the scan target is the CLI's `--root`, not a config key.
+thresholds directly and exempt via `[ignore]`. The config file holds rule settings and the
+`exclude` list only — the scan target is the CLI's `--root`, not a config key.

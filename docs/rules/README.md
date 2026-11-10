@@ -39,7 +39,9 @@ Every finding is one of three strengths, chosen by how confidently slop can spea
   sequence (REVIEW)
 
 **Class**
-- `class-shape` — the Chidamber–Kemerer suite (CBO/DIT/NOC/NOM), as an observation
+- `class-shape` — the Chidamber–Kemerer suite (CBO/DIT/NOC/NOM) plus cohesion as LCOM4
+  (the groups of methods joined through shared instance members; Python, JavaScript and
+  TypeScript), as an observation. `slop shape` prints the same numbers for every class.
 
 **Whole-corpus signals**
 - `vocabulary` — identifier token distribution (a Zipf near-invariant; deviation is
