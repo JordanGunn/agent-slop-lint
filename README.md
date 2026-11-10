@@ -168,9 +168,11 @@ undefined list is ordered, not filtered.
 ## Configuration
 
 slop walks upward from `--root` for a `.slop.toml`, or a `pyproject.toml` with a
-`[tool.slop]` table. Two sections:
+`[tool.slop]` table. Three keys:
 
 ```toml
+exclude = ["tests/**", "**/vendor/**"]   # files never carved; globs relative to the config's directory
+
 [rules."complexity.cyclomatic"]
 enabled = true
 thresholds.callable = 12          # keyed by the rule's declared altitude
@@ -179,9 +181,13 @@ thresholds.callable = 12          # keyed by the rule's declared altitude
 classes = ["LegacyAdapter"]       # scope-keyed exemptions: functions/classes/modules/packages
 ```
 
+`exclude` applies to every command. The read-only commands (`find`, `tree`, `lexicon`,
+`deps`, `vocab`) read only `exclude`; `[rules]` and `[ignore]` matter to `lint` and `check`
+alone, so a stale rule name there cannot block a question about the code.
+
 A threshold keyed to an altitude the rule doesn't declare is a load error, not a silent
 no-op — so "not flagged" is verifiably clean. `slop schema` prints the exact shape. (The CLI
-takes `--root` directly; the config's keys are rule settings, not a scan path.)
+takes `--root` directly; the config's keys are not a scan path.)
 
 ## Acknowledgments
 

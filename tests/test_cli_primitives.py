@@ -271,14 +271,24 @@ def test_a_clean_project_has_no_caveats(sample_project: Path, capsys):
     assert answer["caveats"] == []
 
 
-# ---- A config naming a rule slop no longer has must not block the primitives -------
+# ---- Read-only commands honour `exclude` and ignore `[rules]` ----------------------
 
-def test_primitives_ignore_rule_config_they_do_not_use(sample_project: Path, capsys):
-    # Primitives never judge, so rule overrides (here a rule name from slop 1.x) are
-    # irrelevant to them. `lint` still rejects the same config, where it matters.
-    (sample_project / ".slop.toml").write_text("[rules.complexity]\nenabled = true\n")
+def test_primitives_apply_exclude_and_ignore_stale_rule_config(sample_project: Path, capsys):
+    # One config carries both a rule slop no longer has and an exclude. The read-only
+    # commands must take the exclude and not trip on the rule; `lint` must still reject it.
+    (sample_project / "tests").mkdir()
+    (sample_project / "tests" / "test_address.py").write_text("class Address:\n    pass\n")
+    (sample_project / ".slop.toml").write_text(
+        'exclude = ["tests/**"]\n[rules.complexity]\nenabled = true\n')
     code, answer, err = _ask(capsys, "find", "Address", "--root", str(sample_project), "--output", "json")
     assert code == 0, err
-    assert [m["qualname"] for m in answer["matches"]] == ["address.Address"]
+    assert [m["path"] for m in answer["matches"]] == ["store/address.py"]
     with pytest.raises(ValueError, match="unknown rule 'complexity'"):
         cli.lint(sample_project, "json")
+
+
+def test_without_exclude_the_same_files_are_carved(sample_project: Path, capsys):
+    (sample_project / "tests").mkdir()
+    (sample_project / "tests" / "test_address.py").write_text("class Address:\n    pass\n")
+    _, answer, _ = _ask(capsys, "find", "Address", "--root", str(sample_project), "--output", "json")
+    assert sorted(m["path"] for m in answer["matches"]) == ["store/address.py", "tests/test_address.py"]

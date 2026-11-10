@@ -14,6 +14,7 @@ import cycle with the rule layer. ``AnalysisConfig`` is owned by the ``Corpus``
 """
 from __future__ import annotations
 
+from fnmatch import fnmatchcase
 import tomllib
 from dataclasses import dataclass, field, replace
 from pathlib import Path
@@ -64,6 +65,7 @@ _IGNORE_SCOPES = frozenset(_IGNORE_KEY.values())
 class AnalysisConfig:
     rules: dict[str, RuleConfig]
     ignore: dict[str, frozenset[str]] = field(default_factory=dict)
+    exclusion: "Exclusion" = field(default_factory=lambda: Exclusion())
 
     def for_rule(self, name: str) -> RuleConfig | None:
         return self.rules.get(name)
@@ -86,14 +88,24 @@ class AnalysisConfig:
         return cls(merged)
 
     @classmethod
+    def scan(cls, root: Path, rule_types: Any) -> "AnalysisConfig":
+        """Default rules plus the discovered config's *scan* settings (``exclude``), for
+        commands that read the corpus but never judge it. ``[rules]`` and ``[ignore]`` are
+        not read, so a config naming a rule slop no longer has cannot block them; ``load``
+        is the strict path for ``lint`` and ``check``."""
+        doc, anchor = _discover(Path(root))
+        return replace(cls.defaults(rule_types), exclusion=_parse_exclusion(doc, anchor))
+
+    @classmethod
     def load(cls, root: Path, rule_types: Any) -> "AnalysisConfig":
         """Defaults, with discovered config (``.slop.toml`` or ``pyproject[tool.slop]``,
         found by walking up from ``root``) merged on top: ``[rules]`` overrides
-        validated against each rule's declared altitudes, plus scope-keyed ``[ignore]``."""
+        validated against each rule's declared altitudes, plus scope-keyed ``[ignore]``
+        and ``exclude``."""
         rule_types = list(rule_types)
         base = {rt.name: rt.default_config() for rt in rule_types}
         altitudes = {rt.name: {k.value for k in rt.altitudes} for rt in rule_types}
-        doc = _discover(Path(root))
+        doc, anchor = _discover(Path(root))
         overrides = doc.get("rules", {})
         merged = dict(base)
         for name, ov in overrides.items():
@@ -103,7 +115,38 @@ class AnalysisConfig:
         for name, rc in merged.items():
             _validate_threshold_keys(name, rc.thresholds, altitudes[name])
         ignore = _parse_ignore(doc.get("ignore", {}))
-        return cls(merged, ignore=ignore)
+        return cls(merged, ignore=ignore, exclusion=_parse_exclusion(doc, anchor))
+
+
+@dataclass(frozen=True)
+class Exclusion:
+    """Files the corpus must not carve: ``fnmatch`` globs over POSIX paths relative to
+    ``anchor``, the directory holding the config. ``*`` crosses ``/`` (so ``tests/**``
+    covers everything beneath ``tests/``), and a leading ``**/`` also matches the top
+    level (``**/vendor/**`` covers ``vendor/x.py``). A file outside ``anchor`` is never
+    excluded."""
+
+    patterns: tuple[str, ...] = ()
+    anchor: Path | None = None
+
+    def excludes(self, path: Path) -> bool:
+        if not self.patterns or self.anchor is None:
+            return False
+        try:
+            rel = path.resolve().relative_to(self.anchor).as_posix()
+        except ValueError:
+            return False
+        return any(
+            fnmatchcase(rel, pat) or (pat.startswith("**/") and fnmatchcase(rel, pat[3:]))
+            for pat in self.patterns
+        )
+
+
+def _parse_exclusion(doc: dict[str, Any], anchor: Path | None) -> Exclusion:
+    raw = doc.get("exclude", [])
+    if not isinstance(raw, list) or not all(isinstance(p, str) for p in raw):
+        raise ValueError("config 'exclude' must be a list of glob strings")
+    return Exclusion(tuple(raw), anchor)
 
 
 def _apply_override(base: RuleConfig, ov: dict[str, Any], allowed: set[str]) -> RuleConfig:
@@ -148,21 +191,23 @@ def _parse_ignore(raw: Any) -> dict[str, frozenset[str]]:
     return out
 
 
-def _discover(start: Path) -> dict[str, Any]:
+def _discover(start: Path) -> tuple[dict[str, Any], Path | None]:
     """Walk up from ``start`` for the nearest ``.slop.toml`` or a ``pyproject.toml``
-    carrying ``[tool.slop]``. A pyproject without ``[tool.slop]`` is skipped (so a
-    sub-project pyproject does not mask a repo-root ``.slop.toml``)."""
+    carrying ``[tool.slop]``; return its table and the directory it was found in (the
+    anchor for relative paths in it), or ``({}, None)``. A pyproject without
+    ``[tool.slop]`` is skipped (so a sub-project pyproject does not mask a repo-root
+    ``.slop.toml``)."""
     start = start.resolve()
     for cur in [start, *start.parents]:
         slop = cur / ".slop.toml"
         if slop.is_file():
-            return _read_toml(slop)
+            return _read_toml(slop), cur
         pyproject = cur / "pyproject.toml"
         if pyproject.is_file():
             tool_slop = _read_toml(pyproject).get("tool", {}).get("slop")
             if tool_slop is not None:
-                return tool_slop
-    return {}
+                return tool_slop, cur
+    return {}, None
 
 
 def _read_toml(path: Path) -> dict[str, Any]:

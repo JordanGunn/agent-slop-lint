@@ -54,3 +54,22 @@ def test_unknown_rule_in_toml_is_an_error(tmp_path: Path):
     (tmp_path / ".slop.toml").write_text('[rules."does.not.exist"]\nenabled = false\n')
     with pytest.raises(ValueError, match="unknown rule"):
         AnalysisConfig.load(tmp_path, RULE_REGISTRY)
+
+
+# ---- exclude --------------------------------------------------------------------------
+
+def test_exclusion_globs_are_relative_to_the_config_directory(tmp_path: Path):
+    from slop.config import Exclusion
+    ex = Exclusion(("tests/**", "**/vendor/**", "gen_*.py"), tmp_path.resolve())
+    assert ex.excludes(tmp_path / "tests" / "unit" / "test_a.py")
+    assert ex.excludes(tmp_path / "vendor" / "x.py")           # leading **/ reaches the top level
+    assert ex.excludes(tmp_path / "pkg" / "vendor" / "x.py")
+    assert ex.excludes(tmp_path / "gen_a.py")
+    assert not ex.excludes(tmp_path / "src" / "tests_helper.py")
+    assert not ex.excludes(tmp_path.parent / "tests" / "x.py")  # outside the config directory
+
+
+def test_exclude_must_be_a_list_of_strings(tmp_path: Path):
+    (tmp_path / ".slop.toml").write_text('exclude = "tests/**"\n')
+    with pytest.raises(ValueError, match="exclude"):
+        AnalysisConfig.scan(tmp_path, RULE_REGISTRY)

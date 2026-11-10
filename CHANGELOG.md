@@ -108,8 +108,16 @@ below is recoverable from commit `b7ab8f7` (the tip of `dev` before this change)
 - **A stale `.slop.toml` blocked the read-only commands.** `find`, `tree`, `lexicon`,
   `deps` and `vocab` loaded and validated rule overrides they never use, so a config
   naming a rule slop no longer has (laszy's names slop 1.x rules such as `complexity`)
-  made them exit 2. They now take the default rule config; `lint` and `check` still reject
-  an unknown rule name.
+  made them exit 2. They now read only the config's scan settings; `lint` and `check`
+  still reject an unknown rule name.
+- **Regression: `exclude` was ignored since the v3 rebuild.** 1.x read the top-level
+  `exclude = [...]` key and applied it to every rule and to discovery; commit 850d77e
+  (v3 promoted, legacy package deleted) dropped it while generated configs kept the key,
+  so `exclude = ["tests/**"]` still analysed `tests/` in `lint` and every read-only
+  command. `scan_corpus` now skips excluded files: `fnmatch` globs over POSIX paths
+  relative to the directory holding the config (`*` crosses `/`; a leading `**/` also
+  matches the top level), applied by `lint`, `check` and the read-only commands alike.
+  Lint figures taken before this fix included excluded directories and are not baselines.
 
 ### Known limits
 
@@ -123,12 +131,8 @@ below is recoverable from commit `b7ab8f7` (the tip of `dev` before this change)
   distinct classes can share one (laszy's `octree/index.py` and `quadtree/index.py` both
   yield `index.Index`). `find` reports the path as well, so its answers stay distinct;
   anything keyed on qualname alone (`[ignore]`, duplication labels) does not.
-- **Regression: `exclude` was honoured in 1.x and is not read by the component-model
-  carve.** The 1.x loader read the top-level `exclude = [...]` key and passed it to every
-  rule and to discovery; commit 850d77e (v3 promoted to the repo root, legacy package
-  deleted) dropped it, and generated configs still carry the key. A config that excludes
-  `tests/**` therefore analyses `tests/` in `lint` and in every read-only command; only
-  `--root src` narrows. Done when `scan_corpus` applies the config's exclude globs.
+- The config key `languages` (generated configs carry it, commented) is read by nothing;
+  not yet checked against 1.x.
 
 ## [3.0.0a0] - 2026-06-04
 
