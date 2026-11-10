@@ -4,9 +4,10 @@ from __future__ import annotations
 from typing import Any, ClassVar
 
 from ..paradigm import MultiPurpose
+from .ecmascript import EcmaScriptMembers
 
 
-class JavaScript(MultiPurpose):
+class JavaScript(EcmaScriptMembers, MultiPurpose):
     id: ClassVar[str] = "javascript"
 
     @classmethod

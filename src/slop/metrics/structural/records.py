@@ -47,6 +47,26 @@ class MagicLiteral:
 # --- Class altitude (Chidamber-Kemerer 1994) --------------------------------
 
 @dataclass(frozen=True)
+class Cohesion:
+    """How a class's methods share instance members (LCOM4, Hitz and Montangero 1995).
+
+    ``groups`` are the sets of methods joined through shared members, in declaration order;
+    ``len(groups)`` is LCOM4 (1 = cohesive). ``detached`` are methods that reach no instance
+    member and are reached by none, so they have no state to be cohesive about."""
+
+    groups: tuple[tuple[str, ...], ...]
+    detached: tuple[str, ...]
+
+    @property
+    def lcom4(self) -> int:
+        return len(self.groups)
+
+    def as_dict(self) -> dict[str, Any]:
+        return {"lcom4": self.lcom4, "method_groups": [list(g) for g in self.groups],
+                "detached": list(self.detached)}
+
+
+@dataclass(frozen=True)
 class CKMetrics:
     """The CK suite for one class. Legacy: coupling, inheritance.depth,
     inheritance.children (+ complexity.cyclomatic at class scope).
@@ -54,24 +74,35 @@ class CKMetrics:
     WMC is intentionally absent as a field: it is Sigma of method weights with
     the weight unspecified by CK, so it equals ``cyclomatic()`` under cyclomatic
     weight and ``nom`` under unit weight. Both are already reachable; a wmc
-    field would duplicate one of them. ``lcom`` is not in the legacy — carried
-    as intended future behaviour.
+    field would duplicate one of them. Cohesion is LCOM4 (Hitz and Montangero 1995), not
+    CK's original pairwise LCOM: ``cohesion`` counts the groups of methods joined through shared
+    instance members and names them.
     """
 
     nom: int        # number of methods (WMC under unit weight)
     dit: int        # depth of inheritance tree
     noc: int        # number of children
     cbo: int        # coupling between objects
-    lcom: int | None  # lack of cohesion in methods — future
+    #: ``None`` when the language's instance member access cannot be read from syntax
+    #: (Java, C#, C++), which is not the same as a class with no groups.
+    cohesion: Cohesion | None
     #: Reasons the inheritance numbers may not be exact (a class that shares its name with
     #: another, or an unresolvable base name). Empty when the numbers are exact.
     caveats: tuple[str, ...] = ()
 
     def as_dict(self) -> dict[str, Any]:
-        return {"nom": self.nom, "dit": self.dit, "noc": self.noc,
-                "cbo": self.cbo, "lcom": self.lcom, "caveats": list(self.caveats)}
+        return {"nom": self.nom, "dit": self.dit, "noc": self.noc, "cbo": self.cbo,
+                "lcom4": None if self.cohesion is None else self.cohesion.lcom4,
+                "method_groups": None if self.cohesion is None
+                else [list(g) for g in self.cohesion.groups],
+                "detached": None if self.cohesion is None else list(self.cohesion.detached),
+                "caveats": list(self.caveats)}
 
-    def narrate(self, *, cbo_floor: int, dit_floor: int, noc_floor: int) -> str:
+    @property
+    def lcom4(self) -> int | None:
+        return None if self.cohesion is None else self.cohesion.lcom4
+
+    def narrate(self, *, cbo_floor: int, dit_floor: int, noc_floor: int, lcom4_floor: int) -> str:
         """Claim-free prose over the CK profile, naming only the metrics past their
         attention-floor. Descriptive, never a verdict — the floors mark "worth a
         look", not "defect". NOC in particular is framed as ambiguous: a broad base
@@ -92,6 +123,13 @@ class CKMetrics:
             parts.append(
                 f"{self.noc} direct subclasses (broad base — often a healthy "
                 f"abstraction, but worth confirming it is not a god-base)"
+            )
+        if self.cohesion is not None and self.cohesion.lcom4 > lcom4_floor:
+            groups = "; ".join("{" + ", ".join(g) + "}" for g in self.cohesion.groups)
+            parts.append(
+                f"{self.cohesion.lcom4} method groups share no instance member ({groups}) — "
+                f"may be {self.cohesion.lcom4} classes under one name, or one coordinator "
+                f"of independent operations"
             )
         note = f" Caveat: {'; '.join(self.caveats)}." if self.caveats else ""
         if not parts:

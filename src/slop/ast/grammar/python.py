@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import Any, ClassVar
 
 from ..paradigm import MultiPurpose
+from ..paradigm.base import MemberAccess
 
 
 class Python(MultiPurpose):
@@ -20,6 +21,34 @@ class Python(MultiPurpose):
     @classmethod
     def implicit_receiver_names(cls) -> frozenset[str]:
         return frozenset({"self", "cls"})
+
+    @classmethod
+    def member_access(cls) -> MemberAccess | None:
+        return MemberAccess("attribute", "object", "attribute")
+
+    @classmethod
+    def instance_receiver(cls, method: Any, content: bytes) -> str | None:
+        """The method's first parameter, unless it is decorated ``staticmethod`` or
+        ``classmethod`` or is named ``cls`` (``__init_subclass__`` and metaclass methods
+        take the class, not an instance)."""
+        parent = method.parent
+        if parent is not None and parent.type == "decorated_definition":
+            for decorator in parent.children:
+                if decorator.type != "decorator":
+                    continue
+                text = content[decorator.start_byte:decorator.end_byte].decode()
+                if text.lstrip("@").split("(")[0].strip().split(".")[-1] in {"staticmethod", "classmethod"}:
+                    return None
+        parameters = method.child_by_field_name("parameters")
+        first = parameters.named_children[0] if parameters is not None and parameters.named_children else None
+        if first is None or first.type != "identifier":
+            return None
+        name = content[first.start_byte:first.end_byte].decode()
+        return None if name == "cls" else name
+
+    @classmethod
+    def constructor_names(cls) -> frozenset[str]:
+        return frozenset({"__init__", "__new__"})
 
     @classmethod
     def callable(cls) -> frozenset[str]:

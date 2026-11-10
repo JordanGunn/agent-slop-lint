@@ -50,6 +50,22 @@ below is recoverable from commit `b7ab8f7` (the tip of `dev` before this change)
 
 ### Added
 
+- **Cohesion (LCOM4) in `class-shape`.** `Structure.cohesion()` returns the class's method
+  `groups` (methods joined through shared instance members, a call through `self`/`this`
+  counting as sharing the callee) and its `detached` methods (no instance member reached
+  and none reaching them: abstract methods, constant properties). `CKMetrics.lcom` (always
+  `None`) is replaced by `CKMetrics.cohesion` and an `lcom4` property; evidence carries
+  `lcom4`, `method_groups` and `detached`, and the message lists the groups. Constructors,
+  static and class methods are excluded. New grammar facts `member_access()`,
+  `instance_receiver()` and `constructor_names()` (Python, JavaScript, TypeScript);
+  elsewhere `lcom4` is `null`, not 0, because Java, C# and C++ allow a bare `x` for
+  `this.x`. `class-shape` gains the attention floor `lcom4_attention` (default 1: a class
+  with more than one group is narrated), so a project's `class-shape` observation count can
+  rise. On laszy `src/`, 8 of 110 classes have more than one group; counting stateless
+  methods as groups first flagged 29, mostly interfaces and enum-like classes. Limits: a
+  nested JavaScript `function` rebinds `this`, which is not modelled; a class made of
+  independent accessor properties reads as many groups (LCOM4's known weakness); Python
+  methods whose first parameter is `cls` are treated as class methods.
 - **Primitives:** `slop find <name>` / `--collisions` (where a name is defined; which class
   names are defined more than once), `slop tree` (ownership tree beneath a scope) and
   `slop vocab --ontology IR.json` (class names against a canonical vocabulary from an Open

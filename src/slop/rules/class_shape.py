@@ -37,15 +37,18 @@ class ClassShapeRule(Rule):
         return RuleConfig(
             name=cls.name,
             severity=Severity.INFO,
-            params={"cbo_attention": 8, "dit_attention": 4, "noc_attention": 10},
+            params={"cbo_attention": 8, "dit_attention": 4, "noc_attention": 10,
+                    "lcom4_attention": 1},
         )
 
     def check(self, component: Scope, config: RuleConfig) -> Iterable[Finding]:
         cbo_floor = int(config.param("cbo_attention", 8))
         dit_floor = int(config.param("dit_attention", 4))
         noc_floor = int(config.param("noc_attention", 10))
+        lcom4_floor = int(config.param("lcom4_attention", 1))
         ck = Structure.over(component).ck()
-        if not (ck.cbo > cbo_floor or ck.dit > dit_floor or ck.noc > noc_floor):
+        split = ck.lcom4 is not None and ck.lcom4 > lcom4_floor
+        if not (ck.cbo > cbo_floor or ck.dit > dit_floor or ck.noc > noc_floor or split):
             return
         yield Observation(
             rule=self.name,
@@ -53,6 +56,6 @@ class ClassShapeRule(Rule):
             evidence=Evidence(kind="ck-profile", data=ck.as_dict()),
             message=(
                 f"{component.qualname}: "
-                f"{ck.narrate(cbo_floor=cbo_floor, dit_floor=dit_floor, noc_floor=noc_floor)}"
+                f"{ck.narrate(cbo_floor=cbo_floor, dit_floor=dit_floor, noc_floor=noc_floor, lcom4_floor=lcom4_floor)}"
             ),
         )

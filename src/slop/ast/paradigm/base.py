@@ -23,6 +23,7 @@ later if multiple grammars want it).
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 from typing import Any, ClassVar
@@ -37,6 +38,16 @@ class Paradigm(Enum):
     PROCEDURAL = "procedural"            # free functions, no classes (no shipped grammar)
     OBJECT_ORIENTED = "object_oriented"  # classes + methods, no free functions (Java, C#)
     MULTI_PURPOSE = "multi_purpose"      # both (Python, Go, Rust, C, C++, Julia, Ruby, TS, JS)
+
+
+@dataclass(frozen=True)
+class MemberAccess:
+    """A grammar's spelling of ``receiver.member``: the node type, and the fields that
+    hold the receiver expression and the member name."""
+
+    node_type: str
+    receiver_field: str
+    member_field: str
 
 
 class Grammar(ABC):
@@ -259,6 +270,34 @@ class Grammar(ABC):
         """Parameter names that are the implicit receiver rather than a chosen name
         (Python's ``self`` / ``cls``, which its grammar lists among a method's parameters).
         Default empty: most grammars do not list the receiver as a parameter at all."""
+        return frozenset()
+
+    # ---- instance members (cohesion) ------------------------------------
+    #
+    # Cohesion asks which instance members each method touches, so a grammar must say
+    # how it spells ``receiver.member`` and what a method calls its own instance. A
+    # grammar that cannot say so soundly (Java/C#/C++ let a bare ``x`` mean ``this.x``,
+    # which needs name resolution, not syntax) leaves these at their defaults and the
+    # cohesion measure reports itself unmeasurable instead of undercounting.
+
+    @classmethod
+    def member_access(cls) -> MemberAccess | None:
+        """How ``receiver.member`` is spelled, or ``None`` when the language's instance
+        member access cannot be read from syntax alone."""
+        return None
+
+    @classmethod
+    def instance_receiver(cls, method: Any, content: bytes) -> str | None:
+        """What ``method`` (a raw tree-sitter node) calls its own instance: Python's first
+        parameter (``self``), JavaScript's ``this``. ``None`` for a method with no instance
+        (static, class method), which therefore has no instance members to share."""
+        del method, content
+        return None
+
+    @classmethod
+    def constructor_names(cls) -> frozenset[str]:
+        """Method names that construct the instance. A constructor touches every member it
+        initialises, so it would join every method into one group and hide a split."""
         return frozenset()
 
     # ---- class / package vocabulary -----------------------------------

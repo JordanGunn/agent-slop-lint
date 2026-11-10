@@ -52,9 +52,9 @@ slop/                       <- repo root: pyproject.toml, uv.lock, README, LICEN
                               undefined / unused / unmeasurable, no thresholds); scope/lexicon.py
                               builds the declared-names Lexicon it is fed
     metrics/                slop's measurements over a scope/region:
-                              structural/ (view.py + complexity/halstead/ck/martin/relational/
-                              orphans/hotspots/imports compute), locus.py (narrowest-common-ancestor;
-                              duck-typed)
+                              structural/ (view.py + complexity/halstead/ck/cohesion/martin/
+                              relational/orphans/hotspots/imports compute), locus.py
+                              (narrowest-common-ancestor; duck-typed)
     graph/                  import/dependency graph: build.py, dependency.py, imports.py
     rules/                  one rule per file → single flat RULE_REGISTRY (__init__.py)
   tests/                    pytest suite (test_rule_*.py per rule, test_<view>.py, cross-cutting)

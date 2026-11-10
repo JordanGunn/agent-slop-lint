@@ -4,9 +4,10 @@ from __future__ import annotations
 from typing import Any, ClassVar
 
 from ..paradigm import MultiPurpose
+from .ecmascript import EcmaScriptMembers
 
 
-class TypeScript(MultiPurpose):
+class TypeScript(EcmaScriptMembers, MultiPurpose):
     id: ClassVar[str] = "typescript"
 
     @classmethod

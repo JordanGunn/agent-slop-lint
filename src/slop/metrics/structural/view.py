@@ -24,9 +24,10 @@ from typing import Any
 
 from ...identity import ScopeKind
 from . import callable_measures, class_index, complexity, halstead
+from .cohesion import cohesion as _cohesion
 from .hotspots import _DEFAULT_WINDOW as _HOTSPOT_WINDOW, hotspots as _hotspots
 from .orphans import orphans as _orphans
-from .records import CKMetrics, PackageMetrics
+from .records import CKMetrics, Cohesion, PackageMetrics
 from .clones import clone_clusters as _clone_clusters
 
 
@@ -81,7 +82,7 @@ class Structure:
     # ---- Class measures: Chidamber-Kemerer (dit/noc/cbo via the class index) --
     def ck(self) -> CKMetrics:
         return CKMetrics(nom=self.method_count(), dit=self.dit(), noc=self.noc(),
-                         cbo=self.cbo(), lcom=self.lcom(),
+                         cbo=self.cbo(), cohesion=self.cohesion(),
                          caveats=class_index.caveats(self._r, self._class_index()))
 
     def method_count(self) -> int:
@@ -96,8 +97,11 @@ class Structure:
     def cbo(self) -> int:
         return class_index.cbo(self._r, self._class_index())
 
-    def lcom(self):
-        return None  # not in legacy; future
+    def cohesion(self) -> Cohesion | None:
+        """The class's method groups and detached methods, or ``None`` when the language's
+        instance member access cannot be read from syntax."""
+        r = self._r
+        return _cohesion(r.methods(), r._grammar)
 
     def _class_index(self):
         idx = self._r.context.class_index if self._r.context else None

@@ -35,7 +35,9 @@ def test_cbo(tmp_path: Path):
 def test_ck_record(tmp_path: Path):
     cs = _classes(tmp_path)
     ck = Structure.over(cs["Leaf"]).ck()
-    assert (ck.dit, ck.noc, ck.cbo, ck.nom, ck.lcom) == (2, 0, 2, 1, None)
+    # `m` reaches no instance member and is reached by none: detached, not a group.
+    assert (ck.dit, ck.noc, ck.cbo, ck.nom, ck.lcom4) == (2, 0, 2, 1, 0)
+    assert ck.cohesion.detached == ("m",)
 
 
 # ---- homonymous classes must not merge ------------------------------------
