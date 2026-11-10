@@ -68,6 +68,10 @@ class Java(ObjectOriented):
                           "hex_integer_literal", "octal_integer_literal"})
 
     @classmethod
+    def string_literal_nodes(cls) -> frozenset[str]:
+        return frozenset({"string_literal"})
+
+    @classmethod
     def operator_nodes(cls) -> frozenset[str]:
         return frozenset({
             "if", "else", "for", "while", "do", "return", "class", "interface",

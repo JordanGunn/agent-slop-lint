@@ -15,9 +15,10 @@ from .combinatorial import CombinatorialRule
 from .cyclomatic import CyclomaticRule
 from .dependency_cycles import DependencyCyclesRule
 from .duplication import DuplicationRule
+from .duplicate_string import DuplicateStringRule
 from .god_module import GodModuleRule
 from .halstead import HalsteadVolumeRule
-from .magic_literal import MagicLiteralRule
+from .magic_float import MagicFloatRule
 from .rigidity import RigidityRule
 from .uselessness import UselessnessRule
 
@@ -26,7 +27,8 @@ RULE_REGISTRY: list[Rule] = [
     CognitiveRule(),
     CombinatorialRule(),
     HalsteadVolumeRule(),
-    MagicLiteralRule(),
+    MagicFloatRule(),
+    DuplicateStringRule(),
     GodModuleRule(),
     DuplicationRule(),
     DependencyCyclesRule(),
@@ -47,11 +49,12 @@ __all__ = [
     "CouplingRule",
     "CyclomaticRule",
     "DependencyCyclesRule",
+    "DuplicateStringRule",
     "DuplicationRule",
     "GodModuleRule",
     "HalsteadVolumeRule",
     "InheritanceDepthRule",
-    "MagicLiteralRule",
+    "MagicFloatRule",
     "RigidityRule",
     "UselessnessRule",
 ]

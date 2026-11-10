@@ -95,6 +95,10 @@ class Ruby(MultiPurpose):
         return frozenset({"integer", "float", "complex", "rational"})
 
     @classmethod
+    def string_literal_nodes(cls) -> frozenset[str]:
+        return frozenset({"string"})
+
+    @classmethod
     def operator_nodes(cls) -> frozenset[str]:
         return frozenset({
             "def", "end", "class", "module", "if", "elsif", "else", "unless",

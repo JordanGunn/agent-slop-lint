@@ -84,6 +84,10 @@ class Rust(MultiPurpose):
         return frozenset({"integer_literal", "float_literal"})
 
     @classmethod
+    def string_literal_nodes(cls) -> frozenset[str]:
+        return frozenset({"raw_string_literal", "string_literal"})
+
+    @classmethod
     def operator_nodes(cls) -> frozenset[str]:
         return frozenset({
             "fn", "if", "else", "for", "while", "loop", "match", "return",

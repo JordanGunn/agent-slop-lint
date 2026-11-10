@@ -1,7 +1,7 @@
 """Structural metrics — measurements over AST shape + the analysis-context.
 
 The relocated metric inventory: the result records (``records``) and the compute
-(``complexity``, ``halstead``, ``callable_measures``, ``annotations``, ``class_index``,
+(``complexity``, ``halstead``, ``literals``, ``annotations``, ``class_index``,
 ``relational``, ``hotspots``). Compute takes plain ``ast`` nodes (or a
 duck-typed region) — never a scope/component object — so this package depends only on
 ``ast`` + ``identity`` + its own ``records``, and ``scope`` is free to depend on it

@@ -58,11 +58,15 @@ Hotspot Analysis (slop hotspots)
 Software Science (halstead-volume)
   Halstead, M.H. (1977). "Elements of Software Science." Elsevier.
 
-Magic numbers (magic-literal)
+Magic numbers (magic-float)
   Martin, R.C. (2008). "Clean Code: A Handbook of Agile Software Craftsmanship."
   Prentice Hall. G25: Replace Magic Numbers with Named Constants.
   Fowler, M. (1999). "Refactoring: Improving the Design of Existing Code."
   Addison-Wesley. Replace Magic Number with Symbolic Constant.
+
+Duplicated string literals (duplicate-string)
+  SonarSource rule S1192, "String literals should not be duplicated". slop takes its
+  minimum string length (5); its default limit differs (see the rule's docstring).
 
 Acyclic Dependencies Principle (import-cycle)
   Lakos, J. (1996). "Large-Scale C++ Software Design." Addison-Wesley.

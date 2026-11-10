@@ -75,6 +75,10 @@ class CSharp(ObjectOriented):
         return frozenset({"integer_literal", "real_literal"})
 
     @classmethod
+    def string_literal_nodes(cls) -> frozenset[str]:
+        return frozenset({"string_literal", "verbatim_string_literal"})
+
+    @classmethod
     def operator_nodes(cls) -> frozenset[str]:
         return frozenset({
             "if", "else", "for", "foreach", "while", "do", "return", "class",

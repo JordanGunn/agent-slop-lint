@@ -63,6 +63,12 @@ elsewhere.
 5. A rule that visited zero components is listed in `Report.zero_visited` rather than passing
    silently. Exit code: 0 no violations, 1 any violation, 2 error.
 
+Objective and subjective violations: a rule reports a violation only when it is objective,
+meaning it follows from syntax and a stated limit alone. A case that needs an exemption for
+idiom or intent is subjective and is not reported; judging it is the job of a layer that
+reads context. `magic-float` and `duplicate-string` show the split: they measure a float
+operand and a repeated long string, and say nothing about integers or short strings.
+
 Contributor invariants:
 
 - A rule subclasses `Rule` (`name`, `description`, `altitudes`, `default_config`, `check`);

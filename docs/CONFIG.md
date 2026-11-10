@@ -33,7 +33,7 @@ enabled = true
 
 - `enabled`: boolean. Default `true`; `class-cohesion` defaults to `false`.
 - Options: `limit` for every rule except `import-cycle`; `duplicate-code` also takes
-  `min_leaf_nodes`. An integer option needs an integer; `rigid-package` and
+  `min_leaf_nodes`, and `duplicate-string` also takes `min_length`. An integer option needs an integer; `rigid-package` and
   `useless-package` take an integer or float.
 
 An unknown rule name, option, or wrongly typed value is an error. `slop rules` lists rule

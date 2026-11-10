@@ -87,6 +87,10 @@ class Go(MultiPurpose):
         return frozenset({"int_literal", "float_literal", "imaginary_literal", "rune_literal"})
 
     @classmethod
+    def string_literal_nodes(cls) -> frozenset[str]:
+        return frozenset({"interpreted_string_literal", "raw_string_literal"})
+
+    @classmethod
     def operator_nodes(cls) -> frozenset[str]:
         return frozenset({
             "func", "if", "else", "for", "switch", "case", "default",

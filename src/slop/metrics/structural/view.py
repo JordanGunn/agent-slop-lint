@@ -23,7 +23,7 @@ from __future__ import annotations
 from typing import Any
 
 from ...identity import ScopeKind
-from . import callable_measures, class_index, complexity, halstead
+from . import class_index, complexity, halstead, literals
 from .cohesion import cohesion as _cohesion
 from .hotspots import DEFAULT_LAST as _HOTSPOT_LAST, hotspots as _hotspots
 from .records import CKMetrics, Cohesion, PackageMetrics
@@ -72,9 +72,12 @@ class Structure:
         r = self._r
         return halstead.profile(r._ast_node(), r._grammar)
 
-    def magic_literals(self):
-        r = self._r
-        return callable_measures.magic_literals(r._ast_node(), r._grammar)
+    # ---- Module measures: literals --------------------------------------
+    def magic_floats(self):
+        return literals.magic_floats(self._r)
+
+    def repeated_strings(self, *, min_length: int = 5):
+        return literals.repeated_strings(self._r, min_length=min_length)
 
     # ---- Class measures: Chidamber-Kemerer (dit/noc/cbo via the class index) --
     def ck(self) -> CKMetrics:

@@ -83,6 +83,10 @@ class TypeScript(EcmaScriptMembers, MultiPurpose):
         return frozenset({"number"})
 
     @classmethod
+    def string_literal_nodes(cls) -> frozenset[str]:
+        return frozenset({"string"})
+
+    @classmethod
     def operator_nodes(cls) -> frozenset[str]:
         return frozenset({
             "function", "if", "else", "for", "while", "do", "return", "class",

@@ -66,12 +66,17 @@ class Julia(MultiPurpose):
         return frozenset({"integer_literal", "float_literal"})
 
     @classmethod
+    def string_literal_nodes(cls) -> frozenset[str]:
+        return frozenset({"string_literal"})
+
+    @classmethod
     def operator_nodes(cls) -> frozenset[str]:
         return frozenset({
             "function", "return", "if", "else", "elseif", "end", "for", "while",
             "break", "continue", "in", "try", "catch", "finally", "throw", "do",
             "begin", "let", "global", "local", "module", "using", "import", "export",
             "struct", "mutable", "abstract", "primitive", "type", "const",
+            "operator",     # the node type of every infix operator token; its text is the symbol
             "=", "+", "-", "*", "/", "%", "^", "//", ".",
             "==", "!=", "<", ">", "<=", ">=", "===", "!==",
             "&&", "||", "!", "&", "|", "<<", ">>", "+=", "-=", "*=", "/=",

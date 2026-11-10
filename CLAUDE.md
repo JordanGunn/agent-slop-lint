@@ -17,7 +17,7 @@ root (src-layout; package `agent-slop-lint`, import `slop`, CLI `slop.cli:main`)
   vocabulary (`slop lexicon`).
 - `src/slop/ontology/`: canonical vocabulary; `ir.py` reads the Open Ontology JSON IR
   (`slop vocab`).
-- Lint layer: `rule.py` (Rule), `rules/` (14 rules, `RULE_REGISTRY` in `rules/__init__.py`),
+- Lint layer: `rule.py` (Rule), `rules/` (15 rules, `RULE_REGISTRY` in `rules/__init__.py`),
   `dispatch.py`, `violation.py`, `config.py`.
 - `cli.py`: all commands. `tests/`: pytest, `test_rule_*.py` per rule.
 
@@ -54,6 +54,11 @@ uv run slop rules
 - Config top-level keys are `exclude` and `rules` only; unknown keys, rules and options, and
   wrongly typed values, are load errors. Every command loads through
   `AnalysisConfig.load`. `slop check RULE...` runs the named rules even when disabled.
+- A violation is *objective* or *subjective*. Objective: it follows from syntax and a stated
+  limit alone, so no idiom or intent excuses it. Subjective: it depends on what the author
+  meant (a mask, a unit conversion, a format offset). The linter reports objective violations
+  only, and only those exit 1. Never add exemptions or special cases to make a subjective case
+  objective; leave it to the inferential layer, which is not built.
 - Exit codes: lint `0` none / `1` any violation / `2` error. Read-only commands `0`
   answered / `2` could not answer; an empty answer carries caveats.
 - Suppression is inline `slop: ignore[exact-rule-name]`, applied by the dispatcher. The dispatcher

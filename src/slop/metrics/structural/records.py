@@ -37,11 +37,14 @@ class HalsteadProfile:
 
 
 @dataclass(frozen=True)
-class MagicLiteral:
-    """A non-trivial numeric literal in a callable body. Legacy: types.magic_literals."""
+class LiteralUse:
+    """One distinct literal in a module: its text, where it first appears, and how many
+    times it is used."""
 
     value: str
     line: int
+    column: int
+    count: int
 
 
 # --- Class altitude (Chidamber-Kemerer 1994) --------------------------------

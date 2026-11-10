@@ -217,7 +217,12 @@ class Grammar(ABC):
 
     @classmethod
     def numeric_literal_nodes(cls) -> frozenset[str]:
-        """Numeric-literal node types (for magic-literal detection)."""
+        """Numeric-literal node types."""
+        return frozenset()
+
+    @classmethod
+    def string_literal_nodes(cls) -> frozenset[str]:
+        """String-literal node types: one node per literal, quotes included."""
         return frozenset()
 
     @classmethod
