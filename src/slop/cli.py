@@ -427,7 +427,7 @@ def tree_view(root: str | Path, output: str = "human", *, scope: str | None = No
     shown_kind = _parse_kind(kind)
     rows = discovery.outline(target, corpus.root, depth=depth,
                              kinds=frozenset({shown_kind}) if shown_kind else None)
-    notes = discovery.caveats(corpus, shown_kind)
+    notes = discovery.caveats(corpus, shown_kind, under=target)
     label = _rel_path(target.id, str(corpus.root)) or target.qualname or corpus.name
     if output == "json":
         print(json.dumps({"scope": label, "kind": target.id.kind.value,

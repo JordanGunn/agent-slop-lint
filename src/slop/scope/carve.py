@@ -56,8 +56,15 @@ def scan_corpus(root: Path, config: Any) -> C.Corpus:
     from ..metrics.structural import class_index
     from ..graph.build import build as build_dependency_graph
     from .context import AnalysisContext
-    index = class_index.build(list(corpus._iter_classes()))
     graph = build_dependency_graph(corpus)
+    # Which modules each module imports: a base name written as a simple name is resolved
+    # through these edges before falling back to proximity (see class_index._nearest).
+    imports: dict[Any, set[Any]] = {}
+    for edge in graph.edges():
+        if edge.resolved and edge.to is not None:
+            imports.setdefault(edge.from_, set()).add(edge.to)
+    index = class_index.build(list(corpus._iter_classes()),
+                              {k: frozenset(v) for k, v in imports.items()})
     module_pkg = {
         m.id: pkg.id
         for r in corpus.realms() for pkg in r.packages() for m in pkg.modules()
@@ -164,9 +171,11 @@ def _carve_decls(
     callable_types = grammar.callable()
     out: list[Any] = []
     for child in node.children():
-        if child.type in class_types:
+        # An anonymous token can share a node type with the construct it belongs to (Ruby's
+        # ``class`` keyword vs a ``class`` node), so only named nodes are declarations.
+        if child.type in class_types and child.named:
             out.append(_make_class(child, grammar, content, path, parts))
-        elif child.type in callable_types:
+        elif child.type in callable_types and child.named:
             out.append(_make_callable(child, grammar, content, path, parts, in_class))
         else:
             out.extend(_carve_decls(

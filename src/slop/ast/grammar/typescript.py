@@ -24,7 +24,8 @@ class TypeScript(MultiPurpose):
 
     @classmethod
     def classes(cls) -> frozenset[str]:
-        return frozenset({"class_declaration", "interface_declaration", "abstract_class_declaration"})
+        return frozenset({"class_declaration", "interface_declaration", "abstract_class_declaration",
+                          "enum_declaration"})
 
     @classmethod
     def identifiers(cls) -> frozenset[str]:

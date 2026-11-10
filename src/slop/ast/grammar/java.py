@@ -15,7 +15,8 @@ class Java(ObjectOriented):
 
     @classmethod
     def classes(cls) -> frozenset[str]:
-        return frozenset({"class_declaration", "interface_declaration", "record_declaration"})
+        return frozenset({"class_declaration", "interface_declaration", "record_declaration",
+                          "enum_declaration"})
 
     @classmethod
     def decision_nodes(cls) -> frozenset[str]:

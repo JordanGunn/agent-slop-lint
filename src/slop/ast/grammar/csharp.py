@@ -15,7 +15,8 @@ class CSharp(ObjectOriented):
 
     @classmethod
     def classes(cls) -> frozenset[str]:
-        return frozenset({"class_declaration", "interface_declaration", "struct_declaration"})
+        return frozenset({"class_declaration", "interface_declaration", "struct_declaration",
+                          "enum_declaration"})
 
     @classmethod
     def decision_nodes(cls) -> frozenset[str]:

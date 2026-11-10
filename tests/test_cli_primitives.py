@@ -247,3 +247,48 @@ def test_vocab_carries_the_caveat_for_a_polyglot_root(tmp_path: Path, capsys):
     _, answer, _ = _ask(capsys, "vocab", "--ontology", IR, "--root", str(tmp_path), "--output", "json")
     assert [m["term"] for m in answer["matched"]] == ["Ticket"]
     assert any(c.startswith("c:") for c in answer["caveats"])   # Customer may live in C
+
+
+def _polyglot(tmp_path: Path) -> None:
+    (tmp_path / "p").mkdir()
+    (tmp_path / "p" / "a.py").write_text("class Widget:\n    pass\n")
+    (tmp_path / "c").mkdir()
+    (tmp_path / "c" / "b.c").write_text("struct Widget { int x; };\n")
+
+
+def test_a_tree_scoped_to_one_realm_carries_only_that_realms_caveats(tmp_path: Path, capsys):
+    # The C realm cannot affect rows under the Python realm, so its note would be noise.
+    _polyglot(tmp_path)
+    _, whole, _ = _ask(capsys, "tree", "--root", str(tmp_path), "--output", "json")
+    _, py_only, _ = _ask(capsys, "tree", "--root", str(tmp_path), "--scope", "python",
+                         "--scope-kind", "realm", "--output", "json")
+    assert any(c.startswith("c:") for c in whole["caveats"])
+    assert py_only["caveats"] == []
+
+
+def test_find_and_vocab_carry_the_c_caveat_in_a_polyglot_root_but_callables_do_not(
+        tmp_path: Path, capsys):
+    _polyglot(tmp_path)
+    _, found, _ = _ask(capsys, "find", "Widget", "--root", str(tmp_path), "--output", "json")
+    assert any(c.startswith("c:") for c in found["caveats"])
+    _, callables, _ = _ask(capsys, "find", "Widget", "--kind", "callable", "--root",
+                           str(tmp_path), "--output", "json")
+    assert callables["caveats"] == []
+
+
+def test_a_file_with_syntax_errors_is_named_instead_of_silently_losing_its_definitions(
+        tmp_path: Path, capsys):
+    (tmp_path / "good.py").write_text("class Good:\n    pass\n")
+    (tmp_path / "broken.py").write_text("class Broken(\n    def x(:\n")
+    _, answer, _ = _ask(capsys, "find", "Broken", "--root", str(tmp_path), "--output", "json")
+    assert answer["matches"] == []          # the definition did not survive the parse...
+    (note,) = answer["caveats"]             # ...and the answer says so, naming the file
+    assert "1 file(s) have syntax errors" in note and "broken.py" in note
+    _, clean, _ = _ask(capsys, "find", "Good", "--root", str(tmp_path), "--output", "json")
+    assert [m["name"] for m in clean["matches"]] == ["Good"]
+    assert "good.py" not in " ".join(clean["caveats"])
+
+
+def test_a_clean_project_has_no_caveats(sample_project: Path, capsys):
+    _, answer, _ = _ask(capsys, "find", "Store", "--root", str(sample_project), "--output", "json")
+    assert answer["caveats"] == []

@@ -134,13 +134,10 @@ class Go(MultiPurpose):
         if node.type != "type_declaration":
             return super().extract_name(node, content)
         for spec in node.children:
-            if spec.type != "type_spec":
+            if spec.type not in ("type_spec", "type_alias"):
                 continue
             name_node = spec.child_by_field_name("name")
-            type_node = spec.child_by_field_name("type")
-            if name_node is None or type_node is None:
-                continue
-            if type_node.type in ("struct_type", "interface_type"):
+            if name_node is not None:
                 return content[name_node.start_byte:name_node.end_byte].decode("utf-8", errors="replace")
         return "<anonymous>"
 

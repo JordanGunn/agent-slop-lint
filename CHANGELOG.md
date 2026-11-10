@@ -58,9 +58,11 @@ below is recoverable from commit `b7ab8f7` (the tip of `dev` before this change)
 - **Modules:** `scope/find.py` (discovery) and `ontology/` (`Vocabulary` interface,
   `OntologyIR` reader, `compare`).
 - `tests/test_layers.py` pins the import boundaries between layers.
-- **Caveats on class questions.** `find`, `tree` and `vocab` carry a `caveats` list (JSON)
-  or `note:` lines (human) when a realm's grammar carves no class scopes (C, Julia), so
-  "no match" there is not read as "not defined".
+- **Caveats on questions the primitives cannot fully answer.** `find`, `tree` and `vocab`
+  carry a `caveats` list (JSON) or `note:` lines (human) for (1) a realm whose grammar
+  carves no class scopes (C, Julia), so "no match" there is not read as "not defined", and
+  (2) files with syntax errors, which are still carved but may have lost definitions. A
+  `tree` scoped to one realm reports only that realm's caveats.
 - **Findings carry a root-relative `path`** (JSON), and the human output shows
   `path:line`, so same-named scopes in different files can be told apart.
 
@@ -69,11 +71,28 @@ below is recoverable from commit `b7ab8f7` (the tip of `dev` before this change)
 - **`class-shape` merged homonymous classes.** The CK class index was keyed by simple
   name ("last wins on clash"), so every class named `Params` (or `Store`, `Index`, `Key`)
   reported the combined subclass count and could chain depth through the wrong parent. A
-  base name now resolves to the nearest class of that name (same module, then same
-  package), is left unresolved when still ambiguous, and the finding says so (`Caveat:`).
-  On the laszy codebase this removed four spurious "11 direct subclasses" observations
-  (the real counts were 3, 3, 3 and 2).
+  base name now resolves, in order, to the single class of that name in the same module,
+  in a module it imports, or in the same package, so an explicit
+  `from b.params import Params` beats a nearer homonym. It is left unresolved when still
+  ambiguous, and the finding says so (`Caveat:`), including on the base class whose NOC
+  may then be undercounted. On the laszy codebase this removed four spurious "11 direct
+  subclasses" observations (the real counts were 3, 3, 3 and 2).
+- **Discovery gaps.** Enums are now discovered in Java, C# and TypeScript. Go names every
+  declared type, not only structs and interfaces (`type Status int` and aliases used to
+  come out as `<anonymous>`). Ruby's empty-bodied classes no longer grow a phantom
+  `<anonymous>` child (the `class` keyword token shares its node type with the node);
+  unnamed scopes are no longer reported as collisions.
 - The stale note that the C# grammar wheel does not load (it loads and parses).
+
+### Known limits
+
+- C and Julia structs, C++ enums, and TypeScript type aliases are not discovered (the
+  caveat covers C and Julia; C needs a has-body check and `typedef struct {...} Name;`).
+- `orphans` matches by name, so an unreferenced function whose name is used elsewhere is
+  not reported. `structure.duplication` lists clone members by qualname only, so two
+  packages with identical module and function names repeat the label.
+- `[ignore]` entries match kind plus qualname, so `classes = ["Params"]` silences every
+  class of that name; a per-instance exemption needs path-qualified ignores.
 
 ## [3.0.0a0] - 2026-06-04
 

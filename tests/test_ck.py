@@ -88,7 +88,10 @@ def test_depth_follows_the_nearest_parent(tmp_path: Path):
 def test_ck_says_when_its_numbers_may_not_be_exact(tmp_path: Path):
     cs = _homonyms(tmp_path)
     twin = Structure.over(cs[("a/params.py", "Params")]).ck().caveats
-    assert len(twin) == 1 and "shares its name with 1 other class" in twin[0]
+    assert len(twin) == 2 and "shares its name with 1 other class" in twin[0]
+    # Stray (c/use.py) names 'Params' but could not be placed on either, so the parent
+    # must say its NOC may be undercounted rather than print 2 as if exact.
+    assert "1 subclass(es) naming it could not be placed" in twin[1] and "undercounted" in twin[1]
     stray = Structure.over(cs[("c/use.py", "Stray")]).ck().caveats
     assert len(stray) == 1 and "Params" in stray[0] and "not resolved" in stray[0]
     assert Structure.over(cs[("a/params.py", "Deep")]).ck().caveats == ()   # unique name, exact
@@ -103,3 +106,37 @@ def test_class_shape_finding_carries_the_caveat(tmp_path: Path):
     (finding,) = list(ClassShapeRule().check(cs[("a/params.py", "Params")], cfg))
     assert "2 direct subclasses" in finding.message
     assert "Caveat: shares its name with 1 other class" in finding.message
+
+
+# ---- an explicit import beats proximity -----------------------------------
+
+def _import_case(tmp_path: Path) -> dict:
+    files = {
+        "a/__init__.py": "",
+        "a/params.py": "class Params:\n    pass\n",
+        "b/__init__.py": "",
+        "b/params.py": "class Params:\n    pass\n\nclass B1(Params):\n    pass\n",
+        # Same package as a.Params, but it extends the Params it IMPORTS from b.
+        "a/use.py": "from b.params import Params\n\nclass Mad(Params):\n    pass\n",
+    }
+    for rel, body in files.items():
+        (tmp_path / rel).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / rel).write_text(body)
+    corpus = scan_corpus(tmp_path, config=None)
+    return {
+        (c.id.spans[0].path.removeprefix(str(tmp_path) + "/"), c.name): c
+        for c in corpus._iter_classes()
+    }
+
+
+def test_an_imported_base_beats_a_nearer_homonym(tmp_path: Path):
+    cs = _import_case(tmp_path)
+    # Proximity alone would attach Mad to a/params.py (same package). The import says b.
+    assert Structure.over(cs[("b/params.py", "Params")]).noc() == 2    # B1 and Mad
+    assert Structure.over(cs[("a/params.py", "Params")]).noc() == 0
+    assert Structure.over(cs[("a/use.py", "Mad")]).dit() == 1
+
+
+def test_a_resolved_import_leaves_no_ambiguity_note_on_the_child(tmp_path: Path):
+    cs = _import_case(tmp_path)
+    assert Structure.over(cs[("a/use.py", "Mad")]).ck().caveats == ()

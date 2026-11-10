@@ -35,17 +35,18 @@ VERDICTS
       → break-dependency-cycle: invert one dependency (depend on an abstraction, DIP),
         extract the shared code into a module both can depend on, or merge the modules
         if they are truly one concern.
-  [warning] structure.duplication  ·  app
+  [warning] structure.duplication  ·  app  src/cli/app.py
       2 Type-2 clones: app.grid_group, app.surface_group
       → extract-helper-function: Extract a shared helper: 2 functions are Type-2 clones
         (structurally identical bodies, 43 leaf nodes).
 
 OBSERVATIONS
-  [info] class-shape  ·  params.Params
-      params.Params: CK profile — 11 direct subclasses (broad base — often a healthy
-      abstraction, but worth confirming it is not a god-base). (0 methods.)
+  [info] vocabulary  ·  src/laszy/project/scan
+      src/laszy/project/scan: Identifier vocabulary: 94 distinct tokens across 399 uses.
+      Reuse follows a healthy Zipfian gradient (α=0.93, R²=0.92), typical of engineered
+      code. …
 
-40 verdict(s) (2 error, 38 warning), 31 observation(s) — exit 1
+40 verdict(s) (2 error, 38 warning), 27 observation(s) — exit 1
 ```
 
 Exit `0` clean, `1` on any error-severity verdict, `2` on error (including a missing or

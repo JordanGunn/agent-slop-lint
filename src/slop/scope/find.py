@@ -128,13 +128,18 @@ def outline(scope: Scope, root: Path | str, *, depth: int | None = None,
     return rows
 
 
+_UNNAMED = "<anonymous>"
+
+
 def collisions(corpus, *, kind: ScopeKind = ScopeKind.CLASS) -> dict[str, list[Match]]:
     """Names defined by two or more distinct scopes of ``kind``.
 
     Identity is (qualname, path): module bare-stem qualnames repeat across packages, so
-    qualname alone would merge distinct definitions."""
+    qualname alone would merge distinct definitions. Unnamed scopes are not collisions."""
     groups: dict[str, dict[tuple, Match]] = {}
     for match in find(corpus, kind=kind):
+        if match.name == _UNNAMED:
+            continue
         groups.setdefault(match.name, {})[(match.qualname, match.path)] = match
     return {
         name: sorted(by_identity.values(), key=Match.sort_key)
@@ -143,18 +148,44 @@ def collisions(corpus, *, kind: ScopeKind = ScopeKind.CLASS) -> dict[str, list[M
     }
 
 
-def caveats(corpus, kind: ScopeKind | None = None) -> list[str]:
-    """Reasons a class-related answer may be incomplete, one line per affected language.
+def _realms_under(corpus, scope: Scope) -> list:
+    """The realms a question about ``scope`` can touch: all of them for the corpus, else
+    the realm that is, or encloses, ``scope``."""
+    if scope is corpus:
+        return list(corpus.realms())
+    node = scope
+    while node is not None and node.id.kind is not ScopeKind.REALM:
+        node = node.owner
+    return [node] if node is not None else []
 
-    A realm whose grammar is procedural (C, Julia) carves no class scopes, so its
-    ``struct``/type definitions are not discoverable and an empty answer there does not
-    mean "not defined". Empty unless the question involves classes (``kind`` is None or
-    CLASS)."""
-    if kind is not None and kind is not ScopeKind.CLASS:
-        return []
-    return sorted(
-        f"{realm.language}: procedural grammar carves no class scopes; "
-        "struct/type definitions are not discovered"
-        for realm in corpus.realms()
-        if not issubclass(realm.grammar, ObjectOriented)
+
+def caveats(corpus, kind: ScopeKind | None = None, *, under: Scope | None = None) -> list[str]:
+    """Reasons an answer about ``under`` (the whole corpus by default) may be incomplete.
+
+    - A realm whose grammar is procedural (C, Julia) carves no class scopes, so its
+      ``struct``/type definitions are not discoverable and an empty class answer there does
+      not mean "not defined". Reported only for questions about classes (``kind`` None or
+      CLASS).
+    - A file with syntax errors is still carved, but definitions inside the broken region
+      may be missing, for any kind of question.
+
+    Only realms and files that ``under`` actually contains are reported."""
+    target = under if under is not None else corpus
+    notes: list[str] = []
+    if kind is None or kind is ScopeKind.CLASS:
+        notes.extend(
+            f"{realm.language}: procedural grammar carves no class scopes; "
+            "struct/type definitions are not discovered"
+            for realm in _realms_under(corpus, target)
+            if not issubclass(realm.grammar, ObjectOriented)
+        )
+    broken = sorted(
+        relative_path(m.id, corpus.root) or m.qualname
+        for m in walk(target)
+        if m.id.kind is ScopeKind.MODULE and m._ast_node().raw.has_error
     )
+    if broken:
+        shown = ", ".join(broken[:5]) + (f", and {len(broken) - 5} more" if len(broken) > 5 else "")
+        notes.append(f"{len(broken)} file(s) have syntax errors, so definitions in them "
+                     f"may be missing: {shown}")
+    return sorted(notes)
