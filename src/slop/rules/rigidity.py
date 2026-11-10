@@ -1,4 +1,4 @@
-"""structure.rigidity: a package in Martin's Zone of Pain.
+"""rigid-package: a package in Martin's Zone of Pain.
 
 Defined at the package altitude. A package is rigid when it is both stable (many
 dependents, low instability I) and concrete (few abstractions, low abstractness A):
@@ -16,7 +16,7 @@ from .limit import Limit
 
 
 class RigidityRule(Limit):
-    name = "structure.rigidity"
+    name = "rigid-package"
     description = "a package is stable and concrete, far from Martin's main sequence"
     altitude = ScopeKind.PACKAGE
     default_limit = 0.7

@@ -1,4 +1,4 @@
-"""structure.god-module: top-level definition count against the module limit."""
+"""god-module: top-level definition count against the module limit."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -31,12 +31,12 @@ def _module(tmp_path: Path):
 
 
 def _cfg(limit) -> RuleConfig:
-    return RuleConfig(name=GodModuleRule.name, thresholds={ScopeKind.MODULE.value: limit})
+    return RuleConfig(name=GodModuleRule.name, options={"limit": limit})
 
 
-def test_default_config_is_threshold_20_module():
+def test_default_config_is_limit_20_module():
     rc = GodModuleRule.default_config()
-    assert rc.thresholds == {ScopeKind.MODULE.value: 20}
+    assert rc.options == {"limit": 20}
     assert GodModuleRule.altitudes == frozenset({ScopeKind.MODULE})
 
 
@@ -47,7 +47,7 @@ def test_registered():
 def test_violation_fields_and_location(tmp_path: Path):
     mod = _module(tmp_path)
     [v] = list(GodModuleRule().check(mod, _cfg(2)))
-    assert v.rule == "structure.god-module"
+    assert v.rule == "god-module"
     assert v.path == str(tmp_path / "m.py")
     assert (v.line, v.column) == (1, 1)
     assert v.value == 3 and v.threshold == 2  # 2 functions + 1 class; method excluded
@@ -64,7 +64,3 @@ def test_default_limit_is_silent(tmp_path: Path):
     mod = _module(tmp_path)
     assert list(GodModuleRule().check(mod, GodModuleRule.default_config())) == []
 
-
-def test_no_threshold_configured_is_silent(tmp_path: Path):
-    mod = _module(tmp_path)
-    assert list(GodModuleRule().check(mod, RuleConfig(name=GodModuleRule.name))) == []

@@ -1,15 +1,9 @@
 # slop — a linter and code-structure query tool
 
-> Checks code against established structural measures (McCabe, Campbell, Nejmeh, Chidamber and Kemerer, Hitz and Montazeri, Martin, Lakos) and answers questions about it: where a name is defined, what a scope holds, how a class is shaped, how its vocabulary compares with a canonical one.
+> Checks code against published structural measures (McCabe, Campbell, Nejmeh, Chidamber and Kemerer, Hitz and Montazeri, Martin) and answers questions about it: where a name is defined, what a scope holds, how a class is shaped, how its vocabulary compares with a canonical one.
 
-`slop` is the CLI shipped by the [`agent-slop-lint`](https://pypi.org/project/agent-slop-lint/) package on PyPI. Use this index when answering questions about installing `slop`, configuring limits, reading violations, suppressing one inline, or querying code structure.
+`slop` is the CLI of the `agent-slop-lint` package.
 
-## Overview
-
-- [README](https://github.com/JordanGunn/agent-slop-lint/blob/main/README.md): install, commands, the rules and their default limits, language support.
-- [Rule index](https://github.com/JordanGunn/agent-slop-lint/blob/main/docs/rules/README.md): the 12 rules, with their measures and sources.
-
-## Reference
-
-- [Configuration reference](https://github.com/JordanGunn/agent-slop-lint/blob/main/docs/CONFIG.md): `exclude`, `languages`, and per-rule `enabled`, `thresholds` and `params`; inline `slop: ignore[rule]` suppression.
-- [Changelog](https://github.com/JordanGunn/agent-slop-lint/blob/main/CHANGELOG.md): release history and compatibility notes.
+- [README](https://github.com/JordanGunn/agent-slop-lint/blob/main/README.md): install, commands, rules and default limits, languages.
+- [Configuration reference](https://github.com/JordanGunn/agent-slop-lint/blob/main/docs/CONFIG.md): `exclude`, per-rule `enabled` and options, inline `slop: ignore[rule]`.
+- [Changelog](https://github.com/JordanGunn/agent-slop-lint/blob/main/CHANGELOG.md)

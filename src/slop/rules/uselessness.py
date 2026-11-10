@@ -1,4 +1,4 @@
-"""structure.uselessness: a package in Martin's Zone of Uselessness.
+"""useless-package: a package in Martin's Zone of Uselessness.
 
 Defined at the package altitude. A package is useless when it is both unstable (few or no
 dependents, high instability I) and abstract (heavy on interfaces, high abstractness A):
@@ -15,7 +15,7 @@ from .limit import Limit
 
 
 class UselessnessRule(Limit):
-    name = "structure.uselessness"
+    name = "useless-package"
     description = "a package is unstable and abstract, far from Martin's main sequence"
     altitude = ScopeKind.PACKAGE
     default_limit = 0.7

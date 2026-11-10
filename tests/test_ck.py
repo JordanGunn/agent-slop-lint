@@ -103,7 +103,7 @@ def test_children_rule_counts_only_this_classes_own_subclasses(tmp_path: Path):
     from slop.config import RuleConfig
     from slop.rules.class_design import ChildrenRule
     cs = _homonyms(tmp_path)
-    cfg = RuleConfig(name="class.children", thresholds={"class": 1})
+    cfg = RuleConfig(name="class-children", options={"limit": 1})
     (violation,) = list(ChildrenRule().check(cs[("a/params.py", "Params")], cfg))
     assert (violation.value, violation.threshold) == (2, 1)   # not 3: b.Params's B1 is not its child
     assert "2 direct subclasses" in violation.message

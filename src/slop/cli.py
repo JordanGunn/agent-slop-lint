@@ -1,18 +1,19 @@
 """slop CLI.
 
 Primitives (read-only views over the layers): ``ast`` / ``tree`` / ``find`` / ``lexicon`` /
-``deps`` / ``vocab``. Lint layer: ``lint`` / ``check`` / ``rules``. Housekeeping:
-``doctor`` / ``init`` / ``schema``.
+``deps`` / ``vocab`` / ``shape``. Lint: ``lint`` / ``check`` / ``rules``. Housekeeping:
+``doctor`` / ``init``.
 
 The primitives answer questions and exit 0 whenever they answered (an empty result is an
-answer); 2 means the question could not be answered. The lint layer exits 0 clean /
-1 on any ERROR finding / 2 on error.
+answer); 2 means the question could not be answered. The lint commands exit 0 with no
+violations, 1 with any, 2 on error.
 """
 from __future__ import annotations
 
 import argparse
 import json
 import sys
+from dataclasses import replace
 from importlib.metadata import PackageNotFoundError, version as _pkg_version
 from pathlib import Path
 
@@ -83,7 +84,7 @@ def _scan_root(root: str | Path):
     if not root.exists():
         print(f"slop: error: root path does not exist: {root}", file=sys.stderr)
         return None
-    corpus = scan_corpus(root, AnalysisConfig.scan(root, RULE_REGISTRY))
+    corpus = scan_corpus(root, AnalysisConfig.load(root, RULE_REGISTRY))
     if not _has_source(corpus):
         print(f"slop: error: no source files found under {root}", file=sys.stderr)
         return None
@@ -120,21 +121,22 @@ def _has_source(corpus) -> bool:
     return False
 
 
-def lint(root: str | Path, output: str = "human", *, rules=RULE_REGISTRY) -> int:
+def lint(root: str | Path, output: str = "human", *, rules=None) -> int:
+    """Run every enabled rule, or only ``rules`` (which then run whether or not the config
+    has them enabled)."""
     root = Path(root)
     if not root.exists():
         print(f"slop: error: root path does not exist: {root}", file=sys.stderr)
         return 2
-    # Config is always validated against the FULL registry (a configured rule outside
-    # the dispatched subset is still a known rule); only `rules` are dispatched. This
-    # is what lets `check <family>` run with an ancestor config that configures other
-    # rules without raising "configures unknown rule".
     config = AnalysisConfig.load(root, RULE_REGISTRY)
+    if rules is not None:
+        config = replace(config, rules={
+            **config.rules, **{r.name: replace(config.rules[r.name], enabled=True) for r in rules}})
     corpus = scan_corpus(root, config)
     if not _has_source(corpus):
         print(f"slop: error: no source files found under {root}", file=sys.stderr)
         return 2
-    report = Dispatcher(rules, config).run(corpus)
+    report = Dispatcher(RULE_REGISTRY if rules is None else rules, config).run(corpus)
     if output == "json":
         print(json.dumps(report.as_dict(), indent=2))
     else:
@@ -142,15 +144,14 @@ def lint(root: str | Path, output: str = "human", *, rules=RULE_REGISTRY) -> int
     return report.exit_code()
 
 
-def check(target: str, root: str | Path, output: str = "human") -> int:
-    """Lint with only the rules matching ``target`` — an exact rule name
-    (``complexity.cyclomatic``) or a namespace family (``complexity``)."""
-    selected = [r for r in RULE_REGISTRY
-                if r.name == target or r.name.startswith(target + ".")]
-    if not selected:
-        print(f"slop: no rule or family matches '{target}'. Try `slop rules`.", file=sys.stderr)
+def check(names: list[str], root: str | Path, output: str = "human") -> int:
+    """Run only the named rules, even if the config or the default has them off."""
+    by_name = {r.name: r for r in RULE_REGISTRY}
+    unknown = [n for n in names if n not in by_name]
+    if unknown:
+        print(f"slop: unknown rule(s) {unknown}. Try `slop rules`.", file=sys.stderr)
         return 2
-    return lint(root, output, rules=selected)
+    return lint(root, output, rules=[by_name[n] for n in names])
 
 
 def rules_cmd(output: str = "human") -> int:
@@ -166,30 +167,6 @@ def rules_cmd(output: str = "human") -> int:
     print(f"{len(rows)} rules\n")
     for n, a, on, d in rows:
         print(f"  {n:<{width}}  {'on ' if on else 'off'}  [{a}]  {d}")
-    return 0
-
-
-def schema_cmd(output: str = "json") -> int:
-    """Emit the config shape, generated from the registry (so it cannot drift from the
-    rules it describes)."""
-    rules_schema = []
-    for r in sorted(RULE_REGISTRY, key=lambda x: x.name):
-        rc = r.default_config()
-        rules_schema.append({
-            "name": r.name,
-            "altitudes": sorted(k.value for k in r.altitudes),
-            "enabled": rc.enabled,
-            "thresholds": dict(rc.thresholds),
-            "params": dict(rc.params),
-        })
-    schema = {"version": "v2", "exclude": [], "languages": [], "rules": rules_schema}
-    if output == "json":
-        print(json.dumps(schema, indent=2))
-    else:
-        print(f"slop config schema v2: exclude, languages, and {len(rules_schema)} rules")
-        for r in rules_schema:
-            keys = sorted({*r["thresholds"], *r["params"]})
-            print(f"  {r['name']}: keys={keys}")
     return 0
 
 
@@ -556,16 +533,13 @@ def init(root: str | Path) -> int:
 def _template() -> str:
     lines = ["# slop configuration, generated by `slop init`.",
              "# Uncomment and edit to change a rule's defaults.\n",
-             '# exclude = ["tests/**"]       # files slop never reads',
-             '# languages = ["python"]       # carve only these languages\n']
+             '# exclude = ["tests/**"]       # files slop never reads\n']
     for r in sorted(RULE_REGISTRY, key=lambda x: x.name):
         rc = r.default_config()
-        lines.append(f'# [rules."{r.name}"]')
+        lines.append(f"# [rules.{r.name}]")
         lines.append(f"# enabled = {str(rc.enabled).lower()}")
-        for k, v in rc.thresholds.items():
-            lines.append(f"# thresholds.{k} = {json.dumps(v)}")
-        for k, v in rc.params.items():
-            lines.append(f"# params.{k} = {json.dumps(v)}")
+        for key, value in rc.options.items():
+            lines.append(f"# {key} = {json.dumps(value)}")
         lines.append("")
     return "\n".join(lines)
 
@@ -591,8 +565,8 @@ def main(argv: list[str] | None = None) -> int:
     p_lint.add_argument("--root", default=".", help="source root to scan (default: cwd)")
     p_lint.add_argument("--output", choices=["human", "json"], default="human")
 
-    p_check = sub.add_parser("check", help="lint with only one rule or namespace family")
-    p_check.add_argument("target", help="a rule name (complexity.cyclomatic) or family (complexity)")
+    p_check = sub.add_parser("check", help="run only the named rules")
+    p_check.add_argument("rules", nargs="+", help="rule name(s) to run (see `slop rules`)")
     p_check.add_argument("--root", default=".")
     p_check.add_argument("--output", choices=["human", "json"], default="human")
 
@@ -603,9 +577,6 @@ def main(argv: list[str] | None = None) -> int:
 
     p_init = sub.add_parser("init", help="write a .slop.toml config template")
     p_init.add_argument("--root", default=".")
-
-    p_schema = sub.add_parser("schema", help="print the config schema (generated from the registry)")
-    p_schema.add_argument("--output", choices=["human", "json"], default="json")
 
     p_ast = sub.add_parser("ast", help="print the parse tree of a single source file")
     p_ast.add_argument("path", help="source file to inspect")
@@ -666,15 +637,13 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "lint":
             return lint(args.root, args.output)
         if args.command == "check":
-            return check(args.target, args.root, args.output)
+            return check(args.rules, args.root, args.output)
         if args.command == "rules":
             return rules_cmd(args.output)
         if args.command == "doctor":
             return doctor()
         if args.command == "init":
             return init(args.root)
-        if args.command == "schema":
-            return schema_cmd(args.output)
         if args.command == "ast":
             return ast_view(args.path, args.output, raw=args.raw, max_depth=args.max_depth)
         if args.command == "lexicon":

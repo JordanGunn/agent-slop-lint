@@ -1,12 +1,11 @@
-"""structure.duplication: callables with structurally identical bodies (Type-2 clones).
+"""duplicate-code: callables with structurally identical bodies (Type-2 clones).
 
 Defined at the corpus altitude. A Type-2 clone is a set of callables whose bodies have the
 same AST leaf-type fingerprint, differing only in identifiers and literals: the
 copy-paste-then-rename signature. The rule reports one violation per cluster, at its first
 member (by path, then line), and names every member as ``path:line qualname``.
 
-``min_leaf_nodes`` (default 10) skips trivial bodies. A cluster has at least two members by
-construction, so there is no minimum-size setting.
+``min_leaf_nodes`` (default 10) skips trivial bodies.
 """
 from __future__ import annotations
 
@@ -22,17 +21,18 @@ from ..violation import Violation
 
 
 class DuplicationRule(Rule):
-    name = "structure.duplication"
+    name = "duplicate-code"
     description = "callables have structurally identical bodies (Type-2 clones)"
     altitudes = frozenset({ScopeKind.CORPUS})
 
     @classmethod
     def default_config(cls) -> RuleConfig:
-        return RuleConfig(name=cls.name, params={"min_leaf_nodes": 10})
+        return RuleConfig(name=cls.name, options={"min_leaf_nodes": 10})
 
     def check(self, component: Scope, config: RuleConfig) -> Iterable[Violation]:
-        min_leaf_nodes = int(config.param("min_leaf_nodes", 10))
-        for cluster in Structure.over(component).clone_clusters(min_leaf_nodes=min_leaf_nodes):
+        clusters = Structure.over(component).clone_clusters(
+            min_leaf_nodes=config.option("min_leaf_nodes"))
+        for cluster in clusters:
             members = ", ".join(
                 f"{relative_path(m.scope, component.root) or '?'}:{m.line} {m.qualname}"
                 for m in cluster.members)

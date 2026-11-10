@@ -1,4 +1,4 @@
-"""structure.god-module: a module declaring too many top-level definitions.
+"""god-module: a module declaring too many top-level definitions.
 
 Defined at the module altitude. The measure is a count of breadth, not of depth: the
 module's direct class and callable children. Methods inside classes do not count (that is
@@ -13,7 +13,7 @@ from .limit import Limit
 
 
 class GodModuleRule(Limit):
-    name = "structure.god-module"
+    name = "god-module"
     description = "a module declares more top-level definitions than the limit"
     altitude = ScopeKind.MODULE
     default_limit = 20
@@ -22,4 +22,4 @@ class GodModuleRule(Limit):
         return view.definition_count()
 
     def describe(self, component: Scope, value: int, limit: float, view: Structure) -> str:
-        return f"{component.qualname} declares {value} top-level definitions (limit {int(limit)})"
+        return f"{component.qualname} declares {value} top-level definitions (limit {limit})"

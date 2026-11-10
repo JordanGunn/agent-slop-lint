@@ -127,7 +127,7 @@ def test_languages_with_implicit_this_are_unmeasurable_not_zero(tmp_path: Path, 
     assert _groups(tmp_path, name, src) is None
 
 
-_ENABLED = RuleConfig(name="class.cohesion", enabled=True, thresholds={"class": 1})
+_ENABLED = RuleConfig(name="class-cohesion", enabled=True, options={"limit": 1})
 
 
 def _first_class(root: Path):
@@ -143,7 +143,7 @@ def test_cohesion_rule_lists_the_groups_in_its_message(tmp_path: Path):
     )
     cls = _first_class(tmp_path)
     [v] = list(CohesionRule().check(cls, _ENABLED))
-    assert (v.rule, v.value, v.threshold) == ("class.cohesion", 2, 1)
+    assert (v.rule, v.value, v.threshold) == ("class-cohesion", 2, 1)
     assert "{f}; {g}" in v.message
     assert (v.line, v.column) == (1, 1)
 
@@ -185,7 +185,7 @@ def test_cohesion_rule_respects_its_limit(tmp_path: Path):
     (tmp_path / "m.py").write_text(
         "class A:\n    def f(self): return self.a\n    def g(self): return self.b\n")
     cls = _first_class(tmp_path)
-    assert list(CohesionRule().check(cls, replace(_ENABLED, thresholds={"class": 2}))) == []
+    assert list(CohesionRule().check(cls, replace(_ENABLED, options={"limit": 2}))) == []
     assert len(list(CohesionRule().check(cls, _ENABLED))) == 1
 
 

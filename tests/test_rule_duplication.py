@@ -1,4 +1,4 @@
-"""structure.duplication: Type-2 clone clusters, one violation per cluster."""
+"""duplicate-code: Type-2 clone clusters, one violation per cluster."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -48,15 +48,15 @@ def _corpus(tmp_path: Path, src: str):
     return scan_corpus(tmp_path, config=None)
 
 
-def _check(corpus, **params):
-    cfg = RuleConfig(name=DuplicationRule.name, params=params) if params \
+def _check(corpus, **options):
+    cfg = RuleConfig(name=DuplicationRule.name, options=options) if options \
         else DuplicationRule.default_config()
     return list(DuplicationRule().check(corpus, cfg))
 
 
 def test_default_config_is_corpus_altitude():
     rc = DuplicationRule.default_config()
-    assert rc.param("min_leaf_nodes") == 10
+    assert rc.options == {"min_leaf_nodes": 10}
     assert DuplicationRule.altitudes == frozenset({ScopeKind.CORPUS})
 
 
@@ -66,7 +66,7 @@ def test_registered():
 
 def test_one_violation_per_cluster_at_first_member(tmp_path: Path):
     [v] = _check(_corpus(tmp_path, CLONES))
-    assert v.rule == "structure.duplication"
+    assert v.rule == "duplicate-code"
     assert v.path == str(tmp_path / "m.py")
     assert v.line == 1
     assert v.value == 2 and v.threshold == 2

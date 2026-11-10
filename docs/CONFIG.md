@@ -1,88 +1,53 @@
-# Configuration Reference
+# Configuration
 
-slop reads config from `.slop.toml`, or a `[tool.slop]` table in `pyproject.toml`. It walks
-**upward from `--root`** for the nearest of those (a `pyproject.toml` without `[tool.slop]`
-is skipped, so a sub-project file doesn't mask a repo-root `.slop.toml`). `slop init` writes
-a commented starter; `slop schema` prints the exact shape, generated from the rule registry
-so it cannot drift from the rules it describes.
+slop reads `.slop.toml`, or a `[tool.slop]` table in `pyproject.toml`, from the nearest
+directory at or above `--root`. `slop init` writes a commented template.
 
-A config file may contain only three top-level keys: `exclude`, `languages` and `rules`.
-Any other top-level key (including the removed `[ignore]` table) is a load error, so `lint`
-and `check` exit 2 rather than silently ignoring it. The read-only commands (`find`, `tree`,
-`lexicon`, `deps`, `vocab`, `shape`) read only `exclude` and `languages`.
+Every command loads the same config. An invalid config exits `2`.
 
-## `exclude` — files slop does not read
+## Keys
+
+Only `exclude` and `rules` are accepted at the top level.
+
+### `exclude`
 
 ```toml
 exclude = ["tests/**", "**/vendor/**"]
 ```
 
-Globs over POSIX paths **relative to the directory holding the config file** (`*` crosses
-`/`, so `tests/**` covers everything beneath `tests/`; a leading `**/` also matches the top
-level). Excluded files are never carved, so they appear in no command: `lint`, `find`,
-`tree`, `lexicon`, `vocab` and `shape` all see the same corpus.
+Globs over POSIX paths relative to the directory holding the config file. `*` crosses `/`,
+so `tests/**` covers everything beneath `tests/`. Excluded files are never read.
 
-## `languages` — which languages slop reads
+### `[rules.<name>]`
 
 ```toml
-languages = ["python", "typescript"]
+[rules.cyclomatic-complexity]
+limit = 12
+
+[rules.duplicate-code]
+min_leaf_nodes = 20
+
+[rules.class-cohesion]
+enabled = true
 ```
 
-Language ids to carve; omitted or empty means every supported language (`c`, `c_sharp`,
-`cpp`, `go`, `java`, `javascript`, `julia`, `python`, `ruby`, `rust`, `typescript`). An
-unknown id is a load error that lists the supported ones. Like `exclude`, it applies to every
-command.
+- `enabled`: boolean. Default `true`; `class-cohesion` defaults to `false`.
+- Options: `limit` for every rule except `import-cycle`; `duplicate-code` also takes
+  `min_leaf_nodes`. An integer option needs an integer; `rigid-package` and
+  `useless-package` take an integer or float.
 
-## `[rules]` — per-rule settings
+An unknown rule name, option, or wrongly typed value is an error. `slop rules` lists rule
+names; `slop init` shows every option and its default.
 
-Each rule is configured under `[rules."<name>"]` (the quotes matter: rule names contain
-dots). Three keys:
+## Inline suppression
 
-```toml
-[rules."complexity.cyclomatic"]
-enabled = true                 # default true (class.cohesion defaults to false)
-thresholds.callable = 12       # keyed by the rule's declared ALTITUDE, not a flat number
-
-[rules."structure.duplication"]
-params.min_leaf_nodes = 20     # a rule-specific noise floor
-```
-
-- **`enabled`** turns the rule on or off.
-- **`thresholds`** are keyed by altitude label (`callable` / `class` / `module` / `package`
-  / `corpus`), the scope the rule measures at. A violation is reported when the measure is
-  **strictly greater** than the limit. A threshold keyed to an altitude the rule does
-  **not** declare is a load error, not a silent no-op: if slop accepts your config, the rule
-  is applying it. `slop rules` shows each rule's altitude; `slop schema` shows its threshold
-  keys and defaults.
-- **`params`** (`params.<key> = <value>`) are noise floors. A param the rule does not
-  declare is a load error, and `slop schema` lists each rule's params. They must sit in the
-  `params` table: a bare `<key> = <value>` on a rule is also an error.
-
-Rule tables accept no other keys.
-
-## Suppressing a violation
-
-Suppression is inline, on the line a violation is reported at, in any comment syntax:
+On the line a violation is reported at, in any comment syntax:
 
 ```python
-def legacy_parse(x):  # slop: ignore[complexity.cyclomatic]
+def legacy_parse(x):  # slop: ignore[cyclomatic-complexity]
 ```
 
 - `slop: ignore` drops every violation reported on that line.
-- `slop: ignore[a, b]` drops only those rules. A family prefix covers its rules:
-  `slop: ignore[complexity]` covers `complexity.cyclomatic`, `complexity.cognitive` and
-  `complexity.combinatorial`.
+- `slop: ignore[a, b]` drops only the rules named, by exact name.
 
-The reported line is the line of the definition (`path:line` in the output). To exempt a
-whole file or directory from every command, use `exclude`.
-
-## Exit codes
-
-`0` no violations · `1` at least one violation · `2` error (bad config, or a nonexistent /
-source-free `--root`).
-
-## What changed from earlier versions
-
-There are no profiles, no `[[waivers]]` array and no scope-keyed
-`[ignore]` table, and rules carry no per-rule level. Tune thresholds directly and suppress inline. The scan target itself is
-the CLI's `--root`, not a config key.
+To exempt a file or directory, use `exclude`.

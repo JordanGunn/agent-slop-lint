@@ -10,9 +10,8 @@ rules never walk the corpus themselves. Two things follow:
   excluded) is reported in ``zero_visited`` instead of passing as clean.
 
 A violation on a line carrying ``slop: ignore`` is dropped, and ``slop: ignore[a, b]``
-drops only those rules (a family name such as ``complexity`` covers its rules), like a
-``noqa`` comment: the exemption sits beside the code it excuses, in whatever comment
-syntax the language has.
+drops only the rules named, like a ``noqa`` comment: the exemption sits beside the code
+it excuses, in whatever comment syntax the language has.
 
 Exit codes: 0 no violations, 1 at least one, 2 slop could not run (raised by the CLI).
 """
@@ -115,7 +114,7 @@ class _Lines:
         if match.group(1) is None:
             return True
         named = {name.strip() for name in match.group(1).split(",") if name.strip()}
-        return any(violation.rule == n or violation.rule.startswith(n + ".") for n in named)
+        return violation.rule in named
 
 
 def _index_by_kind(root: Any) -> dict[ScopeKind, list[Any]]:

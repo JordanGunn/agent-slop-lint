@@ -1,5 +1,0 @@
-# slop's own config, for running slop on this repo (`slop lint --root src`).
-#
-# Defaults apply. The v1.2.0 research snapshot under docs/.internal is a frozen corpus, not
-# code to hold to limits, so it is excluded.
-exclude = ["docs/.internal/snapshots/**", "docs/.internal/research/**"]

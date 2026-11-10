@@ -1,4 +1,4 @@
-"""structure.dependency-cycles: modules that import each other in a loop.
+"""import-cycle: modules that import each other in a loop.
 
 Defined at the corpus altitude. The Acyclic Dependencies Principle (Lakos 1996; Martin
 2002, ch. 20) holds that a cycle stops any module in it being reasoned about, tested or
@@ -27,7 +27,7 @@ def _modules(component):
 
 
 class DependencyCyclesRule(Rule):
-    name = "structure.dependency-cycles"
+    name = "import-cycle"
     description = "modules import each other in a cycle (Acyclic Dependencies Principle)"
     altitudes = frozenset({ScopeKind.CORPUS})
 

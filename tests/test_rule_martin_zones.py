@@ -1,4 +1,4 @@
-"""structure.rigidity / structure.uselessness — Martin (1994) package-zone violations.
+"""rigid-package / useless-package — Martin (1994) package-zone violations.
 
 Shared fixture: a 4-package corpus engineered so exactly one package lands in each
 zone. ``core`` is concrete and depended-upon by everyone but depends on nothing
@@ -44,7 +44,7 @@ def _packages(tmp_path: Path) -> dict:
 def test_rigidity_default_config():
     rc = RigidityRule.default_config()
     assert RigidityRule.altitudes == frozenset({ScopeKind.PACKAGE})
-    assert rc.threshold_for(ScopeKind.PACKAGE) == 0.7
+    assert rc.options == {"limit": 0.7}
 
 
 def test_rigidity_registered():
@@ -56,7 +56,7 @@ def test_rigidity_fires_on_zone_of_pain(tmp_path: Path):
     findings = list(RigidityRule().check(pkgs["core"], RigidityRule.default_config()))
     assert len(findings) == 1
     f = findings[0]
-    assert f.rule == "structure.rigidity"
+    assert f.rule == "rigid-package"
     assert f.path == str(tmp_path / "core")       # located at the package directory
     assert f.value == 1.0 and f.threshold == 0.7  # D' and its limit
     assert "Zone of Pain" in f.message
@@ -73,15 +73,10 @@ def test_rigidity_silent_on_main_sequence(tmp_path: Path):
 def test_rigidity_strictly_greater_than_limit(tmp_path: Path):
     pkgs = _packages(tmp_path)
     # D' is 1.0: a limit equal to it is not exceeded, a limit just below it is.
-    at = RuleConfig(name=RigidityRule.name, thresholds={ScopeKind.PACKAGE.value: 1.0})
-    below = RuleConfig(name=RigidityRule.name, thresholds={ScopeKind.PACKAGE.value: 0.99})
+    at = RuleConfig(name=RigidityRule.name, options={"limit": 1.0})
+    below = RuleConfig(name=RigidityRule.name, options={"limit": 0.99})
     assert list(RigidityRule().check(pkgs["core"], at)) == []
     assert len(list(RigidityRule().check(pkgs["core"], below))) == 1
-
-
-def test_rigidity_silent_without_threshold(tmp_path: Path):
-    pkgs = _packages(tmp_path)
-    assert list(RigidityRule().check(pkgs["core"], RuleConfig(name=RigidityRule.name))) == []
 
 
 # ---- uselessness ----------------------------------------------------------
@@ -89,7 +84,7 @@ def test_rigidity_silent_without_threshold(tmp_path: Path):
 def test_uselessness_default_config():
     rc = UselessnessRule.default_config()
     assert UselessnessRule.altitudes == frozenset({ScopeKind.PACKAGE})
-    assert rc.threshold_for(ScopeKind.PACKAGE) == 0.7
+    assert rc.options == {"limit": 0.7}
 
 
 def test_uselessness_registered():
@@ -101,7 +96,7 @@ def test_uselessness_fires_on_zone_of_uselessness(tmp_path: Path):
     findings = list(UselessnessRule().check(pkgs["lonely"], UselessnessRule.default_config()))
     assert len(findings) == 1
     f = findings[0]
-    assert f.rule == "structure.uselessness"
+    assert f.rule == "useless-package"
     assert f.path == str(tmp_path / "lonely")
     assert f.value == 1.0 and f.threshold == 0.7
     assert "Zone of Uselessness" in f.message
@@ -117,12 +112,8 @@ def test_uselessness_silent_outside_zone(tmp_path: Path):
 
 def test_uselessness_strictly_greater_than_limit(tmp_path: Path):
     pkgs = _packages(tmp_path)
-    at = RuleConfig(name=UselessnessRule.name, thresholds={ScopeKind.PACKAGE.value: 1.0})
-    below = RuleConfig(name=UselessnessRule.name, thresholds={ScopeKind.PACKAGE.value: 0.99})
+    at = RuleConfig(name=UselessnessRule.name, options={"limit": 1.0})
+    below = RuleConfig(name=UselessnessRule.name, options={"limit": 0.99})
     assert list(UselessnessRule().check(pkgs["lonely"], at)) == []
     assert len(list(UselessnessRule().check(pkgs["lonely"], below))) == 1
 
-
-def test_uselessness_silent_without_threshold(tmp_path: Path):
-    pkgs = _packages(tmp_path)
-    assert list(UselessnessRule().check(pkgs["lonely"], RuleConfig(name=UselessnessRule.name))) == []

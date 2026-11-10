@@ -1,4 +1,4 @@
-"""complexity.cyclomatic: McCabe (1976) cyclomatic complexity of a callable.
+"""cyclomatic-complexity: McCabe (1976) cyclomatic complexity of a callable.
 
 Defined at the callable altitude only. Cyclomatic complexity counts the independent
 control-flow paths through one unit. A class-level sum is not that: it grows with the
@@ -13,7 +13,7 @@ from .limit import Limit
 
 
 class CyclomaticRule(Limit):
-    name = "complexity.cyclomatic"
+    name = "cyclomatic-complexity"
     description = "a callable's cyclomatic complexity (McCabe 1976) is over the limit"
     altitude = ScopeKind.CALLABLE
     default_limit = 10
@@ -22,4 +22,4 @@ class CyclomaticRule(Limit):
         return view.cyclomatic()
 
     def describe(self, component: Scope, value: int, limit: float, view: Structure) -> str:
-        return f"{component.qualname} has cyclomatic complexity {value} (limit {int(limit)})"
+        return f"{component.qualname} has cyclomatic complexity {value} (limit {limit})"

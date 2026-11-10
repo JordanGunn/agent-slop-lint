@@ -1,10 +1,8 @@
-"""Limit: a rule that compares one measure with a limit at one altitude.
+"""Limit: a rule that compares one measure with a ``limit`` option at one altitude.
 
 Most rules are exactly this: measure something about a component, and report it when the
-measure is over a configured limit. A subclass names the altitude and the default limit,
-says how to measure (``measure``), and how to word the violation (``describe``). The
-limit is read from the rule's ``thresholds.<altitude>`` config key; a rule with no limit
-configured reports nothing.
+measure is over the configured limit. A subclass names the altitude and the default limit,
+says how to measure (``measure``), and how to word the violation (``describe``).
 """
 from __future__ import annotations
 
@@ -21,7 +19,7 @@ from ..violation import Violation
 
 class Limit(Rule):
     altitude: ClassVar[ScopeKind]
-    default_limit: ClassVar[float]
+    default_limit: ClassVar[int | float]
     enabled_by_default: ClassVar[bool] = True
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
@@ -32,12 +30,10 @@ class Limit(Rule):
     @classmethod
     def default_config(cls) -> RuleConfig:
         return RuleConfig(name=cls.name, enabled=cls.enabled_by_default,
-                          thresholds={cls.altitude.value: cls.default_limit})
+                          options={"limit": cls.default_limit})
 
     def check(self, component: Scope, config: RuleConfig) -> Iterable[Violation]:
-        limit = config.threshold_for(component.id.kind)
-        if limit is None:
-            return
+        limit = config.option("limit")
         view = Structure.over(component)
         value = self.measure(view)
         if value is not None and value > limit:

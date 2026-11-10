@@ -1,4 +1,4 @@
-"""structure.dependency-cycles: one violation per import cycle (ADP, Martin 2002)."""
+"""import-cycle: one violation per import cycle (ADP, Martin 2002)."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -22,7 +22,7 @@ def _check(corpus):
 def test_default_config_is_corpus_altitude_without_threshold():
     rc = DependencyCyclesRule.default_config()
     assert DependencyCyclesRule.altitudes == frozenset({ScopeKind.CORPUS})
-    assert rc.thresholds == {} and rc.enabled
+    assert rc.options == {} and rc.enabled
 
 
 def test_registered():
@@ -31,7 +31,7 @@ def test_registered():
 
 def test_fires_on_cycle_at_first_module_by_path(tmp_path: Path):
     [v] = _check(_corpus(tmp_path, cyclic=True))
-    assert v.rule == "structure.dependency-cycles"
+    assert v.rule == "import-cycle"
     assert v.path == str(tmp_path / "a.py")
     assert (v.line, v.column) == (1, 1)
     assert v.value == 2 and v.threshold == 0

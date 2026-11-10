@@ -9,248 +9,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed (breaking)
 
-The lint layer was rewritten as a plain linter (like ruff or flake8); the earlier finding
-ontology is gone. Git history keeps the old design.
-
-- **Removed** `Verdict`, `Observation`, `Evidence`, `Action`, `Disposition`, the `REVIEW`
-  action, prescriptions and `confidence` (`slop/finding.py` is replaced by
-  `slop/violation.py`: `Violation(rule, path, line, column, message, value, threshold)`),
-  and per-rule `severity` (a `severity` key in a rule table is now a config error).
-- **Removed** the scope-keyed `[ignore]` table and its `path::name` form. Suppress inline
-  with `slop: ignore` (every rule on that line) or `slop: ignore[rule, family]` on the
-  reported line.
-- **Removed rules:** `hotspots`, `orphans`, `vocabulary` and `class-shape`. `class-shape`
-  is replaced by `class.coupling` (CBO, limit 8), `class.inheritance-depth` (DIT, 4),
-  `class.children` (NOC, 10) and `class.cohesion` (LCOM4 group count, limit 1, **off by
-  default**). There are now 12 rules. The hotspots and orphans measures remain as dormant
-  measures on `Structure`; `slop shape` is unchanged.
-- **Output:** human output is one `path:line:column: rule message` line per violation,
-  then `Found N violations.` or `No violations.`; the verdict/observation sections and the
-  `zero_visited` note are gone from it. JSON is `{"summary": {"violations", "exit_code"},
-  "violations": [...], "zero_visited": [...]}`; the `findings` key is gone. A rule reports
-  a violation when its measure is strictly greater than its limit.
-- **Exit codes:** `slop lint` / `slop check` exit 1 on any violation (was: any
-  error-severity verdict), 0 when none, 2 on error.
-- **Config:** only the top-level keys `exclude`, `languages` and `rules` are accepted; any
-  other (e.g. `[ignore]`) is a load error for `lint`/`check`. A rule table accepts
-  `enabled`, `thresholds` and `params`. `slop schema` is now version `v2`; `slop init`
-  writes a template without severity.
-- Entries below that describe `[ignore]`, `path::name`, severities, observations or the
-  deleted rules are superseded by this entry.
-
-### Removed
-
-Direction change: build dependable primitives (AST search, hierarchy, vocabulary
-governance) before any analysis layer. A rule stays only if its measure has a published
-source; a rule whose measure *and* name were slop's own invention is removed. Everything
-below is recoverable from commit `b7ab8f7` (the tip of `dev` before this change).
-
-- **Rules (13):** `lexical.imposters`, `lexical.slackers`, `lexical.stutter`,
-  `lexical.verbosity`, `lexical.sprawl`, `lexical.hammers`, `lexical.cohesion`,
-  `structure.call-islands`, `structure.redundancy`, `structure.escape-hatches`,
-  `structure.hidden-mutators`, `structure.sentinels`, `structure.runts`.
-- **`rules/_battery.py`** (cross-rule corroboration) and the "battery" concept.
-- **`metrics/lexical/`** (first-parameter clusters, profile classifier, affix patterns,
-  class-ownership packets and the `Lexical` view): its only callers were the rules above.
-  The prior-art vocabulary kernel `slop.lexicon` is unchanged.
-- **Measures only those rules used:** `Structure.call_islands`, `redundant_siblings`,
-  `is_runt`, `sentinel_parameters`, `mutated_parameters`, `escape_hatch_density` and
-  `escape_hatch_counts`, with `metrics/structural/{annotations,runts}.py`, the redundancy
-  and call-island code in `relational.py`, `AnalysisContext.callable_names`, and four
-  record types. `relational.py` is now `clones.py` (clone detection only).
-- **Six grammar facts nothing called any more** (about 770 lines across the 11 grammars and
-  the paradigm base, with their helpers): `parameter_mutations`,
-  `string_annotated_parameters`, `extract_callee_name`, `type_annotation_queries`,
-  `member_access_patterns`, `is_dynamic_type`. `extract_parameters` stays.
-- Kept without a rule, for the later structural-analysis layer: `Structure.lcom` (still a
-  stub returning `None`), `method_count`, `halstead_density`, `magic_literals`.
-- **Documentation and research probes for the removed concepts (45 files):**
-  `docs/philosophy/naming-spec.md` and `composition-and-lexical.md`,
-  `docs/.internal/design/LITERALS.md`, `docs/.internal/roadmap.md`,
-  `scripts/research/composition_poc/`, `composition_poc_v2/`, `synonym_probe.py`,
-  `lexicon_affinity_probe.py`, and `.scratch/lexicon/` (the old `Lexicon` API). Design docs
-  that mixed removed and surviving material were trimmed. The frozen research record under
-  `docs/.internal/research/` and `docs/.internal/snapshots/` is untouched; its pointers to
-  the deleted scripts now dangle and resolve only in `b7ab8f7`.
-- 12 rules remain, each tracing to a citation or a standard concept: `complexity.*`
-  (McCabe, Campbell, Nejmeh), `structure.dependency-cycles` (Lakos, Martin, Tarjan),
-  `structure.rigidity` / `structure.uselessness` (Martin), `class-shape` (Chidamber-Kemerer),
-  `hotspots` (Tornhill), `vocabulary` (Zipf), `structure.duplication` (Type-2 clones),
-  `structure.god-module`, `orphans`.
-- No rule now reaches across the lexical and structural boundary.
+- The lint layer is a plain linter: a rule reports a `Violation(rule, path, line, column,
+  message, value, threshold)` when its measure is strictly greater than its limit. No
+  severity, verdict, observation or prescription.
+- Output is `path:line:column: rule message` per violation, then `Found N violations.` or
+  `No violations.`; JSON is `{"summary": {"violations", "exit_code"}, "violations": [...],
+  "zero_visited": [...]}`. Exit 0 none, 1 any violation, 2 error.
+- Suppress inline with `slop: ignore` or `slop: ignore[rule, family]` on the reported line.
+- Config accepts only `exclude` and `[rules.<name>]` with `enabled` and flat options (`limit`,
+  `min_leaf_nodes`); other keys and wrongly typed values are errors. `languages`, `thresholds`,
+  `params`, `slop schema` and rule families are removed. `slop check` takes rule names.
+- Rules renamed: `complexity.cyclomatic` to `cyclomatic-complexity`, `complexity.cognitive`
+  to `cognitive-complexity`, `complexity.combinatorial` to `npath-complexity`,
+  `structure.god-module` to `god-module`, `structure.rigidity` to `rigid-package`,
+  `structure.uselessness` to `useless-package`, `structure.dependency-cycles` to
+  `import-cycle`, `structure.duplication` to `duplicate-code`; `class-shape` is replaced by
+  `class-coupling` (CBO, 8), `class-inheritance-depth` (DIT, 4), `class-children` (NOC, 10)
+  and `class-cohesion` (LCOM4, 1, off by default): 12 rules.
+- Suppression matches exact rule names only: `slop: ignore[a, b]`.
+- `scripts/` removed.
 
 ### Added
 
-- **Cohesion (LCOM4) in `class-shape`.** `Structure.cohesion()` returns the class's method
-  `groups` (methods joined through shared instance members, a call through `self`/`this`
-  counting as sharing the callee) and its `detached` methods (no instance member reached
-  and none reaching them: abstract methods, constant properties). `CKMetrics.lcom` (always
-  `None`) is replaced by `CKMetrics.cohesion` and an `lcom4` property; evidence carries
-  `lcom4`, `method_groups` and `detached`, and the message lists the groups. Constructors,
-  static and class methods are excluded. New grammar facts `member_access()`,
-  `instance_receiver()` and `constructor_names()` (Python, JavaScript, TypeScript);
-  elsewhere `lcom4` is `null`, not 0, because Java, C# and C++ allow a bare `x` for
-  `this.x`. `class-shape` gains the attention floor `lcom4_attention` (default 1: a class
-  with more than one group is narrated), so a project's `class-shape` observation count can
-  rise. On laszy `src/`, 8 of 110 classes have more than one group; counting stateless
-  methods as groups first flagged 29, mostly interfaces and enum-like classes. Limits: a
-  nested JavaScript `function` rebinds `this`, which is not modelled; a class made of
-  independent accessor properties reads as many groups (LCOM4's known weakness); Python
-  methods whose first parameter is `cls` are treated as class methods. A JavaScript or
-  TypeScript class field holding an arrow function is carved as an unnamed method and is
-  counted, named `<anonymous>:<line>` so two of them never merge. `lcom4` 0 means nothing
-  was measurable (no instance methods, or all detached), not perfect cohesion. LCOM4 is
-  credited to Hitz and Montazeri (1995) in `NOTICE` and `CITATIONS.md`.
-- **`slop shape [--scope Q]`.** Prints every class beneath a scope with its Chidamber-Kemerer
-  profile and its cohesion groups, with no floors: `class-shape` narrates only classes past
-  an attention floor, `shape` answers for any class. JSON rows carry the `find` fields
-  (`name`, `qualname`, `path`, `line`) plus `nom`, `dit`, `noc`, `cbo`, `lcom4`,
-  `method_groups`, `detached` and `caveats`; `lcom4`, `method_groups` and `detached` are
-  `null` where the language's instance member access is unreadable, and the row's
-  `caveats` then say so (this also reaches `class-shape` evidence). `--scope` names a
-  scope and reports it if it is a class, plus every class beneath it. Like the other
-  primitives it needs no rule config, so it runs on a repository whose `lint` cannot.
-  New `scope.find.locate` pairs scopes with their `Match`.
-- **Primitives:** `slop find <name>` / `--collisions` (where a name is defined; which class
-  names are defined more than once), `slop tree` (ownership tree beneath a scope) and
-  `slop vocab --ontology IR.json` (class names against a canonical vocabulary from an Open
-  Ontology JSON IR: matched, unknown, unused). `tree` and `lexicon` take `--scope-kind`
-  because a package shares its qualname with its `__init__` module.
-- **Modules:** `scope/find.py` (discovery) and `ontology/` (`Vocabulary` interface,
-  `OntologyIR` reader, `compare`).
-- `tests/test_layers.py` pins the import boundaries between layers.
-- **Lexical analysis: `slop lexicon --ontology IR.json`.** Compares the words the code
-  declares (modules, packages, classes, callables, parameters) with the words an ontology
-  defines: coverage of declared-name occurrences, undefined tokens ordered by use and file
-  spread, unused canonical tokens, and canonical tokens the noise list strips (reported as
-  unmeasurable, not unused). No thresholds. New: `slop/lexical/`, `Lexicon.spread()`, the
-  `implicit_receiver_names()` grammar fact (Python: `self`, `cls`), and
-  `scope.lexicon.build_declared_lexicon`, which emits the `CLASS`/`CALLABLE`/`PARAMETER`
-  roles the lexicon kernel had reserved. Comparing every identifier occurrence was tried
-  first and rejected: it ranked `self`, `np`, `float` and `int` as the top undefined
-  vocabulary.
-- **Caveats on questions the primitives cannot fully answer.** `find`, `tree` and `vocab`
-  carry a `caveats` list (JSON) or `note:` lines (human) for files with syntax errors,
-  which are still carved but may have lost definitions, and for a grammar that carves no
-  class scopes (none ship today; the guard keeps a future one honest). A `tree` scoped to
-  one realm reports only that realm's caveats.
-- **C and Julia types are discoverable.** C `struct`/`union`/`enum` definitions become
-  class scopes, but only where the specifier has a body, so forward declarations, file-scope
-  usages and `struct Node *next;` inside a body are not phantoms; an anonymous
-  `typedef struct {...} Point;` is named `Point`. Julia `struct`, `abstract type` and
-  parametric types (`Box{T}` is `Box`) are class scopes, with `<:` supertypes as bases. Both
-  grammars are now multi-purpose, so the structural rules count these types too; on a
-  synthetic C layout this produced no new findings.
-- **Findings carry a root-relative `path`** (JSON), and the human output shows
-  `path:line`, so same-named scopes in different files can be told apart.
+- Read-only primitives that answer with facts and no limits: `slop find` / `--collisions`,
+  `tree`, `shape`, `vocab --ontology IR.json` and `lexicon --ontology IR.json`; they report
+  caveats for syntax-error files.
+- LCOM4 cohesion for Python, JavaScript and TypeScript; `null` elsewhere. Class properties
+  enter the declared-names lexicon for the same languages.
+- Discovery of C `struct`/`union`/`enum`, Julia `struct`/`abstract type`, Java/C#/TypeScript
+  enums, TypeScript type aliases, and every Go declared type.
 
 ### Fixed
 
-- **Rule `params` in config were silently ignored.** `slop init` writes
-  `params.cbo_attention = 8`, but the loader stored that dotted key under a param named
-  `params`, so a rule never read it (only a bare `cbo_attention = 8`, which the template
-  never emitted, worked). A `params` table now overrides the rule's declared params; a
-  param the rule does not declare is a load error ("can never read"), as an altitude it
-  does not declare already was; a rule key outside `enabled`/`severity`/`thresholds`/
-  `params` is an error that says to use the `params` table. Configs that used bare keys
-  must move them under `params`. On laszy, `params.cbo_attention = 0` now raises
-  `class-shape` from 8 to 72 observations.
-- **`hotspots` ranked files that did not change.** The churn cutoff is the 75th
-  percentile, which is 0 in a quiet window, and `churn >= 0` held for every file, so every
-  complex file was a "hotspot" ("High-churn" about files with churn 0): laszy, idle since
-  June, reported 49. A file now needs churn above zero, and complexity above zero, to be
-  in the high quadrant. Only files the corpus carved are ranked, so churn in a README, a
-  data file or an `exclude`d directory no longer enters with complexity 0 (a 400-day
-  window on laszy gave 1,919 hotspot observations from this; it gives 36, all under
-  `src/`).
-- **`find --collisions` reported a name defined once per language as a collision.** A
-  `Ticket` in Python and a `Ticket` in TypeScript is usually one concept mirrored across a
-  language boundary, and one grammar's scopes cannot shadow another's, so it is no longer a
-  collision. Two definitions inside one language still are, and the entry lists them. Every
-  match (`find`, `tree`, `shape` and the collisions) now carries a `language`. If you do want
-  cross-language mirrors listed, `find <name>` still returns every definition.
-- **The declared-names lexicon had no class properties.** `Class.properties()` was always
-  empty, so a field an ontology defines (`address/handle`) could not be matched to the
-  attribute that carries it. A class's properties are now its class-body fields plus the
-  members its methods assign through the instance receiver (`self.x = ...`, `this.x =
-  ...`, constructors included), read through new grammar facts `class_fields()` and
-  `assignment_nodes()`; a member only read, a member of another object, a dunder and a
-  `cls.x` in a class method are not; nor is an augmented assignment (`self.v += 1`), which
-  can only update a member that already exists. They enter the lexicon with a new
-  `PROPERTY` role. Measured on one tree (laszy's `slop-config` checkout, its `exclude`
-  applied, against the laszy-core IR) with `PROPERTY` emission off and on: declared
-  occurrences 2,790 to 3,233, covered 513 to 630, observed tokens 567 to 649. Python,
-  JavaScript and TypeScript only (the same grammars that have `member_access`): other
-  languages yield no properties, not a guess. Local variables are deliberately not declared
-  names: they are implementation detail, not vocabulary a canonical model governs, and
-  `Callable.locals()` stays unimplemented.
-- **TypeScript type aliases were not discovered.** `type Point = {...}` and generic
-  `type Box<T> = ...` are now class-like scopes beside `interface` and `enum`, as Go's named
-  types already were, so `find`, `vocab` and `shape` see them. Every alias counts, including
-  `type Id = string` and unions (`type C = A | B`); there is no object-shaped-only filter, so
-  a name repeated across files (React's `Props`) is a same-language collision like any
-  other. A `shape` row for an alias has no methods and `lcom4` 0.
-- **Regression: `languages` was ignored since the v3 rebuild.** 1.x read the top-level
-  `languages = [...]` key and passed it to the engine (restricting the scan to those
-  languages); `850d77e` dropped it while generated configs kept it. It now restricts every
-  command to the listed language ids (`python`, `typescript`, ...), and an id slop does not
-  have is an error that lists the supported ones, not an empty corpus.
-- **Same-named modules were conflated in cycles and clone clusters.** Module qualnames are
-  bare file stems, so `a/x.py` and `b/x.py` are both `x`. A cycle between them read
-  `x → x → x`, its finding collapsed onto one of the two (a `{qualname: module}` lookup
-  kept the last), and its metadata was `['x', 'x']`; clone clusters listed members by
-  qualname only, so two `m.f` read as one function. `DependencyCycle` now carries the
-  modules' `ScopeId`s and labels them by root-relative path (`a/x.py → b/x.py → a/x.py`),
-  the rule resolves modules by identity and attributes the finding to the members'
-  narrowest common ancestor (the realm here), and `CloneCluster.members` are
-  `CloneMember(scope, qualname, line)` shown as `path:line qualname`, which also removes the
-  "members have no locations" limit the duplication rule documented. `[ignore]` accepts
-  `path::name` (`functions = ["a/x.py::f"]`) to exempt one file's unit; the path matches
-  whole segments at the end of the source path. `relative_path` moved to
-  `slop.identity` so the graph layer can use it.
-- **`class-shape` merged homonymous classes.** The CK class index was keyed by simple
-  name ("last wins on clash"), so every class named `Params` (or `Store`, `Index`, `Key`)
-  reported the combined subclass count and could chain depth through the wrong parent. A
-  base name now resolves, in order, to the single class of that name in the same module,
-  in a module it imports, or in the same package, so an explicit
-  `from b.params import Params` beats a nearer homonym. It is left unresolved when still
-  ambiguous, and the finding says so (`Caveat:`), including on the base class whose NOC
-  may then be undercounted. On the laszy codebase this removed four spurious "11 direct
-  subclasses" observations (the real counts were 3, 3, 3 and 2).
-- **Discovery gaps.** Enums are now discovered in Java, C# and TypeScript. Go names every
-  declared type, not only structs and interfaces (`type Status int` and aliases used to
-  come out as `<anonymous>`). Ruby's empty-bodied classes no longer grow a phantom
-  `<anonymous>` child (the `class` keyword token shares its node type with the node);
-  unnamed scopes are no longer reported as collisions.
-- **C++ invented phantom classes.** `struct_specifier` is both a definition and a type
-  reference, so every forward declaration, file-scope usage and `struct Node *alt;` inside a
-  body became a class: `Node` came out four times and `--collisions` reported false
-  collisions. A C++ specifier now counts only with a body (as in C), an anonymous
-  `typedef struct {...} Point;` is named `Point`, and `union` and `enum` are discovered.
-- The stale note that the C# grammar wheel does not load (it loads and parses).
-- **A stale `.slop.toml` blocked the read-only commands.** `find`, `tree`, `lexicon`,
-  `deps` and `vocab` loaded and validated rule overrides they never use, so a config
-  naming a rule slop no longer has (laszy's names slop 1.x rules such as `complexity`)
-  made them exit 2. They now read only the config's scan settings; `lint` and `check`
-  still reject an unknown rule name.
-- **Regression: `exclude` was ignored since the v3 rebuild.** 1.x read the top-level
-  `exclude = [...]` key and applied it to every rule and to discovery; commit 850d77e
-  (v3 promoted, legacy package deleted) dropped it while generated configs kept the key,
-  so `exclude = ["tests/**"]` still analysed `tests/` in `lint` and every read-only
-  command. `scan_corpus` now skips excluded files: `fnmatch` globs over POSIX paths
-  relative to the directory holding the config (`*` crosses `/`; a leading `**/` also
-  matches the top level), applied by `lint`, `check` and the read-only commands alike.
-  Lint figures taken before this fix included excluded directories and are not baselines.
+- `exclude` in config takes effect for every command.
+- Same-named modules and classes are no longer merged in cycles, clone clusters and CK metrics.
+- `find --collisions` ignores a name defined once per language.
+- C++ forward declarations and Ruby empty classes no longer create phantom classes.
+
+### Removed
+
+- Rules `hotspots`, `orphans`, `vocabulary`, `class-shape`, `lexical.imposters`,
+  `lexical.slackers`, `lexical.stutter`, `lexical.verbosity`, `lexical.sprawl`,
+  `lexical.hammers`, `lexical.cohesion`, `structure.call-islands`, `structure.redundancy`,
+  `structure.escape-hatches`, `structure.hidden-mutators`, `structure.sentinels`,
+  `structure.runts`.
+- The finding model, per-rule `severity`, and the `[ignore]` table with `path::name`.
 
 ### Known limits
 
-- `orphans` matches by name, so an unreferenced function whose name is used elsewhere is
-  not reported.
-- A class qualname is its module name plus its class name, without the package path, so
-  distinct classes can share one (laszy's `octree/index.py` and `quadtree/index.py` both
-  yield `index.Index`). Identity is the `ScopeId` (it includes the file), and the places
-  that name a module or a clone show a path; a plain `[ignore]` entry still matches by
-  name, so exempting one of two same-named classes needs the `path::name` form.
+- `Structure.orphans` matches by name; it has no rule.
+- LCOM4 is unmeasurable for Java, C#, C++, Go, Rust, Ruby, C and Julia; class properties
+  exist only for Python, JavaScript and TypeScript.
+- A nested JavaScript `function` rebinds `this`, which LCOM4 does not model.
+- A class qualname omits the package path, so distinct classes can share one; identity is
+  the `ScopeId`.
 
 ## [3.0.0a0] - 2026-06-04
 

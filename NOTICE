@@ -1,40 +1,38 @@
-slop — Agentic Code Quality Linter
+slop — a linter and code-structure query tool
 Copyright 2025 Jordan Godau
 
-This product implements established software metrics from the following
-published research. These metrics are mathematical formulas computed from
-source code structure; slop implements them independently via tree-sitter
-AST traversal. No code from the original authors' implementations is used.
+slop implements established software metrics from the published work listed
+below. The metrics are formulas computed from source structure; slop implements
+them independently via tree-sitter AST traversal. No code from the original
+authors' implementations is used.
 
-The v3 codebase (src/slop/) is a ground-up rebuild and is original work by
-the author, licensed under the project's Apache License 2.0 (see LICENSE).
-It contains no third-party code; the metric kernels are slop's own
-implementation (heritage: the author's aux-skills project,
-https://github.com/JordanGunn/aux, also Copyright 2025 Jordan Godau under
-Apache 2.0). The earlier vendored-kernel subpackages and their separate
-KERNELS_LICENSE are retired — there is no third-party code to attribute.
+The codebase (src/slop/) is original work by the author, licensed under the
+Apache License 2.0 (see LICENSE). It contains no third-party code.
 
-ACADEMIC CITATIONS
-==================
+MEASURES
+========
 
-Cyclomatic Complexity (complexity.cyclomatic)
+Cyclomatic Complexity (cyclomatic-complexity)
   McCabe, T.J. (1976). "A Complexity Measure." IEEE Transactions on
   Software Engineering, SE-2(4), 308-320.
 
-Cognitive Complexity (complexity.cognitive)
+Cognitive Complexity (cognitive-complexity)
   Campbell, G.A. (2018). "Cognitive Complexity: A new way of measuring
   understandability." SonarSource SA. Technical report.
 
-Chidamber & Kemerer Object-Oriented Metrics (class.coupling, class.inheritance-depth, class.children)
+NPath (npath-complexity)
+  Nejmeh, B.A. (1988). "NPATH: A Measure of Execution Path Complexity and
+  its Applications." Communications of the ACM, 31(2), 188-200.
+
+Chidamber & Kemerer Object-Oriented Metrics (class-coupling, class-inheritance-depth, class-children)
   Chidamber, S.R. & Kemerer, C.F. (1994). "A Metrics Suite for Object
   Oriented Design." IEEE Transactions on Software Engineering, 20(6),
   476-493.
 
   Metrics implemented: CBO (Coupling Between Object Classes), DIT (Depth
-  of Inheritance Tree), NOC (Number of Children), WMC (Weighted Methods
-  per Class).
+  of Inheritance Tree), NOC (Number of Children).
 
-Cohesion, LCOM4 (class.cohesion, off by default; slop shape)
+Cohesion, LCOM4 (class-cohesion, off by default; slop shape)
   Hitz, M. & Montazeri, B. (1995). "Measuring Coupling and Cohesion in
   Object-Oriented Systems." Institut fuer Angewandte Informatik und
   Systemanalyse, University of Vienna.
@@ -43,7 +41,7 @@ Cohesion, LCOM4 (class.cohesion, off by default; slop shape)
   graph joining a class's methods through the instance members they share
   or call. Methods reaching no instance member are reported as detached.
 
-Distance from the Main Sequence (structure.rigidity, structure.uselessness)
+Distance from the Main Sequence (rigid-package, useless-package)
   Martin, R.C. (1994). "OO Design Quality Metrics: An Analysis of
   Dependencies." Proceedings of Workshop Pragmatic and Theoretical
   Directions in Object-Oriented Software Metrics, OOPSLA '94.
@@ -54,51 +52,20 @@ Distance from the Main Sequence (structure.rigidity, structure.uselessness)
   Metrics implemented: Instability (I), Abstractness (A), Distance from
   the Main Sequence (D').
 
-Hotspot Analysis (dormant measure Structure.hotspots; no rule reports it)
-  Tornhill, A. (2015). "Your Code as a Crime Scene: Use Forensic
-  Techniques to Arrest Defects, Bottlenecks, and Bad Design in Your
-  Programs." Pragmatic Bookshelf.
+Hotspot Analysis (measure Structure.hotspots; no rule reports it)
+  Tornhill, A. (2015). "Your Code as a Crime Scene." Pragmatic Bookshelf.
 
-  The hotspot formula (complexity × churn) and quadrant classification
-  approach are adapted from Tornhill's work. The churn proxy uses net LOC
-  delta (git --numstat) instead of commit count, and the default time
-  window (14 days vs Tornhill's 1 year) is an intentional adjustment for
-  agentic-era codebases where architectural damage accumulates in days.
+Software Science (measure metrics/structural/halstead.py; no rule reports it)
+  Halstead, M.H. (1977). "Elements of Software Science." Elsevier.
 
-Information Flow Complexity (historical reference)
-  Henry, S. & Kafura, D. (1981). "Software Structure Metrics Based on
-  Information Flow." IEEE Transactions on Software Engineering, SE-7(5),
-  510-518.
+Acyclic Dependencies Principle (import-cycle)
+  Lakos, J. (1996). "Large-Scale C++ Software Design." Addison-Wesley.
+  Tarjan, R.E. (1972). "Depth-First Search and Linear Graph Algorithms."
+  SIAM Journal on Computing, 1(2), 146-160. (Strongly connected components.)
 
-  Not directly implemented. Martin's Instability metric is a normalised
-  refinement of Henry & Kafura's fan-in/fan-out model.
-
-Identifier Vocabulary — empirical noise list (lexicon)
+Identifier noise list (lexicon)
   Newman, C.D., AlSuhaibani, R.S., Collard, M.L. & Maletic, J.I. (2017).
   "Lexical Categories for Source Code Identifiers." 24th IEEE International
   Conference on Software Analysis, Evolution and Reengineering (SANER 2017),
-  Klagenfurt, Austria, 228-237.
-
-  slop seeds its STOP_WORDS constant with the 14 identifiers the
-  authors found common to all 50 C/C++ systems they studied (a, length, id,
-  pos, start, next, str, key, f, x, index, p, left, result). These 14 form
-  an empirically-grounded floor for noise filtering in identifier-token
-  analysis (frequency and distribution measurement). The paper's
-  wider lexical-category framework (s-noun /
-  s-pronoun / s-adjective / s-verb) is not adopted; slop does not
-  currently produce per-identifier POS-style tags.
-
-Stop-Word Principles for Software Engineering Text (lexicon, design)
-  Fan, Y., Arora, C. & Treude, C. (2023). "Stop Words for Processing
-  Software Engineering Documents: Do they Matter?" University of Melbourne
-  & Monash University. arXiv:2303.10439. Online appendix:
-  https://zenodo.org/record/7865748
-
-  slop adopts two principles from this paper. First, no universal stop-word
-  list exists — the same word is signal in one task and noise in another.
-  Second, blind binary removal can degrade analyses; filtering is a
-  per-task choice. slop's Lexicon takes its stop-word set as an injectable
-  argument (default STOP_WORDS, the Newman 14 plus glue words). The paper's
-  specific 200-word SE-domain list is not adopted directly: their corpus
-  is Stack Overflow prose, not identifier streams. See
-  docs/.internal/identifier-vocabulary.md for the full discussion.
+  228-237. slop's STOP_WORDS contains the 14 identifiers the authors found
+  common to all 50 C/C++ systems they studied.

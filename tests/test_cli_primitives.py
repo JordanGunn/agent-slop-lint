@@ -290,20 +290,24 @@ def test_a_clean_project_has_no_caveats(sample_project: Path, capsys):
     assert answer["caveats"] == []
 
 
-# ---- Read-only commands honour `exclude` and ignore `[rules]` ----------------------
+# ---- Every command reads the same config ----------------------------------------------
 
-def test_primitives_apply_exclude_and_ignore_stale_rule_config(sample_project: Path, capsys):
-    # One config carries both a rule slop no longer has and an exclude. The read-only
-    # commands must take the exclude and not trip on the rule; `lint` must still reject it.
+def test_primitives_apply_exclude(sample_project: Path, capsys):
     (sample_project / "tests").mkdir()
     (sample_project / "tests" / "test_address.py").write_text("class Address:\n    pass\n")
-    (sample_project / ".slop.toml").write_text(
-        'exclude = ["tests/**"]\n[rules.complexity]\nenabled = true\n')
+    (sample_project / ".slop.toml").write_text('exclude = ["tests/**"]\n')
     code, answer, err = _ask(capsys, "find", "Address", "--root", str(sample_project), "--output", "json")
     assert code == 0, err
     assert [m["path"] for m in answer["matches"]] == ["store/address.py"]
-    with pytest.raises(ValueError, match="unknown rule 'complexity'"):
-        cli.lint(sample_project, "json")
+
+
+def test_an_invalid_config_fails_the_primitives_too(sample_project: Path, capsys):
+    # One loader serves every command: a config naming a rule slop does not have is an
+    # error whether you ask a question or run the linter.
+    (sample_project / ".slop.toml").write_text("[rules.no-such-rule]\nenabled = true\n")
+    code, _, err = _ask(capsys, "find", "Address", "--root", str(sample_project), "--output", "json")
+    assert code == 2
+    assert "unknown rule" in err and "no-such-rule" in err
 
 
 def test_without_exclude_the_same_files_are_carved(sample_project: Path, capsys):
@@ -388,49 +392,6 @@ def test_shape_explains_a_null_lcom4_in_the_row(tmp_path: Path, capsys):
     assert any("cohesion not measured" in c and "lcom4 is null" in c for c in thing["caveats"])
     measured = next(r for r in answer["classes"] if r["name"] == "Whole")
     assert not any("cohesion not measured" in c for c in measured["caveats"])
-
-
-# ---- `languages` restricts what is carved -------------------------------------------
-
-def _mixed_project(tmp_path: Path) -> Path:
-    (tmp_path / "a.py").write_text("class FromPython:\n    pass\n")
-    (tmp_path / "b.ts").write_text("class FromTypeScript {}\n")
-    return tmp_path
-
-
-def test_languages_restricts_the_read_only_commands(tmp_path: Path, capsys):
-    root = _mixed_project(tmp_path)
-    _, all_classes, _ = _ask(capsys, "shape", "--root", str(root), "--output", "json")
-    assert {r["name"] for r in all_classes["classes"]} == {"FromPython", "FromTypeScript"}
-    (root / ".slop.toml").write_text('languages = ["python"]\n')
-    code, only_python, err = _ask(capsys, "shape", "--root", str(root), "--output", "json")
-    assert code == 0, err
-    assert {r["name"] for r in only_python["classes"]} == {"FromPython"}
-
-
-def test_an_unknown_language_is_an_error_not_an_empty_corpus(tmp_path: Path, capsys):
-    root = _mixed_project(tmp_path)
-    (root / ".slop.toml").write_text('languages = ["pyhton"]\n')
-    code, _, err = _ask(capsys, "shape", "--root", str(root), "--output", "json")
-    assert code == 2
-    assert "unknown language" in err and "pyhton" in err
-
-
-def test_languages_applies_to_lint_too(tmp_path: Path, capsys):
-    import json
-    (tmp_path / "a.py").write_text("def ok(x):\n    return x\n")
-    (tmp_path / "b.ts").write_text(
-        "function branchy(x) {\n  if (x) { return 1 }\n  if (x > 2) { return 2 }\n  return 3\n}\n")
-    rule = '[rules."complexity.cyclomatic".thresholds]\ncallable = 2\n'
-    def paths() -> set[str]:
-        capsys.readouterr()
-        cli.lint(tmp_path, "json")
-        return {f["path"] for f in json.loads(capsys.readouterr().out)["violations"]
-                if f["rule"] == "complexity.cyclomatic"}
-    (tmp_path / ".slop.toml").write_text(rule)
-    assert paths() == {"b.ts"}
-    (tmp_path / ".slop.toml").write_text('languages = ["python"]\n' + rule)
-    assert paths() == set()
 
 
 def test_a_name_clashing_in_two_languages_is_one_entry_with_every_definition_labelled(

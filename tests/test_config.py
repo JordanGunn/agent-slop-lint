@@ -1,12 +1,12 @@
-"""Config: per-altitude thresholds validated against each rule's declared altitudes.
-A key the rule can never apply is a load error, not a silent drop."""
+"""Config: `exclude` and `[rules.<name>]` tables, and what is rejected."""
 from __future__ import annotations
 
 from pathlib import Path
 
 import pytest
 
-from slop.config import AnalysisConfig, Exclusion
+from slop import cli
+from slop.config import AnalysisConfig
 from slop.rules import RULE_REGISTRY
 from slop.scope import scan_corpus
 
@@ -15,188 +15,113 @@ def _write(root: Path, text: str) -> None:
     (root / ".slop.toml").write_text(text)
 
 
-def test_defaults_are_coherent():
-    cfg = AnalysisConfig.defaults(RULE_REGISTRY)
-    cyclo = cfg.for_rule("complexity.cyclomatic")
-    assert cyclo is not None and cyclo.enabled
-    assert cyclo.thresholds == {"callable": 10}
-    assert set(cfg.rules) == {r.name for r in RULE_REGISTRY}
+def _load(root: Path) -> AnalysisConfig:
+    return AnalysisConfig.load(root, RULE_REGISTRY)
 
 
-def test_cohesion_is_the_only_rule_off_by_default():
-    cfg = AnalysisConfig.defaults(RULE_REGISTRY)
-    assert {n for n, rc in cfg.rules.items() if not rc.enabled} == {"class.cohesion"}
+def test_defaults_cover_every_rule_and_only_cohesion_is_off():
+    config = AnalysisConfig.defaults(RULE_REGISTRY)
+    assert set(config.rules) == {r.name for r in RULE_REGISTRY}
+    assert [n for n, rc in config.rules.items() if not rc.enabled] == ["class-cohesion"]
 
 
-def test_load_with_no_toml_returns_defaults(tmp_path: Path):
-    cfg = AnalysisConfig.load(tmp_path, RULE_REGISTRY)
-    assert cfg.rules == AnalysisConfig.defaults(RULE_REGISTRY).rules
-    assert cfg.languages == frozenset()
-    assert not cfg.exclusion.patterns
+def test_no_config_file_means_defaults(tmp_path: Path):
+    assert _load(tmp_path) == AnalysisConfig.defaults(RULE_REGISTRY)
 
 
-def test_toml_threshold_override_applies_and_leaves_other_rules(tmp_path: Path):
-    _write(tmp_path, '[rules."complexity.cyclomatic".thresholds]\ncallable = 15\n')
-    cfg = AnalysisConfig.load(tmp_path, RULE_REGISTRY)
-    assert cfg.for_rule("complexity.cyclomatic").thresholds["callable"] == 15
-    assert cfg.for_rule("complexity.cognitive").thresholds == {"callable": 15}  # its own default
+def test_a_limit_override_applies_to_that_rule_only(tmp_path: Path):
+    _write(tmp_path, "[rules.cyclomatic-complexity]\nlimit = 3\n")
+    config = _load(tmp_path)
+    assert config.for_rule("cyclomatic-complexity").option("limit") == 3
+    assert config.for_rule("cognitive-complexity").option("limit") == 15
 
 
 def test_a_rule_can_be_disabled_and_a_default_off_rule_enabled(tmp_path: Path):
-    _write(tmp_path,
-           '[rules."complexity.cyclomatic"]\nenabled = false\n'
-           '[rules."class.cohesion"]\nenabled = true\n')
-    cfg = AnalysisConfig.load(tmp_path, RULE_REGISTRY)
-    assert not cfg.for_rule("complexity.cyclomatic").enabled
-    assert cfg.for_rule("class.cohesion").enabled
+    _write(tmp_path, "[rules.god-module]\nenabled = false\n[rules.class-cohesion]\nenabled = true\n")
+    config = _load(tmp_path)
+    assert config.for_rule("god-module").enabled is False
+    assert config.for_rule("class-cohesion").enabled is True
+    assert config.for_rule("class-cohesion").option("limit") == 1      # option default kept
 
 
-def test_threshold_for_undeclared_altitude_is_a_load_error(tmp_path: Path):
-    _write(tmp_path, '[rules."complexity.cyclomatic".thresholds]\nmodule = 5\n')
-    with pytest.raises(ValueError, match="not a declared altitude"):
-        AnalysisConfig.load(tmp_path, RULE_REGISTRY)
+def test_a_whole_number_is_accepted_for_a_fractional_limit(tmp_path: Path):
+    _write(tmp_path, "[rules.rigid-package]\nlimit = 1\n")
+    assert _load(tmp_path).for_rule("rigid-package").option("limit") == 1
 
 
-def test_unknown_rule_in_toml_is_an_error(tmp_path: Path):
-    _write(tmp_path, '[rules."does.not.exist"]\nenabled = false\n')
-    with pytest.raises(ValueError, match="unknown rule"):
-        AnalysisConfig.load(tmp_path, RULE_REGISTRY)
+@pytest.mark.parametrize("text, message", [
+    ("[rules.no-such-rule]\nenabled = true\n", "unknown rule"),
+    ('[rules."complexity.cyclomatic"]\nlimit = 3\n', "unknown rule"),            # the old dotted name
+    ("[rules.cyclomatic-complexity]\nthreshold = 3\n", "unknown option"),
+    ("[rules.cyclomatic-complexity]\nseverity = 'error'\n", "unknown option"),
+    ("[rules.cyclomatic-complexity]\nlimit = 'ten'\n", "must be of type"),
+    ("[rules.cyclomatic-complexity]\nlimit = true\n", "must be of type"),         # a bool is not a number
+    ("[rules.cyclomatic-complexity]\nenabled = 1\n", "'enabled' must be"),
+    ("[rules.cyclomatic-complexity]\nlimit = 2.5\n", "must be of type"),            # a count is whole
+    ("[rules.duplicate-code]\nmin_leaf_nodes = 2.5\n", "must be of type"),
+    ("rules.cyclomatic-complexity = 3\n", "expected a table"),
+    ("[rules.import-cycle]\nlimit = 1\n", "unknown option"),                       # declares no options
+])
+def test_a_config_that_could_silently_do_nothing_is_an_error(tmp_path: Path, text: str, message: str):
+    _write(tmp_path, text)
+    with pytest.raises(ValueError, match=message):
+        _load(tmp_path)
 
 
-def test_a_family_name_is_not_a_rule(tmp_path: Path):
-    _write(tmp_path, '[rules.complexity]\nenabled = false\n')
-    with pytest.raises(ValueError, match="unknown rule 'complexity'"):
-        AnalysisConfig.load(tmp_path, RULE_REGISTRY)
-
-
-def test_severity_is_no_longer_a_rule_key(tmp_path: Path):
-    _write(tmp_path, '[rules."complexity.cyclomatic"]\nseverity = "warning"\n')
-    with pytest.raises(ValueError, match="severity"):
-        AnalysisConfig.load(tmp_path, RULE_REGISTRY)
-
-
-def test_a_bare_key_in_a_rule_table_is_rejected(tmp_path: Path):
-    _write(tmp_path, '[rules."complexity.cyclomatic"]\ncallable = 3\n')
+@pytest.mark.parametrize("key", ["languages", "ignore", "severity", "thresholds", "root"])
+def test_only_exclude_and_rules_are_top_level_keys(tmp_path: Path, key: str):
+    _write(tmp_path, f"{key} = []\n")
     with pytest.raises(ValueError, match="unknown key"):
-        AnalysisConfig.load(tmp_path, RULE_REGISTRY)
+        _load(tmp_path)
 
 
-# ---- top-level keys -------------------------------------------------------------------
-
-def test_an_unknown_top_level_key_is_rejected_by_load(tmp_path: Path):
-    _write(tmp_path, '[ignore]\nfunctions = ["f"]\n')
-    with pytest.raises(ValueError, match="unknown key.*ignore"):
-        AnalysisConfig.load(tmp_path, RULE_REGISTRY)
-
-
-def test_read_only_commands_do_not_read_rules_or_unknown_keys(tmp_path: Path):
-    # `scan` serves the commands that never check rules, so a stale config cannot block them,
-    # yet its exclude and languages still apply.
-    _write(tmp_path, 'exclude = ["gen/**"]\nlanguages = ["python"]\n'
-                     '[ignore]\nx = 1\n[rules.gone]\nenabled = true\n')
-    cfg = AnalysisConfig.scan(tmp_path, RULE_REGISTRY)
-    assert cfg.exclusion.patterns == ("gen/**",)
-    assert cfg.languages == frozenset({"python"})
-    assert cfg.rules == AnalysisConfig.defaults(RULE_REGISTRY).rules
+def test_exclude_globs_are_relative_to_the_config_directory(tmp_path: Path):
+    _write(tmp_path, 'exclude = ["tests/**", "gen_*.py"]\n')
+    config = _load(tmp_path)
+    assert config.excludes(tmp_path / "tests" / "unit" / "test_a.py")     # `*` crosses `/`
+    assert config.excludes(tmp_path / "gen_a.py")
+    assert not config.excludes(tmp_path / "src" / "tests_helper.py")
+    assert not config.excludes(tmp_path.parent / "tests" / "x.py")        # outside the config dir
 
 
-# ---- exclude --------------------------------------------------------------------------
-
-def test_exclusion_globs_are_relative_to_the_config_directory(tmp_path: Path):
-    ex = Exclusion(("tests/**", "**/vendor/**", "gen_*.py"), tmp_path.resolve())
-    assert ex.excludes(tmp_path / "tests" / "unit" / "test_a.py")
-    assert ex.excludes(tmp_path / "vendor" / "x.py")           # leading **/ reaches the top level
-    assert ex.excludes(tmp_path / "pkg" / "vendor" / "x.py")
-    assert ex.excludes(tmp_path / "gen_a.py")
-    assert not ex.excludes(tmp_path / "src" / "tests_helper.py")
-    assert not ex.excludes(tmp_path.parent / "tests" / "x.py")  # outside the config directory
-
-
-@pytest.mark.parametrize("loader", [AnalysisConfig.scan, AnalysisConfig.load])
-def test_exclude_must_be_a_list_of_strings(tmp_path: Path, loader):
+def test_exclude_must_be_a_list_of_strings(tmp_path: Path):
     _write(tmp_path, 'exclude = "tests/**"\n')
     with pytest.raises(ValueError, match="exclude"):
-        loader(tmp_path, RULE_REGISTRY)
+        _load(tmp_path)
 
 
-def test_exclude_removes_files_from_the_corpus(tmp_path: Path):
-    (tmp_path / "app.py").write_text("x = 1\n")
-    (tmp_path / "skip").mkdir()
-    (tmp_path / "skip" / "m.py").write_text("y = 1\n")
-    def modules(config) -> set[str]:
-        corpus = scan_corpus(tmp_path, config)
-        return {m.qualname for r in corpus.realms() for p in r.packages() for m in p.modules()}
-
-    everything = modules(None)
-    assert len(everything) == 2
-    _write(tmp_path, 'exclude = ["skip/**"]\n')
-    kept = modules(AnalysisConfig.load(tmp_path, RULE_REGISTRY))
-    assert len(kept) == 1 and kept < everything
+def test_excluded_files_are_not_carved(tmp_path: Path):
+    (tmp_path / "keep.py").write_text("def f():\n    return 1\n")
+    (tmp_path / "tests").mkdir()
+    (tmp_path / "tests" / "test_x.py").write_text("def g():\n    return 1\n")
+    _write(tmp_path, 'exclude = ["tests/**"]\n')
+    corpus = scan_corpus(tmp_path, _load(tmp_path))
+    assert {c.qualname for c in corpus._iter_callables()} == {"keep.f"}
 
 
-# ---- languages ------------------------------------------------------------------------
-
-@pytest.mark.parametrize("loader", [AnalysisConfig.scan, AnalysisConfig.load])
-def test_an_unknown_language_is_an_error(tmp_path: Path, loader):
-    _write(tmp_path, 'languages = ["pyhton"]\n')
-    with pytest.raises(ValueError, match="unknown language.*pyhton"):
-        loader(tmp_path, RULE_REGISTRY)
+def test_config_is_found_in_pyproject_and_a_slop_toml_wins(tmp_path: Path):
+    (tmp_path / "pyproject.toml").write_text("[tool.slop.rules.god-module]\nlimit = 7\n")
+    assert _load(tmp_path).for_rule("god-module").option("limit") == 7
+    _write(tmp_path, "[rules.god-module]\nlimit = 9\n")
+    assert _load(tmp_path).for_rule("god-module").option("limit") == 9
 
 
-def test_languages_must_be_a_list(tmp_path: Path):
-    _write(tmp_path, 'languages = "python"\n')
-    with pytest.raises(ValueError, match="languages"):
-        AnalysisConfig.load(tmp_path, RULE_REGISTRY)
+def test_a_pyproject_without_a_slop_table_does_not_hide_a_config_above_it(tmp_path: Path):
+    _write(tmp_path, "[rules.god-module]\nlimit = 9\n")
+    sub = tmp_path / "pkg"
+    sub.mkdir()
+    (sub / "pyproject.toml").write_text("[project]\nname = 'x'\n")
+    assert _load(sub).for_rule("god-module").option("limit") == 9
 
 
-# ---- rule params ----------------------------------------------------------------------
-
-def test_params_table_overrides_a_declared_param(tmp_path: Path):
-    # `slop init` writes params.<name>; it must reach the rule, not nest under "params".
-    _write(tmp_path, '[rules."structure.duplication"]\nparams.min_leaf_nodes = 3\n')
-    rc = AnalysisConfig.load(tmp_path, RULE_REGISTRY).for_rule("structure.duplication")
-    assert rc.param("min_leaf_nodes") == 3
-    assert "params" not in rc.params
-
-
-def test_params_in_a_nested_table_are_equivalent(tmp_path: Path):
-    _write(tmp_path, '[rules."structure.duplication".params]\nmin_leaf_nodes = 4\n')
-    rc = AnalysisConfig.load(tmp_path, RULE_REGISTRY).for_rule("structure.duplication")
-    assert rc.param("min_leaf_nodes") == 4
-
-
-def test_an_unknown_param_is_a_load_error_not_a_silent_no_op(tmp_path: Path):
-    _write(tmp_path, '[rules."structure.duplication"]\nparams.min_leaf_nodez = 3\n')
-    with pytest.raises(ValueError, match="min_leaf_nodez.*can never read"):
-        AnalysisConfig.load(tmp_path, RULE_REGISTRY)
-
-
-def test_params_must_be_a_table(tmp_path: Path):
-    _write(tmp_path, '[rules."structure.duplication"]\nparams = 3\n')
-    with pytest.raises(ValueError, match="params"):
-        AnalysisConfig.load(tmp_path, RULE_REGISTRY)
-
-
-# ---- the init template ----------------------------------------------------------------
-
-def test_the_init_template_loads_as_written(tmp_path: Path):
-    from slop import cli
+def test_the_init_template_loads_as_written_and_changes_nothing(tmp_path: Path):
     cli.init(tmp_path)
-    assert AnalysisConfig.load(tmp_path, RULE_REGISTRY).rules == \
-        AnalysisConfig.defaults(RULE_REGISTRY).rules
-
-
-def test_the_init_template_loads_with_every_line_uncommented(tmp_path: Path):
-    # Uncommenting every generated setting must give exactly the defaults, not an error.
-    from slop import cli
-    cli.init(tmp_path)
-    text = (tmp_path / ".slop.toml").read_text()
+    template = (tmp_path / ".slop.toml").read_text()
+    # Uncomment every generated setting: the result must be the defaults, not an error.
     uncommented = "\n".join(
-        ln[2:] if ln.startswith("# ") and ("=" in ln or ln.startswith("# [")) and "generated" not in ln
-        and "Uncomment" not in ln else ln
-        for ln in text.splitlines())
-    _write(tmp_path, uncommented)
-    loaded = AnalysisConfig.load(tmp_path, RULE_REGISTRY)
+        line[2:] if line.startswith("# ") and ("=" in line or line.startswith("# [")) else line
+        for line in template.splitlines())
+    (tmp_path / ".slop.toml").write_text(uncommented)
+    loaded = _load(tmp_path)
     assert loaded.rules == AnalysisConfig.defaults(RULE_REGISTRY).rules
-    assert loaded.exclusion.patterns == ("tests/**",)
-    assert loaded.languages == frozenset({"python"})
+    assert loaded.exclude == ("tests/**",)

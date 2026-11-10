@@ -24,19 +24,16 @@ _METHOD_ONLY_TYPES = {"method_declaration", "method_definition", "singleton_meth
 
 
 def scan_corpus(root: Path, config: Any) -> C.Corpus:
-    """Build a Corpus from ``root``. One Realm per detected language; modules
-    grouped into packages by directory. Files matched by ``config.exclusion`` and languages
-    outside ``config.languages`` (when it is not empty) are not carved (``config=None``
-    restricts nothing)."""
+    """Build a Corpus from ``root``. One Realm per detected language; modules grouped into
+    packages by directory. Files matched by ``config.exclude`` are not carved
+    (``config=None`` excludes nothing)."""
     root = Path(root)
-    exclusion = getattr(config, "exclusion", None)
-    languages = getattr(config, "languages", None)
     files_by_lang: dict[str, list[Path]] = {}
     for path in _iter_source_files(root):
-        if exclusion is not None and exclusion.excludes(path):
+        if config is not None and config.excludes(path):
             continue
         lang = detect_language(path)
-        if lang is None or lang not in GRAMMARS_BY_ID or (languages and lang not in languages):
+        if lang is None or lang not in GRAMMARS_BY_ID:
             continue
         files_by_lang.setdefault(lang, []).append(path)
 

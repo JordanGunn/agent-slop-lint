@@ -1,14 +1,20 @@
-"""Config: which files slop reads, and per rule whether it runs and where its limits sit.
+"""Config: which files slop reads, and which rules run with which options.
 
-A config file (``.slop.toml``, or ``[tool.slop]`` in ``pyproject.toml``) has three keys:
-``exclude`` and ``languages`` choose what is read, and ``[rules."<name>"]`` tunes a rule
-(``enabled``, ``thresholds``, ``params``). Nothing else is accepted, and nothing accepted
-is ignored: a threshold keyed to an altitude the rule does not declare, a param the rule
-never reads, or a key slop does not know is a load error. That is what makes "no
-violations" mean the rules ran as configured, not that a misspelt key switched them off.
+A config file (``.slop.toml``, or ``[tool.slop]`` in ``pyproject.toml``) has two keys:
 
-``config`` does not import ``rule``: it consumes rule metadata (``name``, ``altitudes``,
-``default_config()``) by duck typing, so there is no import cycle with the rule layer.
+    exclude = ["tests/**"]
+
+    [rules.cyclomatic-complexity]
+    limit = 12
+
+``exclude`` lists globs of files never read. A ``[rules.<name>]`` table sets ``enabled``
+and the options the rule declares (every limit rule declares ``limit``). Nothing else is
+accepted, and nothing accepted is ignored: an unknown key, an unknown rule, an option the
+rule does not declare, or an option of the wrong type is an error. That is what makes "no
+violations" mean the rules ran as configured, not that a misspelt key switched one off.
+
+``config`` does not import ``rule``: it reads rule metadata (``name``, ``default_config()``)
+by duck typing, so there is no import cycle.
 """
 from __future__ import annotations
 
@@ -18,184 +24,114 @@ from fnmatch import fnmatchcase
 from pathlib import Path
 from typing import Any
 
-from .scope.identity import ScopeKind
-
-_CONFIG_KEYS = frozenset({"exclude", "languages", "rules"})
+_CONFIG_KEYS = frozenset({"exclude", "rules"})
 
 
 @dataclass(frozen=True)
 class RuleConfig:
-    """The config slice handed to one rule's ``check``.
-
-    ``thresholds`` is keyed by altitude *label* (``ScopeKind.value``); ``params`` holds a
-    rule's other settings (a window, a minimum size).
-    """
+    """One rule's settings: whether it runs, and its options (``limit``, ...)."""
 
     name: str
     enabled: bool = True
-    thresholds: dict[str, float] = field(default_factory=dict)
-    params: dict[str, Any] = field(default_factory=dict)
+    options: dict[str, Any] = field(default_factory=dict)
 
-    def threshold_for(self, kind: ScopeKind) -> float | None:
-        return self.thresholds.get(kind.value)
-
-    def param(self, key: str, default: Any = None) -> Any:
-        return self.params.get(key, default)
-
-
-@dataclass(frozen=True)
-class Exclusion:
-    """Files the corpus must not carve: ``fnmatch`` globs over POSIX paths relative to
-    ``anchor``, the directory holding the config. ``*`` crosses ``/`` (so ``tests/**``
-    covers everything beneath ``tests/``), and a leading ``**/`` also matches the top
-    level (``**/vendor/**`` covers ``vendor/x.py``). A file outside ``anchor`` is never
-    excluded."""
-
-    patterns: tuple[str, ...] = ()
-    anchor: Path | None = None
-
-    def excludes(self, path: Path) -> bool:
-        if not self.patterns or self.anchor is None:
-            return False
-        try:
-            rel = path.resolve().relative_to(self.anchor).as_posix()
-        except ValueError:
-            return False
-        return any(
-            fnmatchcase(rel, pat) or (pat.startswith("**/") and fnmatchcase(rel, pat[3:]))
-            for pat in self.patterns
-        )
+    def option(self, key: str) -> Any:
+        return self.options[key]
 
 
 @dataclass(frozen=True)
 class AnalysisConfig:
     rules: dict[str, RuleConfig]
-    exclusion: Exclusion = field(default_factory=Exclusion)
-    #: Language ids to carve (``python``, ``typescript`` ...); empty means all of them.
-    languages: frozenset[str] = frozenset()
+    #: Glob patterns of files never read, matched against the path relative to ``anchor``
+    #: (the directory holding the config file). ``*`` matches across ``/``, so ``tests/**``
+    #: covers everything beneath ``tests/``.
+    exclude: tuple[str, ...] = ()
+    anchor: Path | None = None
 
     def for_rule(self, name: str) -> RuleConfig | None:
         return self.rules.get(name)
 
-    @classmethod
-    def defaults(cls, rule_types: Any) -> AnalysisConfig:
-        rule_types = list(rule_types)
-        merged = {rt.name: rt.default_config() for rt in rule_types}
-        for rt in rule_types:
-            _validate_threshold_keys(rt.name, merged[rt.name].thresholds, {k.value for k in rt.altitudes})
-        return cls(merged)
+    def excludes(self, path: Path) -> bool:
+        if not self.exclude or self.anchor is None:
+            return False
+        try:
+            relative = path.resolve().relative_to(self.anchor).as_posix()
+        except ValueError:
+            return False
+        return any(fnmatchcase(relative, pattern) for pattern in self.exclude)
 
     @classmethod
-    def scan(cls, root: Path, rule_types: Any) -> AnalysisConfig:
-        """Default rules plus the discovered config's scan settings (``exclude``,
-        ``languages``), for commands that read the corpus but never check it. ``[rules]``
-        is not read, so a config naming a rule slop no longer has cannot block them;
-        ``load`` is the strict path for ``lint`` and ``check``."""
-        doc, anchor = _discover(Path(root))
-        return replace(cls.defaults(rule_types), **_scan_settings(doc, anchor))
+    def defaults(cls, rule_types: Any) -> AnalysisConfig:
+        return cls({rt.name: rt.default_config() for rt in rule_types})
 
     @classmethod
     def load(cls, root: Path, rule_types: Any) -> AnalysisConfig:
-        """Defaults, with the discovered config (``.slop.toml`` or ``pyproject[tool.slop]``,
-        found by walking up from ``root``) merged on top: ``[rules]`` overrides validated
-        against each rule's declared altitudes and params, plus the scan settings."""
-        rule_types = list(rule_types)
+        """Defaults, with the discovered config (found by walking up from ``root``) on top."""
         base = {rt.name: rt.default_config() for rt in rule_types}
-        altitudes = {rt.name: {k.value for k in rt.altitudes} for rt in rule_types}
         doc, anchor = _discover(Path(root))
         unknown = sorted(set(doc) - _CONFIG_KEYS)
         if unknown:
-            raise ValueError(
-                f"config has unknown key(s) {unknown}; slop reads {sorted(_CONFIG_KEYS)}")
-        merged = dict(base)
-        for name, ov in doc.get("rules", {}).items():
+            raise ValueError(f"config has unknown key(s) {unknown}; slop reads {sorted(_CONFIG_KEYS)}")
+        patterns = doc.get("exclude", [])
+        if not isinstance(patterns, list) or not all(isinstance(p, str) for p in patterns):
+            raise ValueError("config 'exclude' must be a list of glob strings")
+        rules = dict(base)
+        for name, table in doc.get("rules", {}).items():
             if name not in base:
-                raise ValueError(f"config configures unknown rule '{name}'")
-            merged[name] = _apply_override(base[name], ov, altitudes[name])
-        for name, rc in merged.items():
-            _validate_threshold_keys(name, rc.thresholds, altitudes[name])
-        return cls(merged, **_scan_settings(doc, anchor))
+                raise ValueError(f"config configures unknown rule '{name}'; see `slop rules`")
+            rules[name] = _apply(base[name], table)
+        return cls(rules, exclude=tuple(patterns), anchor=anchor)
 
 
-def _parse_exclusion(doc: dict[str, Any], anchor: Path | None) -> Exclusion:
-    raw = doc.get("exclude", [])
-    if not isinstance(raw, list) or not all(isinstance(p, str) for p in raw):
-        raise ValueError("config 'exclude' must be a list of glob strings")
-    return Exclusion(tuple(raw), anchor)
-
-
-def _parse_languages(doc: dict[str, Any]) -> frozenset[str]:
-    """The language ids to carve; empty means every supported language."""
-    from .ast import GRAMMARS_BY_ID
-    raw = doc.get("languages", [])
-    if not isinstance(raw, list) or not all(isinstance(x, str) for x in raw):
-        raise ValueError("config 'languages' must be a list of language ids")
-    unknown = sorted(set(raw) - set(GRAMMARS_BY_ID))
+def _apply(base: RuleConfig, table: Any) -> RuleConfig:
+    if not isinstance(table, dict):
+        raise ValueError(f"rule '{base.name}': expected a table of options")
+    declared = set(base.options) | {"enabled"}
+    unknown = sorted(set(table) - declared)
     if unknown:
-        raise ValueError(
-            f"config 'languages' names unknown language(s) {unknown}; supported: "
-            f"{sorted(GRAMMARS_BY_ID)}")
-    return frozenset(raw)
-
-
-def _scan_settings(doc: dict[str, Any], anchor: Path | None) -> dict[str, Any]:
-    """What the config says about which files the corpus carves, for ``AnalysisConfig``."""
-    return {"exclusion": _parse_exclusion(doc, anchor), "languages": _parse_languages(doc)}
-
-
-def _apply_override(base: RuleConfig, ov: dict[str, Any], allowed: set[str]) -> RuleConfig:
-    stray = set(ov) - {"enabled", "thresholds", "params"}
-    if stray:
-        raise ValueError(
-            f"rule '{base.name}': unknown key(s) {sorted(stray)}; a rule takes 'enabled', "
-            f"'thresholds' and 'params' (params.<name> = ...)")
-    enabled = bool(ov.get("enabled", base.enabled))
-    thresholds = dict(base.thresholds)
-    if "thresholds" in ov:
-        thresholds.update({str(k): float(v) for k, v in ov["thresholds"].items()})
-    overrides = ov.get("params", {})
-    if not isinstance(overrides, dict):
-        raise ValueError(f"rule '{base.name}': 'params' must be a table")
-    for key in overrides:
-        if key not in base.params:
+        raise ValueError(f"rule '{base.name}': unknown option(s) {unknown}; it takes {sorted(declared)}")
+    enabled = table.get("enabled", base.enabled)
+    if not isinstance(enabled, bool):
+        raise ValueError(f"rule '{base.name}': 'enabled' must be true or false")
+    options = dict(base.options)
+    for key in set(table) - {"enabled"}:
+        if not _same_kind(base.options[key], table[key]):
             raise ValueError(
-                f"rule '{base.name}': param '{key}' is not a declared param "
-                f"{sorted(base.params)}; the rule can never read it")
-    params = {**base.params, **overrides}
-    _validate_threshold_keys(base.name, thresholds, allowed)
-    return replace(base, enabled=enabled, thresholds=thresholds, params=params)
+                f"rule '{base.name}': option '{key}' must be of type "
+                f"{type(base.options[key]).__name__}, got {table[key]!r}")
+        options[key] = table[key]
+    return replace(base, enabled=enabled, options=options)
 
 
-def _validate_threshold_keys(name: str, thresholds: dict[str, float], allowed: set[str]) -> None:
-    for key in thresholds:
-        if key not in allowed:
-            raise ValueError(
-                f"rule '{name}': threshold altitude '{key}' is not a declared altitude "
-                f"{sorted(allowed)}; the rule can never apply it"
-            )
+def _same_kind(default: Any, value: Any) -> bool:
+    """An int option takes an int, a float option takes any number, a bool or a string takes
+    its own kind (a bool is not a number)."""
+    if isinstance(default, bool) or isinstance(value, bool):
+        return isinstance(default, bool) and isinstance(value, bool)
+    if isinstance(default, int):
+        return isinstance(value, int)
+    if isinstance(default, float):
+        return isinstance(value, (int, float))
+    return isinstance(value, type(default))
 
 
 def _discover(start: Path) -> tuple[dict[str, Any], Path | None]:
-    """Walk up from ``start`` for the nearest ``.slop.toml`` or a ``pyproject.toml``
-    carrying ``[tool.slop]``; return its table and the directory it was found in (the
-    anchor for relative paths in it), or ``({}, None)``. A pyproject without
-    ``[tool.slop]`` is skipped (so a sub-project pyproject does not mask a repo-root
-    ``.slop.toml``)."""
+    """Walk up from ``start`` for the nearest ``.slop.toml`` or a ``pyproject.toml`` with a
+    ``[tool.slop]`` table; return its table and the directory it was found in, or
+    ``({}, None)``."""
     start = start.resolve()
-    for cur in [start, *start.parents]:
-        slop = cur / ".slop.toml"
+    for directory in [start, *start.parents]:
+        slop = directory / ".slop.toml"
         if slop.is_file():
-            return _read_toml(slop), cur
-        pyproject = cur / "pyproject.toml"
+            return _read(slop), directory
+        pyproject = directory / "pyproject.toml"
         if pyproject.is_file():
-            tool_slop = _read_toml(pyproject).get("tool", {}).get("slop")
-            if tool_slop is not None:
-                return tool_slop, cur
+            table = _read(pyproject).get("tool", {}).get("slop")
+            if table is not None:
+                return table, directory
     return {}, None
 
 
-def _read_toml(path: Path) -> dict[str, Any]:
-    if not path.is_file():
-        return {}
+def _read(path: Path) -> dict[str, Any]:
     with open(path, "rb") as f:
         return tomllib.load(f)

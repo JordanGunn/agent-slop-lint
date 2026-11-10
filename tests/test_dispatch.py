@@ -27,7 +27,7 @@ class _Recorder(Rule):
 
     @classmethod
     def default_config(cls) -> RuleConfig:
-        return RuleConfig(name=cls.name, thresholds={"module": 0, "class": 0})
+        return RuleConfig(name=cls.name)
 
     def check(self, component, config):
         type(self).seen.append(component.id.kind)
@@ -39,7 +39,7 @@ def _config(rule_cls: type[Rule], **kw) -> AnalysisConfig:
 
 
 def _cyclomatic(tmp_path: Path, limit: int = 2):
-    cfg = _config(CyclomaticRule, thresholds={"callable": limit})
+    cfg = _config(CyclomaticRule, options={"limit": limit})
     return Dispatcher([CyclomaticRule()], cfg).run(scan_corpus(tmp_path, cfg))
 
 
@@ -55,7 +55,7 @@ def test_a_rule_is_only_called_at_its_declared_altitudes(tmp_path: Path):
 
 def test_a_disabled_rule_is_neither_run_nor_recorded(tmp_path: Path):
     (tmp_path / "m.py").write_text(BRANCHY.format(n="f"))
-    cfg = _config(CyclomaticRule, enabled=False, thresholds={"callable": 1})
+    cfg = _config(CyclomaticRule, enabled=False, options={"limit": 1})
     report = Dispatcher([CyclomaticRule()], cfg).run(scan_corpus(tmp_path, cfg))
     assert report.violations == [] and report.visited == {} and report.zero_visited == []
 
@@ -69,15 +69,15 @@ def test_a_rule_missing_from_the_config_is_not_run(tmp_path: Path):
 def test_a_rule_that_visited_nothing_is_reported_not_passed_as_clean(tmp_path: Path):
     (tmp_path / "m.py").write_text("x = 1\ny = 2\n")        # no callable for cyclomatic
     report = _cyclomatic(tmp_path)
-    assert report.zero_visited == ["complexity.cyclomatic"]
-    assert report.visited["complexity.cyclomatic"] == 0
+    assert report.zero_visited == ["cyclomatic-complexity"]
+    assert report.visited["cyclomatic-complexity"] == 0
     assert report.exit_code() == 0
 
 
 def test_visited_counts_every_component_at_the_altitude(tmp_path: Path):
     (tmp_path / "m.py").write_text(BRANCHY.format(n="a") + BRANCHY.format(n="b") + "class C:\n    def m(self):\n        return 1\n")
     report = _cyclomatic(tmp_path)
-    assert report.visited["complexity.cyclomatic"] == 3        # a, b, C.m
+    assert report.visited["cyclomatic-complexity"] == 3        # a, b, C.m
 
 
 def test_exit_code_is_one_if_and_only_if_there_is_a_violation(tmp_path: Path):
@@ -115,6 +115,6 @@ def test_the_default_registry_runs_end_to_end_and_flags_a_tangled_function(tmp_p
     cfg = AnalysisConfig.defaults(RULE_REGISTRY)
     report = Dispatcher(RULE_REGISTRY, cfg).run(scan_corpus(tmp_path, cfg))
     fired = {v.rule for v in report.violations}
-    assert "complexity.cyclomatic" in fired
+    assert "cyclomatic-complexity" in fired
     assert report.exit_code() == 1
     assert "class.cohesion" not in report.visited      # off by default, so never dispatched

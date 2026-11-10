@@ -1,4 +1,4 @@
-"""complexity.cognitive: threshold gating and violation location (values pinned in test_complexity)."""
+"""cognitive-complexity: limit gating and violation location (values pinned in test_complexity)."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -36,12 +36,12 @@ def _callables(tmp_path: Path) -> dict:
 
 
 def _cfg(limit) -> RuleConfig:
-    return RuleConfig(name=CognitiveRule.name, thresholds={ScopeKind.CALLABLE.value: limit})
+    return RuleConfig(name=CognitiveRule.name, options={"limit": limit})
 
 
 def test_default_config_is_callable_15():
     rc = CognitiveRule.default_config()
-    assert rc.thresholds == {ScopeKind.CALLABLE.value: 15}
+    assert rc.options == {"limit": 15}
     assert CognitiveRule.altitudes == frozenset({ScopeKind.CALLABLE})
 
 
@@ -52,7 +52,7 @@ def test_registered():
 def test_violation_fields_and_location(tmp_path: Path):
     cs = _callables(tmp_path)
     [v] = list(CognitiveRule().check(cs["m.h"], _cfg(5)))
-    assert v.rule == "complexity.cognitive"
+    assert v.rule == "cognitive-complexity"
     assert v.path == str(tmp_path / "m.py")
     assert (v.line, v.column) == (1, 1)
     assert v.value == 7 and v.threshold == 5
@@ -77,7 +77,3 @@ def test_below_threshold_and_default_are_silent(tmp_path: Path):
     assert list(CognitiveRule().check(cs["m.branchy"], _cfg(5))) == []
     assert list(CognitiveRule().check(cs["m.h"], CognitiveRule.default_config())) == []
 
-
-def test_no_threshold_configured_is_silent(tmp_path: Path):
-    cs = _callables(tmp_path)
-    assert list(CognitiveRule().check(cs["m.h"], RuleConfig(name=CognitiveRule.name))) == []

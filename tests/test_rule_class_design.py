@@ -1,4 +1,4 @@
-"""class.coupling / class.inheritance-depth / class.children / class.cohesion."""
+"""class-coupling / class-inheritance-depth / class-children / class-cohesion."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -68,7 +68,7 @@ def _classes(tmp_path: Path, src: str = SRC, filename: str = "ck.py") -> dict:
 
 
 def _cfg(rule, limit) -> RuleConfig:
-    return RuleConfig(name=rule.name, thresholds={ScopeKind.CLASS.value: limit})
+    return RuleConfig(name=rule.name, options={"limit": limit})
 
 
 def _check(rule, cls, config):
@@ -86,7 +86,7 @@ def test_default_limits_and_enablement():
         CouplingRule: 8, InheritanceDepthRule: 4, ChildrenRule: 10, CohesionRule: 1,
     }
     for rule, limit in defaults.items():
-        assert rule.default_config().thresholds == {ScopeKind.CLASS.value: limit}
+        assert rule.default_config().options == {"limit": limit}
     assert CohesionRule.default_config().enabled is False
     for rule in (CouplingRule, InheritanceDepthRule, ChildrenRule):
         assert rule.default_config().enabled is True
@@ -96,7 +96,7 @@ def test_inheritance_depth_fires_above_limit_only(tmp_path: Path):
     cs = _classes(tmp_path)
     assert _check(InheritanceDepthRule, cs["Leaf"], _cfg(InheritanceDepthRule, 2)) == []
     [v] = _check(InheritanceDepthRule, cs["Leaf"], _cfg(InheritanceDepthRule, 1))
-    assert v.rule == "class.inheritance-depth"
+    assert v.rule == "class-inheritance-depth"
     assert v.path == str(tmp_path / "ck.py")
     assert (v.line, v.column) == (7, 1)
     assert v.value == 2 and v.threshold == 1
@@ -108,7 +108,7 @@ def test_children_fires_above_limit_only(tmp_path: Path):
     cs = _classes(tmp_path)
     assert _check(ChildrenRule, cs["Base"], _cfg(ChildrenRule, 1)) == []
     [v] = _check(ChildrenRule, cs["Base"], _cfg(ChildrenRule, 0))
-    assert v.rule == "class.children"
+    assert v.rule == "class-children"
     assert (v.line, v.column) == (1, 1)
     assert v.value == 1 and v.threshold == 0
     assert "Base" in v.message
@@ -129,7 +129,7 @@ def test_coupling_fires_above_limit_only(tmp_path: Path):
     cs = _classes(tmp_path)
     assert _check(CouplingRule, cs["Leaf"], _cfg(CouplingRule, 2)) == []
     [v] = _check(CouplingRule, cs["Leaf"], _cfg(CouplingRule, 1))
-    assert v.rule == "class.coupling"
+    assert v.rule == "class-coupling"
     assert (v.line, v.column) == (7, 1)
     assert v.value == 2 and v.threshold == 1
     assert "Leaf" in v.message
@@ -142,17 +142,12 @@ def test_defaults_are_silent_on_small_hierarchy(tmp_path: Path):
             assert _check(rule, cls, rule.default_config()) == []
 
 
-def test_no_threshold_configured_is_silent(tmp_path: Path):
-    cs = _classes(tmp_path)
-    for rule in (CouplingRule, InheritanceDepthRule, ChildrenRule, CohesionRule):
-        assert _check(rule, cs["Leaf"], RuleConfig(name=rule.name)) == []
-
 
 def test_cohesion_lists_method_groups(tmp_path: Path):
     cs = _classes(tmp_path, SPLIT)
     assert Structure.over(cs["Split"]).cohesion().lcom4 == 2
     [v] = _check(CohesionRule, cs["Split"], _cfg(CohesionRule, 1))
-    assert v.rule == "class.cohesion"
+    assert v.rule == "class-cohesion"
     assert (v.line, v.column) == (1, 1)
     assert v.value == 2 and v.threshold == 1
     assert "{f, g}" in v.message and "{h}" in v.message

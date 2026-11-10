@@ -1,12 +1,10 @@
-"""class.*: the Chidamber and Kemerer (1994) class measures, plus cohesion, as limits.
+"""class-coupling, class-inheritance-depth, class-children, class-cohesion: the Chidamber and
+Kemerer (1994) class measures, plus cohesion, as limits at the class altitude.
 
-Defined at the class altitude. Each rule checks one measure against a limit, as pylint's
-design checks do:
-
-- ``class.coupling``: CBO, the number of other classes this one depends on.
-- ``class.inheritance-depth``: DIT, the length of the longest path up its base classes.
-- ``class.children``: NOC, the number of classes that inherit from it directly.
-- ``class.cohesion``: LCOM4 (Hitz and Montazeri 1995), the number of groups of methods
+- ``class-coupling``: CBO, the number of other classes this one depends on.
+- ``class-inheritance-depth``: DIT, the length of the longest path up its base classes.
+- ``class-children``: NOC, the number of classes that inherit from it directly.
+- ``class-cohesion``: LCOM4 (Hitz and Montazeri 1995), the number of groups of methods
   joined through shared instance members. Off by default: its precision on real code has
   not been measured, and a class of independent accessors reads as many groups.
 
@@ -21,7 +19,7 @@ from .limit import Limit
 
 
 class CouplingRule(Limit):
-    name = "class.coupling"
+    name = "class-coupling"
     description = "a class depends on more other classes (CBO) than the limit"
     altitude = ScopeKind.CLASS
     default_limit = 8
@@ -30,11 +28,11 @@ class CouplingRule(Limit):
         return view.cbo()
 
     def describe(self, component: Scope, value: int, limit: float, view: Structure) -> str:
-        return f"{component.qualname} is coupled to {value} other classes (limit {int(limit)})"
+        return f"{component.qualname} is coupled to {value} other classes (limit {limit})"
 
 
 class InheritanceDepthRule(Limit):
-    name = "class.inheritance-depth"
+    name = "class-inheritance-depth"
     description = "a class sits deeper in an inheritance tree (DIT) than the limit"
     altitude = ScopeKind.CLASS
     default_limit = 4
@@ -43,11 +41,11 @@ class InheritanceDepthRule(Limit):
         return view.dit()
 
     def describe(self, component: Scope, value: int, limit: float, view: Structure) -> str:
-        return f"{component.qualname} has inheritance depth {value} (limit {int(limit)})"
+        return f"{component.qualname} has inheritance depth {value} (limit {limit})"
 
 
 class ChildrenRule(Limit):
-    name = "class.children"
+    name = "class-children"
     description = "a class has more direct subclasses (NOC) than the limit"
     altitude = ScopeKind.CLASS
     default_limit = 10
@@ -56,11 +54,11 @@ class ChildrenRule(Limit):
         return view.noc()
 
     def describe(self, component: Scope, value: int, limit: float, view: Structure) -> str:
-        return f"{component.qualname} has {value} direct subclasses (limit {int(limit)})"
+        return f"{component.qualname} has {value} direct subclasses (limit {limit})"
 
 
 class CohesionRule(Limit):
-    name = "class.cohesion"
+    name = "class-cohesion"
     description = "a class's methods fall into more groups sharing no instance member (LCOM4) than the limit"
     altitude = ScopeKind.CLASS
     default_limit = 1
@@ -73,4 +71,4 @@ class CohesionRule(Limit):
     def describe(self, component: Scope, value: int, limit: float, view: Structure) -> str:
         groups = "; ".join("{" + ", ".join(g) + "}" for g in view.cohesion().groups)
         return (f"{component.qualname} has {value} method groups sharing no instance member "
-                f"(limit {int(limit)}): {groups}")
+                f"(limit {limit}): {groups}")

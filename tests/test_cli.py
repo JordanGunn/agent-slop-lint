@@ -30,7 +30,7 @@ def test_rules_lists_registry(capsys):
     rc = cli.rules_cmd("human")
     out = capsys.readouterr().out
     assert rc == 0
-    assert "complexity.cyclomatic" in out
+    assert "cyclomatic-complexity" in out
     assert "rules" in out
 
 
@@ -39,34 +39,27 @@ def test_rules_json(capsys):
     data = json.loads(capsys.readouterr().out)
     assert rc == 0
     by_name = {r["name"]: r for r in data}
-    assert "complexity.cyclomatic" in by_name and "class.coupling" in by_name
-    assert not {"orphans", "hotspots", "vocabulary", "class-shape"} & set(by_name)
-    assert by_name["class.cohesion"]["enabled"] is False
-    assert by_name["complexity.cyclomatic"]["altitudes"] == ["callable"]
+    assert "cyclomatic-complexity" in by_name and "class-coupling" in by_name
+    assert len(by_name) == 12
+    assert by_name["class-cohesion"]["enabled"] is False
+    assert by_name["cyclomatic-complexity"]["altitudes"] == ["callable"]
 
 
 def test_rules_human_marks_default_off_rules(capsys):
     cli.rules_cmd("human")
     lines = capsys.readouterr().out.splitlines()
-    [cohesion] = [ln for ln in lines if "class.cohesion" in ln]
-    [cyclomatic] = [ln for ln in lines if "complexity.cyclomatic" in ln]
+    [cohesion] = [ln for ln in lines if "class-cohesion" in ln]
+    [cyclomatic] = [ln for ln in lines if "cyclomatic-complexity" in ln]
     assert " off " in cohesion and " on " in cyclomatic
 
 
-def test_schema_json_is_v2(capsys):
-    assert cli.schema_cmd("json") == 0
-    data = json.loads(capsys.readouterr().out)
-    assert data["version"] == "v2" and {"exclude", "languages", "rules"} <= set(data)
-    cohesion = next(r for r in data["rules"] if r["name"] == "class.cohesion")
-    assert cohesion["enabled"] is False and cohesion["thresholds"] == {"class": 1}
-
-
 def test_check_unknown_target_errors(capsys):
-    assert cli.check("nonsense.rule", ".", "human") == 2
+    assert cli.check(["nonsense-rule"], ".", "human") == 2
 
 
-def test_a_name_that_only_prefixes_a_rule_is_not_a_family(capsys):
-    assert cli.check("complex", ".", "human") == 2
+def test_a_family_or_prefix_is_not_a_rule(capsys):
+    assert cli.check(["complexity"], ".", "human") == 2
+    assert cli.check(["cyclomatic"], ".", "human") == 2
 
 
 def test_nonexistent_root_errors(tmp_path: Path, capsys):
@@ -92,9 +85,9 @@ def test_lint_human_output_is_one_located_line_per_violation(tmp_path: Path, cap
     (tmp_path / "m.py").write_text(_TANGLED)
     assert cli.lint(tmp_path, "human") == 1
     lines = capsys.readouterr().out.splitlines()
-    cyclomatic = [ln for ln in lines if " complexity.cyclomatic " in ln]
+    cyclomatic = [ln for ln in lines if " cyclomatic-complexity " in ln]
     assert len(cyclomatic) == 1
-    assert cyclomatic[0].startswith("m.py:1:1: complexity.cyclomatic ")
+    assert cyclomatic[0].startswith("m.py:1:1: cyclomatic-complexity ")
     assert "16" in cyclomatic[0] and "limit 10" in cyclomatic[0]
     assert lines[-1] == f"Found {len(lines) - 1} violations."
 
@@ -104,7 +97,7 @@ def test_lint_human_output_uses_the_singular_for_one_violation(tmp_path: Path, c
     (tmp_path / ".slop.toml").write_text(_LOW)
     assert cli.lint(tmp_path, "human") == 1
     lines = capsys.readouterr().out.splitlines()
-    assert len(lines) == 2 and lines[0].startswith("m.py:1:1: complexity.cyclomatic ")
+    assert len(lines) == 2 and lines[0].startswith("m.py:1:1: cyclomatic-complexity ")
     assert lines[1] == "Found 1 violation."
 
 
@@ -120,8 +113,8 @@ def test_lint_json_shape(tmp_path: Path, capsys):
     assert code == 1 and set(doc) == {"summary", "violations", "zero_visited"}
     assert doc["summary"] == {"violations": len(doc["violations"]), "exit_code": 1}
     assert "findings" not in doc
-    v = next(v for v in doc["violations"] if v["rule"] == "complexity.cyclomatic")
-    assert v == {"rule": "complexity.cyclomatic", "path": "m.py", "line": 1, "column": 1,
+    v = next(v for v in doc["violations"] if v["rule"] == "cyclomatic-complexity")
+    assert v == {"rule": "cyclomatic-complexity", "path": "m.py", "line": 1, "column": 1,
                  "message": v["message"], "value": 16, "threshold": 10}
 
 
@@ -131,58 +124,53 @@ def test_lint_json_of_clean_source(tmp_path: Path, capsys):
     assert code == 0 and doc["violations"] == [] and doc["summary"] == {"violations": 0, "exit_code": 0}
 
 
-def test_check_filters_to_a_family(tmp_path: Path, capsys):
+def test_check_runs_only_the_named_rules(tmp_path: Path, capsys):
     (tmp_path / "m.py").write_text(_TANGLED)
-    code, doc = _lint_json(tmp_path, capsys, check="complexity")
-    assert code == 1
-    fired = {v["rule"] for v in doc["violations"]}
-    assert "complexity.cyclomatic" in fired and all(r.startswith("complexity.") for r in fired)
-
-
-def test_check_filters_to_one_rule(tmp_path: Path, capsys):
-    (tmp_path / "m.py").write_text(_TANGLED)
-    code, doc = _lint_json(tmp_path, capsys, check="complexity.cyclomatic")
-    assert code == 1 and {v["rule"] for v in doc["violations"]} == {"complexity.cyclomatic"}
+    code, doc = _lint_json(tmp_path, capsys, check=["cyclomatic-complexity"])
+    assert code == 1 and {v["rule"] for v in doc["violations"]} == {"cyclomatic-complexity"}
+    _, several = _lint_json(tmp_path, capsys, check=["cyclomatic-complexity", "npath-complexity"])
+    assert {v["rule"] for v in several["violations"]} == {"cyclomatic-complexity", "npath-complexity"}
 
 
 def test_check_exits_zero_when_its_rules_are_clean_though_others_are_not(tmp_path: Path, capsys):
     (tmp_path / "m.py").write_text(_TANGLED)
-    code, doc = _lint_json(tmp_path, capsys, check="structure")
+    code, doc = _lint_json(tmp_path, capsys, check=["god-module"])
     assert code == 0 and doc["violations"] == []
 
 
-def test_check_with_ancestor_config_for_other_rule(tmp_path: Path, capsys):
-    # A config that configures a rule OUTSIDE the checked subset must not make
-    # `check` raise "configures unknown rule" (regression: validate against the
-    # full registry, dispatch only the subset).
-    (tmp_path / ".slop.toml").write_text('[rules."structure.god-module"]\nenabled = false\n')
+def test_check_with_a_config_for_another_rule(tmp_path: Path, capsys):
+    (tmp_path / ".slop.toml").write_text("[rules.god-module]\nenabled = false\n")
     (tmp_path / "m.py").write_text("def f(x): return x\n")
-    assert cli.check("complexity", tmp_path, "json") == 0
+    assert cli.check(["cyclomatic-complexity"], tmp_path, "json") == 0
 
 
 def test_an_invalid_config_is_exit_two_not_a_clean_run(tmp_path: Path, capsys):
     (tmp_path / "m.py").write_text(_TANGLED)
-    (tmp_path / ".slop.toml").write_text('[rules."complexity.cyclomatic"]\nseverity = "warning"\n')
+    (tmp_path / ".slop.toml").write_text('[rules.cyclomatic-complexity]\nseverity = "warning"\n')
     assert cli.main(["lint", "--root", str(tmp_path)]) == 2
     assert "severity" in capsys.readouterr().err
 
 
-def test_a_disabled_rule_reports_nothing(tmp_path: Path, capsys):
+def test_a_disabled_rule_reports_nothing_but_check_still_runs_it(tmp_path: Path, capsys):
     (tmp_path / "m.py").write_text(_TANGLED)
-    (tmp_path / ".slop.toml").write_text('[rules."complexity.cyclomatic"]\nenabled = false\n')
+    (tmp_path / ".slop.toml").write_text("[rules.cyclomatic-complexity]\nenabled = false\n")
     _, doc = _lint_json(tmp_path, capsys)
-    assert "complexity.cyclomatic" not in {v["rule"] for v in doc["violations"]}
+    assert "cyclomatic-complexity" not in {v["rule"] for v in doc["violations"]}
+    code, named = _lint_json(tmp_path, capsys, check=["cyclomatic-complexity"])
+    assert code == 1 and {v["rule"] for v in named["violations"]} == {"cyclomatic-complexity"}
 
 
-def test_class_cohesion_is_reported_once_enabled(tmp_path: Path, capsys):
+def test_class_cohesion_is_off_by_default_and_runs_when_enabled_or_checked(tmp_path: Path, capsys):
     (tmp_path / "m.py").write_text(
         "class A:\n    def f(self): return self.a\n    def g(self): return self.b\n")
     _, doc = _lint_json(tmp_path, capsys)
     assert doc["violations"] == []
-    (tmp_path / ".slop.toml").write_text('[rules."class.cohesion"]\nenabled = true\n')
-    _, doc = _lint_json(tmp_path, capsys)
-    [v] = doc["violations"]
-    assert (v["rule"], v["path"], v["value"], v["threshold"]) == ("class.cohesion", "m.py", 2, 1)
+    _, named = _lint_json(tmp_path, capsys, check=["class-cohesion"])      # `check` runs it anyway
+    [v] = named["violations"]
+    assert (v["rule"], v["path"], v["value"], v["threshold"]) == ("class-cohesion", "m.py", 2, 1)
+    (tmp_path / ".slop.toml").write_text("[rules.class-cohesion]\nenabled = true\n")
+    _, enabled = _lint_json(tmp_path, capsys)
+    assert enabled["violations"] == named["violations"]
 
 
 def test_doctor_runs(capsys):
@@ -327,14 +315,12 @@ def test_deps_unknown_scope_errors(tmp_path: Path, capsys):
     assert "no scope" in capsys.readouterr().err
 
 
-def test_init_writes_template(tmp_path: Path, capsys):
+def test_init_writes_a_template_of_every_rule_and_refuses_to_overwrite(tmp_path: Path, capsys):
     assert cli.init(tmp_path) == 0
     cfg = (tmp_path / ".slop.toml").read_text()
-    assert '[rules."complexity.cyclomatic"]' in cfg
-    assert "thresholds.callable = 10" in cfg
-    assert "# exclude" in cfg and "# languages" in cfg
-    assert "severity" not in cfg and "ignore" not in cfg.replace("slop: ignore", "")
-    # second init refuses to overwrite
+    assert "# [rules.cyclomatic-complexity]" in cfg and "# limit = 10" in cfg
+    assert "# [rules.duplicate-code]" in cfg and "# min_leaf_nodes = 10" in cfg
+    assert "# exclude" in cfg
     assert cli.init(tmp_path) == 2
 
 
@@ -345,25 +331,25 @@ def test_lint_and_check_drop_excluded_files(tmp_path: Path, capsys):
     (tmp_path / "tests").mkdir()
     (tmp_path / "tests" / "test_a.py").write_text(
         "def branchy(x):\n    if x:\n        return 1\n    if x > 2:\n        return 2\n    return 3\n")
-    rule = '[rules."complexity.cyclomatic".thresholds]\ncallable = 2\n'
+    rule = "[rules.cyclomatic-complexity]\nlimit = 2\n"
 
-    def paths(check: str | None = None) -> set[str]:
+    def paths(check: list[str] | None = None) -> set[str]:
         return {v["path"] for v in _lint_json(tmp_path, capsys, check=check)[1]["violations"]}
 
     (tmp_path / ".slop.toml").write_text(rule)
     assert paths() == {"tests/test_a.py"}
-    assert paths("complexity.cyclomatic") == {"tests/test_a.py"}
+    assert paths(["cyclomatic-complexity"]) == {"tests/test_a.py"}
 
     (tmp_path / ".slop.toml").write_text('exclude = ["tests/**"]\n' + rule)
     assert paths() == set()
-    assert paths("complexity.cyclomatic") == set()
+    assert paths(["cyclomatic-complexity"]) == set()
 
 
 _BRANCHY = "def f(v):\n    if v:\n        return 1\n    if v > 2:\n        return 2\n    return 3\n"
-_LOW = '[rules."complexity.cyclomatic".thresholds]\ncallable = 2\n'
+_LOW = "[rules.cyclomatic-complexity]\nlimit = 2\n"
 
 
-def _lint_json(root: Path, capsys, *, check: str | None = None) -> tuple[int, dict]:
+def _lint_json(root: Path, capsys, *, check: list[str] | None = None) -> tuple[int, dict]:
     capsys.readouterr()
     code = cli.check(check, root, "json") if check else cli.lint(root, "json")
     return code, json.loads(capsys.readouterr().out)
@@ -371,7 +357,7 @@ def _lint_json(root: Path, capsys, *, check: str | None = None) -> tuple[int, di
 
 def _cyclomatic_paths(root: Path, capsys) -> set[str]:
     _, doc = _lint_json(root, capsys)
-    return {v["path"] for v in doc["violations"] if v["rule"] == "complexity.cyclomatic"}
+    return {v["path"] for v in doc["violations"] if v["rule"] == "cyclomatic-complexity"}
 
 
 def test_same_named_functions_in_two_files_are_both_reported_at_their_own_paths(tmp_path: Path, capsys):
@@ -390,7 +376,7 @@ def test_an_ignore_table_is_now_a_config_error(tmp_path: Path, capsys):
     assert cli.main(["lint", "--root", str(tmp_path)]) == 2
     err = capsys.readouterr().err
     assert "unknown key" in err and "ignore" in err
-    assert cli.main(["check", "complexity", "--root", str(tmp_path)]) == 2
+    assert cli.main(["check", "cyclomatic-complexity", "--root", str(tmp_path)]) == 2
 
 
 def test_an_inline_ignore_comment_exempts_only_its_own_function(tmp_path: Path, capsys):

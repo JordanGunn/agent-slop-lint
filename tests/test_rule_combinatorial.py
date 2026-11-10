@@ -1,4 +1,4 @@
-"""complexity.combinatorial: threshold gating and violation location (values pinned in test_complexity)."""
+"""npath-complexity: limit gating and violation location (values pinned in test_complexity)."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -36,12 +36,12 @@ def _callables(tmp_path: Path) -> dict:
 
 
 def _cfg(limit) -> RuleConfig:
-    return RuleConfig(name=CombinatorialRule.name, thresholds={ScopeKind.CALLABLE.value: limit})
+    return RuleConfig(name=CombinatorialRule.name, options={"limit": limit})
 
 
 def test_default_config_is_callable_400():
     rc = CombinatorialRule.default_config()
-    assert rc.thresholds == {ScopeKind.CALLABLE.value: 400}
+    assert rc.options == {"limit": 400}
     assert CombinatorialRule.altitudes == frozenset({ScopeKind.CALLABLE})
 
 
@@ -52,7 +52,7 @@ def test_registered():
 def test_violation_fields_and_location(tmp_path: Path):
     cs = _callables(tmp_path)
     [v] = list(CombinatorialRule().check(cs["m.h"], _cfg(5)))
-    assert v.rule == "complexity.combinatorial"
+    assert v.rule == "npath-complexity"
     assert v.path == str(tmp_path / "m.py")
     assert (v.line, v.column) == (1, 1)
     assert v.value == 9 and v.threshold == 5
@@ -77,7 +77,3 @@ def test_below_threshold_and_default_are_silent(tmp_path: Path):
     assert list(CombinatorialRule().check(cs["m.branchy"], _cfg(5))) == []
     assert list(CombinatorialRule().check(cs["m.h"], CombinatorialRule.default_config())) == []
 
-
-def test_no_threshold_configured_is_silent(tmp_path: Path):
-    cs = _callables(tmp_path)
-    assert list(CombinatorialRule().check(cs["m.h"], RuleConfig(name=CombinatorialRule.name))) == []
