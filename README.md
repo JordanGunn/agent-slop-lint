@@ -141,8 +141,9 @@ slop --version                     Print the installed version
 The primitives regenerate from the current source each run. `--scope` takes a qualname or
 a file path; a package shares its qualname with its `__init__` module, so `tree` and
 `lexicon` ask you to pick with `--scope-kind` instead of guessing. `find` matches the local
-name exactly and reports `path:line`; `--collisions` lists names defined by more than one
-scope of a kind (class by default).
+name exactly and reports `path:line` and language; `--collisions` lists names defined by more
+than one scope of a kind (class by default) *within one language*, so a type mirrored once in
+Python and once in TypeScript is not a collision.
 
 Class questions discover each grammar's class-like definitions: classes, interfaces,
 structs, enums and traits as the language has them. That includes C `struct`/`union`/`enum`

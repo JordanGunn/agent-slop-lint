@@ -29,6 +29,7 @@ class Match:
     qualname: str
     path: str | None
     line: int | None
+    language: str | None = None
 
     def as_dict(self) -> dict:
         return {
@@ -37,6 +38,7 @@ class Match:
             "qualname": self.qualname,
             "path": self.path,
             "line": self.line,
+            "language": self.language,
         }
 
     def sort_key(self) -> tuple:
@@ -68,6 +70,14 @@ class _Lines:
         return data.count(b"\n", 0, start_byte) + 1
 
 
+def _language_of(scope: Scope) -> str | None:
+    """The language of the realm that is, or encloses, ``scope`` (None for the corpus)."""
+    node: Scope | None = scope
+    while node is not None and node.id.kind is not ScopeKind.REALM:
+        node = node.owner
+    return node.language if node is not None else None
+
+
 def _match(scope: Scope, root: Path | str, lines: _Lines) -> Match:
     span = scope.id.spans[0] if scope.id.spans else None
     return Match(
@@ -76,6 +86,7 @@ def _match(scope: Scope, root: Path | str, lines: _Lines) -> Match:
         qualname=scope.qualname,
         path=relative_path(scope.id, root),
         line=lines.of(span.path, span.start_byte) if span and span.path else None,
+        language=_language_of(scope),
     )
 
 
@@ -127,20 +138,25 @@ _UNNAMED = "<anonymous>"
 
 
 def collisions(corpus, *, kind: ScopeKind = ScopeKind.CLASS) -> dict[str, list[Match]]:
-    """Names defined by two or more distinct scopes of ``kind``.
+    """Names defined by two or more distinct scopes of ``kind`` within one language.
+
+    A name defined once in Python and once in TypeScript is not a collision: the two are
+    usually one concept mirrored across a language boundary, and one grammar's scopes cannot
+    shadow another's. Two definitions inside one language are, and the entry for that name
+    lists every definition in each language that has such a clash (each match says which).
 
     Identity is (qualname, path): module bare-stem qualnames repeat across packages, so
     qualname alone would merge distinct definitions. Unnamed scopes are not collisions."""
-    groups: dict[str, dict[tuple, Match]] = {}
+    groups: dict[tuple[str | None, str], dict[tuple, Match]] = {}
     for match in find(corpus, kind=kind):
         if match.name == _UNNAMED:
             continue
-        groups.setdefault(match.name, {})[(match.qualname, match.path)] = match
-    return {
-        name: sorted(by_identity.values(), key=Match.sort_key)
-        for name, by_identity in sorted(groups.items())
-        if len(by_identity) > 1
-    }
+        groups.setdefault((match.language, match.name), {})[(match.qualname, match.path)] = match
+    clashing: dict[str, list[Match]] = {}
+    for (_language, name), by_identity in groups.items():
+        if len(by_identity) > 1:
+            clashing.setdefault(name, []).extend(by_identity.values())
+    return {name: sorted(matches, key=Match.sort_key) for name, matches in sorted(clashing.items())}
 
 
 def _realms_under(corpus, scope: Scope) -> list:

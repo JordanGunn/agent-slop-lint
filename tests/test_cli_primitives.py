@@ -36,7 +36,7 @@ def test_where_is_a_name_defined(sample_project: Path, capsys):
     assert code == 0
     assert answer["matches"] == [
         {"kind": "class", "name": "Address", "qualname": "address.Address",
-         "path": "store/address.py", "line": 1},
+         "path": "store/address.py", "line": 1, "language": "python"},
     ]
 
 
@@ -52,8 +52,8 @@ def test_human_output_names_the_location(sample_project: Path, capsys):
 
 
 def test_discovery_is_language_agnostic(tmp_path: Path, capsys):
-    # The same word defined in four languages is found with a path and line in each, and
-    # reported as one collision: the primitives read the ownership tree, not one grammar.
+    # The same word defined in four languages is found with a path, line and language in
+    # each: the primitives read the ownership tree, not one grammar.
     (tmp_path / "go").mkdir()
     (tmp_path / "go" / "go.mod").write_text("module example.com/x\ngo 1.21\n")
     (tmp_path / "go" / "store.go").write_text("package store\n\ntype Store struct {\n\tpath string\n}\n")
@@ -67,8 +67,27 @@ def test_discovery_is_language_agnostic(tmp_path: Path, capsys):
     assert [(m["path"], m["line"]) for m in answer["matches"]] == [
         ("go/store.go", 3), ("py/store.py", 1), ("rs/store.rs", 1), ("ts/store.ts", 1),
     ]
+    # A name defined once per language is a mirror across languages, not a collision.
     _, collisions, _ = _ask(capsys, "find", "--collisions", "--root", str(tmp_path), "--output", "json")
-    assert set(collisions["collisions"]) == {"Store"}
+    assert collisions["collisions"] == {}
+    assert {m["language"] for m in answer["matches"]} == {"go", "python", "rust", "typescript"}
+
+
+def test_a_name_defined_twice_within_one_language_is_a_collision_beside_other_languages(
+        tmp_path: Path, capsys):
+    (tmp_path / "a").mkdir()
+    (tmp_path / "a" / "store.py").write_text("class Store:\n    pass\n")
+    (tmp_path / "b").mkdir()
+    (tmp_path / "b" / "store.py").write_text("class Store:\n    pass\n")
+    (tmp_path / "ts").mkdir()
+    (tmp_path / "ts" / "store.ts").write_text("export class Store {}\nexport class Only {}\n")
+    (tmp_path / "ts" / "only.py").write_text("class Only:\n    pass\n")
+    _, answer, _ = _ask(capsys, "find", "--collisions", "--root", str(tmp_path), "--output", "json")
+    # `Store` clashes inside Python (a/ and b/); the TypeScript `Store` is not part of it,
+    # and `Only` (once per language) is not a collision at all.
+    assert set(answer["collisions"]) == {"Store"}
+    assert {(m["language"], m["path"]) for m in answer["collisions"]["Store"]} == {
+        ("python", "a/store.py"), ("python", "b/store.py")}
 
 
 # ---- Q2: what is in package Y? --------------------------------------------

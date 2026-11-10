@@ -132,6 +132,12 @@ below is recoverable from commit `b7ab8f7` (the tip of `dev` before this change)
   data file or an `exclude`d directory no longer enters with complexity 0 (a 400-day
   window on laszy gave 1,919 hotspot observations from this; it gives 36, all under
   `src/`).
+- **`find --collisions` reported a name defined once per language as a collision.** A
+  `Ticket` in Python and a `Ticket` in TypeScript is usually one concept mirrored across a
+  language boundary, and one grammar's scopes cannot shadow another's, so it is no longer a
+  collision. Two definitions inside one language still are, and the entry lists them. Every
+  match (`find`, `tree`, `shape` and the collisions) now carries a `language`. If you do want
+  cross-language mirrors listed, `find <name>` still returns every definition.
 - **The declared-names lexicon had no class properties.** `Class.properties()` was always
   empty, so a field an ontology defines (`address/handle`) could not be matched to the
   attribute that carries it. A class's properties are now its class-body fields plus the
