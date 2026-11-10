@@ -2,7 +2,7 @@
 
 Before this, only Python extracted parameters; every other grammar returned () (the
 base helper matched Python tree-sitter node types), silently deadening sentinels /
-hidden-mutators / imposters / slackers and dropping parameter tokens from the lexicon
+hidden-mutators and dropping parameter tokens from the lexicon
 on all non-Python code. Each case below asserts the parameter NAMES are recovered.
 """
 from __future__ import annotations
@@ -48,8 +48,8 @@ def test_parameters_extracted_per_language(tmp_path: Path, fname, case):
 
 
 def test_go_first_param_clustering_now_works(tmp_path: Path):
-    # Downstream win: imposters/slackers depend on first_param_clusters, which was
-    # dead on Go because parameters were empty. Three Go funcs sharing a first param.
+    # Downstream win: first_param_clusters was dead on Go because parameters were
+    # empty. Three Go funcs sharing a first param.
     from slop.metrics.lexical import Lexical
     (tmp_path / "m.go").write_text(
         "package m\n"

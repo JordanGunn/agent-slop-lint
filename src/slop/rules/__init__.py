@@ -22,13 +22,11 @@ from .god_module import GodModuleRule
 from .hammers import HammersRule
 from .hidden_mutators import HiddenMutatorsRule
 from .hotspots import HotspotsRule
-from .imposters import ImpostersRule
 from .orphans import OrphansRule
 from .redundancy import RedundancyRule
 from .rigidity import RigidityRule
 from .runts import RuntsRule
 from .sentinels import SentinelsRule
-from .slackers import SlackersRule
 from .sprawl import SprawlRule
 from .stutter import StutterRule
 from .verbosity import VerbosityRule
@@ -53,8 +51,6 @@ RULE_REGISTRY: list[Rule] = [
     HotspotsRule(),
     RedundancyRule(),
     HammersRule(),
-    ImpostersRule(),
-    SlackersRule(),
     SprawlRule(),
     StutterRule(),
     CohesionRule(),
@@ -82,8 +78,6 @@ __all__ = [
     "HotspotsRule",
     "RedundancyRule",
     "HammersRule",
-    "ImpostersRule",
-    "SlackersRule",
     "SprawlRule",
     "StutterRule",
     "CohesionRule",

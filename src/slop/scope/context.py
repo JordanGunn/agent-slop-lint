@@ -27,7 +27,7 @@ class AnalysisContext:
     module_pkg: dict = field(default_factory=dict)  # module id -> owning package id
     callable_names: frozenset = field(default_factory=frozenset)  # every project-defined callable name (redundancy precision)
     #: Lazily-populated memo for consumer-derived state that is expensive and shared
-    #: across rules (e.g. the cross-rule corroboration index both imposters and slackers
-    #: need). The dataclass is frozen, but mutating this dict in place is allowed. Kept
+    #: across rules (e.g. a corpus-wide index several rules would otherwise each
+    #: rebuild). The dataclass is frozen, but mutating this dict in place is allowed. Kept
     #: generic (a plain dict) so scope stays free of metric/rule type imports.
     cache: dict = field(default_factory=dict)

@@ -1,6 +1,6 @@
 # slop rules
 
-slop ships **25 rules**, language-agnostic across 11 grammars. The authoritative,
+slop ships **23 rules**, language-agnostic across 11 grammars. The authoritative,
 always-current reference is the tool itself:
 
 ```bash
@@ -46,13 +46,8 @@ Every finding is one of three strengths, chosen by how confidently slop can spea
 - `lexical.stutter` — a name restating its enclosing scope
 - `lexical.verbosity` — names compensating for a missing namespace
 - `lexical.sprawl` — a closed alphabet acting as an undeclared type (REVIEW)
-- `lexical.imposters` — a parameter that is really a receiver (a class in hiding)
-- `lexical.slackers` — a real cluster whose names don't align
 - `lexical.hammers` — institutionalised catch-all vocabulary (observation)
 - `lexical.cohesion` — a module foreign to its package's vocabulary (observation)
-
-`imposters` / `slackers` are observations alone, and promote to a REVIEW verdict only when
-an independent structural signal (clones or redundant siblings) corroborates the cluster.
 
 **Whole-corpus signals** (observations)
 - `vocabulary` — identifier token distribution (a Zipf near-invariant; deviation is the signal)

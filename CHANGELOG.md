@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- **`lexical.imposters`, `lexical.slackers` and the cross-rule corroboration module
+  (`rules/_battery.py`)**, with their tests and documentation. The names were slop-coined,
+  not drawn from prior art. The lexical primitive they consumed
+  (`Lexical.first_param_clusters`) remains. No rule now reaches across the lexical and
+  structural boundary.
+
 ## [3.0.0a0] - 2026-06-04
 
 Ground-up rebuild on a component model (pre-release). slop is reorganised around an

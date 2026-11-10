@@ -80,7 +80,7 @@ Findings come in three strengths, matched to how confidently slop can speak:
 
 ## Rules
 
-25 rules, language-agnostic across 11 grammars. `slop rules` lists them with altitude and
+23 rules, language-agnostic across 11 grammars. `slop rules` lists them with altitude and
 disposition.
 
 - **Complexity** (per callable, error): `complexity.cyclomatic` (McCabe), `complexity.cognitive`
@@ -92,15 +92,11 @@ disposition.
   `structure.hidden-mutators`, `structure.sentinels`.
 - **Class**: `class-shape` — the Chidamber–Kemerer suite (CBO/DIT/NOC/WMC) as an observation.
 - **Lexical**: `lexical.stutter` (a name restating its scope), `lexical.verbosity`,
-  `lexical.sprawl` (a closed alphabet acting as an undeclared type), `lexical.imposters`
-  (a parameter that is really a receiver — a class in hiding), `lexical.slackers` (a real
-  cluster whose names don't align), `lexical.hammers` (institutionalised catch-all
-  vocabulary), `lexical.cohesion` (a module foreign to its package).
+  `lexical.sprawl` (a closed alphabet acting as an undeclared type), `lexical.hammers`
+  (institutionalised catch-all vocabulary), `lexical.cohesion` (a module foreign to its
+  package).
 - **Whole-corpus signals** (observations): `vocabulary` (identifier token distribution),
   `hotspots` (churn × complexity, Tornhill), `orphans` (unreferenced top-level symbols).
-
-`imposters`/`slackers` are observations on their own; they promote to a REVIEW verdict only
-when an independent structural signal (clones or redundant siblings) corroborates them.
 
 ## Languages
 

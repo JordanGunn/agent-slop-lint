@@ -32,7 +32,7 @@ class NamedEntity:
 class FirstParameterCluster:
     """A group of callables sharing a first parameter, with profile signals.
 
-    Consumed by implicit-receiver rules (imposters, slackers). The cluster is
+    Produced by ``Lexical.first_param_clusters``. The cluster is
     reported at the narrowest scope where it coheres; ``verdict`` + ``profile_label``
     classify what it ACTUALLY does (missing class vs strategy family vs plumbing).
     """

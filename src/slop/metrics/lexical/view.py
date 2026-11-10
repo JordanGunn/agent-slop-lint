@@ -93,7 +93,7 @@ class Lexical:
 
     def token_locations(self) -> dict[str, set[str]]:
         """Token → set of files where it appears (entity + parameter vocabulary).
-        The headline sprawl/imposters primitive: a token in many files with no module
+        The headline sprawl primitive: a token in many files with no module
         of that name is a missing-module candidate."""
         out: dict[str, set[str]] = {}
         for tok, path in self._vocab_units():
@@ -194,8 +194,8 @@ class Lexical:
                              root: Any = None) -> list:
         """Groups of callables sharing a first parameter, enriched with profile
         signals (body Jaccard, receiver-call density, modal overlap) and reported at
-        the narrowest scope where they cohere. The implicit-receiver primitive that
-        imposters / slackers / sprawl consume."""
+        the narrowest scope where they cohere. The implicit-receiver primitive;
+        no rule consumes it at present."""
         from .clusters import compute_first_param_clusters
         return compute_first_param_clusters(
             self, min_cluster=min_cluster, exempt_names=exempt_names, root=root)

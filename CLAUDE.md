@@ -42,8 +42,7 @@ slop/                       <- repo root: pyproject.toml, uv.lock, README, LICEN
                               orphans/hotspots/imports compute), lexical/ (view.py + affix/clusters/
                               profile), locus.py (narrowest-common-ancestor; duck-typed)
     graph/                  import/dependency graph: build.py, dependency.py, imports.py
-    rules/                  one rule per file → single flat RULE_REGISTRY (__init__.py);
-                              _battery.py and _<helper>.py hold rule-internal shared logic
+    rules/                  one rule per file → single flat RULE_REGISTRY (__init__.py)
   tests/                    pytest suite (test_rule_*.py per rule, test_<view>.py, cross-cutting)
 ```
 
@@ -104,8 +103,7 @@ scope at the rule's altitude.
   remedy, WARNING-capped). An `Observation` is a claim-free evidential nudge (pinned INFO /
   INVESTIGATE; no prescription — it makes no precision claim, so it cannot be a false
   positive). The disposition policy: **exact** pattern → directive verdict; **certain
-  pattern, open remedy** → REVIEW; **inferred** pattern → observation, or REVIEW *only when
-  an independent signal corroborates* (a battery, see `rules/_battery.py`). This cuts
+  pattern, open remedy** → REVIEW; **inferred** pattern → observation. This cuts
   across substrate — `redundancy` is structural but soft; `stutter` is lexical but exact.
 - **Three layers: rule → view method → algorithm helper.** A rule thresholds + emits; a
   view method (`Structure.<m>()` / `Lexical.<m>()`) is the public measurement API; the
@@ -113,7 +111,7 @@ scope at the rule's altitude.
 - **Boundaries.** `lexicon` is a standalone kernel (imports only `slop.span` + stdlib).
   `metrics` never imports `scope` (views take a duck-typed region); `scope` never imports
   `metrics`/`rules`/`linter`. The locus NCA helper lives in `metrics/locus.py` for this reason.
-- **One flat rule registry.** All 25 rules live in `rules/` regardless of substrate;
+- **One flat rule registry.** All 23 rules live in `rules/` regardless of substrate;
   `rules/__init__.py` builds a single `RULE_REGISTRY` (substrate grouping encoded nothing the
   imports don't already say).
 - **`zero_visited` safeguard.** The dispatcher records each rule's visited-count; a rule

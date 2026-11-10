@@ -5,7 +5,7 @@ tokenises, counts, measures distribution, and (as it grows) clusters — in the
 vocabulary of lexicography, not of slop. The governing test for every member: *would
 a corpus linguist recognise this concept independent of slop?* Hapax ratio,
 type/token counts, frequency, Zipf shape, collocations, formal concepts,
-edit-distance clustering — yes. "imposters", "sprawl", threshold verdicts — no; those
+edit-distance clustering — yes. "sprawl", threshold verdicts — no; those
 are slop-invented and live in the rule layer above.
 
 The hard boundary: ``slop.lexicon`` is importable and usable **outside the linter**.

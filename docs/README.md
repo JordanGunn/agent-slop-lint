@@ -7,7 +7,7 @@ it should investigate.
 
 ## Use it
 
-- [rules/README.md](rules/README.md) — the 25 rules at a glance. The always-current
+- [rules/README.md](rules/README.md) — the 23 rules at a glance. The always-current
   reference is `slop rules` (listing) and `slop schema` (config shape); each rule's full
   rationale lives in its module docstring under `src/slop/rules/`.
 - [CONFIG.md](CONFIG.md) — `.slop.toml` / `[tool.slop]`: per-rule thresholds keyed by

@@ -1,8 +1,6 @@
 """Affix-pattern + alphabet-clustering + FCA primitives.
 
-Shared by lexical.sprawl (its own algorithm) and lexical.slackers
-(uses ``build_affix_patterns`` to decide whether a first-parameter
-cluster has a coherent naming template). The Lexicon view consumes
+Used by lexical.sprawl (its own algorithm). The Lexicon view consumes
 these via the rules; they are not exposed as view methods because
 their inputs are caller-shaped (a particular Lexeme list at a
 chosen scope).
