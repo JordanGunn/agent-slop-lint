@@ -1,6 +1,16 @@
-"""Per-callable non-aggregatable measure: magic literals (distinct non-trivial numeric
-literals in a body; trivial values are preserved from the legacy compute). No rule consumes
-it yet; it awaits the structural-analysis layer."""
+"""Magic literals: numeric literals that appear as operands of an operator in a callable.
+
+A magic number is a numeric literal whose meaning the reader must guess (Martin, Clean
+Code, 2008, G25; Fowler, Refactoring, 1999). Slop reads one syntactic context as the
+signal: the literal is an operand of an arithmetic, comparison, bitwise or logical operator, as in
+``x > 15`` or ``x * 86400``. A literal in a default value, a keyword argument, an index, a
+call argument or the right side of ``name = 30`` is named by its position and is not
+reported. That is a deliberate undercount: a bare call argument such as ``sleep(5)`` is
+missed.
+
+Ordinary values 0, 1 and 2 are never reported. Text that is not a number (a grammar can
+name a type keyword like a numeric literal) is not reported either.
+"""
 from __future__ import annotations
 
 from typing import Any
@@ -8,40 +18,43 @@ from typing import Any
 from ...ast import NodeKind
 from .records import MagicLiteral
 
-_TRIVIAL_INTS: frozenset[int] = frozenset({-1, 0, 1, 2})
-_TRIVIAL_FLOATS: frozenset[float] = frozenset({-1.0, 0.0, 0.5, 1.0, 2.0, 100.0})
+_ORDINARY = frozenset({0, 1, 2})
+# Arithmetic, comparison, bitwise and logical operator tokens, with their augmented forms.
+# Keywords (``return``, ``if``) and punctuation (``=>``, ``?``, ``...``) also appear in a
+# grammar's operator set; a literal beside them is not an operand of an operation.
+_OPERATIONS = frozenset({
+    "+", "-", "*", "/", "%", "**", "//", "@",
+    "<", ">", "<=", ">=", "==", "!=", "===", "!==", "<>",
+    "<<", ">>", ">>>", "&", "|", "^", "&&", "||",
+    "+=", "-=", "*=", "/=", "%=", "**=", "//=", "<<=", ">>=", ">>>=", "&=", "|=", "^=",
+})
 
 
 def magic_literals(node: Any, grammar: Any) -> list[MagicLiteral]:
-    """Distinct non-trivial numeric literals in the callable body (excludes nested callables).
-
-    ``node`` is a ``slop.ast.Node``; ``Node.walk(prune={CALLABLE})`` is the
-    body-local DFS that does not cross nested callables.
-    """
+    """Distinct magic numeric literals in the callable body (nested callables excluded),
+    each at its first line."""
     literal_types = grammar.numeric_literal_nodes()
+    operators = grammar.operator_nodes() & _OPERATIONS
     if not literal_types:
         return []
     seen: dict[str, int] = {}
     for cur in node.walk(prune=frozenset({NodeKind.CALLABLE})):
-        if cur.type in literal_types:
-            text = cur.text
-            if text not in seen and not _is_trivial(text):
-                seen[text] = cur.line
+        if cur.type not in literal_types or cur.text in seen:
+            continue
+        value = _parse_numeric(cur.text)
+        if value is None or value in _ORDINARY:
+            continue
+        parent = cur.parent
+        if parent is not None and any(k.type in operators for k in parent.children()):
+            seen[cur.text] = cur.line
     return [MagicLiteral(value=t, line=ln) for t, ln in seen.items()]
-
-
-def _is_trivial(text: str) -> bool:
-    value = _parse_numeric(text)
-    if value is None:
-        return False
-    return value in _TRIVIAL_INTS if isinstance(value, int) else value in _TRIVIAL_FLOATS
 
 
 def _parse_numeric(text: str) -> int | float | None:
     stripped = text.replace("_", "").strip()
     if not stripped:
         return None
-    while stripped and stripped[-1].isalpha():
+    while stripped and stripped[-1].isalpha() and not stripped.lower().startswith(("0x", "0b", "0o")):
         stripped = stripped[:-1]
     if stripped.endswith(("i", "j")):
         stripped = stripped[:-1]

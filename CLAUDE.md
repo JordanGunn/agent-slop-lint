@@ -17,7 +17,7 @@ root (src-layout; package `agent-slop-lint`, import `slop`, CLI `slop.cli:main`)
   vocabulary (`slop lexicon`).
 - `src/slop/ontology/`: canonical vocabulary; `ir.py` reads the Open Ontology JSON IR
   (`slop vocab`).
-- Lint layer: `rule.py` (Rule), `rules/` (12 rules, `RULE_REGISTRY` in `rules/__init__.py`),
+- Lint layer: `rule.py` (Rule), `rules/` (14 rules, `RULE_REGISTRY` in `rules/__init__.py`),
   `dispatch.py`, `violation.py`, `config.py`.
 - `cli.py`: all commands. `tests/`: pytest, `test_rule_*.py` per rule.
 

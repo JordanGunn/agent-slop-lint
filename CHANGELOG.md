@@ -28,6 +28,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `class-cohesion` (LCOM4, 1, off by default): 12 rules.
 - Suppression matches exact rule names only: `slop: ignore[a, b]`.
 - `scripts/` removed.
+- New rules `halstead-volume` (limit 1000) and `magic-literal` (limit 0): 14 rules.
+  `magic-literal` reports numeric literals that are operands of an arithmetic, comparison,
+  bitwise or logical operator; defaults, keyword arguments, indices, call arguments and
+  `name = 30` are not reported, and 0, 1 and 2 never are. Fixed: Python strings were not
+  counted as Halstead operands; a TypeScript `number` type keyword was a magic literal.
+  `Structure.halstead_density` is removed; it returned Halstead difficulty.
 - File discovery is one mechanism: inside a git work tree, tracked files plus untracked files
   `.gitignore` does not ignore; elsewhere every file except `.git`. The hard-coded skip list
   and the dot-directory rule are gone, so hidden directories are now read; use `exclude`.

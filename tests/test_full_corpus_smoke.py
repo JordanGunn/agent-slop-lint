@@ -15,7 +15,7 @@ def test_every_non_graph_metric_answers_on_real_corpus():
     classes = list(corpus._iter_classes())
     assert callables and classes
     for c in callables[:50]:
-        Structure.over(c).cyclomatic(); Structure.over(c).cognitive(); Structure.over(c).combinatorial(); Structure.over(c).volume(); Structure.over(c).halstead_density()
+        Structure.over(c).cyclomatic(); Structure.over(c).cognitive(); Structure.over(c).combinatorial(); Structure.over(c).volume()
         Structure.over(c).magic_literals()
     for k in classes[:50]:
         Structure.over(k).dit(); Structure.over(k).noc(); Structure.over(k).cbo(); Structure.over(k).method_count(); Structure.over(k).ck()

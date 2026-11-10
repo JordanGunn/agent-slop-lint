@@ -2,7 +2,7 @@
 
 A linter and code-structure query tool. It parses source with tree-sitter into an ownership
 tree (Corpus › Realm › Package › Module › Class › Callable). Read-only commands answer
-questions about that tree with facts and no limits. The linter checks 12 published measures
+questions about that tree with facts and no limits. The linter checks 14 published measures
 against limits and prints `path:line:column: rule message`.
 
 ```
@@ -60,6 +60,8 @@ A rule reports a violation when its measure is strictly greater than `limit`.
 | `cyclomatic-complexity` | callable | 10 | McCabe (1976) |
 | `cognitive-complexity` | callable | 15 | Campbell (2018) |
 | `npath-complexity` | callable | 400 | Nejmeh (1988) |
+| `halstead-volume` | callable | 1000 | Halstead (1977); limit is DCM's default |
+| `magic-literal` | callable | 0 unnamed numeric literals | Martin (2008) G25 |
 | `god-module` | module | 20 top-level definitions | |
 | `rigid-package` | package | D' 0.7 | Martin (1994, 2002) |
 | `useless-package` | package | D' 0.7 | Martin (1994, 2002) |

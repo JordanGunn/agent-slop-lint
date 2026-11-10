@@ -55,8 +55,14 @@ Distance from the Main Sequence (rigid-package, useless-package)
 Hotspot Analysis (slop hotspots)
   Tornhill, A. (2015). "Your Code as a Crime Scene." Pragmatic Bookshelf.
 
-Software Science (measure metrics/structural/halstead.py; no rule reports it)
+Software Science (halstead-volume)
   Halstead, M.H. (1977). "Elements of Software Science." Elsevier.
+
+Magic numbers (magic-literal)
+  Martin, R.C. (2008). "Clean Code: A Handbook of Agile Software Craftsmanship."
+  Prentice Hall. G25: Replace Magic Numbers with Named Constants.
+  Fowler, M. (1999). "Refactoring: Improving the Design of Existing Code."
+  Addison-Wesley. Replace Magic Number with Symbolic Constant.
 
 Acyclic Dependencies Principle (import-cycle)
   Lakos, J. (1996). "Large-Scale C++ Software Design." Addison-Wesley.

@@ -3,8 +3,8 @@ consume. Each entry is a stateless ``Rule`` instance; its ``name``, ``descriptio
 ``altitudes`` are class-level, and ``default_config`` ships its defaults.
 
 Every rule checks one measure that has a published source (McCabe, Campbell, Nejmeh,
-Martin, Lakos, Chidamber and Kemerer, Hitz and Montazeri) or a standard concept (Type-2
-clones, module size) against a limit. A rule is a threshold on a measure and nothing more.
+Halstead, Martin, Lakos, Chidamber and Kemerer, Hitz and Montazeri) or a standard concept (Type-2
+clones, module size, magic numbers) against a limit. A rule is a threshold on a measure and nothing more.
 """
 from __future__ import annotations
 
@@ -16,6 +16,8 @@ from .cyclomatic import CyclomaticRule
 from .dependency_cycles import DependencyCyclesRule
 from .duplication import DuplicationRule
 from .god_module import GodModuleRule
+from .halstead import HalsteadVolumeRule
+from .magic_literal import MagicLiteralRule
 from .rigidity import RigidityRule
 from .uselessness import UselessnessRule
 
@@ -23,6 +25,8 @@ RULE_REGISTRY: list[Rule] = [
     CyclomaticRule(),
     CognitiveRule(),
     CombinatorialRule(),
+    HalsteadVolumeRule(),
+    MagicLiteralRule(),
     GodModuleRule(),
     DuplicationRule(),
     DependencyCyclesRule(),
@@ -45,7 +49,9 @@ __all__ = [
     "DependencyCyclesRule",
     "DuplicationRule",
     "GodModuleRule",
+    "HalsteadVolumeRule",
     "InheritanceDepthRule",
+    "MagicLiteralRule",
     "RigidityRule",
     "UselessnessRule",
 ]

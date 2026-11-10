@@ -40,7 +40,7 @@ def test_rules_json(capsys):
     assert rc == 0
     by_name = {r["name"]: r for r in data}
     assert "cyclomatic-complexity" in by_name and "class-coupling" in by_name
-    assert len(by_name) == 12
+    assert len(by_name) == 14
     assert by_name["class-cohesion"]["enabled"] is False
     assert by_name["cyclomatic-complexity"]["altitudes"] == ["callable"]
 

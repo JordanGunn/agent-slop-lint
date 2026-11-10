@@ -70,10 +70,6 @@ class Structure:
         r = self._r
         return halstead.profile(r._ast_node(), r._grammar)
 
-    def halstead_density(self) -> float:
-        r = self._r
-        return halstead.profile(r._ast_node(), r._grammar).difficulty
-
     def magic_literals(self):
         r = self._r
         return callable_measures.magic_literals(r._ast_node(), r._grammar)

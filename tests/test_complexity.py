@@ -54,9 +54,18 @@ def test_combinatorial_npath(tmp_path: Path):
 def test_halstead(tmp_path: Path):
     cs = _callables(tmp_path)
     assert round(Structure.over(cs["m.h"]).volume(), 2) == 76.15
-    assert round(Structure.over(cs["m.h"]).halstead_density(), 2) == 6.67
     prof = Structure.over(cs["m.h"]).halstead()
+    assert round(prof.difficulty, 2) == 6.67
     assert prof.effort == prof.volume * prof.difficulty
+
+
+def test_a_string_literal_is_one_operand_not_zero(tmp_path: Path):
+    # A Python string is a node with string_start / string_content children, not a leaf.
+    (tmp_path / "s.py").write_text('def s():\n    return "a b"\n\ndef t():\n    return "a b" + "a b" + "c"\n')
+    cs = {c.qualname: c for c in scan_corpus(tmp_path, config=None)._iter_callables()}
+    one, many = Structure.over(cs["s.s"]).halstead(), Structure.over(cs["s.t"]).halstead()
+    assert (one.n2, one.N2) == (1, 1)
+    assert (many.n2, many.N2) == (2, 3)
 
 
 def test_aggregation_sums_volume(tmp_path: Path):
@@ -65,3 +74,10 @@ def test_aggregation_sums_volume(tmp_path: Path):
     mod = corpus.realms()[0].packages()[0].modules()[0]
     total = sum(Structure.over(c).volume() for c in corpus._iter_callables())
     assert round(Structure.over(mod).volume(), 4) == round(total, 4)
+
+
+def test_halstead_does_not_count_a_nested_callable_in_its_parent(tmp_path: Path):
+    (tmp_path / "n.py").write_text("def outer(x):\n    def inner(y):\n        return y * 99 + y * 98\n    return x\n")
+    cs = {c.qualname: c for c in scan_corpus(tmp_path, config=None)._iter_callables()}
+    prof = Structure.over(cs["n.outer"]).halstead()
+    assert (prof.n1, prof.n2, prof.N1, prof.N2) == (1, 1, 1, 1)       # `return x` only

@@ -2,8 +2,7 @@
 
 Walk the resolved body counting unique + total operator/operand leaves
 (η1, η2, N1, N2), then derive the measures. Runs on the ``slop.ast`` ``Node``
-proxy (``node.body()`` + ``Node.walk(prune={CALLABLE})``); body-local, so it
-skips nested callables. volume = N·log2(η) is the summable component;
+proxy over ``node.body()``; body-local, so it skips nested callables. volume = N·log2(η) is the summable component;
 difficulty/effort are non-additive.
 """
 from __future__ import annotations
@@ -16,21 +15,30 @@ from .records import HalsteadProfile
 
 
 def counts(node: Any, grammar: Any) -> tuple[int, int, int, int]:
-    """(η1, η2, N1, N2) — distinct/total operators and operands."""
+    """(η1, η2, N1, N2): distinct/total operators and operands.
+
+    An operand is counted at its outermost node and its children are not visited, so a
+    string literal is one operand however the grammar splits it into tokens (a Python
+    ``string`` has ``string_start``/``string_content`` children). Names inside an
+    interpolated string are therefore not counted separately."""
     operator_set = grammar.operator_nodes()
     operand_set = grammar.operand_nodes()
     operators: set[str] = set()
     operands: set[str] = set()
     n1_total = n2_total = 0
-    for n in node.body().walk(prune=frozenset({NodeKind.CALLABLE})):
-        if n.child_count == 0:
-            ntype = n.type
-            if ntype in operator_set:
+    body = node.body()
+    stack = [body]
+    while stack:
+        n = stack.pop()
+        if n.type in operand_set:
+            operands.add(n.text)
+            n2_total += 1
+        elif n.child_count == 0:
+            if n.type in operator_set:
                 operators.add(n.text)
                 n1_total += 1
-            elif ntype in operand_set:
-                operands.add(n.text)
-                n2_total += 1
+        elif n is body or n.kind != NodeKind.CALLABLE:
+            stack.extend(reversed(n.children()))
     return len(operators), len(operands), n1_total, n2_total
 
 
