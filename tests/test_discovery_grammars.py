@@ -69,3 +69,47 @@ def test_ruby_empty_classes_do_not_grow_a_phantom_child(tmp_path: Path):
     names = {m.name for m in find(scan_corpus(tmp_path, config=None), kind=ScopeKind.CLASS)}
     assert names == {"Shop", "Order", "Customer", "Top"}
     assert not collisions(scan_corpus(tmp_path, config=None))
+
+
+# ---- C: a specifier is a definition only when it has a body ----------------
+
+_C_SOURCE = (
+    "struct Node;                         /* forward declaration: not a definition */\n"
+    "struct Node { int v; struct Node *next; };   /* definition, with a self-reference */\n"
+    "typedef struct { int x; int y; } Point;      /* anonymous: named by its typedef */\n"
+    "typedef struct Tag { int a; } Alias_t;       /* tagged: the tag is the name */\n"
+    "enum Color { RED, GREEN };\n"
+    "union Value { int i; float f; };\n"
+    "struct Node *head;                   /* file-scope usage: not a definition */\n"
+    "int run(struct Node *n) { return n->v; }\n"
+)
+
+
+def test_c_defines_a_type_only_where_the_specifier_has_a_body(tmp_path: Path):
+    (tmp_path / "m.c").write_text(_C_SOURCE)
+    corpus = scan_corpus(tmp_path, config=None)
+    classes = find(corpus, kind=ScopeKind.CLASS)
+    assert sorted(m.name for m in classes) == ["Color", "Node", "Point", "Tag", "Value"]
+    assert [m.line for m in classes if m.name == "Node"] == [2]   # the definition, once
+    assert not collisions(corpus)                                  # usages are not phantoms
+    assert {m.name for m in find(corpus, kind=ScopeKind.CALLABLE)} == {"run"}
+
+
+def test_c_names_an_anonymous_struct_from_its_typedef_not_as_anonymous(tmp_path: Path):
+    (tmp_path / "m.c").write_text("typedef struct { int x; } Point;\n")
+    assert _names(tmp_path, ScopeKind.CLASS) == {"Point"}
+
+
+# ---- Julia: struct, abstract and parametric types, with their supertypes ----
+
+def test_julia_discovers_struct_abstract_and_parametric_types(tmp_path: Path):
+    (tmp_path / "m.jl").write_text(
+        "abstract type Shape end\n\nstruct Circle <: Shape\n    r::Float64\nend\n\n"
+        "mutable struct Box{T}\n    x::T\nend\n\nstruct Plain\nend\n"
+    )
+    corpus = scan_corpus(tmp_path, config=None)
+    assert {m.name for m in find(corpus, kind=ScopeKind.CLASS)} == {"Shape", "Circle", "Box", "Plain"}
+    by_name = {c.name: c for c in corpus._iter_classes()}
+    assert by_name["Circle"]._base_names == ("Shape",)       # struct Circle <: Shape
+    assert by_name["Shape"].is_abstract and not by_name["Circle"].is_abstract
+    assert by_name["Box"]._base_names == ()                  # Box{T} is named Box, no supertype

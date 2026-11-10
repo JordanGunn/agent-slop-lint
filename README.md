@@ -137,11 +137,13 @@ a file path; a package shares its qualname with its `__init__` module, so `tree`
 name exactly and reports `path:line`; `--collisions` lists names defined by more than one
 scope of a kind (class by default).
 
-Class questions carry a `caveats` list (JSON) or `note:` lines (human). C and Julia carve
-no class scopes, so their `struct` definitions are not discoverable; for those languages an
-empty answer is accompanied by a note saying so, because "no match" there does not mean
-"not defined". The other nine grammars (Python, JavaScript, TypeScript, Go, Java, C#, Rust,
-C++, Ruby) discover their class-like definitions, and a test pins that for each.
+Class questions discover each grammar's class-like definitions: classes, interfaces,
+structs, enums and traits as the language has them. That includes C `struct`/`union`/`enum`
+definitions (a specifier counts only with a body, and `typedef struct {...} Name;` is named
+`Name`) and Julia `struct`, `abstract type` and parametric types. Answers carry a `caveats`
+list (JSON) or `note:` lines (human) when they may be incomplete: files with syntax errors
+are still carved but may have lost definitions. Known gaps: C++ enums and TypeScript type
+aliases are not discovered.
 
 `vocab` reads the JSON IR that [Open Ontology](https://open-ontology.com) emits
 (`pnpm model:check <model> --json`; the bare IR and that command's wrapper are both

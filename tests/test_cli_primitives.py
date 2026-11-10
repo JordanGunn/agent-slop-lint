@@ -203,6 +203,8 @@ _WIDGET = {
     "m.rs": "pub struct Widget {}\n",
     "m.cpp": "class Widget {};\n",
     "m.rb": "class Widget\nend\n",
+    "m.c": "struct Widget { int x; };\n",
+    "m.jl": "struct Widget\nend\n",
 }
 
 
@@ -217,63 +219,38 @@ def test_class_bearing_grammars_find_a_defined_class(tmp_path: Path, capsys, fil
     assert answer["caveats"] == []
 
 
-@pytest.mark.parametrize("filename,source", [
-    ("m.c", "struct Widget { int x; };\n"),
-    ("m.jl", "struct Widget\nend\n"),
-])
-def test_a_grammar_without_class_scopes_says_so_instead_of_answering_empty(
-        tmp_path: Path, capsys, filename: str, source: str):
-    # An empty 'matches' here would read as "Widget is not defined". It is defined; the
-    # grammar just carves no class scopes, so the answer must carry that caveat.
-    (tmp_path / filename).write_text(source)
-    _, answer, _ = _ask(capsys, "find", "Widget", "--root", str(tmp_path), "--output", "json")
-    assert answer["matches"] == []
-    assert len(answer["caveats"]) == 1 and "no class scopes" in answer["caveats"][0]
-    code, text, _ = _ask(capsys, "find", "Widget", "--root", str(tmp_path))
-    assert "note:" in text
-
-
-def test_caveats_apply_only_to_questions_about_classes(tmp_path: Path, capsys):
-    (tmp_path / "m.c").write_text("int run(void) { return 1; }\n")
-    _, answer, _ = _ask(capsys, "find", "run", "--kind", "callable", "--root", str(tmp_path),
-                        "--output", "json")
-    assert [m["name"] for m in answer["matches"]] == ["run"]
-    assert answer["caveats"] == []       # callables are discoverable in C
-
-
-def test_vocab_carries_the_caveat_for_a_polyglot_root(tmp_path: Path, capsys):
+def test_vocab_matches_a_c_struct_against_the_ontology(tmp_path: Path, capsys):
     (tmp_path / "a.py").write_text("class Ticket:\n    pass\n")
     (tmp_path / "b.c").write_text("struct Customer { int x; };\n")
     _, answer, _ = _ask(capsys, "vocab", "--ontology", IR, "--root", str(tmp_path), "--output", "json")
-    assert [m["term"] for m in answer["matched"]] == ["Ticket"]
-    assert any(c.startswith("c:") for c in answer["caveats"])   # Customer may live in C
+    assert [m["term"] for m in answer["matched"]] == ["Customer", "Ticket"]
+    assert answer["caveats"] == []
 
 
 def _polyglot(tmp_path: Path) -> None:
+    # A clean Python realm beside a C realm with a syntax error (a struct missing its brace).
     (tmp_path / "p").mkdir()
     (tmp_path / "p" / "a.py").write_text("class Widget:\n    pass\n")
     (tmp_path / "c").mkdir()
-    (tmp_path / "c" / "b.c").write_text("struct Widget { int x; };\n")
+    (tmp_path / "c" / "b.c").write_text("struct Widget { int x;\n")
 
 
 def test_a_tree_scoped_to_one_realm_carries_only_that_realms_caveats(tmp_path: Path, capsys):
-    # The C realm cannot affect rows under the Python realm, so its note would be noise.
+    # The C realm's broken file cannot affect rows under the Python realm.
     _polyglot(tmp_path)
     _, whole, _ = _ask(capsys, "tree", "--root", str(tmp_path), "--output", "json")
     _, py_only, _ = _ask(capsys, "tree", "--root", str(tmp_path), "--scope", "python",
                          "--scope-kind", "realm", "--output", "json")
-    assert any(c.startswith("c:") for c in whole["caveats"])
+    assert any("b.c" in c for c in whole["caveats"])
     assert py_only["caveats"] == []
 
 
-def test_find_and_vocab_carry_the_c_caveat_in_a_polyglot_root_but_callables_do_not(
-        tmp_path: Path, capsys):
+def test_syntax_error_notes_apply_to_every_kind_of_question(tmp_path: Path, capsys):
     _polyglot(tmp_path)
-    _, found, _ = _ask(capsys, "find", "Widget", "--root", str(tmp_path), "--output", "json")
-    assert any(c.startswith("c:") for c in found["caveats"])
-    _, callables, _ = _ask(capsys, "find", "Widget", "--kind", "callable", "--root",
-                           str(tmp_path), "--output", "json")
-    assert callables["caveats"] == []
+    for kind in ("class", "callable"):
+        _, answer, _ = _ask(capsys, "find", "Widget", "--kind", kind, "--root", str(tmp_path),
+                            "--output", "json")
+        assert len(answer["caveats"]) == 1 and "b.c" in answer["caveats"][0]
 
 
 def test_a_file_with_syntax_errors_is_named_instead_of_silently_losing_its_definitions(

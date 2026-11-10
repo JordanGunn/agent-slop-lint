@@ -34,9 +34,9 @@ class Paradigm(Enum):
     """The capability tier of a grammar — decides which typed accessors a carved
     Module/Package exposes."""
 
-    PROCEDURAL = "procedural"            # free functions, no classes (C, Julia)
+    PROCEDURAL = "procedural"            # free functions, no classes (no shipped grammar)
     OBJECT_ORIENTED = "object_oriented"  # classes + methods, no free functions (Java, C#)
-    MULTI_PURPOSE = "multi_purpose"      # both (Python, Go, Rust, C++, Ruby, TS, JS)
+    MULTI_PURPOSE = "multi_purpose"      # both (Python, Go, Rust, C, C++, Julia, Ruby, TS, JS)
 
 
 class Grammar(ABC):

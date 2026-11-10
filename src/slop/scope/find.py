@@ -162,10 +162,11 @@ def _realms_under(corpus, scope: Scope) -> list:
 def caveats(corpus, kind: ScopeKind | None = None, *, under: Scope | None = None) -> list[str]:
     """Reasons an answer about ``under`` (the whole corpus by default) may be incomplete.
 
-    - A realm whose grammar is procedural (C, Julia) carves no class scopes, so its
-      ``struct``/type definitions are not discoverable and an empty class answer there does
-      not mean "not defined". Reported only for questions about classes (``kind`` None or
-      CLASS).
+    - A realm whose grammar is procedural-only carves no class scopes, so its type
+      definitions are not discoverable and an empty class answer there does not mean "not
+      defined". No shipped grammar is procedural-only today (C and Julia carve their
+      struct/abstract types); the guard keeps a future one honest. Reported only for
+      questions about classes (``kind`` None or CLASS).
     - A file with syntax errors is still carved, but definitions inside the broken region
       may be missing, for any kind of question.
 

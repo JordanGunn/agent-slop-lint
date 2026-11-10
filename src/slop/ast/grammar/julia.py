@@ -1,13 +1,22 @@
-"""Julia grammar — procedural; flat-body. extract_name walks signature→call."""
+"""Julia grammar — struct/abstract/primitive type definitions are class-like scopes (methods
+live outside them, by multiple dispatch); flat-body. extract_name walks signature→call."""
 from __future__ import annotations
 
 from typing import Any, ClassVar
 
-from ..paradigm import Procedural
+from ..paradigm import MultiPurpose
 
 
-class Julia(Procedural):
+class Julia(MultiPurpose):
     id: ClassVar[str] = "julia"
+
+    @classmethod
+    def classes(cls) -> frozenset[str]:
+        return frozenset({"struct_definition", "abstract_definition", "primitive_definition"})
+
+    @classmethod
+    def methods(cls) -> frozenset[str]:
+        return frozenset()
 
     @classmethod
     def callable(cls) -> frozenset[str]:
@@ -87,6 +96,9 @@ class Julia(Procedural):
 
     @classmethod
     def extract_name(cls, node: Any, content: bytes) -> str:
+        if node.type in cls.classes():
+            ident = _head_identifier(node)
+            return _text(ident, content) if ident is not None else "<anonymous>"
         if node.type == "arrow_function_expression":
             return "<lambda>"
         if node.type != "function_definition":
@@ -107,3 +119,35 @@ class Julia(Procedural):
         """Julia params live under ``signature → call_expression → argument_list``."""
         from ..paradigm.base import julia_signature_parameters
         return julia_signature_parameters(node, content)
+
+    @classmethod
+    def is_abstract_scope(cls, node: Any, content: bytes) -> bool | None:
+        del content
+        return True if node.type == "abstract_definition" else None
+
+    @classmethod
+    def extract_superclasses(cls, node: Any, content: bytes) -> list[str]:
+        """``struct Circle <: Shape`` extends ``Shape``."""
+        head = next((c for c in node.children if c.type == "type_head"), None)
+        if head is None or not head.children or head.children[0].type != "binary_expression":
+            return []
+        supertype = _leftmost_identifier(head.children[0].children[-1])
+        return [_text(supertype, content)] if supertype is not None else []
+
+
+def _leftmost_identifier(node: Any) -> Any | None:
+    """The first identifier reached by descending first children (``Box{T}`` -> ``Box``)."""
+    while node is not None and node.type != "identifier":
+        node = node.children[0] if node.children else None
+    return node
+
+
+def _head_identifier(node: Any) -> Any | None:
+    """The declared name of a struct/abstract/primitive definition: the leftmost
+    identifier of its ``type_head`` (past ``<:`` and type parameters)."""
+    head = next((c for c in node.children if c.type == "type_head"), None)
+    return _leftmost_identifier(head)
+
+
+def _text(node: Any, content: bytes) -> str:
+    return content[node.start_byte:node.end_byte].decode("utf-8", errors="replace")

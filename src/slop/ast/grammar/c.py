@@ -1,13 +1,29 @@
-"""C grammar — procedural; no classes. extract_name walks the declarator chain."""
+"""C grammar — struct/union/enum definitions are class-like scopes; functions are free
+callables. extract_name walks the declarator chain, and names an anonymous
+``typedef struct {...} Name;`` from its typedef."""
 from __future__ import annotations
 
 from typing import Any, ClassVar
 
-from ..paradigm import Procedural
+from ..paradigm import MultiPurpose
 
 
-class C(Procedural):
+class C(MultiPurpose):
     id: ClassVar[str] = "c"
+
+    @classmethod
+    def classes(cls) -> frozenset[str]:
+        return frozenset({"struct_specifier", "union_specifier", "enum_specifier"})
+
+    @classmethod
+    def methods(cls) -> frozenset[str]:
+        return frozenset()
+
+    @classmethod
+    def is_class_definition(cls, node: Any) -> bool:
+        # A specifier with a body defines the type; without one it is a forward
+        # declaration or a reference (``struct Node *head;``, ``struct Node *next;``).
+        return node.child_by_field_name("body") is not None
 
     @classmethod
     def callable(cls) -> frozenset[str]:
@@ -113,6 +129,8 @@ class C(Procedural):
 
     @classmethod
     def extract_name(cls, node: Any, content: bytes) -> str:
+        if node.type in cls.classes():
+            return _type_name(node, content)
         if node.type != "function_definition":
             return super().extract_name(node, content)
         declarator = node.child_by_field_name("declarator")
@@ -149,3 +167,13 @@ def _decl_ident(decl: Any, content: bytes) -> str | None:
             return content[inner.start_byte:inner.end_byte].decode("utf-8", errors="replace")
         cur = inner
     return None
+
+
+def _type_name(node: Any, content: bytes) -> str:
+    """A struct/union/enum's tag, else the name of the ``typedef`` that wraps it."""
+    name = node.child_by_field_name("name")
+    if name is None and node.parent is not None and node.parent.type == "type_definition":
+        name = node.parent.child_by_field_name("declarator")
+    if name is None or name.type not in ("type_identifier", "identifier"):
+        return "<anonymous>"
+    return content[name.start_byte:name.end_byte].decode("utf-8", errors="replace")

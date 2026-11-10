@@ -173,7 +173,7 @@ def _carve_decls(
     for child in node.children():
         # An anonymous token can share a node type with the construct it belongs to (Ruby's
         # ``class`` keyword vs a ``class`` node), so only named nodes are declarations.
-        if child.type in class_types and child.named:
+        if child.type in class_types and child.named and grammar.is_class_definition(child.raw):
             out.append(_make_class(child, grammar, content, path, parts))
         elif child.type in callable_types and child.named:
             out.append(_make_callable(child, grammar, content, path, parts, in_class))

@@ -59,10 +59,17 @@ below is recoverable from commit `b7ab8f7` (the tip of `dev` before this change)
   `OntologyIR` reader, `compare`).
 - `tests/test_layers.py` pins the import boundaries between layers.
 - **Caveats on questions the primitives cannot fully answer.** `find`, `tree` and `vocab`
-  carry a `caveats` list (JSON) or `note:` lines (human) for (1) a realm whose grammar
-  carves no class scopes (C, Julia), so "no match" there is not read as "not defined", and
-  (2) files with syntax errors, which are still carved but may have lost definitions. A
-  `tree` scoped to one realm reports only that realm's caveats.
+  carry a `caveats` list (JSON) or `note:` lines (human) for files with syntax errors,
+  which are still carved but may have lost definitions, and for a grammar that carves no
+  class scopes (none ship today; the guard keeps a future one honest). A `tree` scoped to
+  one realm reports only that realm's caveats.
+- **C and Julia types are discoverable.** C `struct`/`union`/`enum` definitions become
+  class scopes, but only where the specifier has a body, so forward declarations, file-scope
+  usages and `struct Node *next;` inside a body are not phantoms; an anonymous
+  `typedef struct {...} Point;` is named `Point`. Julia `struct`, `abstract type` and
+  parametric types (`Box{T}` is `Box`) are class scopes, with `<:` supertypes as bases. Both
+  grammars are now multi-purpose, so the structural rules count these types too; on a
+  synthetic C layout this produced no new findings.
 - **Findings carry a root-relative `path`** (JSON), and the human output shows
   `path:line`, so same-named scopes in different files can be told apart.
 
@@ -86,8 +93,8 @@ below is recoverable from commit `b7ab8f7` (the tip of `dev` before this change)
 
 ### Known limits
 
-- C and Julia structs, C++ enums, and TypeScript type aliases are not discovered (the
-  caveat covers C and Julia; C needs a has-body check and `typedef struct {...} Name;`).
+- C++ enums and TypeScript type aliases are not discovered. C++ needs the same has-body
+  check C now has.
 - `orphans` matches by name, so an unreferenced function whose name is used elsewhere is
   not reported. `structure.duplication` lists clone members by qualname only, so two
   packages with identical module and function names repeat the label.

@@ -26,6 +26,15 @@ class ObjectOriented(Grammar, ABC):
         """Node types defining class-like scopes."""
 
     @classmethod
+    def is_class_definition(cls, node: Any) -> bool:
+        """True if a node of a ``classes()`` type *defines* a type here. Default True.
+
+        C overrides it because ``struct_specifier`` is both a definition (has a body) and
+        a type reference (``struct Node *head;``, a forward declaration)."""
+        del node
+        return True
+
+    @classmethod
     def methods(cls) -> frozenset[str]:
         """Node types defining methods. Default: the full callable set."""
         return cls.callable()
