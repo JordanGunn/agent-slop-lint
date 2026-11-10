@@ -51,6 +51,26 @@ def test_human_output_names_the_location(sample_project: Path, capsys):
     assert "store/array.py:1" in text and "store/frame.py:1" in text
 
 
+def test_discovery_is_language_agnostic(tmp_path: Path, capsys):
+    # The same word defined in four languages is found with a path and line in each, and
+    # reported as one collision: the primitives read the ownership tree, not one grammar.
+    (tmp_path / "go").mkdir()
+    (tmp_path / "go" / "go.mod").write_text("module example.com/x\ngo 1.21\n")
+    (tmp_path / "go" / "store.go").write_text("package store\n\ntype Store struct {\n\tpath string\n}\n")
+    (tmp_path / "ts").mkdir()
+    (tmp_path / "ts" / "store.ts").write_text("export class Store {\n  save(): number { return 1; }\n}\n")
+    (tmp_path / "rs").mkdir()
+    (tmp_path / "rs" / "store.rs").write_text("pub struct Store { pub path: String }\n")
+    (tmp_path / "py").mkdir()
+    (tmp_path / "py" / "store.py").write_text("class Store:\n    pass\n")
+    _, answer, _ = _ask(capsys, "find", "Store", "--kind", "class", "--root", str(tmp_path), "--output", "json")
+    assert [(m["path"], m["line"]) for m in answer["matches"]] == [
+        ("go/store.go", 3), ("py/store.py", 1), ("rs/store.rs", 1), ("ts/store.ts", 1),
+    ]
+    _, collisions, _ = _ask(capsys, "find", "--collisions", "--root", str(tmp_path), "--output", "json")
+    assert set(collisions["collisions"]) == {"Store"}
+
+
 # ---- Q2: what is in package Y? --------------------------------------------
 
 def test_what_a_package_holds(sample_project: Path, capsys):
