@@ -70,8 +70,8 @@ class Cohesion:
 
 @dataclass(frozen=True)
 class CKMetrics:
-    """The CK suite for one class. Legacy: coupling, inheritance.depth,
-    inheritance.children (+ complexity.cyclomatic at class scope).
+    """The CK suite for one class: coupling (CBO), inheritance depth (DIT) and
+    children (NOC).
 
     WMC is intentionally absent as a field: it is Sigma of method weights with
     the weight unspecified by CK, so it equals ``cyclomatic()`` under cyclomatic

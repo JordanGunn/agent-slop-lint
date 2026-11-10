@@ -211,10 +211,5 @@ class Corpus(_Base, CorpusABC):
     def realms(self): return tuple(c for c in self._children if c.KIND == ScopeKind.REALM)
 
     def dependency_graph(self):
-        """The corpus Module-level DependencyGraph (built during scan)."""
+        """The corpus Module-level DependencyGraph (built during carve)."""
         return self.context.dep_graph
-
-    @classmethod
-    def scan(cls, root: Path, config: Any) -> "Corpus":
-        from .carve import scan_corpus
-        return scan_corpus(root, config)

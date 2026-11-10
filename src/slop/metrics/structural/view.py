@@ -110,7 +110,7 @@ class Structure:
     def _class_index(self):
         idx = self._r.context.class_index if self._r.context else None
         if idx is None:
-            raise _todo("CK metrics", "class index not attached (scan via Corpus.scan)")
+            raise _todo("CK metrics", "class index not attached (build the corpus with scan_corpus)")
         return idx
 
     # ---- Module measures --------------------------------------------------
@@ -126,7 +126,7 @@ class Structure:
         ctx = self._r.context
         graph = ctx.dep_graph if ctx else None
         if graph is None:
-            raise _todo("Package.martin", "dependency graph not attached (scan via Corpus.scan)")
+            raise _todo("Package.martin", "dependency graph not attached (build the corpus with scan_corpus)")
         module_pkg = ctx.module_pkg
         ce: set = set()
         ca: set = set()

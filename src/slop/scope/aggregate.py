@@ -10,7 +10,7 @@ root.
 Ownership of cross-cutting state, settled here:
 - the analysis **config** lives on ``Corpus`` (the analysis boundary);
 - the **grammar** adapter lives on ``Realm`` (the resolver world);
-- **source-root detection** lives on ``Corpus.scan`` (it discovers Realms).
+- **source-root detection** lives in ``carve.scan_corpus`` (it discovers Realms).
 """
 from __future__ import annotations
 
@@ -105,10 +105,8 @@ class Corpus(AggregateContainer):
     """The filesystem root selected for analysis — an analysis boundary, not
     necessarily a real project root.
 
-    Owns one or more Realms (polyglot repos have several), the analysis
-    ``config``, and the ``scan`` that discovers Realms by detecting language
-    source roots under ``root``. Owns no declarations; its projections are the
-    union over its Realms.
+    Owns one or more Realms (polyglot repos have several) and the analysis ``config``.
+    Owns no declarations; its projections are the union over its Realms.
     """
 
     KIND: ClassVar[ScopeKind] = ScopeKind.CORPUS
@@ -123,15 +121,6 @@ class Corpus(AggregateContainer):
     @abstractmethod
     def config(self) -> AnalysisConfig:
         """The analysis configuration governing this scan and the rules over it."""
-        ...
-
-    @classmethod
-    @abstractmethod
-    def scan(cls, root: Path, config: AnalysisConfig) -> "Corpus":
-        """Build a Corpus from a filesystem root: detect language source roots,
-        construct one Realm per coherent resolver world, and carve the hierarchy
-        beneath each. Source-root detection is Corpus-internal (private
-        ``_detect_*`` helpers); polyglot roots yield multiple Realms."""
         ...
 
     @abstractmethod

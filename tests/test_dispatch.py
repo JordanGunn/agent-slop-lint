@@ -117,4 +117,4 @@ def test_the_default_registry_runs_end_to_end_and_flags_a_tangled_function(tmp_p
     fired = {v.rule for v in report.violations}
     assert "cyclomatic-complexity" in fired
     assert report.exit_code() == 1
-    assert "class.cohesion" not in report.visited      # off by default, so never dispatched
+    assert "class-cohesion" not in report.visited      # off by default, so never dispatched
