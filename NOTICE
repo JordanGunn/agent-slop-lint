@@ -34,6 +34,15 @@ Chidamber & Kemerer Object-Oriented Metrics (class-shape)
   of Inheritance Tree), NOC (Number of Children), WMC (Weighted Methods
   per Class).
 
+Cohesion, LCOM4 (class-shape)
+  Hitz, M. & Montazeri, B. (1995). "Measuring Coupling and Cohesion in
+  Object-Oriented Systems." Institut fuer Angewandte Informatik und
+  Systemanalyse, University of Vienna.
+
+  Metric implemented: LCOM4, the number of connected components of the
+  graph joining a class's methods through the instance members they share
+  or call. Methods reaching no instance member are reported as detached.
+
 Distance from the Main Sequence (structure.rigidity, structure.uselessness)
   Martin, R.C. (1994). "OO Design Quality Metrics: An Analysis of
   Dependencies." Proceedings of Workshop Pragmatic and Theoretical

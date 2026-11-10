@@ -48,11 +48,13 @@ class MagicLiteral:
 
 @dataclass(frozen=True)
 class Cohesion:
-    """How a class's methods share instance members (LCOM4, Hitz and Montangero 1995).
+    """How a class's methods share instance members (LCOM4, Hitz and Montazeri 1995).
 
     ``groups`` are the sets of methods joined through shared members, in declaration order;
     ``len(groups)`` is LCOM4 (1 = cohesive). ``detached`` are methods that reach no instance
-    member and are reached by none, so they have no state to be cohesive about."""
+    member and are reached by none, so they have no state to be cohesive about. An LCOM4 of
+    0 means nothing was measurable (no instance methods, or every one detached), not a
+    perfectly cohesive class."""
 
     groups: tuple[tuple[str, ...], ...]
     detached: tuple[str, ...]
@@ -74,7 +76,7 @@ class CKMetrics:
     WMC is intentionally absent as a field: it is Sigma of method weights with
     the weight unspecified by CK, so it equals ``cyclomatic()`` under cyclomatic
     weight and ``nom`` under unit weight. Both are already reachable; a wmc
-    field would duplicate one of them. Cohesion is LCOM4 (Hitz and Montangero 1995), not
+    field would duplicate one of them. Cohesion is LCOM4 (Hitz and Montazeri 1995), not
     CK's original pairwise LCOM: ``cohesion`` counts the groups of methods joined through shared
     instance members and names them.
     """

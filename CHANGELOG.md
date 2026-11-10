@@ -65,7 +65,11 @@ below is recoverable from commit `b7ab8f7` (the tip of `dev` before this change)
   methods as groups first flagged 29, mostly interfaces and enum-like classes. Limits: a
   nested JavaScript `function` rebinds `this`, which is not modelled; a class made of
   independent accessor properties reads as many groups (LCOM4's known weakness); Python
-  methods whose first parameter is `cls` are treated as class methods.
+  methods whose first parameter is `cls` are treated as class methods. A JavaScript or
+  TypeScript class field holding an arrow function is carved as an unnamed method and is
+  counted, named `<anonymous>:<line>` so two of them never merge. `lcom4` 0 means nothing
+  was measurable (no instance methods, or all detached), not perfect cohesion. LCOM4 is
+  credited to Hitz and Montazeri (1995) in `NOTICE` and `CITATIONS.md`.
 - **Primitives:** `slop find <name>` / `--collisions` (where a name is defined; which class
   names are defined more than once), `slop tree` (ownership tree beneath a scope) and
   `slop vocab --ontology IR.json` (class names against a canonical vocabulary from an Open

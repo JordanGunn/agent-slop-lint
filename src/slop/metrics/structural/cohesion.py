@@ -1,4 +1,4 @@
-"""Class cohesion: LCOM4 (Hitz and Montangero, 1995).
+"""Class cohesion: LCOM4 (Hitz and Montazeri, 1995).
 
 Build a graph whose nodes are a class's member names and whose edges join a method to every
 member it reaches through its own instance (``self.x``, ``this.x``). A method is itself a
@@ -51,6 +51,10 @@ def cohesion(methods: Sequence[Any], grammar: Any) -> Cohesion | None:
     measured: list[str] = []
     for method in methods:
         name = method.name
+        if name == "<anonymous>":
+            # Unnamed callables (a JS/TS class field holding an arrow function) are distinct
+            # methods; one shared name would join unrelated ones.
+            name = f"<anonymous>:{method.line}"
         if name in constructors:
             continue
         receiver = grammar.instance_receiver(method._node, method._content)

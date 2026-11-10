@@ -15,6 +15,7 @@ cited threshold. The shortest summary:
 - Henry & Kafura (1981) — information flow (precursor to Martin's I/A/D')
 - Nejmeh (1988) — NPath
 - Chidamber & Kemerer (1994) — CK suite (CBO, DIT, NOC, WMC)
+- Hitz & Montazeri (1995) — cohesion, LCOM4
 - Martin (1994, 2002) — Distance from the Main Sequence, Acyclic Dependencies Principle
 - Lakos (1996) — physical design and the Acyclic Dependencies Principle
 - Tornhill (2015) — hotspot analysis

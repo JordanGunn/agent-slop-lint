@@ -98,7 +98,7 @@ disposition. Each traces to a published source or a standard concept.
   (Acyclic Dependencies Principle, error), `structure.god-module`, and
   `structure.rigidity` / `structure.uselessness` (Martin's distance-from-main-sequence).
 - **Class**: `class-shape` — the Chidamber–Kemerer suite (CBO/DIT/NOC and method count) plus
-  cohesion as LCOM4 (Hitz and Montangero), as an observation. LCOM4 counts the groups of
+  cohesion as LCOM4 (Hitz and Montazeri), as an observation. LCOM4 counts the groups of
   methods joined through shared instance members (`self.x`, `this.x`) and names them; a
   class with several groups may be several classes. Constructors, static and class methods
   are left out, and methods that reach no instance state are listed as detached, not as

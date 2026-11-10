@@ -172,3 +172,24 @@ def test_class_shape_is_silent_for_a_class_with_only_detached_methods(tmp_path: 
     module = scan_corpus(tmp_path, config=None).realms()[0].packages()[0].modules()[0]
     cls = next(c for c in module.children() if c.KIND.name == "CLASS")
     assert list(ClassShapeRule().check(cls, ClassShapeRule.default_config())) == []
+
+
+def test_class_field_arrow_functions_are_distinct_methods(tmp_path: Path):
+    # Unnamed callables must not share one node: `handler` and `other` touch different
+    # members, so they are two groups, and each is named by where it is declared.
+    src = (
+        "class A {\n"
+        "  x = 1;\n"
+        "  handler = () => this.x;\n"
+        "  other = () => this.y;\n"
+        "  third() { return this.x }\n"
+        "}\n"
+    )
+    groups = _groups(tmp_path, "m.ts", src)
+    assert [g[-1] for g in groups] == ["third", "<anonymous>:4"]
+    assert groups[0][0].startswith("<anonymous>:3")
+
+
+def test_a_class_with_no_methods_has_nothing_measured_not_perfect_cohesion(tmp_path: Path):
+    c = _cohesion(tmp_path, "m.py", "class A:\n    x = 1\n")
+    assert (c.groups, c.detached, c.lcom4) == ((), (), 0)
