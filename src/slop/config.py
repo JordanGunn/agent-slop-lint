@@ -160,10 +160,20 @@ def _apply_override(base: RuleConfig, ov: dict[str, Any], allowed: set[str]) -> 
     thresholds = dict(base.thresholds)
     if "thresholds" in ov:
         thresholds.update({str(k): float(v) for k, v in ov["thresholds"].items()})
-    params = dict(base.params)
-    for k, v in ov.items():
-        if k not in ("enabled", "severity", "thresholds"):
-            params[k] = v
+    stray = set(ov) - {"enabled", "severity", "thresholds", "params"}
+    if stray:
+        raise ValueError(
+            f"rule '{base.name}': unknown key(s) {sorted(stray)}; rule params go in a "
+            f"'params' table (params.<name> = ...)")
+    overrides = ov.get("params", {})
+    if not isinstance(overrides, dict):
+        raise ValueError(f"rule '{base.name}': 'params' must be a table")
+    for key in overrides:
+        if key not in base.params:
+            raise ValueError(
+                f"rule '{base.name}': param '{key}' is not a declared param "
+                f"{sorted(base.params)} — a param the rule can never read")
+    params = {**base.params, **overrides}
     _validate_threshold_keys(base.name, thresholds, allowed)
     return replace(base, enabled=enabled, severity=severity, thresholds=thresholds, params=params)
 

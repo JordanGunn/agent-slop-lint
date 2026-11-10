@@ -73,3 +73,39 @@ def test_exclude_must_be_a_list_of_strings(tmp_path: Path):
     (tmp_path / ".slop.toml").write_text('exclude = "tests/**"\n')
     with pytest.raises(ValueError, match="exclude"):
         AnalysisConfig.scan(tmp_path, RULE_REGISTRY)
+
+
+# ---- rule params ----------------------------------------------------------------------
+
+def test_params_table_overrides_a_declared_param(tmp_path: Path):
+    # `slop init` writes params.<name>; it must reach the rule, not nest under "params".
+    (tmp_path / ".slop.toml").write_text('[rules."class-shape"]\nparams.cbo_attention = 0\n')
+    rc = AnalysisConfig.load(tmp_path, RULE_REGISTRY).for_rule("class-shape")
+    assert rc.param("cbo_attention") == 0
+    assert "params" not in rc.params
+    assert rc.param("dit_attention") == 4          # untouched defaults survive
+
+
+def test_an_unknown_param_is_a_load_error_not_a_silent_no_op(tmp_path: Path):
+    (tmp_path / ".slop.toml").write_text('[rules."class-shape"]\nparams.cbo_attenshun = 0\n')
+    with pytest.raises(ValueError, match="cbo_attenshun.*can never read"):
+        AnalysisConfig.load(tmp_path, RULE_REGISTRY)
+
+
+def test_a_param_outside_the_params_table_is_a_load_error(tmp_path: Path):
+    (tmp_path / ".slop.toml").write_text('[rules."class-shape"]\ncbo_attention = 0\n')
+    with pytest.raises(ValueError, match="go in a 'params' table"):
+        AnalysisConfig.load(tmp_path, RULE_REGISTRY)
+
+
+def test_the_init_template_loads_as_written(tmp_path: Path):
+    # Uncommenting every generated line must give exactly the defaults, not an error.
+    from slop import cli
+    cli.init(tmp_path)
+    text = (tmp_path / ".slop.toml").read_text()
+    (tmp_path / ".slop.toml").write_text("\n".join(
+        ln[2:] if ln.startswith("# ") and "=" in ln or ln.startswith("# [") else ln
+        for ln in text.splitlines()))
+    loaded = AnalysisConfig.load(tmp_path, RULE_REGISTRY)
+    assert {n: (c.thresholds, c.params) for n, c in loaded.rules.items()} == \
+           {n: (c.thresholds, c.params) for n, c in AnalysisConfig.defaults(RULE_REGISTRY).rules.items()}

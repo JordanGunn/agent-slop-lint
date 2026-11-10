@@ -44,8 +44,10 @@ def hotspots(corpus: Any, *, since: str = _DEFAULT_WINDOW) -> list[Hotspot]:
         mod = mod_by_rel.get(f)
         return mod.id if mod is not None else None
 
-    files = sorted(set(complexity) | set(churn))
-    rows = [(f, complexity.get(f, 0), churn.get(f, 0)) for f in files]
+    # Only files the corpus carved are ranked: churn on a README, a data file or an
+    # excluded directory says nothing about code complexity, and would enter with 0.
+    files = sorted(complexity)
+    rows = [(f, complexity[f], churn.get(f, 0)) for f in files]
     if len(rows) < _MIN_RANKED:
         return [Hotspot(path=f, churn=c, complexity=x, quadrant="insufficient_data", locus=_locus(f))
                 for f, x, c in rows]
@@ -54,7 +56,10 @@ def hotspots(corpus: Any, *, since: str = _DEFAULT_WINDOW) -> list[Hotspot]:
     churn_cut = _p75([c for _f, _x, c in rows])
     out: list[Hotspot] = []
     for f, x, c in rows:
-        hi_x, hi_c = x >= ccx_cut, c >= churn_cut
+        # A file that did not change is not high-churn however low the cutoff falls: in a
+        # quiet window most files have none, so the 75th percentile is 0 and ``c >= 0``
+        # would otherwise rank every complex file as a hotspot.
+        hi_x, hi_c = x > 0 and x >= ccx_cut, c > 0 and c >= churn_cut
         quadrant = (
             "hotspot" if hi_x and hi_c
             else "stable_complex" if hi_x

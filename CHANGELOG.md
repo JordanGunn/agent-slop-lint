@@ -115,6 +115,23 @@ below is recoverable from commit `b7ab8f7` (the tip of `dev` before this change)
 
 ### Fixed
 
+- **Rule `params` in config were silently ignored.** `slop init` writes
+  `params.cbo_attention = 8`, but the loader stored that dotted key under a param named
+  `params`, so a rule never read it (only a bare `cbo_attention = 8`, which the template
+  never emitted, worked). A `params` table now overrides the rule's declared params; a
+  param the rule does not declare is a load error ("can never read"), as an altitude it
+  does not declare already was; a rule key outside `enabled`/`severity`/`thresholds`/
+  `params` is an error that says to use the `params` table. Configs that used bare keys
+  must move them under `params`. On laszy, `params.cbo_attention = 0` now raises
+  `class-shape` from 8 to 72 observations.
+- **`hotspots` ranked files that did not change.** The churn cutoff is the 75th
+  percentile, which is 0 in a quiet window, and `churn >= 0` held for every file, so every
+  complex file was a "hotspot" ("High-churn" about files with churn 0): laszy, idle since
+  June, reported 49. A file now needs churn above zero, and complexity above zero, to be
+  in the high quadrant. Only files the corpus carved are ranked, so churn in a README, a
+  data file or an `exclude`d directory no longer enters with complexity 0 (a 400-day
+  window on laszy gave 1,919 hotspot observations from this; it gives 36, all under
+  `src/`).
 - **`class-shape` merged homonymous classes.** The CK class index was keyed by simple
   name ("last wins on clash"), so every class named `Params` (or `Store`, `Index`, `Key`)
   reported the combined subclass count and could chain depth through the wrong parent. A
