@@ -81,3 +81,21 @@ def test_halstead_does_not_count_a_nested_callable_in_its_parent(tmp_path: Path)
     cs = {c.qualname: c for c in scan_corpus(tmp_path, config=None)._iter_callables()}
     prof = Structure.over(cs["n.outer"]).halstead()
     assert (prof.n1, prof.n2, prof.N1, prof.N2) == (1, 1, 1, 1)       # `return x` only
+
+
+def test_julia_infix_operators_are_counted(tmp_path: Path):
+    # Julia types every infix operator token `operator` and puts the symbol in the text.
+    (tmp_path / "j.jl").write_text("function f(x)\n    x * 9.81 + x\nend\n")
+    [c] = scan_corpus(tmp_path, config=None)._iter_callables()
+    prof = Structure.over(c).halstead()
+    assert prof.n1 >= 2 and prof.N1 >= 2          # `*` and `+`
+
+
+def test_cpp_counts_a_plain_body_like_c(tmp_path: Path):
+    # `operator` is in the C++ operator set (the keyword in `operator+`); it must not
+    # change the count of a body that has none.
+    (tmp_path / "a.c").write_text("double f(double x) { return x * 9.81 + x; }\n")
+    (tmp_path / "b.cpp").write_text("double g(double x) { return x * 9.81 + x; }\n")
+    profiles = {c.qualname: Structure.over(c).halstead() for c in scan_corpus(tmp_path, config=None)._iter_callables()}
+    c_prof, cpp_prof = profiles["a.f"], profiles["b.g"]
+    assert (c_prof.n1, c_prof.n2, c_prof.N1, c_prof.N2) == (cpp_prof.n1, cpp_prof.n2, cpp_prof.N1, cpp_prof.N2)

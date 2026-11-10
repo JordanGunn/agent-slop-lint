@@ -59,6 +59,11 @@ def test_integers_and_ordinary_floats_are_never_reported(tmp_path: Path):
     assert _floats(tmp_path, "def f(x):\n    return x * 3 + x * 86400 + x * 0.5 + x * 100.0 + x * 2.0\n") == {}
 
 
+def test_hex_literals_are_never_floats(tmp_path: Path):
+    # `0x1F` and `0xDEADBEEF` end in float-suffix letters; they are integers.
+    assert _floats(tmp_path, "def f(x):\n    return x * 0x1F + (x & 0xFFFF) + x * 0xDEADBEEF + x * 0b101\n") == {}
+
+
 def test_a_repeated_float_is_one_entry_at_its_first_line(tmp_path: Path):
     module = _module(tmp_path, "m.py", "def f(x):\n    a = x * 9.81\n    b = x * 9.81\n    return a + b * 9.81\n")
     [use] = Structure.over(module).magic_floats()
