@@ -4,7 +4,8 @@ The measure is the number of distinct numeric literals in a callable that are op
 of an operator (``x > 15``, ``x * 86400``), excluding 0, 1 and 2. See
 ``metrics/structural/callable_measures.py`` for exactly what counts. The default limit of
 0 reports every one, as ESLint ``no-magic-numbers`` and pylint ``magic-value-comparison``
-do.
+do. Bitwise and shift operands are reported too: in packing code a mask is a format
+definition, so raise ``limit`` or exclude that code rather than expect an exemption.
 """
 from __future__ import annotations
 

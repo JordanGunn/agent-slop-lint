@@ -60,6 +60,8 @@ class Structure:
         return sum(complexity.combinatorial(c._ast_node(), c._grammar) for c in self._leaves())
 
     def volume(self) -> float:
+        """At a callable, its Halstead volume. Above one, the sum of its callables' volumes,
+        which is a total and not itself a Halstead volume (vocabulary does not add)."""
         return float(sum(halstead.volume(c._ast_node(), c._grammar) for c in self._leaves()))
 
     def sloc(self) -> int:
