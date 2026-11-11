@@ -85,3 +85,30 @@ Contributor invariants:
   given. Measures live in `metrics/structural/` and are read through `Structure.over(component)`
   (`metrics/structural/view.py`), so `shape`, `find` and rules share one number.
 - A new rule is added to `RULE_REGISTRY`; `slop rules` and `slop init` are generated from it.
+
+## Inference
+
+`slop/infer/` is a layer over the linter, imported only by `cli.py` (pinned by
+`tests/test_layers.py`). Slop never calls a model: the host agent does the inferring. This
+package frames what the agent sees, fixes the shape of what it may return, and validates and
+stores the result. It follows `Dpre(X) -> A(X' : Sigma) : S -> Dpost(Y)`.
+
+| Subpackage | Role | May import |
+|---|---|---|
+| `contract/` | the documents exchanged (`Worklist`, `Verdicts`, `Receipt`), their JSON Schema, strict parsing | nothing in slop |
+| `ledger/` | persisted rulings (`Ledger`, `JsonlLedger`) | `contract` |
+| `frame/` | finding identity, code excerpt, rubric | `contract` |
+| `source/` | where residue comes from (`Source`, `FindingSource`) | `contract`, `frame` |
+| `apply/` | validate verdicts, store them, settle a report with the ledger | `contract`, `ledger` |
+
+`tests/test_infer_layers.py` pins these directions. A new kind of residue, such as a project
+survey for bootstrapping, is a new module in `source/`; the other layers do not change.
+
+Built: `contract/` (a field is declared once with `described(...)`; the schema and the parser
+both read it), `frame/fingerprint.py`, the `Ledger` and `Source` interfaces, and `slop infer
+schema`. Fixed signature, raises `NotImplementedError`: `JsonlLedger`, `frame/excerpt.py`,
+`frame/rubric.py`, `FindingSource`, and `apply/` (`validate`, `route`, `settle`).
+
+Constants: one used by a single module stays in it. One needed by a second module in the same
+subpackage moves to that subpackage; the contract's closed terms are in `contract/vocabulary.py`.
+One needed by a second package goes in `slop/layout.py` (`CONFIG_FILENAME`, `STATE_DIR`).

@@ -28,6 +28,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `class-cohesion` (LCOM4, 1, off by default): 12 rules.
 - Suppression matches exact rule names only: `slop: ignore[a, b]`.
 - `scripts/` removed.
+- New package `slop/infer/` (inference over the linter) and `slop infer schema`. Built: the
+  `Worklist`, `Verdicts` and `Receipt` documents with their schemas and strict parsing,
+  finding ids and fingerprints, and the `Ledger` and `Source` interfaces. `slop/layout.py`
+  holds `CONFIG_FILENAME` and `STATE_DIR`. Ledger storage, excerpts, rubrics, the finding
+  source and `apply` have fixed signatures and are not built.
 - A rule can be `subjective`: its findings are `WARN` lines in the human output and a
   `warnings` list in JSON, and never exit 1. `class-cohesion`, `rigid-package` and
   `useless-package` are subjective, and every rule is now on by default (`class-cohesion` was off).

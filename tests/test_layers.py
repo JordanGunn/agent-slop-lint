@@ -26,6 +26,8 @@ ALLOWED: dict[str, set[str]] = {
     "metrics": {"ast", "identity", "span"},          # never scope
     "ontology": {"lexicon", "scope", "span"},
     "lexical": {"lexicon", "ontology", "span"},      # never scope, rules or cli
+    "layout": set(),
+    "infer": {"dispatch", "identity", "layout", "span", "violation"},   # never cli; only cli imports infer
 }
 
 #: package -> internal packages it must never import (everything else is unconstrained).
@@ -33,6 +35,22 @@ FORBIDDEN: dict[str, set[str]] = {
     "scope": {"rules", "rule", "dispatch", "cli", "ontology", "lexical"},
     "rules": {"cli", "ontology", "lexical"},
 }
+
+
+def test_only_the_cli_imports_infer():
+    offenders = []
+    for path in sorted((SRC / "slop").rglob("*.py")):
+        rel = path.relative_to(SRC)
+        if rel.parts[1] == "infer" or rel.parts[1] == "cli.py":
+            continue
+        module = ".".join(rel.with_suffix("").parts)
+        is_package = path.name == "__init__.py"
+        if is_package:
+            module = module.removesuffix(".__init__")
+        for line, target in internal_imports(path.read_text(), module, is_package=is_package):
+            if target == "infer":
+                offenders.append(f"{rel}:{line}")
+    assert offenders == []
 
 
 def internal_imports(source: str, module: str, *, is_package: bool) -> list[tuple[int, str]]:

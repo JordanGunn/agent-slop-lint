@@ -24,6 +24,8 @@ from fnmatch import fnmatchcase
 from pathlib import Path
 from typing import Any
 
+from .layout import CONFIG_FILENAME
+
 _CONFIG_KEYS = frozenset({"exclude", "rules"})
 
 
@@ -121,7 +123,7 @@ def _discover(start: Path) -> tuple[dict[str, Any], Path | None]:
     ``({}, None)``."""
     start = start.resolve()
     for directory in [start, *start.parents]:
-        slop = directory / ".slop.toml"
+        slop = directory / CONFIG_FILENAME
         if slop.is_file():
             return _read(slop), directory
         pyproject = directory / "pyproject.toml"

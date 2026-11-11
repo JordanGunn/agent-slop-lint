@@ -20,6 +20,8 @@ root (src-layout; package `agent-slop-lint`, import `slop`, CLI `slop.cli:main`)
   (`slop vocab`).
 - Lint layer: `rule.py` (Rule), `rules/` (15 rules, `RULE_REGISTRY` in `rules/__init__.py`),
   `dispatch.py`, `violation.py`, `config.py`.
+- `src/slop/infer/`: inference layered over the linter (`contract`, `ledger`, `frame`, `source`,
+  `apply`); only `cli.py` imports it. `layout.py` holds file names more than one package uses.
 - `cli.py`: all commands. `tests/`: pytest, `test_rule_*.py` per rule.
 
 ## Commands

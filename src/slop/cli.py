@@ -28,6 +28,8 @@ from .lexical import coverage as lexical_coverage
 from .scope import find as discovery
 from .metrics.structural.hotspots import DEFAULT_LAST
 from .identity import relative_path as _rel_path
+from .infer.contract import schemas as infer_schemas
+from .layout import CONFIG_FILENAME
 from .scope.find import walk as _walk
 from .scope.lexicon import build_declared_lexicon
 
@@ -545,9 +547,15 @@ def hotspots_view(root: str | Path, output: str = "human", *, since: str | None 
     return 0
 
 
+def infer_schema() -> int:
+    """Print the JSON Schema of each document an agent and slop exchange."""
+    print(json.dumps(infer_schemas(), indent=2))
+    return 0
+
+
 def init(root: str | Path) -> int:
     """Emit a ``.slop.toml`` template from each rule's default config."""
-    path = Path(root) / ".slop.toml"
+    path = Path(root) / CONFIG_FILENAME
     if path.exists():
         print(f"slop: {path} already exists; not overwriting", file=sys.stderr)
         return 2
@@ -670,6 +678,10 @@ def main(argv: list[str] | None = None) -> int:
                         help=f"the last N commits plus uncommitted changes (default {DEFAULT_LAST})")
     p_hot.add_argument("--output", choices=["human", "json"], default="human")
 
+    p_infer = sub.add_parser("infer", help="inference over the linter's findings: schemas and, soon, the worklist")
+    infer_sub = p_infer.add_subparsers(dest="infer_command", required=True)
+    infer_sub.add_parser("schema", help="print the JSON Schema of every document the exchange uses")
+
     args = parser.parse_args(argv)
     try:
         if args.command == "lint":
@@ -701,6 +713,8 @@ def main(argv: list[str] | None = None) -> int:
             return shape_view(args.root, args.output, scope=args.scope, scope_kind=args.scope_kind)
         if args.command == "hotspots":
             return hotspots_view(args.root, args.output, since=args.since, last=args.last)
+        if args.command == "infer":
+            return infer_schema()
     except Exception as exc:  # noqa: BLE001 — top-level boundary: any failure is exit 2
         print(f"slop: error: {exc}", file=sys.stderr)
         return 2
