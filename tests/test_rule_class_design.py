@@ -87,9 +87,9 @@ def test_default_limits_and_enablement():
     }
     for rule, limit in defaults.items():
         assert rule.default_config().options == {"limit": limit}
-    assert CohesionRule.default_config().enabled is False
-    for rule in (CouplingRule, InheritanceDepthRule, ChildrenRule):
+    for rule in (CouplingRule, InheritanceDepthRule, ChildrenRule, CohesionRule):
         assert rule.default_config().enabled is True
+    assert CohesionRule.subjective and not CouplingRule.subjective
 
 
 def test_inheritance_depth_fires_above_limit_only(tmp_path: Path):

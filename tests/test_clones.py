@@ -53,3 +53,24 @@ def test_same_named_clones_in_two_packages_are_told_apart(tmp_path: Path):
     assert [m.qualname for m in cluster.members] == ["m.f", "m.f"]
     assert [relative_path(m.scope, tmp_path) for m in cluster.members] == ["a/m.py", "b/m.py"]
     assert [m.line for m in cluster.members] == [1, 1]
+
+
+def _tables(first: str, second: str) -> str:
+    return (f"def a():\n    return frozenset({{{first}}})\n\n"
+            f"def b():\n    return frozenset({{{second}}})\n")
+
+
+def test_constant_tables_with_different_entries_are_not_clones(tmp_path: Path):
+    mod = _module(tmp_path, _tables('"alpha", "beta", "gamma", "delta"', '"one", "two", "three", "four"'))
+    assert Structure.over(mod).clone_clusters(min_leaf_nodes=5) == []
+
+
+def test_constant_tables_with_the_same_entries_are_clones(tmp_path: Path):
+    entries = '"alpha", "beta", "gamma", "delta"'
+    [cluster] = Structure.over(_module(tmp_path, _tables(entries, entries))).clone_clusters(min_leaf_nodes=5)
+    assert {m.qualname for m in cluster.members} == {"r.a", "r.b"}
+
+
+def test_numbers_are_compared_by_value_too(tmp_path: Path):
+    src = "def a(x):\n    return x * 11 + x * 12 + x * 13\n\ndef b(x):\n    return x * 21 + x * 22 + x * 23\n"
+    assert Structure.over(_module(tmp_path, src)).clone_clusters(min_leaf_nodes=5) == []

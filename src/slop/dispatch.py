@@ -13,7 +13,11 @@ A violation on a line carrying ``slop: ignore`` is dropped, and ``slop: ignore[a
 drops only the rules named, like a ``noqa`` comment: the exemption sits beside the code
 it excuses, in whatever comment syntax the language has.
 
-Exit codes: 0 no violations, 1 at least one, 2 slop could not run (raised by the CLI).
+A rule marked ``subjective`` yields warnings, kept apart from violations and never failing
+the run.
+
+Exit codes: 0 no violations (warnings allowed), 1 at least one violation, 2 slop could not
+run (raised by the CLI).
 """
 from __future__ import annotations
 
@@ -33,7 +37,10 @@ _SUPPRESSION = re.compile(r"slop:\s*ignore(?:\[([^\]]*)\])?")
 
 @dataclass
 class Report:
+    #: objective violations: the only findings that fail the run
     violations: list[Violation]
+    #: subjective violations (WARN): reported, never fail the run
+    warnings: list[Violation] = field(default_factory=list)
     visited: dict[str, int] = field(default_factory=dict)
     zero_visited: list[str] = field(default_factory=list)
     root: str | None = None
@@ -53,8 +60,10 @@ class Report:
 
     def as_dict(self) -> dict[str, Any]:
         return {
-            "summary": {"violations": len(self.violations), "exit_code": self.exit_code()},
+            "summary": {"violations": len(self.violations), "warnings": len(self.warnings),
+                        "exit_code": self.exit_code()},
             "violations": [{**v.as_dict(), "path": self.relative_path(v)} for v in self.violations],
+            "warnings": [{**v.as_dict(), "path": self.relative_path(v)} for v in self.warnings],
             "zero_visited": self.zero_visited,
         }
 
@@ -67,6 +76,7 @@ class Dispatcher:
     def run(self, corpus: Any) -> Report:
         by_kind = _index_by_kind(corpus)
         found: list[Violation] = []
+        warned: list[Violation] = []
         visited: dict[str, int] = {}
         zero_visited: list[str] = []
 
@@ -78,7 +88,7 @@ class Dispatcher:
             for kind in rule.altitudes:
                 for component in by_kind.get(kind, ()):
                     count += 1
-                    found.extend(rule.check(component, rc))
+                    (warned if rule.subjective else found).extend(rule.check(component, rc))
             visited[rule.name] = count
             if count == 0:
                 zero_visited.append(rule.name)
@@ -86,7 +96,9 @@ class Dispatcher:
         lines = _Lines()
         kept = [v for v in found if not lines.suppresses(v)]
         kept.sort(key=lambda v: (v.path or "", v.line, v.column, v.rule))
-        return Report(violations=kept, visited=visited, zero_visited=zero_visited,
+        kept_warnings = [v for v in warned if not lines.suppresses(v)]
+        kept_warnings.sort(key=lambda v: (v.path or "", v.line, v.column, v.rule))
+        return Report(violations=kept, warnings=kept_warnings, visited=visited, zero_visited=zero_visited,
                       root=str(corpus.root) if hasattr(corpus, "root") else None)
 
 

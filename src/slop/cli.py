@@ -156,18 +156,18 @@ def check(names: list[str], root: str | Path, output: str = "human") -> int:
 
 
 def rules_cmd(output: str = "human") -> int:
-    """List the rule registry: name, altitudes, whether it is on by default."""
+    """List the rule registry: name, whether it is on by default, objective or subjective, altitudes."""
     rows = [(r.name, ",".join(sorted(k.value for k in r.altitudes)),
-             r.default_config().enabled, r.description)
+             r.default_config().enabled, r.subjective, r.description)
             for r in sorted(RULE_REGISTRY, key=lambda x: x.name)]
     if output == "json":
-        print(json.dumps([{"name": n, "altitudes": a.split(","), "enabled": on, "description": d}
-                          for n, a, on, d in rows], indent=2))
+        print(json.dumps([{"name": n, "altitudes": a.split(","), "enabled": on, "subjective": sub,
+                           "description": d} for n, a, on, sub, d in rows], indent=2))
         return 0
     width = max((len(n) for n, *_ in rows), default=4)
     print(f"{len(rows)} rules\n")
-    for n, a, on, d in rows:
-        print(f"  {n:<{width}}  {'on ' if on else 'off'}  [{a}]  {d}")
+    for n, a, on, sub, d in rows:
+        print(f"  {n:<{width}}  {'on ' if on else 'off'}  {'subjective' if sub else 'objective'}  [{a}]  {d}")
     return 0
 
 
@@ -572,13 +572,16 @@ def _template() -> str:
 
 def _human(report: Report) -> str:
     """One ``path:line:column: rule message`` line per violation, the shape editors and
-    other tools already parse, then a summary."""
-    lines = [
-        f"{report.relative_path(v) or '<corpus>'}:{v.line}:{v.column}: {v.rule} {v.message}"
-        for v in report.violations
-    ]
-    count = len(report.violations)
-    lines.append(f"Found {count} violation{'s' if count != 1 else ''}." if count else "No violations.")
+    other tools already parse; then one ``WARN`` line per subjective finding; then a summary."""
+    def where(v) -> str:
+        return f"{report.relative_path(v) or '<corpus>'}:{v.line}:{v.column}"
+
+    lines = [f"{where(v)}: {v.rule} {v.message}" for v in report.violations]
+    lines += [f"{where(v)}: WARN {v.rule} {v.message}" for v in report.warnings]
+    errors, warnings = len(report.violations), len(report.warnings)
+    head = f"Found {errors} violation{'s' if errors != 1 else ''}" if errors else "No violations"
+    tail = f" and {warnings} warning{'s' if warnings != 1 else ''}" if warnings else ""
+    lines.append(f"{head}{tail}.")
     return "\n".join(lines)
 
 

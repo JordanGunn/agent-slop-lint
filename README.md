@@ -12,7 +12,8 @@ a.py:1:1: npath-complexity a.f has NPath 1024 (limit 400)
 Found 2 violations.
 ```
 
-Exit `0` no violations, `1` any violation, `2` error.
+Exit `0` no violations, `1` any violation, `2` error. A subjective finding is a warning (`WARN`)
+and does not change the exit code.
 
 ## Install
 
@@ -64,16 +65,16 @@ A rule reports a violation when its measure is strictly greater than `limit`.
 | `magic-float` | module | a float operand without a name (limit 0 uses) | Martin (2008) G25 |
 | `duplicate-string` | module | one string used 5+ times (limit 4) | Sonar S1192 |
 | `god-module` | module | 20 top-level definitions | |
-| `rigid-package` | package | D' 0.7 | Martin (1994, 2002) |
-| `useless-package` | package | D' 0.7 | Martin (1994, 2002) |
+| `rigid-package` (subjective) | package | D' 0.7 | Martin (1994, 2002) |
+| `useless-package` (subjective) | package | D' 0.7 | Martin (1994, 2002) |
 | `import-cycle` | corpus | any cycle | Acyclic Dependencies Principle |
 | `duplicate-code` | corpus | clone of 2+ callables (`min_leaf_nodes` 10) | Type-2 clones |
 | `class-coupling` | class | CBO 8 | Chidamber & Kemerer (1994) |
 | `class-inheritance-depth` | class | DIT 4 | Chidamber & Kemerer (1994) |
 | `class-children` | class | NOC 10 | Chidamber & Kemerer (1994) |
-| `class-cohesion` (off) | class | LCOM4 groups 1 | Hitz & Montazeri (1995) |
+| `class-cohesion` (subjective) | class | LCOM4 groups 1 | Hitz & Montazeri (1995) |
 
-Suppress inline, on the reported line: `# slop: ignore[cyclomatic-complexity]`.
+A rule marked subjective reports warnings, not violations. Suppress inline, on the reported line: `# slop: ignore[cyclomatic-complexity]`.
 
 ## Configuration
 
@@ -86,7 +87,7 @@ exclude = ["tests/**"]
 limit = 12
 
 [rules.class-cohesion]
-enabled = true
+enabled = false
 ```
 
 Reference: [docs/CONFIG.md](docs/CONFIG.md).

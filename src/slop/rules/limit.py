@@ -20,8 +20,6 @@ from ..violation import Violation
 class Limit(Rule):
     altitude: ClassVar[ScopeKind]
     default_limit: ClassVar[int | float]
-    enabled_by_default: ClassVar[bool] = True
-
     def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
         if "altitude" in cls.__dict__:
@@ -29,7 +27,7 @@ class Limit(Rule):
 
     @classmethod
     def default_config(cls) -> RuleConfig:
-        return RuleConfig(name=cls.name, enabled=cls.enabled_by_default,
+        return RuleConfig(name=cls.name, enabled=True,
                           options={"limit": cls.default_limit})
 
     def check(self, component: Scope, config: RuleConfig) -> Iterable[Violation]:

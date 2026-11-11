@@ -19,10 +19,10 @@ def _load(root: Path) -> AnalysisConfig:
     return AnalysisConfig.load(root, RULE_REGISTRY)
 
 
-def test_defaults_cover_every_rule_and_only_cohesion_is_off():
+def test_defaults_cover_every_rule_and_every_rule_is_on():
     config = AnalysisConfig.defaults(RULE_REGISTRY)
     assert set(config.rules) == {r.name for r in RULE_REGISTRY}
-    assert [n for n, rc in config.rules.items() if not rc.enabled] == ["class-cohesion"]
+    assert all(rc.enabled for rc in config.rules.values())
 
 
 def test_no_config_file_means_defaults(tmp_path: Path):

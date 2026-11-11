@@ -61,13 +61,16 @@ elsewhere.
    and `threshold`). `Violation.at(scope, ...)` locates one at a scope's definition.
 4. Violations on a line with `slop: ignore` (or `slop: ignore[a, b]`, exact rule names) are dropped, then the rest are sorted by path and position.
 5. A rule that visited zero components is listed in `Report.zero_visited` rather than passing
-   silently. Exit code: 0 no violations, 1 any violation, 2 error.
+   silently. Exit code: 0 no violations (warnings allowed), 1 any violation, 2 error.
 
-Objective and subjective violations: a rule reports a violation only when it is objective,
-meaning it follows from syntax and a stated limit alone. A case that needs an exemption for
-idiom or intent is subjective and is not reported; judging it is the job of a layer that
-reads context. `magic-float` and `duplicate-string` show the split: they measure a float
-operand and a repeated long string, and say nothing about integers or short strings.
+Objective and subjective violations: a violation is objective when it follows from syntax and a
+stated limit alone. A rule whose findings need judgement of idiom or intent (`class-cohesion`,
+`rigid-package`, `useless-package`) sets `subjective = True`; the dispatcher then reports its
+findings as warnings (`WARN` in the human output, `warnings` in JSON) that never fail the run.
+A case that cannot be a rule at all (an integer literal, a short string) is not reported;
+judging those and the warnings is the job of a layer that reads context. `magic-float` and
+`duplicate-string` show the split: they measure a float operand and a repeated long string,
+and say nothing about integers or short strings.
 
 Contributor invariants:
 

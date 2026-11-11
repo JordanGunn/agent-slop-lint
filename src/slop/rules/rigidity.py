@@ -20,6 +20,7 @@ class RigidityRule(Limit):
     description = "a package is stable and concrete, far from Martin's main sequence"
     altitude = ScopeKind.PACKAGE
     default_limit = 0.7
+    subjective = True       # stable and concrete only hurts if the package changes, which D' cannot see
 
     def measure(self, view: Structure) -> float | None:
         return view.martin_metrics().distance if view.in_zone_of_pain() else None

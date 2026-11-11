@@ -101,7 +101,7 @@ def test_as_dict_paths_are_relative_to_the_root(tmp_path: Path):
     (tmp_path / "pkg" / "__init__.py").write_text("")
     (tmp_path / "pkg" / "m.py").write_text(BRANCHY.format(n="f"))
     doc = _cyclomatic(tmp_path).as_dict()
-    assert doc["summary"] == {"violations": 1, "exit_code": 1}
+    assert doc["summary"] == {"violations": 1, "warnings": 0, "exit_code": 1}
     [v] = doc["violations"]
     assert v["path"] == "pkg/m.py" and (v["line"], v["column"]) == (1, 1)
     assert set(v) == {"rule", "path", "line", "column", "message", "value", "threshold"}
@@ -117,4 +117,15 @@ def test_the_default_registry_runs_end_to_end_and_flags_a_tangled_function(tmp_p
     fired = {v.rule for v in report.violations}
     assert "cyclomatic-complexity" in fired
     assert report.exit_code() == 1
-    assert "class-cohesion" not in report.visited      # off by default, so never dispatched
+    assert "class-cohesion" in report.visited          # subjective rules run; their findings are warnings
+
+
+def test_a_warning_is_suppressed_by_an_inline_ignore_like_a_violation(tmp_path: Path):
+    src = "class A:  # slop: ignore[class-cohesion]\n    def f(self): return self.a\n    def g(self): return self.b\n"
+    (tmp_path / "m.py").write_text(src)
+    cfg = AnalysisConfig.defaults(RULE_REGISTRY)
+    report = Dispatcher(RULE_REGISTRY, cfg).run(scan_corpus(tmp_path, cfg))
+    assert report.warnings == [] and report.exit_code() == 0
+    (tmp_path / "m.py").write_text(src.replace("  # slop: ignore[class-cohesion]", ""))
+    report = Dispatcher(RULE_REGISTRY, cfg).run(scan_corpus(tmp_path, cfg))
+    assert [w.rule for w in report.warnings] == ["class-cohesion"] and report.exit_code() == 0

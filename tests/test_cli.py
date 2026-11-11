@@ -41,16 +41,18 @@ def test_rules_json(capsys):
     by_name = {r["name"]: r for r in data}
     assert "cyclomatic-complexity" in by_name and "class-coupling" in by_name
     assert len(by_name) == 15
-    assert by_name["class-cohesion"]["enabled"] is False
+    subjective = {n for n, r in by_name.items() if r["subjective"]}
+    assert subjective == {"class-cohesion", "rigid-package", "useless-package"}
+    assert all(r["enabled"] for r in by_name.values())
     assert by_name["cyclomatic-complexity"]["altitudes"] == ["callable"]
 
 
-def test_rules_human_marks_default_off_rules(capsys):
+def test_rules_human_marks_subjective_rules(capsys):
     cli.rules_cmd("human")
     lines = capsys.readouterr().out.splitlines()
     [cohesion] = [ln for ln in lines if "class-cohesion" in ln]
     [cyclomatic] = [ln for ln in lines if "cyclomatic-complexity" in ln]
-    assert " off " in cohesion and " on " in cyclomatic
+    assert " subjective " in cohesion and " objective " in cyclomatic
 
 
 def test_check_unknown_target_errors(capsys):
@@ -110,8 +112,8 @@ def test_lint_clean_source_exits_zero_with_no_violations(tmp_path: Path, capsys)
 def test_lint_json_shape(tmp_path: Path, capsys):
     (tmp_path / "m.py").write_text(_TANGLED)
     code, doc = _lint_json(tmp_path, capsys)
-    assert code == 1 and set(doc) == {"summary", "violations", "zero_visited"}
-    assert doc["summary"] == {"violations": len(doc["violations"]), "exit_code": 1}
+    assert code == 1 and set(doc) == {"summary", "violations", "warnings", "zero_visited"}
+    assert doc["summary"] == {"violations": len(doc["violations"]), "warnings": 0, "exit_code": 1}
     assert "findings" not in doc
     v = next(v for v in doc["violations"] if v["rule"] == "cyclomatic-complexity")
     assert v == {"rule": "cyclomatic-complexity", "path": "m.py", "line": 1, "column": 1,
@@ -121,7 +123,7 @@ def test_lint_json_shape(tmp_path: Path, capsys):
 def test_lint_json_of_clean_source(tmp_path: Path, capsys):
     (tmp_path / "m.py").write_text("def f(x):\n    return x\n")
     code, doc = _lint_json(tmp_path, capsys)
-    assert code == 0 and doc["violations"] == [] and doc["summary"] == {"violations": 0, "exit_code": 0}
+    assert code == 0 and doc["violations"] == [] and doc["summary"] == {"violations": 0, "warnings": 0, "exit_code": 0}
 
 
 def test_check_runs_only_the_named_rules(tmp_path: Path, capsys):
@@ -160,17 +162,22 @@ def test_a_disabled_rule_reports_nothing_but_check_still_runs_it(tmp_path: Path,
     assert code == 1 and {v["rule"] for v in named["violations"]} == {"cyclomatic-complexity"}
 
 
-def test_class_cohesion_is_off_by_default_and_runs_when_enabled_or_checked(tmp_path: Path, capsys):
+def test_a_subjective_rule_warns_and_never_fails_the_run(tmp_path: Path, capsys):
     (tmp_path / "m.py").write_text(
         "class A:\n    def f(self): return self.a\n    def g(self): return self.b\n")
-    _, doc = _lint_json(tmp_path, capsys)
-    assert doc["violations"] == []
-    _, named = _lint_json(tmp_path, capsys, check=["class-cohesion"])      # `check` runs it anyway
-    [v] = named["violations"]
-    assert (v["rule"], v["path"], v["value"], v["threshold"]) == ("class-cohesion", "m.py", 2, 1)
-    (tmp_path / ".slop.toml").write_text("[rules.class-cohesion]\nenabled = true\n")
-    _, enabled = _lint_json(tmp_path, capsys)
-    assert enabled["violations"] == named["violations"]
+    code, doc = _lint_json(tmp_path, capsys)
+    assert code == 0 and doc["violations"] == [] and doc["summary"]["warnings"] == 1
+    [w] = doc["warnings"]
+    assert (w["rule"], w["path"], w["value"], w["threshold"]) == ("class-cohesion", "m.py", 2, 1)
+    cli.lint(tmp_path, "human")
+    out = capsys.readouterr().out.splitlines()
+    assert out[0].startswith("m.py:1:1: WARN class-cohesion ")
+    assert out[-1] == "No violations and 1 warning."
+    (tmp_path / ".slop.toml").write_text("[rules.class-cohesion]\nenabled = false\n")
+    _, off = _lint_json(tmp_path, capsys)
+    assert off["warnings"] == []
+    code, named = _lint_json(tmp_path, capsys, check=["class-cohesion"])    # `check` runs it anyway
+    assert code == 0 and named["warnings"] == doc["warnings"]
 
 
 def test_doctor_runs(capsys):

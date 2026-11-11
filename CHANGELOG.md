@@ -28,6 +28,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `class-cohesion` (LCOM4, 1, off by default): 12 rules.
 - Suppression matches exact rule names only: `slop: ignore[a, b]`.
 - `scripts/` removed.
+- A rule can be `subjective`: its findings are `WARN` lines in the human output and a
+  `warnings` list in JSON, and never exit 1. `class-cohesion`, `rigid-package` and
+  `useless-package` are subjective, and every rule is now on by default (`class-cohesion` was off).
+  `slop rules` shows objective or subjective.
+- `duplicate-code` compares literal values, so constant tables with different entries are no
+  longer clones (slop: 37 to 29 findings; laszy: 24 to 12).
 - New rules `halstead-volume` (limit 1000), `magic-float` and `duplicate-string`: 15 rules.
   Only objective violations are reported (see `docs/ARCHITECTURE.md`). `magic-float` reports a
   float with a fractional part (not 0.5) used as an operand of an arithmetic, comparison,

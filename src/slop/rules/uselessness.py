@@ -19,6 +19,7 @@ class UselessnessRule(Limit):
     description = "a package is unstable and abstract, far from Martin's main sequence"
     altitude = ScopeKind.PACKAGE
     default_limit = 0.7
+    subjective = True       # as rigid-package: the metric has no notion of how often a package changes
 
     def measure(self, view: Structure) -> float | None:
         return view.martin_metrics().distance if view.in_zone_of_uselessness() else None

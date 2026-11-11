@@ -31,6 +31,10 @@ class Rule(ABC):
     description: ClassVar[str]
     #: the altitudes this rule is defined at; the dispatcher visits exactly these.
     altitudes: ClassVar[frozenset[ScopeKind]]
+    #: True when a violation depends on what the author meant, not on syntax and a limit
+    #: alone. A subjective rule reports a warning (WARN) that never fails the run; judging
+    #: it is left to a layer that reads context.
+    subjective: ClassVar[bool] = False
 
     @classmethod
     @abstractmethod

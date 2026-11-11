@@ -56,10 +56,15 @@ uv run slop rules
   `AnalysisConfig.load`. `slop check RULE...` runs the named rules even when disabled.
 - A violation is *objective* or *subjective*. Objective: it follows from syntax and a stated
   limit alone, so no idiom or intent excuses it. Subjective: it depends on what the author
-  meant (a mask, a unit conversion, a format offset). The linter reports objective violations
-  only, and only those exit 1. Never add exemptions or special cases to make a subjective case
-  objective; leave it to the inferential layer, which is not built.
-- Exit codes: lint `0` none / `1` any violation / `2` error. Read-only commands `0`
+  meant (a mask, a unit conversion, a format offset). A rule with `subjective = True` reports
+  WARN lines, kept in `Report.warnings`; only objective violations exit 1. Never add
+  exemptions or special cases to make a subjective case objective; the inferential layer,
+  which is not built, will judge warnings.
+- A noisy rule is one of: (a) valid and just large, keep it; (b) broken, fix the measure
+  (`duplicate-code` once matched constant tables whose values differed); (c) trying to decide
+  a subjective case, mark it `subjective = True`. Classify findings by hand on slop's own
+  source and on another corpus before choosing, and record the rate in the rule's docstring.
+- Exit codes: lint `0` no violations (warnings allowed) / `1` any violation / `2` error. Read-only commands `0`
   answered / `2` could not answer; an empty answer carries caveats.
 - Suppression is inline `slop: ignore[exact-rule-name]`, applied by the dispatcher. The dispatcher
   lists rules that visited no component under `zero_visited` in the JSON report.
