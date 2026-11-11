@@ -393,3 +393,68 @@ def test_an_inline_ignore_comment_exempts_only_its_own_function(tmp_path: Path, 
     (tmp_path / "b" / "x.py").write_text(_BRANCHY)
     (tmp_path / ".slop.toml").write_text(_LOW)
     assert _cyclomatic_paths(tmp_path, capsys) == {"b/x.py"}
+
+
+def _leaf_commands(parser, path=()):
+    """Every runnable command: a parser with no subcommands, by its path of names."""
+    import argparse
+    groups = [a for a in parser._actions if isinstance(a, argparse._SubParsersAction)]
+    if not groups:
+        yield path, parser
+        return
+    for name, child in groups[0].choices.items():
+        yield from _leaf_commands(child, (*path, name))
+
+
+def test_every_command_has_a_handler():
+    leaves = dict(_leaf_commands(cli._parser()))
+    assert {("lint",), ("doctor",), ("infer", "apply"), ("skill", "install")} <= set(leaves)
+    missing = [" ".join(path) for path, parser in leaves.items() if not callable(parser.get_default("run"))]
+    assert missing == []
+
+
+def test_a_command_runs_its_own_handler(capsys):
+    assert cli.main(["skill", "list"]) == 0 and capsys.readouterr().out.startswith("slop-infer")
+    assert cli.main(["doctor"]) == 0 and "tree-sitter" in capsys.readouterr().out
+
+
+_WIRING = [
+    (["lint", "--root", "r", "--output", "json"], "lint", ("r", "json"), {}),
+    (["check", "a", "b", "--root", "r"], "check", (["a", "b"], "r", "human"), {}),
+    (["rules", "--output", "json"], "rules_cmd", ("json",), {}),
+    (["doctor"], "doctor", (), {}),
+    (["init", "--root", "r"], "init", ("r",), {}),
+    (["ast", "f.py", "--raw", "--max-depth", "3"], "ast_view", ("f.py", "human"), {"raw": True, "max_depth": 3}),
+    (["lexicon", "--root", "r", "--scope", "s", "--top", "5", "--scope-kind", "module", "--ontology", "o.json"],
+     "lexicon_view", ("r", "human"), {"scope": "s", "top": 5, "scope_kind": "module", "ontology": "o.json"}),
+    (["deps", "--root", "r", "--scope", "s", "--cycles"], "deps_view", ("r", "human"), {"scope": "s", "cycles_only": True}),
+    (["find", "N", "--root", "r", "--kind", "class", "--collisions"], "find_view", ("r", "N", "human"),
+     {"kind": "class", "collisions": True}),
+    (["tree", "--root", "r", "--scope", "s", "--depth", "2", "--kind", "class", "--scope-kind", "package"], "tree_view",
+     ("r", "human"), {"scope": "s", "depth": 2, "kind": "class", "scope_kind": "package"}),
+    (["vocab", "--ontology", "o.json", "--root", "r", "--term", "T"], "vocab_view", ("r", "o.json", "human"), {"term": "T"}),
+    (["shape", "--root", "r", "--scope", "s", "--scope-kind", "class"], "shape_view", ("r", "human"),
+     {"scope": "s", "scope_kind": "class"}),
+    (["hotspots", "--root", "r", "--since", "HEAD~3"], "hotspots_view", ("r", "human"), {"since": "HEAD~3", "last": None}),
+    (["infer", "instructions"], "infer_instructions", (), {}),
+    (["infer", "references", "rubrics/x"], "infer_references", ("rubrics/x",), {}),
+    (["infer", "schema", "verdicts"], "infer_schema", ("verdicts",), {}),
+    (["infer", "next", "--root", "r", "--rule", "class-cohesion", "--limit", "4"], "infer_next", ("r", "class-cohesion", 4), {}),
+    (["infer", "apply", "v.json", "--root", "r"], "infer_apply", ("v.json", "r"), {}),
+    (["skill", "list"], "skill_list", (), {}),
+    (["skill", "show", "slop-infer", "SKILL.md"], "skill_show", ("slop-infer", "SKILL.md"), {}),
+    (["skill", "install", "slop-infer", "--dest", "d", "--force"], "skill_install", ("slop-infer", "d", True), {}),
+]
+
+
+@pytest.mark.parametrize("argv,handler,args,kwargs", _WIRING, ids=[" ".join(w[0][:2]) for w in _WIRING])
+def test_each_command_reaches_its_handler_with_its_arguments(monkeypatch, argv, handler, args, kwargs):
+    calls = []
+    monkeypatch.setattr(cli, handler, lambda *a, **k: calls.append((a, k)) or 0)
+    assert cli.main(argv) == 0
+    assert calls == [(args, kwargs)]
+
+
+def test_the_wiring_table_covers_every_command():
+    covered = {tuple(argv[:2]) if argv[0] in ("infer", "skill") else (argv[0],) for argv, *_ in _WIRING}
+    assert covered == set(dict(_leaf_commands(cli._parser())))

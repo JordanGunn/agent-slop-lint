@@ -567,18 +567,10 @@ def hotspots_view(root: str | Path, output: str = "human", *, since: str | None 
     return 0
 
 
-def infer_command(args: argparse.Namespace) -> int:
-    """Run one `slop infer` subcommand."""
-    if args.infer_command == "instructions":
-        print(prose.instructions(), end="")
-        return 0
-    if args.infer_command == "references":
-        return infer_references(args.name)
-    if args.infer_command == "schema":
-        return infer_schema(args.name)
-    if args.infer_command == "next":
-        return infer_next(args.root, args.rule, args.limit)
-    return infer_apply(args.file, args.root)
+def infer_instructions() -> int:
+    """Print the agent's instructions for the inference workflow."""
+    print(prose.instructions(), end="")
+    return 0
 
 
 def infer_references(name: str | None) -> int:
@@ -632,33 +624,46 @@ def infer_apply(file: str, root: str | Path) -> int:
     return 1 if receipt.rejected else 0
 
 
-def skill_command(args: argparse.Namespace) -> int:
-    """Run one `slop skill` subcommand."""
-    if args.skill_command == "list":
-        for name, skill in sorted(SKILLS.items()):
-            print(f"{name}  {skill.description}")
-        return 0
-    if args.name not in SKILLS:
-        print(f"slop: error: no skill '{args.name}'. Try `slop skill list`.", file=sys.stderr)
+def skill_list() -> int:
+    """List the skills slop ships."""
+    for name, skill in sorted(SKILLS.items()):
+        print(f"{name}  {skill.description}")
+    return 0
+
+
+def skill_show(name: str, file: str | None) -> int:
+    """Print a skill's SKILL.md, or the file at ``file`` inside it."""
+    skill = _skill(name)
+    if skill is None:
         return 2
-    skill = SKILLS[args.name]
-    if args.skill_command == "show":
-        tree = skill.tree()
-        if args.file is None:
-            print(tree["SKILL.md"], end="")
-            return 0
-        if args.file not in tree:
-            print(f"slop: error: skill '{args.name}' has no file '{args.file}'. Its files: "
-                  f"{', '.join(tree)}", file=sys.stderr)
-            return 2
-        print(tree[args.file], end="")
-        return 0
+    tree = skill.tree()
+    shown = "SKILL.md" if file is None else file
+    if shown not in tree:
+        print(f"slop: error: skill '{name}' has no file '{shown}'. Its files: {', '.join(tree)}", file=sys.stderr)
+        return 2
+    print(tree[shown], end="")
+    return 0
+
+
+def skill_install(name: str, dest: str, force: bool) -> int:
+    """Write a skill's directory under ``dest`` and print where."""
+    skill = _skill(name)
+    if skill is None:
+        return 2
     try:
-        print(install_skill(skill, Path(args.dest), replace=args.force))
+        print(install_skill(skill, Path(dest), replace=force))
     except InstallError as exc:
         print(f"slop: error: {exc}", file=sys.stderr)
         return 2
     return 0
+
+
+def _skill(name: str):
+    """The skill called ``name``, or None after printing why there is none."""
+    if name not in SKILLS:
+        print(f"slop: error: no skill '{name}'. Try `slop skill list`.", file=sys.stderr)
+        return None
+    return SKILLS[name]
 
 
 def init(root: str | Path) -> int:
@@ -701,7 +706,8 @@ def _human(report: Report) -> str:
     return "\n".join(lines)
 
 
-def main(argv: list[str] | None = None) -> int:
+def _parser() -> argparse.ArgumentParser:
+    """Every command, each with the function it runs as ``run``."""
     parser = argparse.ArgumentParser(prog="slop", description="a linter and code-structure query tool")
     parser.add_argument("--version", action="version", version=f"slop {_version()}")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -709,19 +715,23 @@ def main(argv: list[str] | None = None) -> int:
     p_lint = sub.add_parser("lint", help="lint a source root")
     p_lint.add_argument("--root", default=".", help="source root to scan (default: cwd)")
     p_lint.add_argument("--output", choices=["human", "json"], default="human")
+    p_lint.set_defaults(run=lambda a: lint(a.root, a.output))
 
     p_check = sub.add_parser("check", help="run only the named rules")
     p_check.add_argument("rules", nargs="+", help="rule name(s) to run (see `slop rules`)")
     p_check.add_argument("--root", default=".")
     p_check.add_argument("--output", choices=["human", "json"], default="human")
+    p_check.set_defaults(run=lambda a: check(a.rules, a.root, a.output))
 
     p_rules = sub.add_parser("rules", help="list the rule registry")
     p_rules.add_argument("--output", choices=["human", "json"], default="human")
+    p_rules.set_defaults(run=lambda a: rules_cmd(a.output))
 
-    sub.add_parser("doctor", help="check slop's tooling dependencies")
+    sub.add_parser("doctor", help="check slop's tooling dependencies").set_defaults(run=lambda a: doctor())
 
     p_init = sub.add_parser("init", help="write a .slop.toml config template")
     p_init.add_argument("--root", default=".")
+    p_init.set_defaults(run=lambda a: init(a.root))
 
     p_ast = sub.add_parser("ast", help="print the parse tree of a single source file")
     p_ast.add_argument("path", help="source file to inspect")
@@ -730,6 +740,7 @@ def main(argv: list[str] | None = None) -> int:
                        help="keep anonymous tokens (full transcript); default is the named skeleton")
     p_ast.add_argument("--max-depth", type=int, default=None,
                        help="truncate the tree below this depth")
+    p_ast.set_defaults(run=lambda a: ast_view(a.path, a.output, raw=a.raw, max_depth=a.max_depth))
 
     p_lex = sub.add_parser("lexicon", help="print a scope's vocabulary distribution")
     p_lex.add_argument("--root", default=".")
@@ -740,12 +751,15 @@ def main(argv: list[str] | None = None) -> int:
     p_lex.add_argument("--ontology", default=None,
                        help="Open Ontology IR JSON: also report coverage of the observed tokens")
     p_lex.add_argument("--output", choices=["human", "json"], default="human")
+    p_lex.set_defaults(run=lambda a: lexicon_view(a.root, a.output, scope=a.scope, top=a.top,
+                                                  scope_kind=a.scope_kind, ontology=a.ontology))
 
     p_deps = sub.add_parser("deps", help="print the module dependency graph")
     p_deps.add_argument("--root", default=".")
     p_deps.add_argument("--scope", default=None, help="restrict to edges touching this module qualname")
     p_deps.add_argument("--cycles", action="store_true", help="show only import cycles")
     p_deps.add_argument("--output", choices=["human", "json"], default="human")
+    p_deps.set_defaults(run=lambda a: deps_view(a.root, a.output, scope=a.scope, cycles_only=a.cycles))
 
     p_find = sub.add_parser("find", help="where a name is defined (or which names collide)")
     p_find.add_argument("name", nargs="?", default=None, help="exact local name to look up")
@@ -754,6 +768,7 @@ def main(argv: list[str] | None = None) -> int:
     p_find.add_argument("--collisions", action="store_true",
                         help="list names defined by more than one scope of --kind (default class)")
     p_find.add_argument("--output", choices=["human", "json"], default="human")
+    p_find.set_defaults(run=lambda a: find_view(a.root, a.name, a.output, kind=a.kind, collisions=a.collisions))
 
     p_tree = sub.add_parser("tree", help="print the ownership tree beneath a scope")
     p_tree.add_argument("--root", default=".")
@@ -763,12 +778,15 @@ def main(argv: list[str] | None = None) -> int:
     p_tree.add_argument("--scope-kind", default=None,
                         help="pick one kind when --scope names several (a package and its __init__ module)")
     p_tree.add_argument("--output", choices=["human", "json"], default="human")
+    p_tree.set_defaults(run=lambda a: tree_view(a.root, a.output, scope=a.scope, depth=a.depth,
+                                                kind=a.kind, scope_kind=a.scope_kind))
 
     p_vocab = sub.add_parser("vocab", help="compare code names with a canonical ontology (JSON IR)")
     p_vocab.add_argument("--ontology", required=True, help="Open Ontology IR JSON file")
     p_vocab.add_argument("--root", default=".")
     p_vocab.add_argument("--term", default=None, help="print this term's canonical entry instead of comparing")
     p_vocab.add_argument("--output", choices=["human", "json"], default="human")
+    p_vocab.set_defaults(run=lambda a: vocab_view(a.root, a.ontology, a.output, term=a.term))
 
     p_shape = sub.add_parser("shape", help="print each class's CK profile and cohesion groups")
     p_shape.add_argument("--root", default=".")
@@ -776,6 +794,7 @@ def main(argv: list[str] | None = None) -> int:
     p_shape.add_argument("--scope-kind", default=None,
                          help="pick one kind when --scope names several (a package and its __init__ module)")
     p_shape.add_argument("--output", choices=["human", "json"], default="human")
+    p_shape.set_defaults(run=lambda a: shape_view(a.root, a.output, scope=a.scope, scope_kind=a.scope_kind))
 
     p_hot = sub.add_parser("hotspots", help="files ranked by recent churn x complexity")
     p_hot.add_argument("--root", default=".")
@@ -785,73 +804,52 @@ def main(argv: list[str] | None = None) -> int:
     window.add_argument("--last", type=int, default=None, metavar="N",
                         help=f"the last N commits plus uncommitted changes (default {DEFAULT_LAST})")
     p_hot.add_argument("--output", choices=["human", "json"], default="human")
+    p_hot.set_defaults(run=lambda a: hotspots_view(a.root, a.output, since=a.since, last=a.last))
 
-    p_infer = sub.add_parser("infer", help="inference over the linter's findings: schemas and, soon, the worklist")
+    p_infer = sub.add_parser("infer", help="inference over the linter's findings: worklist, verdicts, rubrics, schemas")
     infer_sub = p_infer.add_subparsers(dest="infer_command", required=True)
-    infer_sub.add_parser("instructions", help="print the agent's instructions for the inference workflow")
+    infer_sub.add_parser("instructions", help="print the agent's instructions for the inference workflow").set_defaults(
+        run=lambda a: infer_instructions())
     p_refs = infer_sub.add_parser("references", help="list the bundled references, or print one")
     p_refs.add_argument("name", nargs="?", default=None, help="a name from the list (for example rubrics/class-cohesion)")
+    p_refs.set_defaults(run=lambda a: infer_references(a.name))
     p_schema = infer_sub.add_parser("schema", help="print the JSON Schema of the documents the exchange uses")
     p_schema.add_argument("name", nargs="?", default=None, choices=sorted(infer_schemas()),
                           help="one document (default: all)")
+    p_schema.set_defaults(run=lambda a: infer_schema(a.name))
     p_next = infer_sub.add_parser("next", help="print the worklist: findings that need judgement")
     p_next.add_argument("--root", default=".")
     p_next.add_argument("--rule", default=None, help="only findings of this rule")
     p_next.add_argument("--limit", type=int, default=None, help="at most this many items")
+    p_next.set_defaults(run=lambda a: infer_next(a.root, a.rule, a.limit))
     p_apply = infer_sub.add_parser("apply", help="store verdicts from a file or stdin and print a receipt")
     p_apply.add_argument("file", nargs="?", default="-", help="verdicts JSON (default: stdin)")
     p_apply.add_argument("--root", default=".")
+    p_apply.set_defaults(run=lambda a: infer_apply(a.file, a.root))
 
     p_skill = sub.add_parser("skill", help="Agent Skills that teach an agent to use slop")
     skill_sub = p_skill.add_subparsers(dest="skill_command", required=True)
-    skill_sub.add_parser("list", help="list the skills slop ships")
+    skill_sub.add_parser("list", help="list the skills slop ships").set_defaults(run=lambda a: skill_list())
     p_show = skill_sub.add_parser("show", help="print a skill's SKILL.md, or one of its files")
     p_show.add_argument("name")
     p_show.add_argument("file", nargs="?", default=None, help="a path inside the skill (default: SKILL.md)")
+    p_show.set_defaults(run=lambda a: skill_show(a.name, a.file))
     p_install = skill_sub.add_parser("install", help="write a skill's directory under DEST")
     p_install.add_argument("name")
     p_install.add_argument("--dest", required=True, help="the skills directory, e.g. .claude/skills")
     p_install.add_argument("--force", action="store_true", help="replace an existing install of this skill")
+    p_install.set_defaults(run=lambda a: skill_install(a.name, a.dest, a.force))
 
-    args = parser.parse_args(argv)
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = _parser().parse_args(argv)
     try:
-        if args.command == "lint":
-            return lint(args.root, args.output)
-        if args.command == "check":
-            return check(args.rules, args.root, args.output)
-        if args.command == "rules":
-            return rules_cmd(args.output)
-        if args.command == "doctor":
-            return doctor()
-        if args.command == "init":
-            return init(args.root)
-        if args.command == "ast":
-            return ast_view(args.path, args.output, raw=args.raw, max_depth=args.max_depth)
-        if args.command == "lexicon":
-            return lexicon_view(args.root, args.output, scope=args.scope, top=args.top,
-                                scope_kind=args.scope_kind, ontology=args.ontology)
-        if args.command == "deps":
-            return deps_view(args.root, args.output, scope=args.scope, cycles_only=args.cycles)
-        if args.command == "find":
-            return find_view(args.root, args.name, args.output,
-                             kind=args.kind, collisions=args.collisions)
-        if args.command == "tree":
-            return tree_view(args.root, args.output, scope=args.scope,
-                             depth=args.depth, kind=args.kind, scope_kind=args.scope_kind)
-        if args.command == "vocab":
-            return vocab_view(args.root, args.ontology, args.output, term=args.term)
-        if args.command == "shape":
-            return shape_view(args.root, args.output, scope=args.scope, scope_kind=args.scope_kind)
-        if args.command == "hotspots":
-            return hotspots_view(args.root, args.output, since=args.since, last=args.last)
-        if args.command == "infer":
-            return infer_command(args)
-        if args.command == "skill":
-            return skill_command(args)
+        return args.run(args)
     except Exception as exc:  # noqa: BLE001 — top-level boundary: any failure is exit 2
         print(f"slop: error: {exc}", file=sys.stderr)
         return 2
-    return 2
 
 
 if __name__ == "__main__":
