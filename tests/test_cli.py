@@ -112,7 +112,7 @@ def test_lint_clean_source_exits_zero_with_no_violations(tmp_path: Path, capsys)
 def test_lint_json_shape(tmp_path: Path, capsys):
     (tmp_path / "m.py").write_text(_TANGLED)
     code, doc = _lint_json(tmp_path, capsys)
-    assert code == 1 and set(doc) == {"summary", "violations", "warnings", "zero_visited"}
+    assert code == 1 and set(doc) == {"root", "project_root", "summary", "violations", "warnings", "zero_visited"}
     assert doc["summary"] == {"violations": len(doc["violations"]), "warnings": 0, "exit_code": 1}
     assert "findings" not in doc
     v = next(v for v in doc["violations"] if v["rule"] == "cyclomatic-complexity")

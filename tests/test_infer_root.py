@@ -112,3 +112,19 @@ def test_a_path_outside_the_root_stays_absolute(tmp_path: Path):
     elsewhere.parent.mkdir()
     elsewhere.write_text("x\n", encoding="utf-8")
     assert project_path(elsewhere, root) == elsewhere.resolve().as_posix()
+
+
+def test_the_lint_output_alone_locates_every_finding_and_its_code_from_any_directory(tmp_path: Path, capsys, monkeypatch):
+    _project(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    code, out = _run(capsys, "lint", "--root", "src", "--output", "json")    # a relative root, as typed
+    doc = json.loads(out)
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    monkeypatch.chdir(elsewhere)                                             # read later, from another directory
+    assert code == 0 and Path(doc["root"]).is_absolute() and Path(doc["project_root"]).is_absolute()
+    [finding] = doc["warnings"]
+    assert (Path(doc["root"]) / finding["path"]).is_file()                 # a finding's path: from root
+    residue = finding["residue"]
+    lines = (Path(doc["project_root"]) / residue["path"]).read_text(encoding="utf-8").splitlines()
+    assert "\n".join(lines[residue["first_line"] - 1:residue["last_line"]]) == TWO_GROUPS.rstrip("\n")

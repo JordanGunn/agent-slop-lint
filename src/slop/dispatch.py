@@ -25,6 +25,7 @@ import os
 import re
 from collections.abc import Iterable
 from dataclasses import dataclass, field
+from pathlib import Path
 from operator import attrgetter
 from typing import Any
 
@@ -60,7 +61,10 @@ class Report:
         return violation.path
 
     def as_dict(self) -> dict[str, Any]:
+        """The report as JSON-ready data. ``root`` is the absolute scan root that each ``path``
+        is relative to, so a reader can open a finding from any working directory."""
         return {
+            "root": str(Path(self.root).resolve()) if self.root else None,
             "summary": {"violations": len(self.violations), "warnings": len(self.warnings),
                         "exit_code": self.exit_code()},
             "violations": [{**v.as_dict(), "path": self.relative_path(v)} for v in self.violations],

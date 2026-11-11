@@ -161,14 +161,16 @@ def lint(root: str | Path, output: str = "human", *, rules=None) -> int:
     settlement = settle(analysis, JsonlLedger.at(analysis.root))
     report = settlement.report
     if output == "json":
-        print(json.dumps(_with_residue(report.as_dict(), settlement), indent=2))
+        print(json.dumps(_with_residue(report.as_dict(), settlement, analysis.root), indent=2))
     else:
         print(_human(report))
     return report.exit_code()
 
 
-def _with_residue(doc: dict, settlement) -> dict:
-    """``doc`` with each finding that can be put to inference carrying its ``residue``."""
+def _with_residue(doc: dict, settlement, project_root: Path) -> dict:
+    """``doc`` with each finding that can be put to inference carrying its ``residue``, and the
+    absolute ``project_root`` that every residue ``path`` is relative to."""
+    doc["project_root"] = str(project_root.resolve())
     for key in ("violations", "warnings"):
         for entry, finding in zip(doc[key], getattr(settlement.report, key)):
             item = settlement.residue.get(finding.position)

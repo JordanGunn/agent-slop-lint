@@ -108,8 +108,10 @@ survey for bootstrapping, is a new module in `source/`; the other layers do not 
 The agent works from the linter's own output. `slop lint --output json` attaches a `residue`
 to each finding of a rule that has a rubric: the finding's id, the definition's line span, the
 closed question, the rubric command and version, the fingerprint, and the ruling's `status`
-(`none`, `stale`, `defer` or `confirm`). The agent reads the code at that span and the rubric,
-then sends verdicts. `slop infer` keeps only what nothing else does:
+(`none`, `stale`, `defer` or `confirm`). The output also states `root`, the absolute scan root
+that finding paths are relative to, and `project_root`, the absolute root that residue paths are
+relative to, so the agent can open the code from any working directory. The agent reads the code
+at that span and the rubric, then sends verdicts. `slop infer` keeps only what nothing else does:
 
 | Command | Does |
 |---|---|

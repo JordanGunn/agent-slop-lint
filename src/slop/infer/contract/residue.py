@@ -36,7 +36,7 @@ class Residue:
 
     id: str = described("Stable id of the finding. Copy it into the verdict.", min_length=1)
     rule: str = described("The linter rule that reported the finding.")
-    path: str = described("Path relative to the project root.")
+    path: str = described("Path relative to the project root, given as project_root in the lint output.")
     subject: str = described("The class, callable or module the finding is about.")
     first_line: int = described("First line of the subject's definition, 1-based.")
     last_line: int = described("Last line of the subject's definition, inclusive. Read these lines.")
