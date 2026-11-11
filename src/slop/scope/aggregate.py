@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 
 class Package(AggregateContainer):
     """An organizational namespace inside a Realm — a directory or import-path
-    segment grouping Modules and sub-Packages.
+    segment grouping Modules. Packages are siblings under a Realm, never nested in each other.
 
     The home altitude for Martin's package metrics (``PackageMeasures``), which
     are undefined below a package. Typed convenience accessors (``classes()`` /
@@ -44,11 +44,6 @@ class Package(AggregateContainer):
     @abstractmethod
     def path(self) -> Path:
         """The package's namespace path (directory or import-path segment)."""
-        ...
-
-    @abstractmethod
-    def packages(self) -> Sequence["Package"]:
-        """Direct sub-packages."""
         ...
 
     @abstractmethod

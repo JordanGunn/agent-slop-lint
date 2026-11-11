@@ -18,14 +18,6 @@ from ..scope.identity import ScopeKind
 from ..violation import Violation
 
 
-def _modules(component):
-    if component.KIND == ScopeKind.MODULE:
-        yield component
-        return
-    for ch in component.children():
-        yield from _modules(ch)
-
-
 class DependencyCyclesRule(Rule):
     name = "import-cycle"
     description = "modules import each other in a cycle (Acyclic Dependencies Principle)"
@@ -36,7 +28,7 @@ class DependencyCyclesRule(Rule):
         return RuleConfig(name=cls.name)
 
     def check(self, component: Scope, config: RuleConfig) -> Iterable[Violation]:
-        mod_by_id = {m.id: m for m in _modules(component)}
+        mod_by_id = {m.id: m for m in component._iter_modules()}
         for cycle in Structure.over(component).dependency_cycles():
             members = list(cycle.members)
             loop = " → ".join(members + members[:1])

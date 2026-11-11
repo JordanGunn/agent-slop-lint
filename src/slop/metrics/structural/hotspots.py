@@ -19,7 +19,6 @@ from collections import Counter
 from pathlib import Path
 from typing import Any, Iterator
 
-from ...identity import ScopeKind
 from .complexity import cyclomatic as _cyclomatic
 from .records import Hotspot
 
@@ -34,7 +33,7 @@ def hotspots(corpus: Any, *, since: str | None = None, last: int = DEFAULT_LAST)
     churn = _churn(repo, _span(repo, since, last))
 
     rows: list[Hotspot] = []
-    for mod in _modules(corpus):
+    for mod in corpus._iter_modules():
         if not mod.files:
             continue
         rel = _repo_relative(mod.files[0], repo)
@@ -117,11 +116,3 @@ def _repo_relative(path: Path, repo: Path) -> str | None:
 def _module_cyclomatic(mod: Any) -> int:
     """Summed cyclomatic complexity of the module's callables."""
     return sum(_cyclomatic(c._ast_node(), c._grammar) for c in mod._iter_callables())
-
-
-def _modules(component: Any):
-    if component.KIND == ScopeKind.MODULE:
-        yield component
-        return
-    for ch in component.children():
-        yield from _modules(ch)

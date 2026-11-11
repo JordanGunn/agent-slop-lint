@@ -9,22 +9,13 @@ membership (I > 0.7 and A > 0.7) comes from the metric; the rule adds a limit on
 from __future__ import annotations
 
 from ..metrics.structural.view import Structure
-from ..scope.base import Scope
-from ..scope.identity import ScopeKind
-from .limit import Limit
+from .main_sequence import Zone
 
 
-class UselessnessRule(Limit):
+class UselessnessRule(Zone):
     name = "useless-package"
     description = "a package is unstable and abstract, far from Martin's main sequence"
-    altitude = ScopeKind.PACKAGE
-    default_limit = 0.7
-    subjective = True       # as rigid-package: the metric has no notion of how often a package changes
+    zone = "Uselessness"
 
-    def measure(self, view: Structure) -> float | None:
-        return view.martin_metrics().distance if view.in_zone_of_uselessness() else None
-
-    def describe(self, component: Scope, value: float, limit: float, view: Structure) -> str:
-        m = view.martin_metrics()
-        return (f"{component.qualname} is in the Zone of Uselessness: distance {value:.2f} "
-                f"(limit {limit}), instability {m.instability:.2f}, abstractness {m.abstractness:.2f}")
+    def in_zone(self, view: Structure) -> bool:
+        return view.in_zone_of_uselessness()

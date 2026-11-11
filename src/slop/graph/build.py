@@ -11,7 +11,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from ..identity import ScopeId, ScopeKind, Span, relative_path
+from ..identity import ScopeId, Span, relative_path
 from .dependency import DependencyCycle
 from .dependency import DependencyEdge, DependencyGraph
 from .imports import module_imports
@@ -86,7 +86,7 @@ class ConcreteDependencyGraph(DependencyGraph):
 
 
 def build(corpus: Any) -> ConcreteDependencyGraph:
-    modules = list(_iter_modules(corpus))
+    modules = list(corpus._iter_modules())
     label: dict[ScopeId, str] = {m.id: relative_path(m.id, corpus.root) or m.qualname for m in modules}
     module_ids = set(label)
     index: dict[str, ScopeId] = {}
@@ -122,14 +122,6 @@ def build(corpus: Any) -> ConcreteDependencyGraph:
         {k: frozenset(v) for k, v in afferent.items()},
         label,
     )
-
-
-def _iter_modules(component: Any):
-    if component.KIND == ScopeKind.MODULE:
-        yield component
-        return
-    for ch in component.children():
-        yield from _iter_modules(ch)
 
 
 def _module_names_for_path(fp: Path, init_name: str | None = None) -> list[str]:

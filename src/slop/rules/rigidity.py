@@ -10,22 +10,13 @@ the rule adds a limit on D' so only packages deep in the corner are reported.
 from __future__ import annotations
 
 from ..metrics.structural.view import Structure
-from ..scope.base import Scope
-from ..scope.identity import ScopeKind
-from .limit import Limit
+from .main_sequence import Zone
 
 
-class RigidityRule(Limit):
+class RigidityRule(Zone):
     name = "rigid-package"
     description = "a package is stable and concrete, far from Martin's main sequence"
-    altitude = ScopeKind.PACKAGE
-    default_limit = 0.7
-    subjective = True       # stable and concrete only hurts if the package changes, which D' cannot see
+    zone = "Pain"
 
-    def measure(self, view: Structure) -> float | None:
-        return view.martin_metrics().distance if view.in_zone_of_pain() else None
-
-    def describe(self, component: Scope, value: float, limit: float, view: Structure) -> str:
-        m = view.martin_metrics()
-        return (f"{component.qualname} is in the Zone of Pain: distance {value:.2f} "
-                f"(limit {limit}), instability {m.instability:.2f}, abstractness {m.abstractness:.2f}")
+    def in_zone(self, view: Structure) -> bool:
+        return view.in_zone_of_pain()

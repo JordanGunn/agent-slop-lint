@@ -19,12 +19,12 @@ rather than returning a false number.
 """
 from __future__ import annotations
 
-from typing import Any, Iterable, Iterator
+from typing import Any, Iterable
 
-from .identity import ScopeKind
+from .descendants import Descendants
 
 
-class Selection:
+class Selection(Descendants):
     """A composite region over a set of scopes. ``Structure.over`` / the lexicon
     bridge treat it like any region; it owns no AST node and aggregates its members."""
 
@@ -39,14 +39,3 @@ class Selection:
     def children(self) -> tuple[Any, ...]:
         return self._regions
 
-    def _iter_callables(self) -> Iterator[Any]:
-        for r in self._regions:
-            if r.KIND == ScopeKind.CALLABLE:
-                yield r
-            yield from r._iter_callables()
-
-    def _iter_classes(self) -> Iterator[Any]:
-        for r in self._regions:
-            if r.KIND == ScopeKind.CLASS:
-                yield r
-            yield from r._iter_classes()

@@ -30,10 +30,6 @@ from .records import CKMetrics, Cohesion, PackageMetrics
 from .clones import clone_clusters as _clone_clusters
 
 
-def _todo(what: str, why: str) -> NotImplementedError:
-    return NotImplementedError(f"{what}: {why}")
-
-
 class Structure:
     """Structural metrics over one region (a scope, or — later — a selection)."""
 
@@ -50,14 +46,17 @@ class Structure:
         r = self._r
         return [r] if r.KIND == ScopeKind.CALLABLE else list(r._iter_callables())
 
+    def _sum_over_callables(self, measure) -> int:
+        return sum(measure(c._ast_node(), c._grammar) for c in self._leaves())
+
     def cyclomatic(self) -> int:
-        return sum(complexity.cyclomatic(c._ast_node(), c._grammar) for c in self._leaves())
+        return self._sum_over_callables(complexity.cyclomatic)
 
     def cognitive(self) -> int:
-        return sum(complexity.cognitive(c._ast_node(), c._grammar) for c in self._leaves())
+        return self._sum_over_callables(complexity.cognitive)
 
     def combinatorial(self) -> int:
-        return sum(complexity.combinatorial(c._ast_node(), c._grammar) for c in self._leaves())
+        return self._sum_over_callables(complexity.combinatorial)
 
     def volume(self) -> float:
         """At a callable, its Halstead volume. Above one, the sum of its callables' volumes,
@@ -93,13 +92,16 @@ class Structure:
         return len(self._r.methods())
 
     def dit(self) -> int:
-        return class_index.dit(self._r, self._class_index())
+        return self._class_measure(class_index.dit)
 
     def noc(self) -> int:
-        return class_index.noc(self._r, self._class_index())
+        return self._class_measure(class_index.noc)
 
     def cbo(self) -> int:
-        return class_index.cbo(self._r, self._class_index())
+        return self._class_measure(class_index.cbo)
+
+    def _class_measure(self, measure) -> int:
+        return measure(self._r, self._class_index())
 
     def cohesion(self) -> Cohesion | None:
         """The class's method groups and detached methods, or ``None`` when the language's
@@ -110,7 +112,7 @@ class Structure:
     def _class_index(self):
         idx = self._r.context.class_index if self._r.context else None
         if idx is None:
-            raise _todo("CK metrics", "class index not attached (build the corpus with scan_corpus)")
+            raise NotImplementedError("CK metrics: class index not attached (build the corpus with scan_corpus)")
         return idx
 
     # ---- Module measures --------------------------------------------------
@@ -126,7 +128,7 @@ class Structure:
         ctx = self._r.context
         graph = ctx.dep_graph if ctx else None
         if graph is None:
-            raise _todo("Package.martin", "dependency graph not attached (build the corpus with scan_corpus)")
+            raise NotImplementedError("Package.martin: dependency graph not attached (build the corpus with scan_corpus)")
         module_pkg = ctx.module_pkg
         ce: set = set()
         ca: set = set()

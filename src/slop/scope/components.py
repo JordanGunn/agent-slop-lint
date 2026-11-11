@@ -10,11 +10,12 @@ filled in incrementally per the goal.
 """
 from __future__ import annotations
 
-from collections.abc import Iterator, Sequence
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
 from .aggregate import Corpus as CorpusABC
+from .descendants import Descendants
 from .aggregate import Package as PackageABC
 from .aggregate import Realm as RealmABC
 from .identity import CallableKind, ScopeId, ScopeKind, Extent
@@ -23,11 +24,7 @@ from .symbol import Class as ClassABC
 from .symbol import Module as ModuleABC
 
 
-def _todo(what: str, why: str) -> NotImplementedError:
-    return NotImplementedError(f"{what}: {why}")
-
-
-class _Base:
+class _Base(Descendants):
     """Universal scope surface + container complexity aggregation. Mixed in
     before the kind ABC so its concrete methods satisfy the abstract ones."""
 
@@ -100,19 +97,6 @@ class _Base:
         path = self._files[0] if self._files else Path(".")
         return Node(self._node, self._content, path, self._grammar)
 
-    # ---- descendant iteration (the region surface the metric views consume) --
-    def _iter_callables(self) -> Iterator[Any]:
-        for ch in self._children:
-            if ch.KIND == ScopeKind.CALLABLE:
-                yield ch
-            yield from ch._iter_callables()
-
-    def _iter_classes(self) -> Iterator[Any]:
-        for ch in self._children:
-            if ch.KIND == ScopeKind.CLASS:
-                yield ch
-            yield from ch._iter_classes()
-
 
 # ============================ symbol containers ============================
 
@@ -127,8 +111,7 @@ class Callable(_Base, CallableABC):
     @property
     def kind(self) -> CallableKind: return self._kind
     def parameters(self): return self._parameters
-    def locals(self): raise _todo("Callable.locals", "pending")
-    def nested(self): return tuple(c for c in self._children if c.KIND == ScopeKind.CALLABLE)
+    def nested(self): return self._children_of(ScopeKind.CALLABLE)
     def symbols(self): return self._children
 
 
@@ -143,14 +126,14 @@ class Class(_Base, ClassABC):
 
     @property
     def is_abstract(self) -> bool: return self._is_abstract
-    def methods(self): return tuple(c for c in self._children if c.KIND == ScopeKind.CALLABLE)
+    def methods(self): return self._children_of(ScopeKind.CALLABLE)
     def properties(self): return self._properties
     def bases(self):
         idx = self.context.class_index
         if idx is None:
             return ()
         return idx.parents.get(self.id, ())
-    def nested_classes(self): return tuple(c for c in self._children if c.KIND == ScopeKind.CLASS)
+    def nested_classes(self): return self._children_of(ScopeKind.CLASS)
     def symbols(self): return self._children
 
 
@@ -174,8 +157,7 @@ class Package(_Base, PackageABC):
 
     @property
     def path(self) -> Path: return self._path
-    def packages(self): return tuple(c for c in self._children if c.KIND == ScopeKind.PACKAGE)
-    def modules(self): return tuple(c for c in self._children if c.KIND == ScopeKind.MODULE)
+    def modules(self): return self._children_of(ScopeKind.MODULE)
 
 
 class Realm(_Base, RealmABC):
@@ -193,7 +175,7 @@ class Realm(_Base, RealmABC):
     def grammar(self) -> type: return self._grammar
     @property
     def language(self) -> str: return self._language
-    def packages(self): return tuple(c for c in self._children if c.KIND == ScopeKind.PACKAGE)
+    def packages(self): return self._children_of(ScopeKind.PACKAGE)
 
 
 class Corpus(_Base, CorpusABC):
@@ -208,7 +190,7 @@ class Corpus(_Base, CorpusABC):
     def root(self) -> Path: return self._root
     @property
     def config(self): return self._config
-    def realms(self): return tuple(c for c in self._children if c.KIND == ScopeKind.REALM)
+    def realms(self): return self._children_of(ScopeKind.REALM)
 
     def dependency_graph(self):
         """The corpus Module-level DependencyGraph (built during carve)."""

@@ -39,11 +39,6 @@ class Callable(SymbolContainer):
         ...
 
     @abstractmethod
-    def locals(self) -> Sequence[str]:
-        """Names bound in the callable's own body."""
-        ...
-
-    @abstractmethod
     def nested(self) -> Sequence["Callable"]:
         """Callables defined inside this one (closures, local functions)."""
         ...
