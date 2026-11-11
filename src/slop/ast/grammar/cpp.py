@@ -127,11 +127,6 @@ class Cpp(CFamily, MultiPurpose):
             return "<anonymous>"
         return _name_from_declarator_inner(inner, content)
 
-    @classmethod
-    def extract_parameters(cls, node: Any, content: bytes) -> tuple[tuple[str, str | None], ...]:
-        """C++ params hang off the function declarator; names nest in declarators."""
-        from ..paradigm.base import c_style_parameters
-        return c_style_parameters(node, content)
 
 
 # ---- declarator / name helpers -------------------------------------------

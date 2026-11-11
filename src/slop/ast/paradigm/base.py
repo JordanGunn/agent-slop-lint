@@ -388,6 +388,12 @@ def child_texts(parent: Any, content: bytes, types: Iterable[str]) -> list[str]:
             for c in parent.children if c.type in types]
 
 
+def container_texts(node: Any, content: bytes, container_type: str, types: Iterable[str]) -> list[str]:
+    """The text of each child in ``types`` of each direct child of ``node`` typed ``container_type``."""
+    return [name for child in node.children if child.type == container_type
+            for name in child_texts(child, content, types)]
+
+
 def type_specifier_name(node: Any, content: bytes) -> str:
     """A C/C++ struct/union/enum/class specifier's tag, else the name of the ``typedef``
     that wraps an anonymous one (``typedef struct { ... } Point;`` is ``Point``)."""

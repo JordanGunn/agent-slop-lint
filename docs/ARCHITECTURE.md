@@ -46,6 +46,10 @@ typescript). It states:
 - how names, parameters, class fields, imports and member access (`MemberAccess`) are read;
 - implicit receiver names (`self`), constructor names, special methods.
 
+Languages that share facts inherit them from a family parent instead of repeating them:
+`ecmascript.py` (JavaScript, TypeScript) and `c_family.py` (C, C++). A fact that two grammars
+spell the same way belongs in the parent; `duplicate-code` finds the ones that were missed.
+
 Its `Paradigm` (`PROCEDURAL`, `OBJECT_ORIENTED`, `MULTI_PURPOSE`) selects the base class in
 `ast/paradigm/`. Language-specific behaviour belongs in the grammar, not in `if lang` branches
 elsewhere.

@@ -107,11 +107,6 @@ class C(CFamily, MultiPurpose):
             break
         return "<anonymous>"
 
-    @classmethod
-    def extract_parameters(cls, node: Any, content: bytes) -> tuple[tuple[str, str | None], ...]:
-        """C params hang off the function declarator; names nest in declarators."""
-        from ..paradigm.base import c_style_parameters
-        return c_style_parameters(node, content)
 
 
 def _decl_ident(decl: Any, content: bytes) -> str | None:

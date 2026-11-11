@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any, ClassVar
 
 from ..paradigm import MultiPurpose
+from ..paradigm.base import julia_signature_parameters
 
 
 class Julia(MultiPurpose):
@@ -122,7 +123,6 @@ class Julia(MultiPurpose):
     @classmethod
     def extract_parameters(cls, node: Any, content: bytes) -> tuple[tuple[str, str | None], ...]:
         """Julia params live under ``signature → call_expression → argument_list``."""
-        from ..paradigm.base import julia_signature_parameters
         return julia_signature_parameters(node, content)
 
     @classmethod

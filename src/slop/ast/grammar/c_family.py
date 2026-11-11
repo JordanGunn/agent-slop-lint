@@ -2,6 +2,10 @@
 way, and both read numbers, strings and boolean operators from the same node types."""
 from __future__ import annotations
 
+from typing import Any
+
+from ..paradigm.base import c_style_parameters
+
 
 class CFamily:
     @classmethod
@@ -50,3 +54,8 @@ class CFamily:
     @classmethod
     def call_node_types(cls) -> frozenset[str]:
         return frozenset({"call_expression"})
+
+    @classmethod
+    def extract_parameters(cls, node: Any, content: bytes) -> tuple[tuple[str, str | None], ...]:
+        """Params hang off the function declarator; names nest in declarators."""
+        return c_style_parameters(node, content)
