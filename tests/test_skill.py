@@ -14,7 +14,7 @@ from slop.skill.catalog import SKILLS
 from slop.skill.install import RECORD, InstallError, install
 from slop.skill.model import MAX_DESCRIPTION_LENGTH, Skill
 
-INFER = SKILLS["slop-infer"]
+SLOP = SKILLS["slop"]
 
 
 def _frontmatter(manifest: str) -> dict[str, str]:
@@ -49,13 +49,13 @@ def test_every_file_a_manifest_names_is_in_the_skill(skill: Skill):
 
 
 def test_the_infer_skill_carries_exactly_what_the_cli_prints():
-    tree = INFER.tree()
-    assert tree["references/instructions.md"] == prose.instructions()
+    tree = SLOP.tree()
+    assert tree["references/infer.md"] == prose.instructions()
     for name in prose.references():
         assert tree[f"references/{name}.md"] == prose.reference(name)
     for document, schema in schemas().items():
         assert json.loads(tree[f"assets/schemas/{document}.json"]) == schema
-    expected = ({"SKILL.md", "references/instructions.md"} | {f"references/{n}.md" for n in prose.references()}
+    expected = ({"SKILL.md", "references/infer.md"} | {f"references/{n}.md" for n in prose.references()}
                 | {f"assets/schemas/{d}.json" for d in schemas()})
     assert set(tree) == expected
 
@@ -65,8 +65,8 @@ def test_the_infer_skill_follows_its_sources_when_they_change(tmp_path: Path, mo
     (tmp_path / "instructions.md").write_text("changed\n", encoding="utf-8")
     (tmp_path / "references" / "rubrics" / "class-cohesion.md").write_text("new rubric\n", encoding="utf-8")
     monkeypatch.setattr(prose, "ROOT", tmp_path)
-    rebuilt = INFER.tree()                                                 # read when built, not copied
-    assert rebuilt["references/instructions.md"] == "changed\n"
+    rebuilt = SLOP.tree()                                                 # read when built, not copied
+    assert rebuilt["references/infer.md"] == "changed\n"
     assert rebuilt["references/rubrics/class-cohesion.md"] == "new rubric\n"
 
 
@@ -99,23 +99,23 @@ def _files(target: Path) -> dict[str, str]:
 
 
 def _skill(files: dict) -> Skill:
-    return Skill(name="slop-infer", description="d", body="b", files=files)
+    return Skill(name="slop", description="d", body="b", files=files)
 
 
 def test_install_writes_the_whole_tree_and_records_what_it_wrote(tmp_path: Path):
-    target = install(INFER, tmp_path)
-    assert target == tmp_path / "slop-infer"
+    target = install(SLOP, tmp_path)
+    assert target == tmp_path / "slop"
     written = _files(target)
     record = json.loads(written.pop(RECORD))
-    assert written == INFER.tree()
-    assert record["skill"] == "slop-infer" and record["files"] == sorted(INFER.tree()) and record["slop"]
+    assert written == SLOP.tree()
+    assert record["skill"] == "slop" and record["files"] == sorted(SLOP.tree()) and record["slop"]
 
 
 def test_install_refuses_an_existing_install_unless_asked(tmp_path: Path):
-    target = install(INFER, tmp_path)
+    target = install(SLOP, tmp_path)
     before = _files(target)
     with pytest.raises(InstallError, match="use --force"):
-        install(INFER, tmp_path)
+        install(SLOP, tmp_path)
     assert _files(target) == before
 
 
@@ -136,26 +136,26 @@ def test_a_directory_left_empty_by_the_replacement_is_removed(tmp_path: Path):
 
 
 def test_a_directory_slop_did_not_install_is_never_replaced(tmp_path: Path):
-    target = tmp_path / "slop-infer"
+    target = tmp_path / "slop"
     target.mkdir()
     (target / "SKILL.md").write_text("someone else's", encoding="utf-8")
     with pytest.raises(InstallError, match="was not installed by slop"):
-        install(INFER, tmp_path, replace=True)
+        install(SLOP, tmp_path, replace=True)
     assert _files(target) == {"SKILL.md": "someone else's"}
 
 
 def test_an_install_of_another_skill_or_a_damaged_record_is_never_replaced(tmp_path: Path):
-    target = install(INFER, tmp_path)
-    for record in ('{"skill": "other", "files": []}', "{not json", '{"skill": "slop-infer", "files": ["../../outside"]}'):
+    target = install(SLOP, tmp_path)
+    for record in ('{"skill": "other", "files": []}', "{not json", '{"skill": "slop", "files": ["../../outside"]}'):
         (target / RECORD).write_text(record, encoding="utf-8")
         with pytest.raises(InstallError, match="was not installed by slop"):
-            install(INFER, tmp_path, replace=True)
+            install(SLOP, tmp_path, replace=True)
     (tmp_path / "outside").write_text("must survive", encoding="utf-8")
     assert (tmp_path / "outside").read_text(encoding="utf-8") == "must survive"
 
 
 def test_a_skill_that_fails_to_build_leaves_the_installed_one_untouched(tmp_path: Path):
-    target = install(INFER, tmp_path)
+    target = install(SLOP, tmp_path)
     before = _files(target)
 
     def broken() -> str:
@@ -167,10 +167,10 @@ def test_a_skill_that_fails_to_build_leaves_the_installed_one_untouched(tmp_path
 
 
 def test_install_never_replaces_something_that_is_not_a_directory(tmp_path: Path):
-    (tmp_path / "slop-infer").write_text("a file", encoding="utf-8")
+    (tmp_path / "slop").write_text("a file", encoding="utf-8")
     with pytest.raises(InstallError, match="not a skill directory"):
-        install(INFER, tmp_path, replace=True)
-    assert (tmp_path / "slop-infer").read_text(encoding="utf-8") == "a file"
+        install(SLOP, tmp_path, replace=True)
+    assert (tmp_path / "slop").read_text(encoding="utf-8") == "a file"
 
 
 def _run(capsys, *argv: str) -> tuple[int, str, str]:
@@ -182,21 +182,35 @@ def _run(capsys, *argv: str) -> tuple[int, str, str]:
 
 def test_the_cli_lists_shows_and_installs(tmp_path: Path, capsys):
     code, out, _ = _run(capsys, "skill", "list")
-    assert code == 0 and out.startswith("slop-infer  ")
-    code, out, _ = _run(capsys, "skill", "show", "slop-infer")
-    assert code == 0 and out == INFER.tree()["SKILL.md"]
-    code, out, _ = _run(capsys, "skill", "show", "slop-infer", "assets/schemas/verdicts.json")
+    assert code == 0 and out.startswith("slop  ")
+    code, out, _ = _run(capsys, "skill", "show", "slop")
+    assert code == 0 and out == SLOP.tree()["SKILL.md"]
+    code, out, _ = _run(capsys, "skill", "show", "slop", "assets/schemas/verdicts.json")
     assert code == 0 and json.loads(out) == schemas()["verdicts"]
-    code, out, _ = _run(capsys, "skill", "install", "slop-infer", "--dest", str(tmp_path))
-    assert code == 0 and out.strip() == str(tmp_path / "slop-infer")
-    code, _, err = _run(capsys, "skill", "install", "slop-infer", "--dest", str(tmp_path))
+    code, out, _ = _run(capsys, "skill", "install", "slop", "--dest", str(tmp_path))
+    assert code == 0 and out.strip() == str(tmp_path / "slop")
+    code, _, err = _run(capsys, "skill", "install", "slop", "--dest", str(tmp_path))
     assert code == 2 and "use --force" in err
-    code, _, _ = _run(capsys, "skill", "install", "slop-infer", "--dest", str(tmp_path), "--force")
+    code, _, _ = _run(capsys, "skill", "install", "slop", "--dest", str(tmp_path), "--force")
     assert code == 0
 
 
 def test_the_cli_names_what_it_cannot_find(capsys):
     code, _, err = _run(capsys, "skill", "show", "nope")
     assert code == 2 and "no skill 'nope'" in err
-    code, _, err = _run(capsys, "skill", "show", "slop-infer", "nope.md")
+    code, _, err = _run(capsys, "skill", "show", "slop", "nope.md")
     assert code == 2 and "has no file 'nope.md'" in err and "SKILL.md" in err
+
+
+def test_the_slop_skill_names_every_top_level_command_and_no_other():
+    from slop import cli
+    import argparse
+    parser = cli._parser()
+    [commands] = [a for a in parser._actions if isinstance(a, argparse._SubParsersAction)]
+    table = SLOP.body.split("## Capabilities", 1)[1].split("\n## ", 1)[0]
+    named = set(re.findall(r"`slop (\w+)", table))
+    assert named == set(commands.choices), (set(commands.choices) - named, named - set(commands.choices))
+
+
+def test_the_slop_skill_points_the_agent_at_the_live_help_menu():
+    assert "`slop --help`" in SLOP.body and "`slop COMMAND --help`" in SLOP.body

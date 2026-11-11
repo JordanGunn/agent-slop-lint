@@ -40,8 +40,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New package `slop/skill/` and `slop skill list | show | install`: Agent Skills built at
   install time from their single sources (no copies in the repository). An install records
   its files in `.slop-skill.json`; `--force` replaces only such an install of the same skill
-  and keeps files a user added. Reinstall after upgrading slop. `slop-infer` carries the
-  `slop infer` instructions, rubrics and schemas.
+  and keeps files a user added. Reinstall after upgrading slop. Slop ships one skill, `slop`
+  (`/slop`): a conversational interface over the CLI, which also carries the `slop infer`
+  workflow, rubrics and schemas.
 - File discovery is one mechanism: inside a git work tree, tracked files plus untracked files
   `.gitignore` does not ignore; elsewhere every file except `.git`. The hard-coded skip list
   and the dot-directory rule are gone, so hidden directories are now read; use `exclude`.

@@ -22,8 +22,8 @@ root (src-layout; package `agent-slop-lint`, import `slop`, CLI `slop.cli:main`)
   `dispatch.py`, `violation.py`, `config.py`.
 - `src/slop/infer/`: inference layered over the linter (`contract`, `ledger`, `frame`, `source`,
   `apply`, `bundle`); only `cli.py` and `skill/` import it.
-- `src/slop/skill/`: Agent Skills, built at install time from the sources they describe
-  (`slop skill list | show | install`). `layout.py` holds file names more than one package uses.
+- `src/slop/skill/`: the one Agent Skill, `slop`, built at install time from the sources it
+  describes (`slop skill list | show | install`); its capabilities table is tested against the parser. `layout.py` holds file names more than one package uses.
 - `cli.py`: all commands. `tests/`: pytest, `test_rule_*.py` per rule.
 
 ## Commands

@@ -414,7 +414,7 @@ def test_every_command_has_a_handler():
 
 
 def test_a_command_runs_its_own_handler(capsys):
-    assert cli.main(["skill", "list"]) == 0 and capsys.readouterr().out.startswith("slop-infer")
+    assert cli.main(["skill", "list"]) == 0 and capsys.readouterr().out.startswith("slop")
     assert cli.main(["doctor"]) == 0 and "tree-sitter" in capsys.readouterr().out
 
 
@@ -442,8 +442,8 @@ _WIRING = [
     (["infer", "next", "--root", "r", "--rule", "class-cohesion", "--limit", "4"], "infer_next", ("r", "class-cohesion", 4), {}),
     (["infer", "apply", "v.json", "--root", "r"], "infer_apply", ("v.json", "r"), {}),
     (["skill", "list"], "skill_list", (), {}),
-    (["skill", "show", "slop-infer", "SKILL.md"], "skill_show", ("slop-infer", "SKILL.md"), {}),
-    (["skill", "install", "slop-infer", "--dest", "d", "--force"], "skill_install", ("slop-infer", "d", True), {}),
+    (["skill", "show", "slop", "SKILL.md"], "skill_show", ("slop", "SKILL.md"), {}),
+    (["skill", "install", "slop", "--dest", "d", "--force"], "skill_install", ("slop", "d", True), {}),
 ]
 
 

@@ -132,8 +132,11 @@ One needed by a second package goes in `slop/layout.py` (`CONFIG_FILENAME`, `STA
 
 ## Skills
 
-`slop/skill/` packages Agent Skills (agentskills.io) that teach an agent to use slop, one per
-job. It imports `infer`; nothing below it imports `skill`.
+`slop/skill/` packages Agent Skills (agentskills.io). Slop ships one, `slop` (`/slop`): the
+single point of agentic access. The agent reads the user's ask, finds the matching capability,
+takes the exact options from `slop --help` and `slop COMMAND --help`, runs the commands and
+answers in prose. Its capabilities table is checked against the parser, so a new command fails
+the tests until the table names it. It imports `infer`; nothing below it imports `skill`.
 
 | Module | Role |
 |---|---|
@@ -142,7 +145,7 @@ job. It imports `infer`; nothing below it imports `skill`.
 | `install.py` | writes `DEST/<name>/`, replaces only a recorded earlier install |
 
 A skill's files are built from their single sources each time it is shown or installed:
-`slop-infer` takes its instructions and rubrics from `infer/bundle/` and its schemas from
+`slop` takes the inference workflow and rubrics from `infer/bundle/` and the schemas from
 `infer/contract/`. Nothing is copied into the repository. An installed skill is a snapshot of
 the slop that wrote it, and goes stale when slop is upgraded until it is reinstalled.
 
@@ -152,5 +155,4 @@ directory with that record for the same skill: it overwrites the skill's files, 
 the earlier install wrote that the skill no longer has, and leaves anything else in place.
 
 `slop skill list` lists them, `slop skill show NAME [FILE]` prints the manifest or one file, and
-`slop skill install NAME --dest DIR [--force]` writes the directory. A new skill is a new
-function in `catalog.py` and a manifest in `manifests/`.
+`slop skill install NAME --dest DIR [--force]` writes the directory.
