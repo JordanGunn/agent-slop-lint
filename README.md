@@ -39,7 +39,7 @@ Read-only (exit `0` answered, `2` could not answer):
 | `slop deps` | the module dependency graph (`--cycles`) |
 | `slop vocab --ontology IR.json` | class names compared with an [Open Ontology](https://open-ontology.com) JSON IR |
 | `slop shape` | each class's CK profile and cohesion groups |
-| `slop infer instructions`, `references`, `schema`, `next`, `apply` | inference over the subjective warnings: an agent reads the bundled instructions and rubric, takes the worklist, and returns verdicts; `slop lint` applies the rulings |
+| `slop infer apply`, `references`, `schema`, `instructions` | inference over the subjective warnings: `slop lint --output json` gives each one a `residue`; an agent reads the code and rubric and returns verdicts; `slop lint` applies the rulings |
 | `slop skill list`, `show`, `install` | the `slop` Agent Skill (`/slop`): a conversational interface that runs slop from a plain-language ask |
 | `slop hotspots` | files changed in a revision window (`--since REV`, `--last N`, plus uncommitted changes), ranked by churn × complexity |
 

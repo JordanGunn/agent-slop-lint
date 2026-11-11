@@ -2,11 +2,12 @@
 from __future__ import annotations
 
 import copy
+from dataclasses import dataclass
 
 import pytest
 
 from slop.infer.contract import (
-    REASON_MAX_LENGTH, SCHEMA_VERSION, ContractError, Outcome, Receipt, Verdicts, Worklist, dump,
+    REASON_MAX_LENGTH, SCHEMA_VERSION, ContractError, Outcome, Receipt, Residue, Status, Verdicts, described, dump,
     parse, schema_of, schemas,
 )
 
@@ -14,13 +15,19 @@ VERDICTS = {"version": "1", "verdicts": [
     {"id": "abc", "outcome": "clear", "reason": "A value object: its accessors share no field by design."},
     {"id": "def", "outcome": "confirm", "reason": "Two unrelated duties in one class."}]}
 
-WORKLIST = {"version": "1", "items": [{
-    "id": "abc", "rule": "class-cohesion", "path": "a.py", "line": 3, "column": 1,
-    "subject": "a.A", "message": "a.A has 2 method groups", "value": 2, "threshold": 1,
-    "excerpt": {"path": "a.py", "first_line": 3, "last_line": 6, "text": "class A: ..."},
+RESIDUE = {
+    "id": "abc", "rule": "class-cohesion", "path": "a.py", "subject": "a.A", "first_line": 3, "last_line": 6,
     "question": {"id": "cohesion.accessor-class", "text": "Is this a value object?", "outcomes": ["clear", "confirm", "defer"]},
     "rubric": {"command": "slop infer references rubrics/class-cohesion", "version": "9f"},
-    "fingerprint": "00ff"}]}
+    "fingerprint": "00ff", "status": "none"}
+
+
+@dataclass(frozen=True)
+class _Measured:
+    """A local declaration for the parts of the schema machinery no shipped document uses."""
+
+    count: int = described("an int")
+    value: float | None = described("an optional number")
 
 
 def _with(doc: dict, path: list, value) -> dict:
@@ -34,7 +41,7 @@ def _with(doc: dict, path: list, value) -> dict:
 
 def test_a_document_round_trips_through_parse_and_dump():
     assert dump(parse(Verdicts, VERDICTS)) == VERDICTS
-    assert dump(parse(Worklist, WORKLIST)) == WORKLIST
+    assert dump(parse(Residue, RESIDUE)) == RESIDUE
 
 
 def test_unknown_missing_and_mistyped_fields_are_errors_that_name_the_path():
@@ -77,18 +84,25 @@ def test_a_document_of_another_version_is_rejected():
 
 
 def test_numbers_and_booleans_are_not_confused():
-    assert parse(Worklist, _with(WORKLIST, ["items", 0, "value"], 3)).items[0].value == 3.0   # int is a number
-    assert parse(Worklist, _with(WORKLIST, ["items", 0, "value"], None)).items[0].value is None   # optional
+    assert parse(_Measured, {"count": 1, "value": 3}).value == 3.0          # an int is a number
+    assert parse(_Measured, {"count": 1, "value": None}).value is None      # optional
     with pytest.raises(ContractError, match="expected float, got bool"):
-        parse(Worklist, _with(WORKLIST, ["items", 0, "value"], True))
+        parse(_Measured, {"count": 1, "value": True})
     with pytest.raises(ContractError, match="expected int, got bool"):
-        parse(Worklist, _with(WORKLIST, ["items", 0, "line"], True))
+        parse(_Measured, {"count": True, "value": 1})
+
+
+def test_the_status_vocabulary_is_closed():
+    assert parse(Residue, RESIDUE).status is Status.NONE
+    with pytest.raises(ContractError, match="'cleared' is not one of"):
+        parse(Residue, _with(RESIDUE, ["status"], "cleared"))
 
 
 def test_schemas_describe_every_document_closed_and_versioned():
     docs = schemas()
-    assert set(docs) == {"worklist", "verdicts", "receipt"}
-    for name, doc in docs.items():
+    assert set(docs) == {"residue", "verdicts", "receipt"}
+    for name in ("verdicts", "receipt"):
+        doc = docs[name]
         assert doc["additionalProperties"] is False, name
         assert doc["properties"]["version"]["const"] == SCHEMA_VERSION, name
         assert "version" in doc["required"], name
@@ -97,7 +111,7 @@ def test_schemas_describe_every_document_closed_and_versioned():
 
 
 def test_optional_fields_are_nullable_in_the_schema():
-    value = schema_of(Worklist)["properties"]["items"]["items"]["properties"]["value"]
+    value = schema_of(_Measured)["properties"]["value"]
     assert value["anyOf"] == [{"type": "number"}, {"type": "null"}]
 
 

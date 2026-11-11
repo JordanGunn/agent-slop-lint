@@ -27,9 +27,12 @@ def _run(capsys, *argv: str) -> tuple[int, str]:
 
 
 def _items(capsys, root: Path) -> list[dict]:
-    code, out = _run(capsys, "infer", "next", "--root", str(root))
-    assert code == 0
-    return json.loads(out)["items"]
+    """The residue of each finding that still needs a ruling, from `slop lint --output json`."""
+    code, out = _run(capsys, "lint", "--root", str(root), "--output", "json")
+    assert code in (0, 1)
+    doc = json.loads(out)
+    return [f["residue"] for f in doc["violations"] + doc["warnings"]
+            if "residue" in f and f["residue"]["status"] in ("none", "stale")]
 
 
 def _rule(capsys, root: Path, outcome: str, scan_root: Path) -> int:
@@ -46,7 +49,6 @@ def test_a_finding_has_the_same_id_and_path_whichever_directory_is_scanned(tmp_p
     [from_project], [from_src] = _items(capsys, tmp_path), _items(capsys, src)
     assert from_project["id"] == from_src["id"]
     assert from_project["path"] == from_src["path"] == "src/pkg/m.py"
-    assert from_project["excerpt"]["path"] == "src/pkg/m.py"
 
 
 def test_a_relative_scan_root_and_a_file_scan_root_name_the_finding_the_same_way(tmp_path: Path, capsys, monkeypatch):

@@ -96,29 +96,36 @@ stores the result. It follows `Dpre(X) -> A(X' : Sigma) : S -> Dpost(Y)`.
 | Subpackage | Role | May import |
 |---|---|---|
 | `bundle/` | prose slop ships and prints: `instructions.md`, `references/` (rubrics among them) | nothing in slop |
-| `contract/` | the documents exchanged (`Worklist`, `Verdicts`, `Receipt`), their JSON Schema, strict parsing | nothing in slop |
+| `contract/` | the documents exchanged (`Residue`, `Verdicts`, `Receipt`), their JSON Schema, strict parsing | nothing in slop |
 | `ledger/` | persisted rulings (`Ledger`, `JsonlLedger`) | `contract` |
-| `frame/` | finding id, code fingerprint, excerpt, the question and rubric for a rule | `bundle`, `contract` |
+| `frame/` | finding id, project-relative location, code fingerprint, the question and rubric for a rule | `bundle`, `contract` |
 | `source/` | where residue comes from (`Source`, `FindingSource`) | `contract`, `frame` |
-| `apply/` | validate verdicts, store them, list what is outstanding, settle a report | `contract`, `frame`, `ledger`, `source` |
+| `apply/` | validate verdicts, store them, settle a report | `contract`, `frame`, `ledger`, `source` |
 
 `tests/test_infer_layers.py` pins these directions. A new kind of residue, such as a project
 survey for bootstrapping, is a new module in `source/`; the other layers do not change.
 
-The commands print or consume these documents, so an agent needs only the CLI:
+The agent works from the linter's own output. `slop lint --output json` attaches a `residue`
+to each finding of a rule that has a rubric: the finding's id, the definition's line span, the
+closed question, the rubric command and version, the fingerprint, and the ruling's `status`
+(`none`, `stale`, `defer` or `confirm`). The agent reads the code at that span and the rubric,
+then sends verdicts. `slop infer` keeps only what nothing else does:
 
 | Command | Does |
 |---|---|
+| `slop infer apply [FILE]` | validates a `Verdicts` document (file or stdin) against the current findings, stores what it accepts, prints a `Receipt` |
+| `slop infer references [NAME]` | lists the references (the rubrics), or prints one |
+| `slop infer schema [NAME]` | prints the JSON Schema of `residue`, `verdicts` and `receipt`, or of one |
 | `slop infer instructions` | prints the agent's workflow |
-| `slop infer references [NAME]` | lists the references, or prints one |
-| `slop infer schema [NAME]` | prints the JSON Schema of every document, or of one |
-| `slop infer next` | prints a `Worklist`: warnings of rules that have a rubric and no current ruling |
-| `slop infer apply [FILE]` | validates a `Verdicts` document (file or stdin), stores what it accepts, prints a `Receipt` |
 
-`slop lint` then settles the report with the ledger: a `clear` ruling drops the warning, a
-`confirm` ruling makes it a violation (it fails the run), and a `defer` ruling, a stale ruling
-or no ruling leaves it a warning. A ruling is stale when the excerpt's text or the rubric
-changed, which `Ledger.current` checks through the fingerprint.
+`slop lint` settles the report with the ledger (`apply/settle.py`): a `clear` ruling drops the
+finding, a `confirm` ruling makes it a violation (it fails the run), and a `defer` ruling, a
+stale ruling or no ruling leaves it a warning. A ruling is stale when the definition's text or
+the rubric changed since it was given, which the fingerprint records. A new ruling for the same
+id replaces the old one, so a confirmed finding can be ruled on again.
+
+A rule whose findings are packages (`rigid-package`, `useless-package`) needs a package span and
+fingerprint before it can have a rubric: the finding source reads a file's line range.
 
 Only `class-cohesion` has a rubric. A field is declared once with `described(...)`; the schema
 and the parser both read it. The ledger is `.slop/inferences.jsonl` under the project root, one ruling per line. The project

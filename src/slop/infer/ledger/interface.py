@@ -4,7 +4,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Iterator
 
-from ..contract import Residue, Ruling
+from ..contract import Ruling
 
 
 class LedgerError(ValueError):
@@ -25,10 +25,3 @@ class Ledger(ABC):
     @abstractmethod
     def rulings(self) -> Iterator[Ruling]:
         """Every ruling, oldest first."""
-
-    def current(self, residue: Residue) -> Ruling | None:
-        """The ruling in force for ``residue``: the newest for its id, and only if it answered
-        the code and rubric as they are now. A ruling on changed code or an edited rubric is
-        stale and is not returned."""
-        ruling = self.latest(residue.id)
-        return ruling if ruling is not None and ruling.fingerprint == residue.fingerprint else None

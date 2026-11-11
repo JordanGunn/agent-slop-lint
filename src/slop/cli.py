@@ -29,13 +29,12 @@ from .lexical import coverage as lexical_coverage
 from .scope import find as discovery
 from .metrics.structural.hotspots import DEFAULT_LAST
 from .identity import relative_path as _rel_path
-from .infer.apply.outstanding import outstanding
 from .infer.apply.route import route
 from .infer.apply.settle import settle
 from .infer.bundle import prose
 from .infer.contract import ContractError, Verdicts, dump, parse, schemas as infer_schemas
-from .infer.frame.rubric import has_rubric
 from .infer.ledger.jsonl import JsonlLedger
+from .infer.source.finding import FindingSource
 from .infer.source.interface import Analysis as InferAnalysis
 from .layout import CONFIG_FILENAME
 from .skill.catalog import SKILLS
@@ -159,12 +158,23 @@ def lint(root: str | Path, output: str = "human", *, rules=None) -> int:
     analysis = _analyse(root, rules)
     if analysis is None:
         return 2
-    report = settle(analysis, JsonlLedger.at(analysis.root))
+    settlement = settle(analysis, JsonlLedger.at(analysis.root))
+    report = settlement.report
     if output == "json":
-        print(json.dumps(report.as_dict(), indent=2))
+        print(json.dumps(_with_residue(report.as_dict(), settlement), indent=2))
     else:
         print(_human(report))
     return report.exit_code()
+
+
+def _with_residue(doc: dict, settlement) -> dict:
+    """``doc`` with each finding that can be put to inference carrying its ``residue``."""
+    for key in ("violations", "warnings"):
+        for entry, finding in zip(doc[key], getattr(settlement.report, key)):
+            item = settlement.residue.get(finding.position)
+            if item is not None:
+                entry["residue"] = dump(item)
+    return doc
 
 
 def check(names: list[str], root: str | Path, output: str = "human") -> int:
@@ -593,18 +603,6 @@ def infer_schema(name: str | None) -> int:
     return 0
 
 
-def infer_next(root: str | Path, rule: str | None, limit: int | None) -> int:
-    """Print the worklist: findings that need judgement and have no current ruling."""
-    if rule is not None and not has_rubric(rule):
-        print(f"slop: error: rule '{rule}' has no rubric, so it cannot be put to inference.", file=sys.stderr)
-        return 2
-    analysis = _analyse(root)
-    if analysis is None:
-        return 2
-    print(json.dumps(dump(outstanding(analysis, JsonlLedger.at(analysis.root), rule=rule, limit=limit)), indent=2))
-    return 0
-
-
 def infer_apply(file: str, root: str | Path) -> int:
     """Read a verdicts document (a file, or ``-`` for stdin), store what is acceptable, and print
     the receipt. Exit 1 if any verdict was rejected, 2 if the document is not valid."""
@@ -617,8 +615,8 @@ def infer_apply(file: str, root: str | Path) -> int:
     analysis = _analyse(root)
     if analysis is None:
         return 2
-    outstanding_now = {item.id: item for item in outstanding(analysis, JsonlLedger.at(analysis.root)).items}
-    receipt = route(verdicts, outstanding_now, JsonlLedger.at(analysis.root),
+    inferable = {item.id: item for item in FindingSource().residue(analysis)}
+    receipt = route(verdicts, inferable, JsonlLedger.at(analysis.root),
                     at=datetime.now(timezone.utc).isoformat(timespec="seconds"))
     print(json.dumps(dump(receipt), indent=2))
     return 1 if receipt.rejected else 0
@@ -806,7 +804,7 @@ def _parser() -> argparse.ArgumentParser:
     p_hot.add_argument("--output", choices=["human", "json"], default="human")
     p_hot.set_defaults(run=lambda a: hotspots_view(a.root, a.output, since=a.since, last=a.last))
 
-    p_infer = sub.add_parser("infer", help="inference over the linter's findings: worklist, verdicts, rubrics, schemas")
+    p_infer = sub.add_parser("infer", help="inference over the linter's subjective findings: verdicts, rubrics, schemas")
     infer_sub = p_infer.add_subparsers(dest="infer_command", required=True)
     infer_sub.add_parser("instructions", help="print the agent's instructions for the inference workflow").set_defaults(
         run=lambda a: infer_instructions())
@@ -817,11 +815,6 @@ def _parser() -> argparse.ArgumentParser:
     p_schema.add_argument("name", nargs="?", default=None, choices=sorted(infer_schemas()),
                           help="one document (default: all)")
     p_schema.set_defaults(run=lambda a: infer_schema(a.name))
-    p_next = infer_sub.add_parser("next", help="print the worklist: findings that need judgement")
-    p_next.add_argument("--root", default=".")
-    p_next.add_argument("--rule", default=None, help="only findings of this rule")
-    p_next.add_argument("--limit", type=int, default=None, help="at most this many items")
-    p_next.set_defaults(run=lambda a: infer_next(a.root, a.rule, a.limit))
     p_apply = infer_sub.add_parser("apply", help="store verdicts from a file or stdin and print a receipt")
     p_apply.add_argument("file", nargs="?", default="-", help="verdicts JSON (default: stdin)")
     p_apply.add_argument("--root", default=".")

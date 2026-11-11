@@ -28,10 +28,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `class-cohesion` (LCOM4, 1, off by default): 12 rules.
 - Suppression matches exact rule names only: `slop: ignore[a, b]`.
 - `scripts/` removed.
-- New package `slop/infer/` and `slop infer instructions | references | schema | next | apply`:
-  inference over the linter's subjective warnings. The host agent judges; slop frames the
-  question (`Worklist`), validates the answer (`Verdicts`, `Receipt`) and stores it in
-  `.slop/inferences.jsonl`. `slop lint` applies the rulings: `clear` drops a warning, `confirm`
+- New package `slop/infer/` and `slop infer apply | references | schema | instructions`:
+  inference over the linter's subjective warnings. `slop lint --output json` attaches a
+  `residue` (id, line span, question, rubric, fingerprint, `status`) to each finding that can be
+  put to inference; the host agent reads the code and the rubric, and slop validates its
+  answer (`Verdicts`, `Receipt`) and stores it in `.slop/inferences.jsonl`. `slop lint` applies the rulings: `clear` drops a warning, `confirm`
   makes it a violation, `defer` or a stale ruling leaves it a warning. Instructions and
   references (the `class-cohesion` rubric) are bundled and printed by the CLI. `Violation`
   gains `subject`; `slop/layout.py` holds `CONFIG_FILENAME` and `STATE_DIR`. Finding paths and the

@@ -1,41 +1,70 @@
-"""Apply the ledger's rulings to a lint report."""
+"""Apply the ledger's rulings to a lint report, and say where each finding's ruling stands."""
 from __future__ import annotations
 
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from operator import attrgetter
 
 from ...dispatch import Report
-from ..contract import Outcome, Residue
+from ...violation import Violation
+from ..contract import Outcome, Residue, Ruling, Status
+from ..frame.fingerprint import finding_id
 from ..frame.location import project_path
 from ..ledger.interface import Ledger
 from ..source.finding import FindingSource
 from ..source.interface import Analysis
 
 
-def settle(analysis: Analysis, ledger: Ledger) -> Report:
-    """The report with each warning that has a current ruling resolved by it.
+@dataclass(frozen=True)
+class Settlement:
+    """The settled report, and the residue of each finding in it that can be put to inference,
+    keyed by the finding's ``Violation.position``."""
 
-    A cleared warning is dropped. A confirmed one becomes a violation, carrying the reason, so
-    it fails the run. A deferred warning, a stale ruling and a warning with no ruling stay
-    warnings."""
+    report: Report
+    residue: dict[tuple[str, int, int, str], Residue]
+
+
+def settle(analysis: Analysis, ledger: Ledger) -> Settlement:
+    """Resolve each warning that has a current ruling, and attach every inferable finding's residue.
+
+    A cleared warning is dropped. A confirmed one becomes a violation, carrying the reason, so it
+    fails the run. A deferred warning, a stale ruling and a warning with no ruling stay warnings."""
     report = analysis.report
-    if next(iter(ledger.rulings()), None) is None:
-        return report
-    by_place = {(r.rule, r.path, r.subject, r.line, r.column): r for r in FindingSource().residue(analysis)}
+    inferable = {r.id: r for r in FindingSource().residue(analysis)}
+    newest: dict[str, Ruling] = {}
+    for ruling in ledger.rulings():
+        newest[ruling.verdict.id] = ruling
     violations, warnings = list(report.violations), []
+    attached: dict[tuple[str, int, int, str], Residue] = {}
     for warning in report.warnings:
-        item = _residue_of(warning, analysis, by_place)
-        ruling = ledger.current(item) if item is not None else None
-        if ruling is None or ruling.verdict.outcome is Outcome.DEFER:
+        item = inferable.get(_id(warning, analysis))
+        if item is None:
             warnings.append(warning)
-        elif ruling.verdict.outcome is Outcome.CONFIRM:
-            violations.append(replace(warning, message=f"{warning.message} [confirmed: {ruling.verdict.reason}]"))
+            continue
+        status = _status(item, newest.get(item.id))
+        if status is None:
+            continue                                    # cleared: not reported
+        if status is Status.CONFIRM:
+            ruling = newest[item.id]
+            finding = replace(warning, message=f"{warning.message} [confirmed: {ruling.verdict.reason}]")
+            violations.append(finding)
+        else:
+            finding = warning
+            warnings.append(finding)
+        attached[finding.position] = replace(item, status=status)
     violations.sort(key=attrgetter("position"))
-    return replace(report, violations=violations, warnings=warnings)
+    return Settlement(report=replace(report, violations=violations, warnings=warnings), residue=attached)
 
 
-def _residue_of(warning, analysis: Analysis, by_place: dict) -> Residue | None:
-    if warning.path is None:
+def _id(warning: Violation, analysis: Analysis) -> str | None:
+    if warning.path is None or warning.subject is None:
         return None
-    key = (warning.rule, project_path(warning.path, analysis.root), warning.subject, warning.line, warning.column)
-    return by_place.get(key)
+    return finding_id(warning.rule, project_path(warning.path, analysis.root), warning.subject)
+
+
+def _status(item: Residue, ruling: Ruling | None) -> Status | None:
+    """Where ``item``'s ruling stands, or None when it is cleared."""
+    if ruling is None:
+        return Status.NONE
+    if ruling.fingerprint != item.fingerprint:
+        return Status.STALE
+    return {Outcome.CLEAR: None, Outcome.CONFIRM: Status.CONFIRM, Outcome.DEFER: Status.DEFER}[ruling.verdict.outcome]

@@ -17,3 +17,12 @@ class Outcome(StrEnum):
     CLEAR = "clear"        # not a problem here: an idiom or an intent the rule cannot see
     CONFIRM = "confirm"    # a real problem: the finding becomes a violation and fails the run
     DEFER = "defer"        # not decidable from what was shown: the finding stays a warning
+
+
+class Status(StrEnum):
+    """Where a finding's ruling stands. A cleared finding is not reported, so it has none."""
+
+    NONE = "none"          # never ruled
+    STALE = "stale"        # ruled, but the code or the rubric has changed since
+    DEFER = "defer"        # ruled undecidable: still a warning
+    CONFIRM = "confirm"    # ruled a real problem: now a violation

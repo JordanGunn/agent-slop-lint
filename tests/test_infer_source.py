@@ -5,7 +5,7 @@ from pathlib import Path
 
 from slop.config import AnalysisConfig
 from slop.dispatch import Dispatcher
-from slop.infer.contract import Outcome
+from slop.infer.contract import Outcome, Status
 from slop.infer.source.finding import FindingSource
 from slop.infer.source.interface import Analysis
 from slop.rules import RULE_REGISTRY
@@ -25,27 +25,26 @@ def _residue(root: Path, source: str):
     return list(FindingSource().residue(_analyse(root)))
 
 
-def test_a_cohesion_warning_becomes_one_residue_with_the_whole_class_in_its_excerpt(tmp_path: Path):
+def test_a_cohesion_warning_becomes_one_residue_spanning_the_whole_class(tmp_path: Path):
     [item] = _residue(tmp_path, TWO_GROUPS)
-    assert (item.rule, item.subject, item.path, item.line) == ("class-cohesion", "m.A", "m.py", 1)
-    assert item.excerpt.text == TWO_GROUPS.rstrip("\n")
-    assert (item.excerpt.first_line, item.excerpt.last_line) == (1, 6)
+    assert (item.rule, item.subject, item.path) == ("class-cohesion", "m.A", "m.py")
+    assert (item.first_line, item.last_line) == (1, 6)
     assert item.question.outcomes == (Outcome.CLEAR, Outcome.CONFIRM, Outcome.DEFER)
-    assert (item.value, item.threshold) == (2, 1)
     assert item.rubric.command == "slop infer references rubrics/class-cohesion"
+    assert item.status is Status.NONE                       # the source does not know the ledger
 
 
-def test_the_excerpt_ends_where_the_definition_ends(tmp_path: Path):
+def test_the_span_and_fingerprint_cover_the_definition_and_nothing_around_it(tmp_path: Path):
     [item] = _residue(tmp_path, "import os\n\n" + TWO_GROUPS + "\n\nafter = 1\n")
-    assert item.excerpt.text == TWO_GROUPS.rstrip("\n")
-    assert (item.excerpt.first_line, item.excerpt.last_line) == (3, 8)
-    assert "after" not in item.excerpt.text and "import os" not in item.excerpt.text
+    assert (item.first_line, item.last_line) == (3, 8)
+    [around] = _residue(tmp_path, "import sys\n\n" + TWO_GROUPS + "\n\nafter = 2\n")
+    assert around.fingerprint == item.fingerprint           # code around the class changed: same ruling holds
 
 
 def test_a_moved_class_keeps_its_id_and_fingerprint_but_an_edited_one_only_its_id(tmp_path: Path):
     [original] = _residue(tmp_path, TWO_GROUPS)
     [moved] = _residue(tmp_path, "import os\n\n\n" + TWO_GROUPS)
-    assert (moved.id, moved.fingerprint) == (original.id, original.fingerprint) and moved.line == 4
+    assert (moved.id, moved.fingerprint) == (original.id, original.fingerprint) and moved.first_line == 4
     [edited] = _residue(tmp_path, TWO_GROUPS.replace("self.b", "self.b + 1"))
     assert edited.id == original.id and edited.fingerprint != original.fingerprint
 

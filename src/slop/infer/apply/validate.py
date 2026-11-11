@@ -20,7 +20,7 @@ def validate(verdicts: Verdicts, residue: Mapping[str, Residue]) -> tuple[Reject
         if seen[verdict.id] > 1:
             reason = "this id appears more than once in the document"
         elif item is None:
-            reason = "no such finding: it is not in the current worklist"
+            reason = "no such finding: no current lint finding with a residue has this id"
         elif verdict.outcome not in item.question.outcomes:
             reason = f"outcome '{verdict.outcome.value}' is not allowed for this question"
         else:

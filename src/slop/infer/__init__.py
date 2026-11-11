@@ -7,9 +7,9 @@ validates and routes the result (``Dpost``). Layers, bottom to top; an arrow is 
     bundle      the prose slop prints: instructions, references. Imports nothing in slop.
     contract    the wire types, their JSON Schema, and strict parsing. Imports nothing in slop.
     ledger      persisted rulings.                              imports contract
-    frame       identity, excerpt and rubric for one finding.   imports bundle, contract
+    frame       identity, location, fingerprint and rubric.      imports bundle, contract
     source      where residue comes from.                       imports contract, frame
-    apply       validate, route, list outstanding, settle.      imports contract, frame, ledger, source
+    apply       validate, route, settle a report.               imports contract, frame, ledger, source
 
 Only ``cli`` and ``skill`` import this package. New kinds of residue (a project survey for bootstrap, a
 candidate listing) are new ``source`` modules; the layers above and below do not change.

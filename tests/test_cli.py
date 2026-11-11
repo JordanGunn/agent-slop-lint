@@ -439,7 +439,6 @@ _WIRING = [
     (["infer", "instructions"], "infer_instructions", (), {}),
     (["infer", "references", "rubrics/x"], "infer_references", ("rubrics/x",), {}),
     (["infer", "schema", "verdicts"], "infer_schema", ("verdicts",), {}),
-    (["infer", "next", "--root", "r", "--rule", "class-cohesion", "--limit", "4"], "infer_next", ("r", "class-cohesion", 4), {}),
     (["infer", "apply", "v.json", "--root", "r"], "infer_apply", ("v.json", "r"), {}),
     (["skill", "list"], "skill_list", (), {}),
     (["skill", "show", "slop", "SKILL.md"], "skill_show", ("slop", "SKILL.md"), {}),

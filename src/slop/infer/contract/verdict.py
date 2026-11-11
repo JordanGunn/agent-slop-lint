@@ -15,10 +15,10 @@ from .vocabulary import REASON_MAX_LENGTH, SCHEMA_VERSION, Outcome
 class Verdict:
     """The agent's decision on one finding."""
 
-    id: str = described("The id of the finding, copied from the worklist item.", min_length=1)
+    id: str = described("The id of the finding, copied from its residue.", min_length=1)
     outcome: Outcome = described("clear: not a problem here. confirm: a real problem. "
-                                 "defer: not decidable from the excerpt shown.")
-    reason: str = described("One sentence of evidence from the excerpt.", max_length=REASON_MAX_LENGTH)
+                                 "defer: not decidable from the code.")
+    reason: str = described("One sentence of evidence from the code.", max_length=REASON_MAX_LENGTH)
 
 
 @dataclass(frozen=True)

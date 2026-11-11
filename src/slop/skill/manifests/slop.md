@@ -36,8 +36,9 @@ answer in prose.
 
 ## Judging warnings
 
-Some findings need judgement, not a limit. `slop infer next` lists them; you rule on each one
-against its rubric and return verdicts with `slop infer apply`. The workflow and its rules are
+Some findings need judgement, not a limit. In `slop lint --output json` they carry a `residue`
+object: you read the code it points to, rule on it against its rubric, and return verdicts with
+`slop infer apply`. The workflow and its rules are
 in `references/infer.md`, the rubrics in `references/rubrics/`, and the document shapes in
 `assets/schemas/`. The same text is printed by `slop infer instructions`, `slop infer references`
 and `slop infer schema`.
