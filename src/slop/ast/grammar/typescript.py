@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import Any, ClassVar
 
 from ..paradigm import MultiPurpose
+from ..paradigm.base import child_texts
 from .ecmascript import EcmaScript
 
 
@@ -94,12 +95,6 @@ class TypeScript(EcmaScript, MultiPurpose):
 
     @classmethod
     def extract_superclasses(cls, node: Any, content: bytes) -> list[str]:
-        out: list[str] = []
-        for child in node.children:
-            if child.type == "class_heritage":
-                for clause in child.children:
-                    if clause.type in ("extends_clause", "implements_clause"):
-                        for c in clause.children:
-                            if c.type in ("type_identifier", "identifier"):
-                                out.append(content[c.start_byte:c.end_byte].decode("utf-8", errors="replace"))
-        return out
+        return [name for child in node.children if child.type == "class_heritage"
+                for clause in child.children if clause.type in ("extends_clause", "implements_clause")
+                for name in child_texts(clause, content, ("type_identifier", "identifier"))]

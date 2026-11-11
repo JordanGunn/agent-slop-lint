@@ -26,6 +26,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
+from collections.abc import Iterable
 from typing import Any, ClassVar
 
 from ..parse import load_ts_language
@@ -379,6 +380,12 @@ def _child_of_type(node: Any, type_name: str) -> Any:
         if child.type == type_name:
             return child
     return None
+
+
+def child_texts(parent: Any, content: bytes, types: Iterable[str]) -> list[str]:
+    """The text of each direct child of ``parent`` whose node type is in ``types``."""
+    return [content[c.start_byte:c.end_byte].decode("utf-8", errors="replace")
+            for c in parent.children if c.type in types]
 
 
 def type_specifier_name(node: Any, content: bytes) -> str:

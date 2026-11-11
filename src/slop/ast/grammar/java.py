@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import Any, ClassVar
 
 from ..paradigm import ObjectOriented
+from ..paradigm.base import child_texts
 
 
 class Java(ObjectOriented):
@@ -115,33 +116,14 @@ class Java(ObjectOriented):
         out: list[str] = []
         sc = node.child_by_field_name("superclass")
         if sc is not None:
-            for child in sc.children:
-                if child.type == "type_identifier":
-                    out.append(content[child.start_byte:child.end_byte].decode("utf-8", errors="replace"))
+            out += child_texts(sc, content, ("type_identifier",))
         ifaces = node.child_by_field_name("interfaces")
         if ifaces is not None:
             for child in ifaces.children:
                 if child.type == "type_list":
-                    for tc in child.children:
-                        if tc.type == "type_identifier":
-                            out.append(content[tc.start_byte:tc.end_byte].decode("utf-8", errors="replace"))
-                elif child.type == "type_identifier":
-                    out.append(content[child.start_byte:child.end_byte].decode("utf-8", errors="replace"))
+                    out += child_texts(child, content, ("type_identifier",))
+            out += child_texts(ifaces, content, ("type_identifier",))
         return out
-
-
-def _word_tokens(text: str) -> set[str]:
-    tokens: set[str] = set()
-    buf: list[str] = []
-    for ch in text:
-        if ch.isalnum() or ch == "_":
-            buf.append(ch)
-        elif buf:
-            tokens.add("".join(buf))
-            buf = []
-    if buf:
-        tokens.add("".join(buf))
-    return tokens
 
 
 def _has_modifier(node: Any, content: bytes, keyword: str) -> bool:

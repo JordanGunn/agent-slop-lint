@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import Any, ClassVar
 
 from ..paradigm import ObjectOriented
+from ..paradigm.base import child_texts
 
 
 class CSharp(ObjectOriented):
@@ -123,24 +124,5 @@ class CSharp(ObjectOriented):
 
     @classmethod
     def extract_superclasses(cls, node: Any, content: bytes) -> list[str]:
-        out: list[str] = []
-        for child in node.children:
-            if child.type == "base_list":
-                for gc in child.children:
-                    if gc.type == "identifier":
-                        out.append(content[gc.start_byte:gc.end_byte].decode("utf-8", errors="replace"))
-        return out
-
-
-def _word_tokens(text: str) -> set[str]:
-    tokens: set[str] = set()
-    buf: list[str] = []
-    for ch in text:
-        if ch.isalnum() or ch == "_":
-            buf.append(ch)
-        elif buf:
-            tokens.add("".join(buf))
-            buf = []
-    if buf:
-        tokens.add("".join(buf))
-    return tokens
+        return [name for child in node.children if child.type == "base_list"
+                for name in child_texts(child, content, ("identifier",))]
