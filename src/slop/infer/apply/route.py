@@ -20,7 +20,7 @@ def route(verdicts: Verdicts, residue: Mapping[str, Residue], ledger: Ledger, *,
         if verdict.id in refused:
             continue
         item = residue[verdict.id]
-        ledger.append(Ruling(verdict=verdict, rule=item.rule, path=item.path, fingerprint=item.fingerprint,
+        ledger.append(Ruling(verdict=verdict, rule=item.rule, path=item.locations[0].path, fingerprint=item.fingerprint,
                              rubric_version=item.rubric.version, at=at))
         accepted.append(verdict.id)
     return Receipt(version=SCHEMA_VERSION, accepted=tuple(accepted), rejected=rejections)

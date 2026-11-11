@@ -27,8 +27,8 @@ def _residue(root: Path, source: str):
 
 def test_a_cohesion_warning_becomes_one_residue_spanning_the_whole_class(tmp_path: Path):
     [item] = _residue(tmp_path, TWO_GROUPS)
-    assert (item.rule, item.subject, item.path) == ("class-cohesion", "m.A", "m.py")
-    assert (item.first_line, item.last_line) == (1, 6)
+    assert (item.rule, item.subject) == ("class-cohesion", "m.A")
+    assert [(loc.path, loc.first_line, loc.last_line) for loc in item.locations] == [("m.py", 1, 6)]
     assert item.question.outcomes == (Outcome.CLEAR, Outcome.CONFIRM, Outcome.DEFER)
     assert item.rubric.command == "slop infer references rubrics/class-cohesion"
     assert item.status is Status.NONE                       # the source does not know the ledger
@@ -36,7 +36,7 @@ def test_a_cohesion_warning_becomes_one_residue_spanning_the_whole_class(tmp_pat
 
 def test_the_span_and_fingerprint_cover_the_definition_and_nothing_around_it(tmp_path: Path):
     [item] = _residue(tmp_path, "import os\n\n" + TWO_GROUPS + "\n\nafter = 1\n")
-    assert (item.first_line, item.last_line) == (3, 8)
+    assert (item.locations[0].first_line, item.locations[0].last_line) == (3, 8)
     [around] = _residue(tmp_path, "import sys\n\n" + TWO_GROUPS + "\n\nafter = 2\n")
     assert around.fingerprint == item.fingerprint           # code around the class changed: same ruling holds
 
@@ -44,7 +44,7 @@ def test_the_span_and_fingerprint_cover_the_definition_and_nothing_around_it(tmp
 def test_a_moved_class_keeps_its_id_and_fingerprint_but_an_edited_one_only_its_id(tmp_path: Path):
     [original] = _residue(tmp_path, TWO_GROUPS)
     [moved] = _residue(tmp_path, "import os\n\n\n" + TWO_GROUPS)
-    assert (moved.id, moved.fingerprint) == (original.id, original.fingerprint) and moved.first_line == 4
+    assert (moved.id, moved.fingerprint) == (original.id, original.fingerprint) and moved.locations[0].first_line == 4
     [edited] = _residue(tmp_path, TWO_GROUPS.replace("self.b", "self.b + 1"))
     assert edited.id == original.id and edited.fingerprint != original.fingerprint
 

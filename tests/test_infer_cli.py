@@ -83,7 +83,8 @@ def test_lint_json_carries_a_valid_residue_on_a_finding_that_needs_judgement(tmp
     _project(tmp_path)
     [raw] = _residues(tmp_path, capsys)
     item = parse(Residue, raw)
-    assert (item.rule, item.subject, item.path, item.first_line, item.last_line) == ("class-cohesion", "m.A", "m.py", 1, 6)
+    assert (item.rule, item.subject) == ("class-cohesion", "m.A")
+    assert [(loc.path, loc.first_line, loc.last_line) for loc in item.locations] == [("m.py", 1, 6)]
     assert raw["status"] == "none"
 
 

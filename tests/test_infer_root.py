@@ -48,7 +48,8 @@ def test_a_finding_has_the_same_id_and_path_whichever_directory_is_scanned(tmp_p
     src = _project(tmp_path)
     [from_project], [from_src] = _items(capsys, tmp_path), _items(capsys, src)
     assert from_project["id"] == from_src["id"]
-    assert from_project["path"] == from_src["path"] == "src/pkg/m.py"
+    assert from_project["locations"] == from_src["locations"]
+    assert from_project["locations"][0]["path"] == "src/pkg/m.py"
 
 
 def test_a_relative_scan_root_and_a_file_scan_root_name_the_finding_the_same_way(tmp_path: Path, capsys, monkeypatch):
@@ -88,7 +89,7 @@ def test_with_no_config_a_file_as_the_scan_root_makes_its_directory_the_project_
     src = _project(tmp_path, config=None)
     module = src / "pkg" / "m.py"
     [item] = _items(capsys, module)
-    assert item["path"] == "m.py"                              # relative to the file's directory
+    assert item["locations"][0]["path"] == "m.py"              # relative to the file's directory
     assert _rule(capsys, module, "clear", scan_root=module) == 0
     assert (module.parent / ".slop" / "inferences.jsonl").is_file()
 
@@ -126,5 +127,6 @@ def test_the_lint_output_alone_locates_every_finding_and_its_code_from_any_direc
     [finding] = doc["warnings"]
     assert (Path(doc["root"]) / finding["path"]).is_file()                 # a finding's path: from root
     residue = finding["residue"]
-    lines = (Path(doc["project_root"]) / residue["path"]).read_text(encoding="utf-8").splitlines()
-    assert "\n".join(lines[residue["first_line"] - 1:residue["last_line"]]) == TWO_GROUPS.rstrip("\n")
+    [where] = residue["locations"]
+    lines = (Path(doc["project_root"]) / where["path"]).read_text(encoding="utf-8").splitlines()
+    assert "\n".join(lines[where["first_line"] - 1:where["last_line"]]) == TWO_GROUPS.rstrip("\n")

@@ -10,9 +10,9 @@ from pathlib import Path
 from typing import Any
 
 from ...violation import Violation
-from ..contract import Residue, Status
+from ..contract import Location, Residue, Status
 from ...identity import project_path
-from ..frame.fingerprint import code_fingerprint
+from ..frame.fingerprint import code_fingerprint, read_lines
 from ..frame.rubric import has_rubric, rubric_for
 from .interface import Analysis, Source
 
@@ -37,15 +37,10 @@ def _residue(warning: Violation, root: Path, definition: Any | None) -> Residue:
     question, rubric = rubric_for(warning.rule)
     path = project_path(warning.path, root)
     return Residue(
-        id=warning.id(root), rule=warning.rule, path=path,
-        subject=warning.subject, first_line=first, last_line=last, question=question, rubric=rubric,
-        fingerprint=code_fingerprint(_lines(Path(warning.path), first, last), rubric.version),
+        id=warning.id(root), rule=warning.rule, subject=warning.subject,
+        locations=(Location(path=path, first_line=first, last_line=last),), question=question, rubric=rubric,
+        fingerprint=code_fingerprint(read_lines(Path(warning.path), first, last), rubric.version),
         status=Status.NONE)
-
-
-def _lines(path: Path, first: int, last: int) -> str:
-    """Lines ``first`` through ``last`` (1-based, inclusive) of ``path``."""
-    return "\n".join(path.read_text(encoding="utf-8", errors="replace").splitlines()[first - 1:last])
 
 
 def _definitions(corpus: Any) -> dict[tuple[str, str], Any]:

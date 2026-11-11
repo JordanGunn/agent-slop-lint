@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from ..infer.apply.route import route
+from ..infer.apply.settle import settle
 from ..infer.bundle import prose
 from ..infer.contract import ContractError, Verdicts, dump, parse, schemas
 from ..infer.ledger.jsonl import JsonlLedger
@@ -71,8 +72,9 @@ def apply(file: str, root: str | Path) -> int:
     analysis = analyse(root)
     if analysis is None:
         return 2
-    inferable = {item.id: item for item in FindingSource().residue(analysis)}
-    receipt = route(verdicts, inferable, JsonlLedger.at(analysis.root),
+    ledger = JsonlLedger.at(analysis.root)
+    inferable = {item.id: item for item in FindingSource().residue(analysis)} | settle(analysis, ledger).groups
+    receipt = route(verdicts, inferable, ledger,
                     at=datetime.now(timezone.utc).isoformat(timespec="seconds"))
     print(json.dumps(dump(receipt), indent=2))
     return 1 if receipt.rejected else 0

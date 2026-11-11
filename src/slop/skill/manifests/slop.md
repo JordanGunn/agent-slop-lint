@@ -37,8 +37,9 @@ answer in prose.
 
 ## Judging warnings
 
-Some findings need judgement, not a limit. In `slop lint --output json` they carry a `residue`
-object: you read the code it points to, rule on it against its rubric, and return verdicts with
+Some findings need judgement, not a limit, and so do the groups of related findings in
+`agglomerations` (does the group have one cause?). In `slop lint --output json` they carry a
+`residue` object: you read the code it points to, rule on it against its rubric, and return verdicts with
 `slop infer apply`. The workflow and its rules are
 in `references/infer.md`, the rubrics in `references/rubrics/`, and the document shapes in
 `assets/schemas/`. The same text is printed by `slop infer instructions`, `slop infer references`

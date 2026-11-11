@@ -74,6 +74,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `slop infer` rules on agglomerations: rubric `agglomeration` asks whether a group shares one
+  cause a single change would remove. A cleared group disappears; a confirmed one is recorded
+  and shown, never failing the run. A residue's code is a list of `locations` (one for a
+  finding, the lead's and each member's for a group) instead of one `path` and line range.
 - `slop lint --output json` lists `agglomerations`: groups of findings related by the code's
   structure (Oizumi et al. 2016: intra-method, intra-class, hierarchical, intra-component,
   cross-component), each with a lead scope and member finding ids. Every finding has an `id`;

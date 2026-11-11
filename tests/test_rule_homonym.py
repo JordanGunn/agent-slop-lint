@@ -49,7 +49,7 @@ def test_lint_reports_it_as_a_warning_with_a_residue_to_rule_on(tmp_path: Path, 
     assert cli.main(["lint", "--root", str(tmp_path), "--output", "json"]) == 0      # subjective: never fails
     [warning] = [w for w in json.loads(capsys.readouterr().out)["warnings"] if w["rule"] == "homonym"]
     residue = warning["residue"]
-    assert (residue["subject"], residue["first_line"], residue["last_line"]) == ("store.Store", 1, 3)
+    assert (residue["subject"], residue["locations"][0]["first_line"], residue["locations"][0]["last_line"]) == ("store.Store", 1, 3)
     assert residue["rubric"]["command"] == "slop infer references rubrics/homonym"
 
 

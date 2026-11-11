@@ -16,7 +16,7 @@ VERDICTS = {"version": "1", "verdicts": [
     {"id": "def", "outcome": "confirm", "reason": "Two unrelated duties in one class."}]}
 
 RESIDUE = {
-    "id": "abc", "rule": "class-cohesion", "path": "a.py", "subject": "a.A", "first_line": 3, "last_line": 6,
+    "id": "abc", "rule": "class-cohesion", "subject": "a.A", "locations": [{"path": "a.py", "first_line": 3, "last_line": 6}],
     "question": {"id": "cohesion.accessor-class", "text": "Is this a value object?", "outcomes": ["clear", "confirm", "defer"]},
     "rubric": {"command": "slop infer references rubrics/class-cohesion", "version": "9f"},
     "fingerprint": "00ff", "status": "none"}

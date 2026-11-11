@@ -19,6 +19,10 @@ _QUESTIONS: dict[str, tuple[str, str]] = {
         "homonym.one-meaning",
         "Does this class name mean one thing wherever it is used, or is it overloaded?",
     ),
+    "agglomeration": (
+        "agglomeration.one-cause",
+        "Do these related findings share one cause that a single change would remove?",
+    ),
 }
 
 

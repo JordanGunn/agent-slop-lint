@@ -47,18 +47,22 @@ class Topology(Enum):
 
 @dataclass(frozen=True)
 class Agglomeration:
-    """A group of related findings, the units they sit on, and the unit that leads them."""
+    """A group of related findings, the units they sit on, and the unit that leads them; for a
+    hierarchical group, the one ``rule`` its findings share."""
 
     topology: Topology
     lead: ScopeId
     units: tuple[ScopeId, ...]
     findings: tuple[Violation, ...]
+    rule: str | None = None
 
     @property
     def id(self) -> str:
-        """Stable across runs: the topology and the lead's kind and qualified name."""
+        """Stable across runs: the topology, the lead's kind and qualified name, and the rule of a
+        hierarchical group (one tree can hold a group per rule)."""
         kind, qualname = self.lead.logical
-        return hashlib.sha256("\0".join((self.topology.value, kind.value, qualname)).encode()).hexdigest()[:16]
+        fields = (self.topology.value, kind.value, qualname, *((self.rule,) if self.rule else ()))
+        return hashlib.sha256("\0".join(fields).encode()).hexdigest()[:16]
 
 
 def agglomerate(findings: list[Violation], corpus: Any) -> list[Agglomeration]:
@@ -160,8 +164,8 @@ def _hierarchical(findings: list[Violation], scopes: dict[ScopeId, Any], structu
     for finding in findings:
         if finding.scope is not None and finding.scope.kind is ScopeKind.CLASS:
             trees[(finding.rule, structure.root(finding.scope))].setdefault(finding.scope, finding)
-    return [Agglomeration(Topology.HIERARCHICAL, root, tuple(sorted(members, key=_order)), tuple(members.values()))
-            for (_rule, root), members in sorted(trees.items(), key=lambda item: (item[0][0], _order(item[0][1])))
+    return [Agglomeration(Topology.HIERARCHICAL, root, tuple(sorted(members, key=_order)), tuple(members.values()), rule)
+            for (rule, root), members in sorted(trees.items(), key=lambda item: (item[0][0], _order(item[0][1])))
             if len(members) > 1]
 
 

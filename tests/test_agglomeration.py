@@ -84,3 +84,18 @@ def test_lint_json_lists_groups_by_finding_id(tmp_path: Path, capsys):
     [group] = doc["agglomerations"]
     assert group["topology"] == "intra-method" and group["lead"]["qualname"] == "m.f"
     assert set(group["findings"]) == {v["id"] for v in doc["violations"]}
+
+
+def test_one_tree_holds_a_group_per_rule_each_with_its_own_id(tmp_path: Path):
+    from slop.cli.lint import analyse as _analyse
+    split = "    def {a}(self):\n        return self.{a}_\n    def {b}(self):\n        return self.{b}_\n"
+    files = {"m.py": "class Base:\n    pass\n\nclass A(Base):\n" + split.format(a="p", b="q") +
+             "\nclass B(Base):\n" + split.format(a="r", b="s"),
+             "n.py": "class A:\n    pass\n\nclass B:\n    pass\n"}            # homonyms of m.A and m.B
+    for name, text in files.items():
+        (tmp_path / name).write_text(text, encoding="utf-8")
+    analysis = _analyse(tmp_path)
+    groups = [g for g in agglomerate([*analysis.report.violations, *analysis.report.warnings], analysis.corpus)
+              if g.topology is Topology.HIERARCHICAL]
+    assert sorted(g.rule for g in groups) == ["class-cohesion", "homonym"]
+    assert len({g.id for g in groups}) == 2

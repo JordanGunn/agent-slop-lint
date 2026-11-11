@@ -10,7 +10,7 @@ from slop.dispatch import Dispatcher
 from slop.infer.apply.route import route
 from slop.infer.apply.settle import settle
 from slop.infer.apply.validate import validate
-from slop.infer.contract import SCHEMA_VERSION, Outcome, Question, Residue, RubricRef, Status, Verdict, Verdicts
+from slop.infer.contract import SCHEMA_VERSION, Location, Outcome, Question, Residue, RubricRef, Status, Verdict, Verdicts
 from slop.infer.ledger.jsonl import JsonlLedger
 from slop.infer.source.finding import FindingSource
 from slop.infer.source.interface import Analysis
@@ -21,7 +21,7 @@ TWO_GROUPS = "class A:\n    def f(self):\n        return self.a\n\n    def g(sel
 
 
 def _item(item_id: str = "a1", outcomes: tuple[Outcome, ...] = tuple(Outcome)) -> Residue:
-    return Residue(id=item_id, rule="class-cohesion", path="m.py", subject="m.A", first_line=1, last_line=2,
+    return Residue(id=item_id, rule="class-cohesion", subject="m.A", locations=(Location(path="m.py", first_line=1, last_line=2),),
                    question=Question(id="q", text="q?", outcomes=outcomes),
                    rubric=RubricRef(command="slop infer references rubrics/class-cohesion", version="rv"),
                    fingerprint="fp", status=Status.NONE)
