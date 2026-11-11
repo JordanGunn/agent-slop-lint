@@ -6,6 +6,7 @@ from typing import Any, ClassVar
 
 from ..paradigm import MultiPurpose
 from ..paradigm.base import julia_signature_parameters
+from ..paradigm.heritage import type_name
 
 
 class Julia(MultiPurpose):
@@ -136,8 +137,8 @@ class Julia(MultiPurpose):
         head = next((c for c in node.children if c.type == "type_head"), None)
         if head is None or not head.children or head.children[0].type != "binary_expression":
             return []
-        supertype = _leftmost_identifier(head.children[0].children[-1])
-        return [_text(supertype, content)] if supertype is not None else []
+        supertype = type_name(head.children[0].children[-1], content)
+        return [supertype] if supertype is not None else []
 
 
 def _leftmost_identifier(node: Any) -> Any | None:

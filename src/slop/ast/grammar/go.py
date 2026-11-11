@@ -11,10 +11,25 @@ from __future__ import annotations
 from typing import Any, ClassVar
 
 from ..paradigm import MultiPurpose
+from ..paradigm.base import MemberAccess
 
 
 class Go(MultiPurpose):
     id: ClassVar[str] = "go"
+
+    @classmethod
+    def member_access(cls) -> MemberAccess | None:
+        """``r.x`` and the callee of ``r.m()``: Go always writes the receiver."""
+        return MemberAccess("selector_expression", "operand", "field")
+
+    @classmethod
+    def instance_receiver(cls, method: Any, content: bytes) -> str | None:
+        """The receiver's name in ``func (s *Stack) Push()``; an unnamed receiver
+        (``func (Stack) Len()``) or a plain function has no instance it can reach."""
+        receivers = method.child_by_field_name("receiver")
+        declared = receivers.named_children if receivers is not None else []
+        name = declared[0].child_by_field_name("name") if declared else None
+        return content[name.start_byte:name.end_byte].decode("utf-8") if name is not None else None
 
     @classmethod
     def callable(cls) -> frozenset[str]:
@@ -157,14 +172,21 @@ def _go_receiver_type_name(method_node: Any, content: bytes) -> str | None:
     if receiver is None:
         return None
     for child in receiver.children:
-        if child.type == "parameter_declaration":
-            type_node = child.child_by_field_name("type")
-            if type_node is None:
-                continue
-            if type_node.type == "pointer_type":
-                for pc in type_node.children:
-                    if pc.type == "type_identifier":
-                        return content[pc.start_byte:pc.end_byte].decode("utf-8", errors="replace")
-            elif type_node.type == "type_identifier":
-                return content[type_node.start_byte:type_node.end_byte].decode("utf-8", errors="replace")
+        if child.type != "parameter_declaration":
+            continue
+        name = _go_type_identifier(child.child_by_field_name("type"))
+        if name is not None:
+            return content[name.start_byte:name.end_byte].decode("utf-8", errors="replace")
+    return None
+
+
+def _go_type_identifier(type_node: Any) -> Any | None:
+    if type_node is None:
+        return None
+    if type_node.type == "pointer_type":
+        for child in type_node.children:
+            if child.type == "type_identifier":
+                return child
+    elif type_node.type == "type_identifier":
+        return type_node
     return None

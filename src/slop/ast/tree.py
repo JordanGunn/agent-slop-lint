@@ -325,11 +325,28 @@ class AST:
 
 _VOCAB_CACHE: dict = {}
 
+# Specific (loop/switch/...) before generic BRANCH: the formers are subsets
+# of decision_nodes, so order disambiguates the overlap.
+_CLASSIFICATION_ORDER = (
+    ("callable", NodeKind.CALLABLE),
+    ("classes", NodeKind.CLASS),
+    ("loop", NodeKind.LOOP),
+    ("switch", NodeKind.SWITCH),
+    ("case", NodeKind.CASE),
+    ("try", NodeKind.TRY),
+    ("catch", NodeKind.CATCH),
+    ("branch", NodeKind.BRANCH),
+    ("bool_op", NodeKind.BOOLEAN_OP),
+    ("call", NodeKind.CALL),
+    ("literal", NodeKind.LITERAL),
+    ("identifier", NodeKind.IDENTIFIER),
+)
+
 
 def _grammar_vocab(grammar: Any) -> dict:
     """The grammar's category sets, computed once. The grammar already
-    classifies raw types (``callable()``/``decision_nodes()``/...); ``kind`` only
-    reorders those into the neutral vocabulary — no separate table."""
+    classifies raw types (``callable()``/``decision_nodes()``/...); classification
+    orders those sets into the neutral vocabulary."""
     cached = _VOCAB_CACHE.get(grammar)
     if cached is not None:
         return cached
@@ -354,32 +371,9 @@ def _grammar_vocab(grammar: Any) -> dict:
 
 def _classify(raw_type: str, grammar: Any) -> NodeKind:
     v = _grammar_vocab(grammar)
-    # Specific (loop/switch/...) before generic BRANCH: the formers are subsets
-    # of decision_nodes, so order disambiguates the overlap.
-    if raw_type in v["callable"]:
-        return NodeKind.CALLABLE
-    if raw_type in v["classes"]:
-        return NodeKind.CLASS
-    if raw_type in v["loop"]:
-        return NodeKind.LOOP
-    if raw_type in v["switch"]:
-        return NodeKind.SWITCH
-    if raw_type in v["case"]:
-        return NodeKind.CASE
-    if raw_type in v["try"]:
-        return NodeKind.TRY
-    if raw_type in v["catch"]:
-        return NodeKind.CATCH
-    if raw_type in v["branch"]:
-        return NodeKind.BRANCH
-    if raw_type in v["bool_op"]:
-        return NodeKind.BOOLEAN_OP
-    if raw_type in v["call"]:
-        return NodeKind.CALL
-    if raw_type in v["literal"]:
-        return NodeKind.LITERAL
-    if raw_type in v["identifier"]:
-        return NodeKind.IDENTIFIER
+    for category, kind in _CLASSIFICATION_ORDER:
+        if raw_type in v[category]:
+            return kind
     # IMPORT / PARAMETER are query/extractor-derived, not single-type sets; they
     # map through OTHER until a consumer needs them.
     return NodeKind.OTHER

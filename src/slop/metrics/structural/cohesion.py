@@ -21,11 +21,14 @@ that silently misses those accesses.
 """
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from typing import Any
 
 from ...ast import NodeKind
 from .records import Cohesion
+
+
+_ANONYMOUS = "<anonymous>"
 
 
 def cohesion(methods: Sequence[Any], grammar: Any) -> Cohesion | None:
@@ -40,21 +43,9 @@ def cohesion(methods: Sequence[Any], grammar: Any) -> Cohesion | None:
         return None
     constructors = grammar.constructor_names()
     parent: dict[str, str] = {}
-
-    def find(name: str) -> str:
-        parent.setdefault(name, name)
-        while parent[name] != name:
-            parent[name] = parent[parent[name]]
-            name = parent[name]
-        return name
-
     measured: list[str] = []
     for method in methods:
-        name = method.name
-        if name == "<anonymous>":
-            # Unnamed callables (a JS/TS class field holding an arrow function) are distinct
-            # methods; one shared name would join unrelated ones.
-            name = f"<anonymous>:{method.line}"
+        name = _method_name(method)
         if name in constructors:
             continue
         receiver = grammar.instance_receiver(method._node, method._content)
@@ -62,24 +53,51 @@ def cohesion(methods: Sequence[Any], grammar: Any) -> Cohesion | None:
             continue
         if name not in measured:
             measured.append(name)
-        find(name)
-        for node in method._ast_node().walk(prune=frozenset({NodeKind.CLASS})):
-            if node.type != access.node_type:
-                continue
-            target, member = node.field(access.receiver_field), node.field(access.member_field)
-            if target is not None and member is not None and target.text == receiver:
-                parent[find(member.text)] = find(name)
+        _find(parent, name)
+        for member in _accessed_members(method, access, receiver):
+            parent[_find(parent, member)] = _find(parent, name)
+    return _split(measured, parent)
 
+
+def _method_name(method: Any) -> str:
+    """The method's name; unnamed callables (a JS/TS class field holding an arrow function)
+    are distinct methods, so each gets its line, as one shared name would join unrelated ones."""
+    if method.name == _ANONYMOUS:
+        return f"{_ANONYMOUS}:{method.line}"
+    return method.name
+
+
+def _find(parent: dict[str, str], name: str) -> str:
+    """The representative of ``name``'s component, compressing the path walked."""
+    parent.setdefault(name, name)
+    while parent[name] != name:
+        parent[name] = parent[parent[name]]
+        name = parent[name]
+    return name
+
+
+def _accessed_members(method: Any, access: Any, receiver: str) -> Iterator[str]:
+    """The member names ``method`` reaches through ``receiver``, nested callables included."""
+    for node in method._ast_node().walk(prune=frozenset({NodeKind.CLASS})):
+        if node.type != access.node_type:
+            continue
+        target, member = node.field(access.receiver_field), node.field(access.member_field)
+        if target is not None and member is not None and target.text == receiver:
+            yield member.text
+
+
+def _split(measured: list[str], parent: dict[str, str]) -> Cohesion:
+    """Groups the measured methods by component; a method alone in its component reaches no
+    instance state, so it is detached."""
     size: dict[str, int] = {}
     for name in list(parent):
-        size[find(name)] = size.get(find(name), 0) + 1
-    # Attached = shares a component with anything else: a member it touches, or a method
-    # that touches it. Alone in its component it reaches no instance state.
-    attached = {name for name in measured if size[find(name)] > 1}
+        root = _find(parent, name)
+        size[root] = size.get(root, 0) + 1
+    attached = {name for name in measured if size[_find(parent, name)] > 1}
     groups: dict[str, list[str]] = {}
     for name in measured:
         if name in attached:
-            groups.setdefault(find(name), []).append(name)
+            groups.setdefault(_find(parent, name), []).append(name)
     return Cohesion(
         groups=tuple(tuple(g) for g in groups.values()),
         detached=tuple(n for n in measured if n not in attached),

@@ -85,8 +85,10 @@ def build(classes: list[Any],
     ambiguous: dict[ScopeId, list[str]] = {}
     unattributed: dict[str, int] = {}
     for cls in classes:
+        realm = _enclosing(cls, ScopeKind.REALM)
         for base in cls._base_names:
-            candidates = by_name.get(base, [])
+            # a class inherits only within its own language
+            candidates = [c for c in by_name.get(base, []) if _enclosing(c, ScopeKind.REALM) == realm]
             target = _nearest(cls, candidates, imports)
             if target is not None:
                 parents.setdefault(cls.id, []).append(target)

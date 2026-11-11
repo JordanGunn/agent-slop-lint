@@ -65,32 +65,9 @@ class OntologyIR(Vocabulary):
         if not isinstance(data, dict) or data.get("kind") != "ontology":
             raise OntologyError(f"{source}: not an Open Ontology IR (expected kind 'ontology')")
 
-        def section(key: str) -> list[dict]:
-            items = data.get(key, [])
-            if not isinstance(items, list) or not all(isinstance(i, dict) for i in items):
-                raise OntologyError(f"{source}: '{key}' must be a list of objects")
-            for item in items:
-                if not isinstance(item.get("name"), str) or not item["name"]:
-                    raise OntologyError(f"{source}: an entry in '{key}' has no name")
-            return items
-
-        def keys(properties: object) -> tuple[str, ...]:
-            return tuple(
-                str(p.get("key", p.get("name", ""))).lstrip(":")
-                for p in properties if isinstance(p, dict)
-            ) if isinstance(properties, list) else ()
-
         terms: list[Term] = []
-        for o in section("objectTypes"):
-            terms.append(Term(o["name"], TermKind.ENTITY, o.get(_DESCRIPTION), keys(o.get("properties"))))
-        for r in section("linkTypes"):
-            terms.append(Term(r["name"], TermKind.RELATION, r.get(_DESCRIPTION),
-                              keys(r.get("properties")), (str(r.get("from", "")), str(r.get("to", "")))))
-        for a in section("actionTypes"):
-            inputs = tuple(str(i.get("name", "")) for i in a.get("input", []) if isinstance(i, dict))
-            terms.append(Term(a["name"], TermKind.ACTION, a.get(_DESCRIPTION), inputs))
-        for q in section("queryTypes"):
-            terms.append(Term(q["name"], TermKind.QUERY, q.get(_DESCRIPTION), ()))
+        for kind, (key, _item_kind) in _SECTIONS.items():
+            terms.extend(_section_term(kind, item) for item in _section(data, key, source))
 
         if not any(t.kind is TermKind.ENTITY for t in terms):
             raise OntologyError(f"{source}: declares no entities, so there is nothing to compare names against")
@@ -106,6 +83,38 @@ class OntologyIR(Vocabulary):
         for kind, (section, item_kind) in _SECTIONS.items():
             ir[section] = [_term_ir(t, item_kind) for t in self._terms if t.kind is kind]
         return ir
+
+
+def _section(data: dict, key: str, source: str) -> list[dict]:
+    """The named entries of one IR section, raising unless it is a list of named objects."""
+    items = data.get(key, [])
+    if not isinstance(items, list) or not all(isinstance(i, dict) for i in items):
+        raise OntologyError(f"{source}: '{key}' must be a list of objects")
+    for item in items:
+        if not isinstance(item.get("name"), str) or not item["name"]:
+            raise OntologyError(f"{source}: an entry in '{key}' has no name")
+    return items
+
+
+def _property_keys(properties: object) -> tuple[str, ...]:
+    """The field keys of an IR property list, without the leading ``:``."""
+    if not isinstance(properties, list):
+        return ()
+    return tuple(str(p.get("key", p.get("name", ""))).lstrip(":") for p in properties if isinstance(p, dict))
+
+
+def _section_term(kind: TermKind, item: dict) -> Term:
+    """The Term for one IR entry of ``kind``."""
+    name, description = item["name"], item.get(_DESCRIPTION)
+    if kind is TermKind.RELATION:
+        ends = (str(item.get("from", "")), str(item.get("to", "")))
+        return Term(name, kind, description, _property_keys(item.get("properties")), ends)
+    if kind is TermKind.ACTION:
+        inputs = tuple(str(i.get("name", "")) for i in item.get("input", []) if isinstance(i, dict))
+        return Term(name, kind, description, inputs)
+    if kind is TermKind.QUERY:
+        return Term(name, kind, description, ())
+    return Term(name, kind, description, _property_keys(item.get("properties")))
 
 
 def _term_ir(term: Term, item_kind: str) -> dict:

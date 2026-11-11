@@ -29,6 +29,11 @@ from .hotspots import DEFAULT_LAST as _HOTSPOT_LAST, hotspots as _hotspots
 from .records import CKMetrics, Cohesion, PackageMetrics
 from .clones import clone_clusters as _clone_clusters
 
+# Zone boundaries on the instability and abstractness axes: the zone of pain is both below
+# the first, the zone of uselessness both above the second.
+_PAIN_BELOW = 0.3
+_USELESS_ABOVE = 0.7
+
 
 class Structure:
     """Structural metrics over one region (a scope, or — later — a selection)."""
@@ -129,26 +134,27 @@ class Structure:
         graph = ctx.dep_graph if ctx else None
         if graph is None:
             raise NotImplementedError("Package.martin: dependency graph not attached (build the corpus with scan_corpus)")
-        module_pkg = ctx.module_pkg
-        ce: set = set()
-        ca: set = set()
-        for m in self._r.modules():
-            for t in graph.efferent_nodes(m.id):
-                p = module_pkg.get(t)
-                if p is not None and p != self._r.id:
-                    ce.add(p)
-            for s in graph.afferent_nodes(m.id):
-                p = module_pkg.get(s)
-                if p is not None and p != self._r.id:
-                    ca.add(p)
-        na = nc = 0
-        for cls in self._r._iter_classes():
-            c = cls._grammar.is_abstract_scope(cls._node, cls._content)
-            if c is True:
-                na += 1
-            elif c is False:
-                nc += 1
+        modules = list(self._r.modules())
+        ce = self._outside_packages(modules, ctx.module_pkg, graph.efferent_nodes)
+        ca = self._outside_packages(modules, ctx.module_pkg, graph.afferent_nodes)
+        na, nc = self._abstract_and_concrete()
         return len(ca), len(ce), na, nc
+
+    def _outside_packages(self, modules, module_pkg, neighbours) -> set:
+        """The other packages that own a module linked to ``modules`` by ``neighbours``."""
+        found: set = set()
+        for m in modules:
+            for node in neighbours(m.id):
+                pkg = module_pkg.get(node)
+                if pkg is not None and pkg != self._r.id:
+                    found.add(pkg)
+        return found
+
+    def _abstract_and_concrete(self) -> tuple[int, int]:
+        """Counts of abstract and concrete classes; classes whose grammar cannot say are skipped."""
+        verdicts = [cls._grammar.is_abstract_scope(cls._node, cls._content)
+                    for cls in self._r._iter_classes()]
+        return verdicts.count(True), verdicts.count(False)
 
     def martin_metrics(self) -> PackageMetrics:
         ca, ce, na, nc = self._martin_raw()
@@ -161,13 +167,13 @@ class Structure:
         ca, ce, na, nc = self._martin_raw()
         if not (ca + ce) or not (na + nc):
             return False
-        return (ce / (ca + ce)) < 0.3 and (na / (na + nc)) < 0.3
+        return (ce / (ca + ce)) < _PAIN_BELOW and (na / (na + nc)) < _PAIN_BELOW
 
     def in_zone_of_uselessness(self) -> bool:
         ca, ce, na, nc = self._martin_raw()
         if not (ca + ce) or not (na + nc):
             return False
-        return (ce / (ca + ce)) > 0.7 and (na / (na + nc)) > 0.7
+        return (ce / (ca + ce)) > _USELESS_ABOVE and (na / (na + nc)) > _USELESS_ABOVE
 
     # ---- Corpus measures: analysis-wide -----------------------------------
     def duplication(self):

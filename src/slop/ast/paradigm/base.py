@@ -31,6 +31,9 @@ from typing import Any, ClassVar
 from ..parse import load_ts_language
 
 
+_IDENTIFIER = "identifier"
+
+
 def _normal(path: Path) -> Path:
     """``path`` with ``.`` and ``..`` collapsed, without touching the filesystem."""
     return Path(os.path.normpath(path))
@@ -101,7 +104,7 @@ class Grammar(ABC):
     @classmethod
     def identifiers(cls) -> frozenset[str]:
         """Node types representing identifier tokens. Default ``{identifier}``."""
-        return frozenset({"identifier"})
+        return frozenset({_IDENTIFIER})
 
     @classmethod
     def extract_name(cls, node: Any, content: bytes) -> str:
@@ -124,7 +127,7 @@ class Grammar(ABC):
         ``{"identifier"}`` — types are distinct node kinds (``type_identifier``,
         ``primitive_type``, ``type_annotation``, …), so identifier-typed nodes are the
         names across most grammars."""
-        return frozenset({"identifier"})
+        return frozenset({_IDENTIFIER})
 
     @classmethod
     def extract_parameters(cls, node: Any, content: bytes) -> tuple[tuple[str, str | None], ...]:
@@ -406,7 +409,7 @@ def _node_text(node: Any, content: bytes) -> str:
     return content[node.start_byte:node.end_byte].decode("utf-8", errors="replace")
 
 
-def _first_identifier(node: Any, identifier_types: frozenset[str] = frozenset({"identifier"})) -> Any:
+def _first_identifier(node: Any, identifier_types: frozenset[str] = frozenset({_IDENTIFIER})) -> Any:
     """DFS for the first identifier-typed descendant (the name buried in a C/C++
     declarator: ``char *name`` → ``pointer_declarator`` → ``identifier``)."""
     if node is None:
@@ -429,38 +432,31 @@ def _child_of_type(node: Any, type_name: str) -> Any:
     return None
 
 
-def child_texts(parent: Any, content: bytes, types: Iterable[str]) -> list[str]:
-    """The text of each direct child of ``parent`` whose node type is in ``types``."""
-    return [content[c.start_byte:c.end_byte].decode("utf-8", errors="replace")
-            for c in parent.children if c.type in types]
-
-
-def container_texts(node: Any, content: bytes, container_type: str, types: Iterable[str]) -> list[str]:
-    """The text of each child in ``types`` of each direct child of ``node`` typed ``container_type``."""
-    return [name for child in node.children if child.type == container_type
-            for name in child_texts(child, content, types)]
-
-
 def type_specifier_name(node: Any, content: bytes) -> str:
     """A C/C++ struct/union/enum/class specifier's tag, else the name of the ``typedef``
     that wraps an anonymous one (``typedef struct { ... } Point;`` is ``Point``)."""
     name = node.child_by_field_name("name")
     if name is None and node.parent is not None and node.parent.type == "type_definition":
         name = node.parent.child_by_field_name("declarator")
-    if name is None or name.type not in ("type_identifier", "identifier"):
+    if name is None or name.type not in ("type_identifier", _IDENTIFIER):
         return "<anonymous>"
     return content[name.start_byte:name.end_byte].decode("utf-8", errors="replace")
+
+
+def _c_function_declarator(node: Any) -> Any | None:
+    decl = node.child_by_field_name("declarator")
+    for _ in range(6):  # walk down to the function_declarator (mirrors c.py)
+        if decl is None or decl.type == "function_declarator":
+            break
+        decl = decl.child_by_field_name("declarator")
+    return decl
 
 
 def c_style_parameters(node: Any, content: bytes) -> tuple[tuple[str, str | None], ...]:
     """C/C++ parameter extraction: the parameter list hangs off the function
     *declarator*, and each parameter's name nests inside its own declarator
     (``char *name`` → ``pointer_declarator`` → ``identifier``)."""
-    decl = node.child_by_field_name("declarator")
-    for _ in range(6):  # walk down to the function_declarator (mirrors c.py)
-        if decl is None or decl.type == "function_declarator":
-            break
-        decl = decl.child_by_field_name("declarator")
+    decl = _c_function_declarator(node)
     if decl is None or decl.type != "function_declarator":
         return ()
     plist = decl.child_by_field_name("parameters") or _child_of_type(decl, "parameter_list")
@@ -488,7 +484,7 @@ def julia_signature_parameters(node: Any, content: bytes) -> tuple[tuple[str, st
     for child in arglist.children:
         if child.type in ("(", ")", ","):
             continue
-        ident = child if child.type == "identifier" else _first_identifier(child)
+        ident = child if child.type == _IDENTIFIER else _first_identifier(child)
         if ident is not None:
             out.append((_node_text(ident, content), None))
     return tuple(out)

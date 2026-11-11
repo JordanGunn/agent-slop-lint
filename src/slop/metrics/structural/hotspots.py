@@ -23,12 +23,13 @@ from .complexity import cyclomatic as _cyclomatic
 from .records import Hotspot
 
 DEFAULT_LAST = 10
+_REV_PARSE = "rev-parse"
 
 
 def hotspots(corpus: Any, *, since: str | None = None, last: int = DEFAULT_LAST) -> list[Hotspot]:
     """Files with churn in the window, hottest (churn x complexity) first."""
-    repo = Path(_git(corpus.root, "rev-parse", "--show-toplevel").strip())
-    if _git(repo, "rev-parse", "--verify", "--quiet", "HEAD", check=False) is None:
+    repo = Path(_git(corpus.root, _REV_PARSE, "--show-toplevel").strip())
+    if _git(repo, _REV_PARSE, "--verify", "--quiet", "HEAD", check=False) is None:
         raise ValueError("the repository has no commits")
     churn = _churn(repo, _span(repo, since, last))
 
@@ -48,12 +49,12 @@ def hotspots(corpus: Any, *, since: str | None = None, last: int = DEFAULT_LAST)
 def _span(repo: Path, since: str | None, last: int) -> str:
     """The ``git log`` revision argument for the committed part of the window."""
     if since is not None:
-        if _git(repo, "rev-parse", "--verify", "--quiet", f"{since}^{{commit}}", check=False) is None:
+        if _git(repo, _REV_PARSE, "--verify", "--quiet", f"{since}^{{commit}}", check=False) is None:
             raise ValueError(f"unknown revision: {since}")
         return f"{since}..HEAD"
     if last < 0:
         raise ValueError("last must be 0 or more")
-    if _git(repo, "rev-parse", "--verify", "--quiet", f"HEAD~{last}", check=False) is None:
+    if _git(repo, _REV_PARSE, "--verify", "--quiet", f"HEAD~{last}", check=False) is None:
         return "HEAD"                       # fewer than `last` commits: the whole history
     return f"HEAD~{last}..HEAD"
 
@@ -100,7 +101,7 @@ def _git(directory: Path, *args: str, check: bool = True) -> str | None:
     if done.returncode != 0:
         if not check:
             return None
-        if args[0] == "rev-parse" and "--show-toplevel" in args:
+        if args[0] == _REV_PARSE and "--show-toplevel" in args:
             raise ValueError(f"not a git work tree: {directory}")
         raise ValueError(f"git {args[0]} failed: {done.stderr.strip()}")
     return done.stdout

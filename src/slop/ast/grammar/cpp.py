@@ -4,7 +4,12 @@ from __future__ import annotations
 from typing import Any, ClassVar
 
 from ..paradigm import MultiPurpose
+from ..paradigm.heritage import heritage
 from .c_family import CFamily
+
+
+_IDENTIFIER = "identifier"
+_UTF8 = "utf-8"
 
 
 class Cpp(CFamily, MultiPurpose):
@@ -27,7 +32,7 @@ class Cpp(CFamily, MultiPurpose):
 
     @classmethod
     def identifiers(cls) -> frozenset[str]:
-        return frozenset({"identifier", "field_identifier", "type_identifier"})
+        return frozenset({_IDENTIFIER, "field_identifier", "type_identifier"})
 
     @classmethod
     def methods(cls) -> frozenset[str]:
@@ -73,7 +78,7 @@ class Cpp(CFamily, MultiPurpose):
     @classmethod
     def operand_nodes(cls) -> frozenset[str]:
         return frozenset({
-            "identifier", "field_identifier", "type_identifier", "namespace_identifier",
+            _IDENTIFIER, "field_identifier", "type_identifier", "namespace_identifier",
             "template_type", "number_literal", "string_literal", "char_literal",
             "raw_string_literal", "concatenated_string", "user_defined_literal",
             "true", "false", "null", "nullptr", "this",
@@ -104,11 +109,7 @@ class Cpp(CFamily, MultiPurpose):
 
     @classmethod
     def extract_superclasses(cls, node: Any, content: bytes) -> list[str]:
-        out: list[str] = []
-        for child in node.children:
-            if child.type == "base_class_clause":
-                out.extend(_base_class_names(child, content))
-        return out
+        return heritage(node, content, ("base_class_clause",))
 
     @classmethod
     def extract_name(cls, node: Any, content: bytes) -> str:
@@ -152,24 +153,24 @@ def _parameters(fn_node: Any) -> Any | None:
 
 def _identifier_child(node: Any) -> Any | None:
     for c in node.children:
-        if c.type == "identifier":
+        if c.type == _IDENTIFIER:
             return c
     return None
 
 
 def _name_from_declarator_inner(inner: Any, content: bytes) -> str:
     itype = inner.type
-    if itype in ("identifier", "field_identifier"):
-        return content[inner.start_byte:inner.end_byte].decode("utf-8", errors="replace")
+    if itype in (_IDENTIFIER, "field_identifier"):
+        return content[inner.start_byte:inner.end_byte].decode(_UTF8, errors="replace")
     if itype == "qualified_identifier":
         for c in reversed(inner.children):
-            if c.type == "identifier":
-                return content[c.start_byte:c.end_byte].decode("utf-8", errors="replace")
+            if c.type == _IDENTIFIER:
+                return content[c.start_byte:c.end_byte].decode(_UTF8, errors="replace")
         return "<anonymous>"
     if itype == "operator_name":
-        return content[inner.start_byte:inner.end_byte].decode("utf-8", errors="replace")
+        return content[inner.start_byte:inner.end_byte].decode(_UTF8, errors="replace")
     if itype == "destructor_name":
-        return content[inner.start_byte:inner.end_byte].decode("utf-8", errors="replace")
+        return content[inner.start_byte:inner.end_byte].decode(_UTF8, errors="replace")
     return "<anonymous>"
 
 
@@ -179,21 +180,6 @@ def _is_pure_virtual(member: Any) -> bool:
     has_func = any(c.type == "function_declarator" for c in member.children)
     has_zero = any(c.type == "number_literal" for c in member.children)
     return has_func and has_zero
-
-
-def _base_class_names(clause: Any, content: bytes) -> list[str]:
-    names: list[str] = []
-    for sub in clause.children:
-        if sub.type == "type_identifier":
-            names.append(content[sub.start_byte:sub.end_byte].decode("utf-8", errors="replace"))
-        elif sub.type == "qualified_identifier":
-            last = None
-            for c in sub.children:
-                if c.type in ("identifier", "type_identifier"):
-                    last = c
-            if last is not None:
-                names.append(content[last.start_byte:last.end_byte].decode("utf-8", errors="replace"))
-    return names
 
 
 # ---- pointer/reference param + mutation helpers --------------------------
@@ -208,7 +194,7 @@ def _decl_ident(decl: Any, content: bytes, *, scan_children: bool = False) -> st
             inner = _identifier_child(cur)
         if inner is None:
             return None
-        if inner.type == "identifier":
-            return content[inner.start_byte:inner.end_byte].decode("utf-8", errors="replace")
+        if inner.type == _IDENTIFIER:
+            return content[inner.start_byte:inner.end_byte].decode(_UTF8, errors="replace")
         cur = inner
     return None

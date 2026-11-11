@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Any, ClassVar
 
 from ..paradigm import ObjectOriented
-from ..paradigm.base import container_texts
+from ..paradigm.heritage import heritage
 
 
 class CSharp(ObjectOriented):
@@ -124,4 +124,4 @@ class CSharp(ObjectOriented):
 
     @classmethod
     def extract_superclasses(cls, node: Any, content: bytes) -> list[str]:
-        return container_texts(node, content, "base_list", ("identifier",))
+        return heritage(node, content, ("base_list",))

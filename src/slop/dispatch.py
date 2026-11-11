@@ -29,7 +29,7 @@ from pathlib import Path
 from operator import attrgetter
 from typing import Any
 
-from .config import AnalysisConfig
+from .config import AnalysisConfig, RuleConfig
 from .rule import Rule
 from .scope.identity import ScopeKind
 from .violation import Violation
@@ -86,25 +86,46 @@ class Dispatcher:
         zero_visited: list[str] = []
 
         for rule in self._rules:
-            rc = self._config.for_rule(rule.name)
-            if rc is None or not rc.enabled:
+            config = self._config.for_rule(rule.name)
+            if config is None or not config.enabled:
                 continue
-            count = 0
-            for kind in rule.altitudes:
-                for component in by_kind.get(kind, ()):
-                    count += 1
-                    (warned if rule.subjective else found).extend(rule.check(component, rc))
+            count, violations = _run_rule(rule, config, by_kind)
             visited[rule.name] = count
             if count == 0:
                 zero_visited.append(rule.name)
+            (warned if rule.subjective else found).extend(violations)
 
-        lines = _Lines()
-        kept = [v for v in found if not lines.suppresses(v)]
-        kept.sort(key=attrgetter("position"))
-        kept_warnings = [v for v in warned if not lines.suppresses(v)]
-        kept_warnings.sort(key=attrgetter("position"))
-        return Report(violations=kept, warnings=kept_warnings, visited=visited, zero_visited=zero_visited,
-                      root=str(corpus.root) if hasattr(corpus, "root") else None)
+        return _report(found, warned, visited, zero_visited, corpus)
+
+
+def _run_rule(rule: Rule, config: RuleConfig, by_kind: dict[ScopeKind, list[Any]]) -> tuple[int, list[Violation]]:
+    """Run ``rule`` at every component of its declared altitudes; return how many
+    components it was run at and what it found."""
+    violations: list[Violation] = []
+    count = 0
+    for kind in rule.altitudes:
+        for component in by_kind.get(kind, ()):
+            count += 1
+            violations.extend(rule.check(component, config))
+    return count, violations
+
+
+def _report(found: list[Violation], warned: list[Violation], visited: dict[str, int],
+            zero_visited: list[str], corpus: Any) -> Report:
+    """Assemble the report, dropping the findings a ``slop: ignore`` comment suppresses."""
+    lines = _Lines()
+    return Report(
+        violations=_kept(found, lines), warnings=_kept(warned, lines),
+        visited=visited, zero_visited=zero_visited,
+        root=str(corpus.root) if hasattr(corpus, "root") else None,
+    )
+
+
+def _kept(violations: list[Violation], lines: "_Lines") -> list[Violation]:
+    """The violations no source line suppresses, ordered by position."""
+    kept = [violation for violation in violations if not lines.suppresses(violation)]
+    kept.sort(key=attrgetter("position"))
+    return kept
 
 
 class _Lines:

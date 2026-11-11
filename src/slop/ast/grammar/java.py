@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Any, ClassVar
 
 from ..paradigm import ObjectOriented
-from ..paradigm.base import child_texts
+from ..paradigm.heritage import heritage
 
 
 class Java(ObjectOriented):
@@ -113,17 +113,8 @@ class Java(ObjectOriented):
 
     @classmethod
     def extract_superclasses(cls, node: Any, content: bytes) -> list[str]:
-        out: list[str] = []
-        sc = node.child_by_field_name("superclass")
-        if sc is not None:
-            out += child_texts(sc, content, ("type_identifier",))
-        ifaces = node.child_by_field_name("interfaces")
-        if ifaces is not None:
-            for child in ifaces.children:
-                if child.type == "type_list":
-                    out += child_texts(child, content, ("type_identifier",))
-            out += child_texts(ifaces, content, ("type_identifier",))
-        return out
+        """A class's ``extends`` and ``implements``, and an interface's ``extends``."""
+        return heritage(node, content, ("superclass", "super_interfaces", "extends_interfaces", "type_list"))
 
 
 def _has_modifier(node: Any, content: bytes, keyword: str) -> bool:

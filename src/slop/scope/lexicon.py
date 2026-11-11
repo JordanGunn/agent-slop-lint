@@ -47,9 +47,15 @@ def build_lexicon(component: Any) -> Lexicon:
     for comp in _iter_all(component):
         role = _FS_ROLE.get(comp.KIND)
         if role is not None:
-            path = comp.files[0] if comp.files else None
-            units.append((comp.name, role, Span(str(path) if path is not None else "", 0, 0)))
+            units.append(_fs_name_unit(comp, role))
     return Lexicon(units)
+
+
+def _fs_name_unit(comp: Any, role: Role) -> tuple[str, Role, Span]:
+    """A filesystem-named component as a lexicon unit; a fileless name gets an empty
+    path, counted in full and excluded from any slice."""
+    path = comp.files[0] if comp.files else None
+    return comp.name, role, Span(str(path) if path is not None else "", 0, 0)
 
 
 _UNNAMED = frozenset({"<anonymous>", "<lambda>"})
@@ -69,21 +75,45 @@ def build_declared_lexicon(component: Any) -> Lexicon:
     declared. ``build_lexicon`` keeps the undifferentiated occurrence stream."""
     units: list[tuple[str, Role, Span]] = []
     for comp in _iter_all(component):
-        kind = comp.KIND
-        if kind in _FS_ROLE:
-            path = comp.files[0] if comp.files else None
-            units.append((comp.name, _FS_ROLE[kind], Span(str(path) if path is not None else "", 0, 0)))
-        elif kind is ScopeKind.CLASS and comp.name not in _UNNAMED:
-            units.append((comp.name, Role.CLASS, comp.id.spans[0]))
-            units.extend((p, Role.PROPERTY, comp.id.spans[0]) for p in comp.properties())
-        elif kind is ScopeKind.CALLABLE:
-            grammar = comp._grammar
-            if comp.name not in _UNNAMED and not grammar.is_special_method(comp.name):
-                units.append((comp.name, Role.CALLABLE, comp.id.spans[0]))
-            receivers = grammar.implicit_receiver_names()
-            units.extend((p, Role.PARAMETER, comp.id.spans[0])
-                         for p in comp.parameters() if p not in receivers)
+        units.extend(_declared_units(comp))
     return Lexicon(units)
+
+
+def _declared_units(comp: Any) -> list[tuple[str, Role, Span]]:
+    """The names ``comp`` declares, each tagged with the role of its kind."""
+    kind = comp.KIND
+    fs_role = _FS_ROLE.get(kind)
+    if fs_role is not None:
+        return [_fs_name_unit(comp, fs_role)]
+    if kind is ScopeKind.CLASS:
+        return _class_units(comp)
+    if kind is ScopeKind.CALLABLE:
+        return _callable_units(comp)
+    return []
+
+
+def _class_units(comp: Any) -> list[tuple[str, Role, Span]]:
+    """A class's own name plus the properties it declares, at the class span."""
+    if comp.name in _UNNAMED:
+        return []
+    span = comp.id.spans[0]
+    units = [(comp.name, Role.CLASS, span)]
+    units.extend((prop, Role.PROPERTY, span) for prop in comp.properties())
+    return units
+
+
+def _callable_units(comp: Any) -> list[tuple[str, Role, Span]]:
+    """A callable's own name unless unnamed or special, plus its parameters other than
+    the grammar's implicit receivers, all at the callable span."""
+    grammar = comp._grammar
+    span = comp.id.spans[0]
+    units: list[tuple[str, Role, Span]] = []
+    if comp.name not in _UNNAMED and not grammar.is_special_method(comp.name):
+        units.append((comp.name, Role.CALLABLE, span))
+    receivers = grammar.implicit_receiver_names()
+    units.extend((param, Role.PARAMETER, span)
+                 for param in comp.parameters() if param not in receivers)
+    return units
 
 
 def _node_holding_nodes(component: Any):

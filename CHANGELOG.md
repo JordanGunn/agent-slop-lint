@@ -77,13 +77,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Read-only primitives that answer with facts and no limits: `slop find` / `--collisions`,
   `tree`, `shape`, `vocab --ontology IR.json` and `lexicon --ontology IR.json`; they report
   caveats for syntax-error files.
-- LCOM4 cohesion for Python, JavaScript and TypeScript; `null` elsewhere. Class properties
-  enter the declared-names lexicon for the same languages.
+- LCOM4 cohesion for Python, JavaScript, TypeScript, Go and Rust (each always writes the
+  receiver: `self.x`, `this.x`, `s.x`); `null` elsewhere. Class properties enter the
+  declared-names lexicon for Python, JavaScript and TypeScript.
 - Discovery of C `struct`/`union`/`enum`, Julia `struct`/`abstract type`, Java/C#/TypeScript
   enums, TypeScript type aliases, and every Go declared type.
 
 ### Fixed
 
+- A class's bases include generic, qualified and interface-inherited ones: `extends E<T>`,
+  `implements r.S`, `interface A extends B`, `: N.Q`, `Store[int]`, `Mod::D`, `E<int>` were
+  dropped (Java, TypeScript, JavaScript, C#, C++, Python, Ruby), and Julia's `<: Mod.Shape` read
+  as `Mod`. One rule now reads every grammar's heritage clause (`ast/paradigm/heritage.py`).
+- A base name resolves only to a class in the same language: a TypeScript `extends S` had
+  become a subclass of a Rust `struct S`, inflating DIT and NOC.
 - Import resolution anchors relative imports at the importing file. Before, a relative import
   (`from ..scope.find import x`, `./util`, `#include "x.h"`, `require_relative`, `super::`) and
   any dotted name (`dask.distributed`) fell back to the first corpus module sharing its last
@@ -107,8 +114,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Known limits
 
 - `Structure.orphans` matches by name; it has no rule.
-- LCOM4 is unmeasurable for Java, C#, C++, Go, Rust, Ruby, C and Julia; class properties
-  exist only for Python, JavaScript and TypeScript.
+- LCOM4 is unmeasurable for Java, C#, C++ and Ruby, where a bare name can mean an instance
+  member or a sibling method, and inapplicable to C and Julia (no instance methods); class
+  properties exist only for Python, JavaScript and TypeScript.
 - A nested JavaScript `function` rebinds `this`, which LCOM4 does not model.
 - A class qualname omits the package path, so distinct classes can share one; identity is
   the `ScopeId`.

@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any, ClassVar
 
 from ..paradigm import MultiPurpose
-from ..paradigm.base import ModuleIndex
+from ..paradigm.base import MemberAccess, ModuleIndex
 
 #: files that hold the module of their directory rather than a module named for themselves
 _DIRECTORY_MODULES = ("mod", "lib", "main")
@@ -140,6 +140,21 @@ class Rust(MultiPurpose):
                 return (found,)
         found = _module_at(base, index)
         return (found,) if found is not None else ()
+
+    @classmethod
+    def member_access(cls) -> MemberAccess | None:
+        """``self.x`` and the callee of ``self.m()``: Rust always writes the receiver."""
+        return MemberAccess("field_expression", "value", "field")
+
+    @classmethod
+    def instance_receiver(cls, method: Any, content: bytes) -> str | None:
+        """``self`` for a method that takes ``self``, ``&self`` or ``&mut self``; an associated
+        function without it (``new``) has no instance."""
+        del content
+        parameters = method.child_by_field_name("parameters")
+        if parameters is None:
+            return None
+        return "self" if any(p.type == "self_parameter" for p in parameters.named_children) else None
 
     @classmethod
     def is_abstract_scope(cls, node: Any, content: bytes) -> bool | None:

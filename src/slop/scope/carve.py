@@ -21,6 +21,8 @@ from .properties import class_properties
 
 _LAMBDA_TYPES = {"lambda", "arrow_function", "lambda_expression", "func_literal", "function_expression"}
 _METHOD_ONLY_TYPES = {"method_declaration", "method_definition", "singleton_method"}
+#: Name for a scope whose filesystem directory has no name (the filesystem root).
+_ROOT_NAME = "<root>"
 
 
 def scan_corpus(root: Path, config: Any) -> C.Corpus:
@@ -28,54 +30,76 @@ def scan_corpus(root: Path, config: Any) -> C.Corpus:
     packages by directory. Files matched by ``config.exclude`` are not carved
     (``config=None`` excludes nothing)."""
     root = Path(root)
-    files_by_lang: dict[str, list[Path]] = {}
+    realms = _carve_realms(root, _files_by_language(root, config))
+    name = root.name or _ROOT_NAME
+    corpus = C.Corpus(
+        root=root, config=config,
+        id=ScopeId(ScopeKind.CORPUS, name, ()),
+        name=name, owner=None,
+        extent=_union_extent(realms), files=_union_files(realms),
+        children=realms,
+    )
+    for realm in realms:
+        realm._owner = corpus
+    corpus._context = _analysis_context(corpus)
+    return corpus
+
+
+def _files_by_language(root: Path, config: Any) -> dict[str, list[Path]]:
+    """Source files under ``root`` grouped by detected language; nothing is excluded
+    when ``config`` is None."""
+    files_by_language: dict[str, list[Path]] = {}
     for path in source_files(root):
         if config is not None and config.excludes(path):
             continue
         lang = detect_language(path)
         if lang is None or lang not in GRAMMARS_BY_ID:
             continue
-        files_by_lang.setdefault(lang, []).append(path)
+        files_by_language.setdefault(lang, []).append(path)
+    return files_by_language
 
+
+def _carve_realms(root: Path, files_by_language: dict[str, list[Path]]) -> list[C.Realm]:
+    """One Realm per language that carved at least one module, in language order."""
     realms: list[C.Realm] = []
-    for lang, paths in sorted(files_by_lang.items()):
-        grammar = GRAMMARS_BY_ID[lang]
-        realm = _carve_realm(root, lang, grammar, paths)
+    for lang, paths in sorted(files_by_language.items()):
+        realm = _carve_realm(root, lang, GRAMMARS_BY_ID[lang], paths)
         if realm is not None:
             realms.append(realm)
+    return realms
 
-    corpus = C.Corpus(
-        root=root, config=config,
-        id=ScopeId(ScopeKind.CORPUS, root.name or "<root>", ()),
-        name=root.name or "<root>", owner=None,
-        extent=_union_extent(realms), files=_union_files(realms),
-        children=realms,
-    )
-    for r in realms:
-        r._owner = corpus
 
-    # Build the corpus-global analysis-context (class hierarchy for CK + the module
-    # dependency graph for Martin) and hang it on the Corpus root. Regions reach it
-    # via region.context (owner chain) — it is not bolted onto entity attributes.
+def _analysis_context(corpus: C.Corpus) -> Any:
+    """The corpus-global analysis context: the class hierarchy for CK plus the module
+    dependency graph for Martin, hung on the Corpus root (regions reach it via
+    ``region.context``, not through entity attributes).
+
+    The metrics and graph layers are imported here, not at module import, to keep the
+    package import direction one-way."""
     from ..metrics.structural import class_index
     from ..graph.build import build as build_dependency_graph
     from .context import AnalysisContext
     graph = build_dependency_graph(corpus)
-    # Which modules each module imports: a base name written as a simple name is resolved
-    # through these edges before falling back to proximity (see class_index._nearest).
+    index = class_index.build(
+        list(corpus._iter_classes()),
+        {key: frozenset(value) for key, value in _resolved_imports(graph).items()},
+    )
+    module_pkg = {
+        module.id: pkg.id
+        for realm in corpus.realms() for pkg in realm.packages() for module in pkg.modules()
+    }
+    return AnalysisContext(class_index=index, dep_graph=graph, module_pkg=module_pkg)
+
+
+def _resolved_imports(graph: Any) -> dict[Any, set[Any]]:
+    """Which modules each module imports, from the graph's resolved edges: a base name
+    written as a simple name is resolved through these before falling back to proximity
+    (see ``class_index._nearest``)."""
     imports: dict[Any, set[Any]] = {}
     for edge in graph.edges():
         if edge.resolved and edge.to is not None:
             imports.setdefault(edge.from_, set()).add(edge.to)
-    index = class_index.build(list(corpus._iter_classes()),
-                              {k: frozenset(v) for k, v in imports.items()})
-    module_pkg = {
-        m.id: pkg.id
-        for r in corpus.realms() for pkg in r.packages() for m in pkg.modules()
-    }
-    corpus._context = AnalysisContext(class_index=index, dep_graph=graph,
-                                      module_pkg=module_pkg)
-    return corpus
+    return imports
 
 
 def _carve_realm(root: Path, lang: str, grammar: type, paths: list[Path]) -> C.Realm | None:
@@ -146,7 +170,7 @@ def _carve_module(path: Path, grammar: type) -> C.Module | None:
     # the init filename is a per-grammar fact, not a hardcoded literal.
     init_name = grammar.package_init_name()
     is_init = init_name is not None and path.name == init_name
-    qualname = (path.parent.name or "<root>") if is_init else path.stem
+    qualname = (path.parent.name or _ROOT_NAME) if is_init else path.stem
     span = Span(str(path), 0, len(content))
 
     children = _carve_decls(
@@ -270,9 +294,9 @@ def _callable_kind(node_type: str, in_class: bool) -> CallableKind:
 def _rel_name(directory: Path, root: Path) -> str:
     try:
         rel = directory.resolve().relative_to(root.resolve())
-        return rel.as_posix() or (root.name or "<root>")
+        return rel.as_posix() or (root.name or _ROOT_NAME)
     except ValueError:
-        return directory.name or "<root>"
+        return directory.name or _ROOT_NAME
 
 
 def _union_extent(components) -> Extent:

@@ -45,11 +45,11 @@ def cognitive(node: Any, grammar: Any) -> int:
     decision_nodes = grammar.decision_nodes()
     if not decision_nodes:
         return 0
-    return _cognitive_walk(
-        node.body(), decision_nodes, grammar.nesting_nodes(),
-        grammar.compensating_decisions(), grammar.boolean_op_node(),
-        grammar.boolean_op_operators(), grammar.callable(),
+    vocab = _CognitiveVocab(
+        decision_nodes, grammar.nesting_nodes(), grammar.compensating_decisions(),
+        grammar.boolean_op_node(), grammar.boolean_op_operators(), grammar.callable(),
     )
+    return _cognitive_walk(node.body(), vocab)
 
 
 def combinatorial(node: Any, grammar: Any) -> int:
@@ -196,80 +196,118 @@ def _npath_of_try(node: Any, vocab: _NPathVocab) -> int:
 
 
 def _npath_of_if(node: Any, vocab: _NPathVocab) -> int:
-    then_np = 1
-    consequence = node.field("consequence")
-    if consequence is not None and consequence.type in vocab.block_types:
-        then_np = _npath_of_block(consequence, vocab)
-    else:
-        for child in node.children():
-            if child.type in vocab.block_types:
-                then_np = _npath_of_block(child, vocab)
-                break
-    alt_nps: list[int] = []
+    children = list(node.children())
+    alternatives: list[int] = []
     has_terminal = False
-    for child in node.children():
+    for child in children:
         if child.type in vocab.elif_nodes:
-            elif_body_np = 1
-            for ec in child.children():
-                if ec.type in vocab.block_types:
-                    elif_body_np = _npath_of_block(ec, vocab)
-            alt_nps.append(elif_body_np)
+            alternatives.append(_npath_of_elif(child, vocab))
         elif child.type in vocab.else_nodes:
             has_terminal = True
-            else_added = False
-            for ec in child.children():
-                if ec.type in vocab.block_types:
-                    alt_nps.append(_npath_of_block(ec, vocab))
-                    else_added = True
-                elif ec.type in vocab.if_nodes:
-                    alt_nps.append(_npath_of_if(ec, vocab))
-                    else_added = True
-            if not else_added and not vocab.body_field:
-                alt_nps.append(1)
+            alternatives.extend(_npath_of_else(child, vocab))
     if vocab.bare_else_keyword and not has_terminal:
-        children = list(node.children())
-        for i, child in enumerate(children):
-            if child.type == vocab.bare_else_keyword and i + 1 < len(children):
-                nxt = children[i + 1]
-                has_terminal = True
-                if nxt.type in vocab.block_types:
-                    alt_nps.append(_npath_of_block(nxt, vocab))
-                elif nxt.type in vocab.if_nodes:
-                    alt_nps.append(_npath_of_if(nxt, vocab))
-    if not has_terminal:
-        return then_np + sum(alt_nps) + 1
-    return then_np + sum(alt_nps)
+        bare = _npath_of_bare_else(children, vocab)
+        if bare is not None:
+            has_terminal = True
+            alternatives.extend(bare)
+    implicit_else = 0 if has_terminal else 1
+    return _npath_of_then(node, vocab) + sum(alternatives) + implicit_else
+
+
+def _npath_of_then(node: Any, vocab: _NPathVocab) -> int:
+    consequence = node.field("consequence")
+    if consequence is not None and consequence.type in vocab.block_types:
+        return _npath_of_block(consequence, vocab)
+    for child in node.children():
+        if child.type in vocab.block_types:
+            return _npath_of_block(child, vocab)
+    return 1
+
+
+def _npath_of_elif(node: Any, vocab: _NPathVocab) -> int:
+    result = 1
+    for child in node.children():
+        if child.type in vocab.block_types:
+            result = _npath_of_block(child, vocab)
+    return result
+
+
+def _npath_of_else(node: Any, vocab: _NPathVocab) -> list[int]:
+    """Path counts of an else clause: its blocks and chained ifs, else one empty path."""
+    paths = [
+        _npath_of_branch(child, vocab)
+        for child in node.children()
+        if child.type in vocab.block_types or child.type in vocab.if_nodes
+    ]
+    if not paths and not vocab.body_field:
+        paths.append(1)
+    return paths
+
+
+def _npath_of_bare_else(children: list[Any], vocab: _NPathVocab) -> list[int] | None:
+    """Path counts after bare ``else`` keywords among siblings; None when there is none."""
+    found = False
+    paths: list[int] = []
+    for child, following in zip(children, children[1:]):
+        if child.type != vocab.bare_else_keyword:
+            continue
+        found = True
+        if following.type in vocab.block_types or following.type in vocab.if_nodes:
+            paths.append(_npath_of_branch(following, vocab))
+    return paths if found else None
+
+
+def _npath_of_branch(node: Any, vocab: _NPathVocab) -> int:
+    if node.type in vocab.block_types:
+        return _npath_of_block(node, vocab)
+    return _npath_of_if(node, vocab)
 
 
 # ---- cognitive -----------------------------------------------------------
 
-def _cognitive_walk(
-    root: Any, decision_nodes: frozenset[str], nesting_nodes: frozenset[str],
-    compensating: frozenset[str], bool_op_node: str | None,
-    bool_op_operators: frozenset[str] | None, nested_callables: frozenset[str],
-) -> int:
+@dataclass(frozen=True)
+class _CognitiveVocab:
+    decision_nodes: frozenset[str]
+    nesting_nodes: frozenset[str]
+    compensating: frozenset[str]
+    bool_op_node: str | None
+    bool_op_operators: frozenset[str] | None
+    nested_callables: frozenset[str]
+
+    def decision_cost(self, ctype: str, depth: int) -> int:
+        if ctype not in self.decision_nodes:
+            return 0
+        if ctype in self.compensating:
+            return 1 + max(0, depth - 1)
+        return 1 + depth
+
+    def counts_operator(self, op_text: str) -> bool:
+        return self.bool_op_operators is None or op_text in self.bool_op_operators
+
+    def bool_op_cost(self, node: Any) -> int:
+        """One for each boolean operator that starts a run; a repeated operator costs nothing."""
+        if self.bool_op_node is None or node.type != self.bool_op_node:
+            return 0
+        op_text = _bool_op_text(node)
+        if not self.counts_operator(op_text):
+            return 0
+        parent = node.parent
+        if parent is not None and parent.type == self.bool_op_node and _bool_op_text(parent) == op_text:
+            return 0
+        return 1
+
+    def node_cost(self, node: Any, depth: int) -> int:
+        return self.decision_cost(node.type, depth) + self.bool_op_cost(node)
+
+
+def _cognitive_walk(root: Any, vocab: _CognitiveVocab) -> int:
     cog = 0
     stack: list[tuple[Any, int]] = [(root, 0)]
     while stack:
         node, depth = stack.pop()
-        ctype = node.type
-        if ctype in nested_callables and node is not root:
+        if node.type in vocab.nested_callables and node is not root:
             continue
-        if ctype in decision_nodes:
-            cog += (1 + max(0, depth - 1)) if ctype in compensating else (1 + depth)
-        if bool_op_node is not None and ctype == bool_op_node:
-            op_text = _bool_op_text(node)
-            counts = (bool_op_operators is None) or (op_text in bool_op_operators)
-            if counts:
-                parent = node.parent
-                in_continuing = False
-                if parent is not None and parent.type == bool_op_node:
-                    parent_op = _bool_op_text(parent)
-                    if (bool_op_operators is None or parent_op in bool_op_operators) and parent_op == op_text:
-                        in_continuing = True
-                if not in_continuing:
-                    cog += 1
-        new_depth = depth + 1 if ctype in nesting_nodes else depth
-        for child in reversed(node.children()):
-            stack.append((child, new_depth))
+        cog += vocab.node_cost(node, depth)
+        child_depth = depth + 1 if node.type in vocab.nesting_nodes else depth
+        stack.extend((child, child_depth) for child in reversed(node.children()))
     return cog

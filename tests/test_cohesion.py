@@ -118,6 +118,37 @@ def test_javascript_method_call_through_this_joins(tmp_path: Path):
     assert _groups(tmp_path, "m.js", src) == (("run", "step"),)
 
 
+def test_rust_self_members_and_associated_functions(tmp_path: Path):
+    src = (
+        "struct A { a: i32, b: i32 }\n"
+        "impl A {\n"
+        "    fn new() -> Self { A { a: 0, b: 0 } }\n"
+        "    fn get_a(&self) -> i32 { self.a }\n"
+        "    fn bump(&mut self) { self.a += 1; self.helper(); }\n"
+        "    fn helper(&self) {}\n"
+        "    fn get_b(self) -> i32 { self.b }\n"
+        "}\n"
+    )
+    c = _cohesion(tmp_path, "m.rs", src)
+    assert c.groups == (("get_a", "bump", "helper"), ("get_b",))
+    assert c.detached == ()                             # new takes no self, so it is not measured
+
+
+def test_go_receiver_members_and_unnamed_receivers(tmp_path: Path):
+    src = (
+        "package p\n"
+        "type A struct { a int; b int }\n"
+        "func (s *A) GetA() int { return s.a }\n"
+        "func (s *A) Bump() { s.a++; s.helper() }\n"
+        "func (s *A) helper() {}\n"
+        "func (t A) GetB() int { return t.b }\n"
+        "func (A) Zero() int { return 0 }\n"
+    )
+    c = _cohesion(tmp_path, "m.go", src)
+    assert c.groups == (("GetA", "Bump", "helper"), ("GetB",))
+    assert c.detached == ()                             # Zero has no instance, so it is not measured
+
+
 @pytest.mark.parametrize("name, src", [
     ("A.java", "class A { int x; int f() { return x; } int g() { return this.x; } }"),
     ("A.cs", "class A { int x; int F() { return x; } }"),

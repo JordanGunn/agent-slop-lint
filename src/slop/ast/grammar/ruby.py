@@ -6,6 +6,13 @@ from typing import Any, ClassVar
 
 from ..paradigm import MultiPurpose
 from ..paradigm.base import ModuleIndex, distinct
+from ..paradigm.heritage import heritage
+
+
+_MODULE = "module"
+_ELSIF = "elsif"
+_WHILE = "while"
+_UNTIL = "until"
 
 
 class Ruby(MultiPurpose):
@@ -17,22 +24,22 @@ class Ruby(MultiPurpose):
 
     @classmethod
     def classes(cls) -> frozenset[str]:
-        return frozenset({"class", "module"})
+        return frozenset({"class", _MODULE})
 
     @classmethod
     def decision_nodes(cls) -> frozenset[str]:
-        return frozenset({"if", "elsif", "unless_modifier", "if_modifier",
+        return frozenset({"if", _ELSIF, "unless_modifier", "if_modifier",
                           "while_modifier", "until_modifier", "rescue_modifier",
-                          "while", "until", "for", "when", "rescue", "conditional"})
+                          _WHILE, _UNTIL, "for", "when", "rescue", "conditional"})
 
     @classmethod
     def nesting_nodes(cls) -> frozenset[str]:
-        return frozenset({"if", "unless_modifier", "while", "until", "for",
+        return frozenset({"if", "unless_modifier", _WHILE, _UNTIL, "for",
                           "case", "begin", "conditional", "do_block", "block"})
 
     @classmethod
     def compensating_decisions(cls) -> frozenset[str]:
-        return frozenset({"elsif", "when"})
+        return frozenset({_ELSIF, "when"})
 
     @classmethod
     def boolean_op_node(cls) -> str | None:
@@ -48,7 +55,7 @@ class Ruby(MultiPurpose):
 
     @classmethod
     def elif_nodes(cls) -> frozenset[str]:
-        return frozenset({"elsif"})
+        return frozenset({_ELSIF})
 
     @classmethod
     def else_nodes(cls) -> frozenset[str]:
@@ -56,7 +63,7 @@ class Ruby(MultiPurpose):
 
     @classmethod
     def loop_nodes(cls) -> frozenset[str]:
-        return frozenset({"while", "until", "for"})
+        return frozenset({_WHILE, _UNTIL, "for"})
 
     @classmethod
     def switch_nodes(cls) -> frozenset[str]:
@@ -87,8 +94,8 @@ class Ruby(MultiPurpose):
         return frozenset({
             "def", "end", "do", "then", "identifier", "operator",
             "method_parameters", "block_parameters", "lambda_parameters",
-            "self", ".", "class", "module", "constant", "superclass",
-            "if", "elsif", "else", "case", "when", "while", "until", "for", "in",
+            "self", ".", "class", _MODULE, "constant", "superclass",
+            "if", _ELSIF, "else", "case", "when", _WHILE, _UNTIL, "for", "in",
             "begin", "rescue", "ensure", "exceptions", "exception_variable",
         })
 
@@ -103,8 +110,8 @@ class Ruby(MultiPurpose):
     @classmethod
     def operator_nodes(cls) -> frozenset[str]:
         return frozenset({
-            "def", "end", "class", "module", "if", "elsif", "else", "unless",
-            "while", "until", "for", "in", "case", "when", "then", "do",
+            "def", "end", "class", _MODULE, "if", _ELSIF, "else", "unless",
+            _WHILE, _UNTIL, "for", "in", "case", "when", "then", "do",
             "return", "yield", "break", "next", "redo", "retry",
             "begin", "rescue", "ensure", "raise", "require", "require_relative",
             "load", "include", "extend", "prepend", "public", "private", "protected",
@@ -163,7 +170,7 @@ class Ruby(MultiPurpose):
     @classmethod
     def is_abstract_scope(cls, node: Any, content: bytes) -> bool | None:
         del content
-        if node.type == "module":
+        if node.type == _MODULE:
             return True
         if node.type == "class":
             return False
@@ -171,33 +178,18 @@ class Ruby(MultiPurpose):
 
     @classmethod
     def extract_superclasses(cls, node: Any, content: bytes) -> list[str]:
-        if node.type == "module":
+        if node.type == _MODULE:
             return []
-        for child in node.children:
-            if child.type == "superclass":
-                for sub in child.children:
-                    if sub.type == "constant":
-                        return [content[sub.start_byte:sub.end_byte].decode("utf-8", errors="replace")]
-        return []
+        return heritage(node, content, ("superclass",))
 
     @classmethod
     def extract_name(cls, node: Any, content: bytes) -> str:
         if node.type not in ("method", "singleton_method"):
             return super().extract_name(node, content)
-        saw_def = saw_self = saw_dot = False
+        saw_def = False
         for child in node.children:
-            ctype = child.type
-            if ctype == "def":
+            if child.type == "def":
                 saw_def = True
-                continue
-            if not saw_def:
-                continue
-            if ctype == "self" and not saw_self:
-                saw_self = True
-                continue
-            if ctype == "." and saw_self and not saw_dot:
-                saw_dot = True
-                continue
-            if ctype in ("identifier", "operator"):
+            elif saw_def and child.type in ("identifier", "operator"):
                 return content[child.start_byte:child.end_byte].decode("utf-8", errors="replace").strip()
         return "<anonymous>"

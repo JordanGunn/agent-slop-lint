@@ -36,19 +36,39 @@ def class_properties(node: Any, content: bytes, grammar: Any, methods: Iterable[
 
 
 def _assigned_members(grammar: Any, methods: Iterable[Any]) -> Iterable[str]:
+    """Member names assigned through the instance receiver inside ``methods``."""
     access, assigning = grammar.member_access(), grammar.assignment_nodes()
     if access is None or not assigning:
         return
     for method in methods:
-        receiver = grammar.instance_receiver(method._node, method._content)
-        if receiver is None:
-            continue
-        for node in method._ast_node().walk(prune=frozenset({NodeKind.CLASS})):
-            if node.type != access.node_type:
-                continue
-            parent = node.parent
-            if parent is None or parent.type not in assigning or parent.field("left") != node:
-                continue
-            target, member = node.field(access.receiver_field), node.field(access.member_field)
-            if target is not None and member is not None and target.text == receiver:
-                yield member.text
+        yield from _method_assignments(grammar, method, access, assigning)
+
+
+def _method_assignments(grammar: Any, method: Any, access: Any, assigning: Any) -> Iterable[str]:
+    """Member names one method assigns through the receiver it calls its own instance."""
+    receiver = grammar.instance_receiver(method._node, method._content)
+    if receiver is None:
+        return
+    for node in method._ast_node().walk(prune=frozenset({NodeKind.CLASS})):
+        member = _assigned_member(node, access, assigning, receiver)
+        if member is not None:
+            yield member
+
+
+def _assigned_member(node: Any, access: Any, assigning: Any, receiver: str) -> str | None:
+    """The member name when ``node`` reads as ``receiver.member`` on the left of an
+    assignment, else ``None``."""
+    if not _assigns_through(node, access, assigning):
+        return None
+    target, member = node.field(access.receiver_field), node.field(access.member_field)
+    if target is None or member is None or target.text != receiver:
+        return None
+    return member.text
+
+
+def _assigns_through(node: Any, access: Any, assigning: Any) -> bool:
+    """Whether ``node`` is a member access whose parent assignment assigns to it."""
+    if node.type != access.node_type:
+        return False
+    parent = node.parent
+    return parent is not None and parent.type in assigning and parent.field("left") == node

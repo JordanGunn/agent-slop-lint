@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Any, ClassVar
 
 from ..paradigm import MultiPurpose
-from ..paradigm.base import container_texts
+from ..paradigm.heritage import heritage
 from .ecmascript import EcmaScript
 
 
@@ -83,4 +83,4 @@ class JavaScript(EcmaScript, MultiPurpose):
 
     @classmethod
     def extract_superclasses(cls, node: Any, content: bytes) -> list[str]:
-        return container_texts(node, content, "class_heritage", ("identifier",))
+        return heritage(node, content, ("class_heritage",))

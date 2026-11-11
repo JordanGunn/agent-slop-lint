@@ -6,6 +6,7 @@ from typing import Any, ClassVar
 
 from ..paradigm import MultiPurpose
 from ..paradigm.base import MemberAccess, ModuleIndex, distinct
+from ..paradigm.heritage import heritage
 
 
 class Python(MultiPurpose):
@@ -41,14 +42,8 @@ class Python(MultiPurpose):
         """The method's first parameter, unless it is decorated ``staticmethod`` or
         ``classmethod`` or is named ``cls`` (``__init_subclass__`` and metaclass methods
         take the class, not an instance)."""
-        parent = method.parent
-        if parent is not None and parent.type == "decorated_definition":
-            for decorator in parent.children:
-                if decorator.type != "decorator":
-                    continue
-                text = content[decorator.start_byte:decorator.end_byte].decode()
-                if text.lstrip("@").split("(")[0].strip().split(".")[-1] in {"staticmethod", "classmethod"}:
-                    return None
+        if _has_non_instance_decorator(method, content):
+            return None
         parameters = method.child_by_field_name("parameters")
         first = parameters.named_children[0] if parameters is not None and parameters.named_children else None
         if first is None or first.type != "identifier":
@@ -226,17 +221,8 @@ class Python(MultiPurpose):
 
     @classmethod
     def extract_superclasses(cls, node: Any, content: bytes) -> list[str]:
-        sc_node = node.child_by_field_name("superclasses")
-        if sc_node is None:
-            return []
-        out: list[str] = []
-        for child in sc_node.children:
-            if child.type == "identifier":
-                out.append(content[child.start_byte:child.end_byte].decode("utf-8", errors="replace"))
-            elif child.type == "attribute":
-                text = content[child.start_byte:child.end_byte].decode("utf-8", errors="replace")
-                out.append(text.split(".")[-1])
-        return out
+        """The base classes in ``class C(A, mod.B, Store[int], metaclass=M)``: ``A``, ``B``, ``Store``."""
+        return heritage(node, content, ("argument_list",))
 
     @classmethod
     def is_abstract_scope(cls, node: Any, content: bytes) -> bool | None:
@@ -280,3 +266,16 @@ class Python(MultiPurpose):
     @classmethod
     def package_init_name(cls) -> str | None:
         return "__init__.py"
+
+
+def _has_non_instance_decorator(method: Any, content: bytes) -> bool:
+    parent = method.parent
+    if parent is None or parent.type != "decorated_definition":
+        return False
+    for decorator in parent.children:
+        if decorator.type != "decorator":
+            continue
+        text = content[decorator.start_byte:decorator.end_byte].decode()
+        if text.lstrip("@").split("(")[0].strip().split(".")[-1] in {"staticmethod", "classmethod"}:
+            return True
+    return False
