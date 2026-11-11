@@ -16,8 +16,8 @@ root (src-layout; package `agent-slop-lint`, import `slop`, CLI `slop.cli:main`)
 - `src/slop/graph/`: module import graph (`slop deps`).
 - `src/slop/lexicon/`, `src/slop/lexical/`: identifier statistics and coverage against a
   vocabulary (`slop lexicon`).
-- `src/slop/ontology/`: canonical vocabulary; `ir.py` reads the Open Ontology JSON IR
-  (`slop vocab`).
+- `src/slop/ontology/`: the project's vocabulary (`.slop/ontology.json`, Open Ontology JSON IR);
+  `draft.py` derives it from the code, `ir.py` reads and writes it (`slop ontology`, `slop vocab`).
 - Lint layer: `rule.py` (Rule), `rules/` (15 rules, `RULE_REGISTRY` in `rules/__init__.py`),
   `dispatch.py`, `violation.py`, `config.py`.
 - `src/slop/infer/`: inference layered over the linter (`contract`, `ledger`, `frame`, `source`,

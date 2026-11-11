@@ -139,6 +139,20 @@ Constants: one used by a single module stays in it. One needed by a second modul
 subpackage moves to that subpackage; the contract's closed terms are in `contract/vocabulary.py`.
 One needed by a second package goes in `slop/layout.py` (`CONFIG_FILENAME`, `STATE_DIR`).
 
+## Vocabulary
+
+`slop/ontology/` is the project's vocabulary: the words user and agent agree the code uses, and
+what each means. It is stored as an Open Ontology JSON IR at `<project root>/.slop/ontology.json`,
+beside the inference ledger, and committed.
+
+- `draft.py` derives a first version from the code (`slop ontology draft`): one entity per
+  public class, its properties as fields, its docstring's first sentence as description. It is
+  complete and noisy; curating it is judgement, done by the agent with the user.
+- `ir.py` reads and writes the IR. Reading enforces Open Ontology's naming rules, so a
+  vocabulary slop accepts is one Open Ontology accepts; `slop ontology check` exposes that.
+- `compare.py` and `lexical/` compare the code with it (`slop vocab`, `slop lexicon`), which use
+  the project's vocabulary unless `--ontology` names another.
+
 ## Skills
 
 `slop/skill/` packages Agent Skills (agentskills.io). Slop ships one, `slop` (`/slop`): the

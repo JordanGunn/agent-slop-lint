@@ -440,6 +440,8 @@ _WIRING = [
     (["infer", "references", "rubrics/x"], "infer_references", ("rubrics/x",), {}),
     (["infer", "schema", "verdicts"], "infer_schema", ("verdicts",), {}),
     (["infer", "apply", "v.json", "--root", "r"], "infer_apply", ("v.json", "r"), {}),
+    (["ontology", "draft", "--root", "r", "--force"], "ontology_draft", ("r", True), {}),
+    (["ontology", "check", "--root", "r"], "ontology_check", ("r",), {}),
     (["skill", "list"], "skill_list", (), {}),
     (["skill", "show", "slop", "SKILL.md"], "skill_show", ("slop", "SKILL.md"), {}),
     (["skill", "install", "slop", "--dest", "d", "--force"], "skill_install", ("slop", "d", True), {}),
@@ -455,5 +457,5 @@ def test_each_command_reaches_its_handler_with_its_arguments(monkeypatch, argv, 
 
 
 def test_the_wiring_table_covers_every_command():
-    covered = {tuple(argv[:2]) if argv[0] in ("infer", "skill") else (argv[0],) for argv, *_ in _WIRING}
+    covered = {tuple(argv[:2]) if argv[0] in ("infer", "ontology", "skill") else (argv[0],) for argv, *_ in _WIRING}
     assert covered == set(dict(_leaf_commands(cli._parser())))

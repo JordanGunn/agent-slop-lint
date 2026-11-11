@@ -45,6 +45,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and keeps files a user added. Reinstall after upgrading slop. Slop ships one skill, `slop`
   (`/slop`): a conversational interface over the CLI, which also carries the `slop infer`
   workflow, rubrics and schemas.
+- `slop ontology draft | check`: the project's vocabulary at `.slop/ontology.json`, an Open
+  Ontology JSON IR drafted from the code (one entity per public class, properties as fields,
+  docstring's first sentence as description) for user and agent to curate. Reading an IR now
+  enforces Open Ontology's naming rules. `slop vocab` and `slop lexicon` use the project's
+  vocabulary by default. Grammars gain a `docstring` fact (Python).
 - `duplicate-code` finds parameterized clones (Baker 1995): bodies that match token for token
   except for the names each binds (parameters by position, assigned locals, loop variables) and
   literal values. A different callee, member or keyword argument is different code, so

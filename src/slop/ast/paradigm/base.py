@@ -252,6 +252,13 @@ class Grammar(ABC):
     # ---- reference / dispatch semantics -------------------------------
 
     @classmethod
+    def docstring(cls, node: Any, content: bytes) -> str | None:
+        """The documentation string a definition carries in its own body (Python's docstring),
+        or None. Default None: most languages document in comments, which are not read."""
+        del node, content
+        return None
+
+    @classmethod
     def is_special_method(cls, name: str) -> bool:
         """True if ``name`` is a language-special method/symbol invoked *implicitly*
         by the runtime rather than called by name (Python's ``__dunder__``). Such a

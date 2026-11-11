@@ -1,4 +1,4 @@
-"""Read an Open Ontology model's JSON IR as a :class:`Vocabulary`.
+"""Read and write an Open Ontology model's JSON IR as a :class:`Vocabulary`.
 
 The IR is plain JSON: ``objectTypes`` (entities), ``linkTypes`` (relations),
 ``actionTypes`` and ``queryTypes``. Both the bare IR and the ``{"ir": ...}`` wrapper
@@ -7,11 +7,14 @@ on and fails loudly on anything else: a silently empty vocabulary would read as 
 name is unknown".
 
 Only the schema is read. Facts seeded at runtime (instances) are not in the IR, so this
-vocabulary is the model's declared words, not its data.
+vocabulary is the model's declared words, not its data. Names must follow Open Ontology's own
+rules (PascalCase entities, kebab-case relations, actions and queries, ``namespace/name``
+fields, every name unique), so a vocabulary slop accepts is one Open Ontology accepts.
 """
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -20,6 +23,13 @@ from .interface import Term, TermKind, Vocabulary
 
 class OntologyError(ValueError):
     """The IR is missing, malformed, or declares nothing usable."""
+
+
+_ENTITY = re.compile(r"^[A-Z][A-Za-z0-9]*$")
+_KEBAB = re.compile(r"^[a-z][a-z0-9-]*$")
+_FIELD = re.compile(r"^[a-z][a-z0-9_-]*/[a-z][a-z0-9_-]*$")
+_SECTIONS = {TermKind.ENTITY: ("objectTypes", "object-type"), TermKind.RELATION: ("linkTypes", "link-type"),
+             TermKind.ACTION: ("actionTypes", "action-type"), TermKind.QUERY: ("queryTypes", "query-type")}
 
 
 class OntologyIR(Vocabulary):
@@ -83,5 +93,47 @@ class OntologyIR(Vocabulary):
 
         if not any(t.kind is TermKind.ENTITY for t in terms):
             raise OntologyError(f"{source}: declares no entities, so there is nothing to compare names against")
+        _check_names(terms, source)
         label = f"{data.get('name', source)}@{data.get('version', '?')}"
         return cls(label, terms)
+
+    def as_ir(self) -> dict:
+        """The vocabulary as Open Ontology JSON IR. Field types are not known to slop, so each
+        field is written as ``json`` (any value), optional and single."""
+        model, _, version = self._label.partition("@")
+        ir: dict = {"kind": "ontology", "name": model, "version": version or "0.1.0"}
+        for kind, (section, item_kind) in _SECTIONS.items():
+            ir[section] = [_term_ir(t, item_kind) for t in self._terms if t.kind is kind]
+        return ir
+
+
+def _term_ir(term: Term, item_kind: str) -> dict:
+    out: dict = {"kind": item_kind, "name": term.name, "description": term.description}
+    if term.kind is TermKind.ACTION:
+        out["input"] = [{"name": name} for name in term.fields]
+        return out
+    if term.kind is TermKind.QUERY:
+        return out
+    out["properties"] = [{"key": f":{key}", "name": key.split("/", 1)[1], "valueType": {"kind": "json"},
+                          "required": False, "unique": False, "cardinality": "one"} for key in term.fields]
+    if term.ends is not None:
+        out["from"], out["to"] = term.ends
+    return out
+
+
+def _check_names(terms: Sequence[Term], source: str) -> None:
+    """Raise unless every name follows Open Ontology's rules and is unique."""
+    seen: set[str] = set()
+    for term in terms:
+        pattern = _ENTITY if term.kind is TermKind.ENTITY else _KEBAB
+        if not pattern.match(term.name):
+            raise OntologyError(f"{source}: {term.kind.value} name {term.name!r} does not follow Open Ontology's "
+                                f"naming rule ({pattern.pattern})")
+        if term.name in seen:
+            raise OntologyError(f"{source}: the name {term.name!r} is declared more than once")
+        seen.add(term.name)
+        if term.kind in (TermKind.ENTITY, TermKind.RELATION):
+            for key in term.fields:
+                if not _FIELD.match(key):
+                    raise OntologyError(f"{source}: field {key!r} of {term.name} is not 'namespace/name' ({_FIELD.pattern})")
+

@@ -28,6 +28,7 @@ answer in prose.
 | what depends on what, and whether imports cycle | `slop deps` |
 | how a class is shaped: coupling, depth, cohesion groups | `slop shape` |
 | the vocabulary of a scope, or how it matches an ontology | `slop lexicon`, `slop vocab` |
+| what the project's words mean: draft or check its vocabulary | `slop ontology` |
 | what is complex and changing right now | `slop hotspots` |
 | the parse tree of one file | `slop ast` |
 | whether the `WARN` findings are real problems | `slop infer`: follow `references/infer.md` |
@@ -42,6 +43,16 @@ object: you read the code it points to, rule on it against its rubric, and retur
 in `references/infer.md`, the rubrics in `references/rubrics/`, and the document shapes in
 `assets/schemas/`. The same text is printed by `slop infer instructions`, `slop infer references`
 and `slop infer schema`.
+
+## Agreeing on vocabulary
+
+The project's vocabulary is `.slop/ontology.json` under the project root, an Open Ontology JSON
+IR: the words the user and you agree the code uses, and what each means. `slop ontology draft`
+writes a first version from the classes; it is complete and noisy. Curate it with the user:
+keep the words that name domain concepts, drop incidental ones, write a one-sentence
+`description` for each, and raise any word that names two things. After every edit run
+`slop ontology check`. `slop vocab` and `slop lexicon` then compare the code with it. The file
+is committed, so each agreement is a reviewable diff.
 
 ## Files
 

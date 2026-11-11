@@ -9,5 +9,9 @@ from __future__ import annotations
 #: The config file looked up from the scan root upward.
 CONFIG_FILENAME = ".slop.toml"
 
-#: The directory under a project root where slop keeps state it writes (the inference ledger).
+#: The directory under a project root where slop keeps state it writes (the inference ledger,
+#: the vocabulary).
 STATE_DIR = ".slop"
+
+#: The project's vocabulary, an Open Ontology JSON IR under ``STATE_DIR``.
+ONTOLOGY_FILENAME = "ontology.json"

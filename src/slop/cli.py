@@ -36,7 +36,9 @@ from .infer.contract import ContractError, Verdicts, dump, parse, schemas as inf
 from .infer.ledger.jsonl import JsonlLedger
 from .infer.source.finding import FindingSource
 from .infer.source.interface import Analysis as InferAnalysis
-from .layout import CONFIG_FILENAME
+from .layout import CONFIG_FILENAME, ONTOLOGY_FILENAME, STATE_DIR
+from .ontology.draft import draft as draft_vocabulary
+from .ontology.ir import OntologyError
 from .skill.catalog import SKILLS
 from .skill.install import InstallError, install as install_skill
 from .scope.find import walk as _walk
@@ -149,8 +151,58 @@ def _analyse(root: str | Path, rules=None) -> InferAnalysis | None:
         print(f"slop: error: no source files found under {root}", file=sys.stderr)
         return None
     report = Dispatcher(RULE_REGISTRY if rules is None else rules, config).run(corpus)
-    project_root = config.anchor or (root if root.is_dir() else root.parent)
-    return InferAnalysis(root=project_root, report=report, corpus=corpus)
+    return InferAnalysis(root=_project_root(root, config), report=report, corpus=corpus)
+
+
+def _project_root(root: Path, config: AnalysisConfig) -> Path:
+    """The directory holding the config, else the scan root (its directory, for a file)."""
+    return config.anchor or (root if root.is_dir() else root.parent)
+
+
+def _ontology_path(root: str | Path) -> Path:
+    """Where the project's vocabulary lives."""
+    root = Path(root)
+    return _project_root(root, AnalysisConfig.load(root, RULE_REGISTRY)) / STATE_DIR / ONTOLOGY_FILENAME
+
+
+def _vocabulary(root: str | Path, ontology: str | Path | None) -> OntologyIR | None:
+    """The vocabulary at ``ontology``, else the project's; None (with the reason printed) if there is none."""
+    path = Path(ontology) if ontology is not None else _ontology_path(root)
+    if ontology is None and not path.exists():
+        print(f"slop: error: no vocabulary at {path}; pass --ontology FILE or run `slop ontology draft`",
+              file=sys.stderr)
+        return None
+    return OntologyIR.load(path)
+
+
+def ontology_draft(root: str | Path, force: bool) -> int:
+    """Write the project's vocabulary, drafted from its classes."""
+    corpus = _scan_root(root)
+    if corpus is None:
+        return 2
+    target = _ontology_path(root)
+    if target.exists() and not force:
+        print(f"slop: error: {target} exists and holds agreed definitions; use --force to replace it",
+              file=sys.stderr)
+        return 2
+    vocabulary = draft_vocabulary(corpus, name=target.parent.parent.resolve().name.lower() or "project")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(json.dumps(vocabulary.as_ir(), indent=2) + "\n", encoding="utf-8")
+    described = sum(1 for t in vocabulary.terms() if t.description)
+    print(f"{target}  {len(vocabulary.terms())} entities, {described} with a description")
+    return 0
+
+
+def ontology_check(root: str | Path) -> int:
+    """Validate the project's vocabulary: exit 0 if Open Ontology would accept it, 2 if not."""
+    path = _ontology_path(root)
+    try:
+        vocabulary = OntologyIR.load(path)
+    except OntologyError as exc:
+        print(f"slop: error: {exc}", file=sys.stderr)
+        return 2
+    print(f"{path}  valid: {len(vocabulary.terms())} terms, {len(vocabulary.entities())} entities")
+    return 0
 
 
 def lint(root: str | Path, output: str = "human", *, rules=None) -> int:
@@ -273,7 +325,7 @@ def lexicon_view(root: str | Path, output: str = "human", *,
         target = _select_scope(corpus, scope, _parse_kind(scope_kind))
         if target is None:
             return 2
-    vocabulary = OntologyIR.load(ontology) if ontology is not None else None
+    vocabulary = _vocabulary(root, ontology) if ontology is not None or _ontology_path(root).exists() else None
     lexicon = target.lexicon()
     dist = lexicon.distribution(top=top)
     cov = (lexical_coverage(build_declared_lexicon(target), vocabulary)
@@ -468,7 +520,7 @@ def tree_view(root: str | Path, output: str = "human", *, scope: str | None = No
     return 0
 
 
-def vocab_view(root: str | Path, ontology: str | Path, output: str = "human", *,
+def vocab_view(root: str | Path, ontology: str | Path | None, output: str = "human", *,
                term: str | None = None) -> int:
     """The canonical vocabulary against the code.
 
@@ -476,7 +528,9 @@ def vocab_view(root: str | Path, ontology: str | Path, output: str = "human", *,
     classes found under ``--root`` are compared with the ontology's entities: matched,
     unknown to the ontology, and declared but unused. Exit 0 whenever the comparison ran;
     gating on mismatches belongs to the lint layer."""
-    vocabulary = OntologyIR.load(ontology)
+    vocabulary = _vocabulary(root, ontology)
+    if vocabulary is None:
+        return 2
     if term is not None:
         found = vocabulary.term(term)
         if output == "json":
@@ -782,7 +836,7 @@ def _parser() -> argparse.ArgumentParser:
                                                 kind=a.kind, scope_kind=a.scope_kind))
 
     p_vocab = sub.add_parser("vocab", help="compare code names with a canonical ontology (JSON IR)")
-    p_vocab.add_argument("--ontology", required=True, help="Open Ontology IR JSON file")
+    p_vocab.add_argument("--ontology", default=None, help="Open Ontology IR JSON file (default: the project's)")
     p_vocab.add_argument("--root", default=".")
     p_vocab.add_argument("--term", default=None, help="print this term's canonical entry instead of comparing")
     p_vocab.add_argument("--output", choices=["human", "json"], default="human")
@@ -821,6 +875,16 @@ def _parser() -> argparse.ArgumentParser:
     p_apply.add_argument("file", nargs="?", default="-", help="verdicts JSON (default: stdin)")
     p_apply.add_argument("--root", default=".")
     p_apply.set_defaults(run=lambda a: infer_apply(a.file, a.root))
+
+    p_onto = sub.add_parser("ontology", help="the project's vocabulary: draft it from the code, or check it")
+    onto_sub = p_onto.add_subparsers(dest="ontology_command", required=True)
+    p_draft = onto_sub.add_parser("draft", help="write the project's vocabulary, drafted from its classes")
+    p_draft.add_argument("--root", default=".")
+    p_draft.add_argument("--force", action="store_true", help="replace an existing vocabulary")
+    p_draft.set_defaults(run=lambda a: ontology_draft(a.root, a.force))
+    p_onto_check = onto_sub.add_parser("check", help="validate the project's vocabulary")
+    p_onto_check.add_argument("--root", default=".")
+    p_onto_check.set_defaults(run=lambda a: ontology_check(a.root))
 
     p_skill = sub.add_parser("skill", help="Agent Skills that teach an agent to use slop")
     skill_sub = p_skill.add_subparsers(dest="skill_command", required=True)
