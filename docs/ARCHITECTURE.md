@@ -95,19 +95,34 @@ stores the result. It follows `Dpre(X) -> A(X' : Sigma) : S -> Dpost(Y)`.
 
 | Subpackage | Role | May import |
 |---|---|---|
+| `bundle/` | prose slop ships and prints: `instructions.md`, `references/` (rubrics among them) | nothing in slop |
 | `contract/` | the documents exchanged (`Worklist`, `Verdicts`, `Receipt`), their JSON Schema, strict parsing | nothing in slop |
 | `ledger/` | persisted rulings (`Ledger`, `JsonlLedger`) | `contract` |
-| `frame/` | finding identity, code excerpt, rubric | `contract` |
+| `frame/` | finding id, code fingerprint, excerpt, the question and rubric for a rule | `bundle`, `contract` |
 | `source/` | where residue comes from (`Source`, `FindingSource`) | `contract`, `frame` |
-| `apply/` | validate verdicts, store them, settle a report with the ledger | `contract`, `ledger` |
+| `apply/` | validate verdicts, store them, list what is outstanding, settle a report | `contract`, `frame`, `ledger`, `source` |
 
 `tests/test_infer_layers.py` pins these directions. A new kind of residue, such as a project
 survey for bootstrapping, is a new module in `source/`; the other layers do not change.
 
-Built: `contract/` (a field is declared once with `described(...)`; the schema and the parser
-both read it), `frame/fingerprint.py`, the `Ledger` and `Source` interfaces, and `slop infer
-schema`. Fixed signature, raises `NotImplementedError`: `JsonlLedger`, `frame/excerpt.py`,
-`frame/rubric.py`, `FindingSource`, and `apply/` (`validate`, `route`, `settle`).
+The commands print or consume these documents, so an agent needs only the CLI:
+
+| Command | Does |
+|---|---|
+| `slop infer instructions` | prints the agent's workflow |
+| `slop infer references [NAME]` | lists the references, or prints one |
+| `slop infer schema [NAME]` | prints the JSON Schema of every document, or of one |
+| `slop infer next` | prints a `Worklist`: warnings of rules that have a rubric and no current ruling |
+| `slop infer apply [FILE]` | validates a `Verdicts` document (file or stdin), stores what it accepts, prints a `Receipt` |
+
+`slop lint` then settles the report with the ledger: a `clear` ruling drops the warning, a
+`confirm` ruling makes it a violation (it fails the run), and a `defer` ruling, a stale ruling
+or no ruling leaves it a warning. A ruling is stale when the excerpt's text or the rubric
+changed, which `Ledger.current` checks through the fingerprint.
+
+Only `class-cohesion` has a rubric. A field is declared once with `described(...)`; the schema
+and the parser both read it. The ledger is `.slop/inferences.jsonl` under the scan root, one
+ruling per line.
 
 Constants: one used by a single module stays in it. One needed by a second module in the same
 subpackage moves to that subpackage; the contract's closed terms are in `contract/vocabulary.py`.

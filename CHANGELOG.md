@@ -28,31 +28,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `class-cohesion` (LCOM4, 1, off by default): 12 rules.
 - Suppression matches exact rule names only: `slop: ignore[a, b]`.
 - `scripts/` removed.
-- New package `slop/infer/` (inference over the linter) and `slop infer schema`. Built: the
-  `Worklist`, `Verdicts` and `Receipt` documents with their schemas and strict parsing,
-  finding ids and fingerprints, and the `Ledger` and `Source` interfaces. `slop/layout.py`
-  holds `CONFIG_FILENAME` and `STATE_DIR`. Ledger storage, excerpts, rubrics, the finding
-  source and `apply` have fixed signatures and are not built.
-- A rule can be `subjective`: its findings are `WARN` lines in the human output and a
-  `warnings` list in JSON, and never exit 1. `class-cohesion`, `rigid-package` and
-  `useless-package` are subjective, and every rule is now on by default (`class-cohesion` was off).
-  `slop rules` shows objective or subjective.
-- `duplicate-code` treats a body that is mostly literals as data: two such bodies are clones
-  only if their literals are equal, so constant tables with different entries are no longer
-  clones. Logic still ignores literal values. A member assigned through a receiver
-  (`self.x = ...`, `this.x = ...`) keeps its name in the fingerprint, since it names state a
-  different body cannot share by renaming: constructors that store different fields are not
-  clones. Applies where the grammar declares member access (Python, JavaScript, TypeScript).
-  slop: 37 to 0 findings; laszy: 24 to 15.
-- New rules `halstead-volume` (limit 1000), `magic-float` and `duplicate-string`: 15 rules.
-  Only objective violations are reported (see `docs/ARCHITECTURE.md`). `magic-float` reports a
-  float with a fractional part (not 0.5) used as an operand of an arithmetic, comparison,
-  bitwise or logical operator; integers, defaults, keyword arguments, call arguments and
-  `NAME = 9.81` are not reported. `duplicate-string` reports a string of 5+ characters used
-  more than `limit` (4) times in a module; short strings, constants, f-strings and `+`
-  fragments are not counted. Fixed: Python strings were not counted as Halstead operands;
-  Julia operator tokens were not counted at all.
-  `Structure.halstead_density` is removed; it returned Halstead difficulty.
+- New package `slop/infer/` and `slop infer instructions | references | schema | next | apply`:
+  inference over the linter's subjective warnings. The host agent judges; slop frames the
+  question (`Worklist`), validates the answer (`Verdicts`, `Receipt`) and stores it in
+  `.slop/inferences.jsonl`. `slop lint` applies the rulings: `clear` drops a warning, `confirm`
+  makes it a violation, `defer` or a stale ruling leaves it a warning. Instructions and
+  references (the `class-cohesion` rubric) are bundled and printed by the CLI. `Violation`
+  gains `subject`; `slop/layout.py` holds `CONFIG_FILENAME` and `STATE_DIR`.
 - File discovery is one mechanism: inside a git work tree, tracked files plus untracked files
   `.gitignore` does not ignore; elsewhere every file except `.git`. The hard-coded skip list
   and the dot-directory rule are gone, so hidden directories are now read; use `exclude`.

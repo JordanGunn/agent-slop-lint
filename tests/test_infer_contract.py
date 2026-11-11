@@ -19,7 +19,7 @@ WORKLIST = {"version": "1", "items": [{
     "subject": "a.A", "message": "a.A has 2 method groups", "value": 2, "threshold": 1,
     "excerpt": {"path": "a.py", "first_line": 3, "last_line": 6, "text": "class A: ..."},
     "question": {"id": "cohesion.accessor-class", "text": "Is this a value object?", "outcomes": ["clear", "confirm", "defer"]},
-    "rubric": {"path": "references/rubrics/class-cohesion.md", "version": "9f"},
+    "rubric": {"command": "slop infer references rubrics/class-cohesion", "version": "9f"},
     "fingerprint": "00ff"}]}
 
 

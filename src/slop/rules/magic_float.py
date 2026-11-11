@@ -36,4 +36,4 @@ class MagicFloatRule(Rule):
                     rule=self.name, path=path, line=use.line, column=use.column,
                     message=f"float {use.value} is an operand {use.count} time(s) in "
                             f"{component.qualname}; name it (limit {limit})",
-                    value=use.count, threshold=limit)
+                    value=use.count, threshold=limit, subject=component.qualname)

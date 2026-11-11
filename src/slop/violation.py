@@ -29,6 +29,8 @@ class Violation:
     message: str
     value: float | int | None = None
     threshold: float | int | None = None
+    #: Qualified name of the class, callable, module or package the violation is about.
+    subject: str | None = None
 
     @classmethod
     def at(cls, scope: Any, rule: str, message: str, *,
@@ -50,7 +52,13 @@ class Violation:
             message=message,
             value=value,
             threshold=threshold,
+            subject=scope.qualname,
         )
+
+    @property
+    def position(self) -> tuple[str, int, int, str]:
+        """Where the violation is, as a sort key: path, line, column, rule."""
+        return (self.path or "", self.line, self.column, self.rule)
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -61,4 +69,5 @@ class Violation:
             "message": self.message,
             "value": self.value,
             "threshold": self.threshold,
+            "subject": self.subject,
         }

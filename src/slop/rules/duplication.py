@@ -46,4 +46,5 @@ class DuplicationRule(Rule):
                 message=f"{len(cluster.members)} Type-2 clones ({cluster.leaf_count} leaf nodes): {members}",
                 value=len(cluster.members),
                 threshold=2,
+                subject=first.qualname,
             )

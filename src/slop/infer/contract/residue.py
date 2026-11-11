@@ -34,7 +34,7 @@ class Question:
 class RubricRef:
     """The rubric that governs the question, and its version."""
 
-    path: str = described("Where to read the rubric, relative to the skill.")
+    command: str = described("Command that prints the rubric. Read it before answering.")
     version: str = described("Content hash. A verdict is stale when it changes.")
 
 

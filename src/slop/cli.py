@@ -14,6 +14,7 @@ import argparse
 import json
 import sys
 from dataclasses import replace
+from datetime import datetime, timezone
 from importlib.metadata import PackageNotFoundError, version as _pkg_version
 from pathlib import Path
 
@@ -28,7 +29,14 @@ from .lexical import coverage as lexical_coverage
 from .scope import find as discovery
 from .metrics.structural.hotspots import DEFAULT_LAST
 from .identity import relative_path as _rel_path
-from .infer.contract import schemas as infer_schemas
+from .infer.apply.outstanding import outstanding
+from .infer.apply.route import route
+from .infer.apply.settle import settle
+from .infer.bundle import prose
+from .infer.contract import ContractError, Verdicts, dump, parse, schemas as infer_schemas
+from .infer.frame.rubric import has_rubric
+from .infer.ledger.jsonl import JsonlLedger
+from .infer.source.interface import Analysis as InferAnalysis
 from .layout import CONFIG_FILENAME
 from .scope.find import walk as _walk
 from .scope.lexicon import build_declared_lexicon
@@ -124,13 +132,13 @@ def _has_source(corpus) -> bool:
     return False
 
 
-def lint(root: str | Path, output: str = "human", *, rules=None) -> int:
-    """Run every enabled rule, or only ``rules`` (which then run whether or not the config
-    has them enabled)."""
+def _analyse(root: str | Path, rules=None) -> InferAnalysis | None:
+    """Scan ``root`` and run every enabled rule, or only ``rules`` (which then run whether or not
+    the config has them enabled). On a missing or source-free root, print the error and return None."""
     root = Path(root)
     if not root.exists():
         print(f"slop: error: root path does not exist: {root}", file=sys.stderr)
-        return 2
+        return None
     config = AnalysisConfig.load(root, RULE_REGISTRY)
     if rules is not None:
         config = replace(config, rules={
@@ -138,8 +146,17 @@ def lint(root: str | Path, output: str = "human", *, rules=None) -> int:
     corpus = scan_corpus(root, config)
     if not _has_source(corpus):
         print(f"slop: error: no source files found under {root}", file=sys.stderr)
-        return 2
+        return None
     report = Dispatcher(RULE_REGISTRY if rules is None else rules, config).run(corpus)
+    return InferAnalysis(root=root, report=report, corpus=corpus)
+
+
+def lint(root: str | Path, output: str = "human", *, rules=None) -> int:
+    """Run every enabled rule, or only ``rules``, then apply the project's inference rulings."""
+    analysis = _analyse(root, rules)
+    if analysis is None:
+        return 2
+    report = settle(analysis, JsonlLedger.at(analysis.root))
     if output == "json":
         print(json.dumps(report.as_dict(), indent=2))
     else:
@@ -547,10 +564,69 @@ def hotspots_view(root: str | Path, output: str = "human", *, since: str | None 
     return 0
 
 
-def infer_schema() -> int:
-    """Print the JSON Schema of each document an agent and slop exchange."""
-    print(json.dumps(infer_schemas(), indent=2))
+def infer_command(args: argparse.Namespace) -> int:
+    """Run one `slop infer` subcommand."""
+    if args.infer_command == "instructions":
+        print(prose.instructions(), end="")
+        return 0
+    if args.infer_command == "references":
+        return infer_references(args.name)
+    if args.infer_command == "schema":
+        return infer_schema(args.name)
+    if args.infer_command == "next":
+        return infer_next(args.root, args.rule, args.limit)
+    return infer_apply(args.file, args.root)
+
+
+def infer_references(name: str | None) -> int:
+    """List the bundled references, or print the one called ``name``."""
+    if name is None:
+        print("\n".join(prose.references()))
+        return 0
+    try:
+        print(prose.reference(name), end="")
+    except KeyError:
+        print(f"slop: error: no reference '{name}'. Try `slop infer references`.", file=sys.stderr)
+        return 2
     return 0
+
+
+def infer_schema(name: str | None) -> int:
+    """Print the JSON Schema of every document an agent and slop exchange, or of one."""
+    schemas = infer_schemas()
+    print(json.dumps(schemas if name is None else schemas[name], indent=2))
+    return 0
+
+
+def infer_next(root: str | Path, rule: str | None, limit: int | None) -> int:
+    """Print the worklist: findings that need judgement and have no current ruling."""
+    if rule is not None and not has_rubric(rule):
+        print(f"slop: error: rule '{rule}' has no rubric, so it cannot be put to inference.", file=sys.stderr)
+        return 2
+    analysis = _analyse(root)
+    if analysis is None:
+        return 2
+    print(json.dumps(dump(outstanding(analysis, JsonlLedger.at(analysis.root), rule=rule, limit=limit)), indent=2))
+    return 0
+
+
+def infer_apply(file: str, root: str | Path) -> int:
+    """Read a verdicts document (a file, or ``-`` for stdin), store what is acceptable, and print
+    the receipt. Exit 1 if any verdict was rejected, 2 if the document is not valid."""
+    text = sys.stdin.read() if file == "-" else Path(file).read_text(encoding="utf-8")
+    try:
+        verdicts = parse(Verdicts, json.loads(text))
+    except (json.JSONDecodeError, ContractError) as exc:
+        print(f"slop: error: {exc}", file=sys.stderr)
+        return 2
+    analysis = _analyse(root)
+    if analysis is None:
+        return 2
+    outstanding_now = {item.id: item for item in outstanding(analysis, JsonlLedger.at(analysis.root)).items}
+    receipt = route(verdicts, outstanding_now, JsonlLedger.at(analysis.root),
+                    at=datetime.now(timezone.utc).isoformat(timespec="seconds"))
+    print(json.dumps(dump(receipt), indent=2))
+    return 1 if receipt.rejected else 0
 
 
 def init(root: str | Path) -> int:
@@ -680,7 +756,19 @@ def main(argv: list[str] | None = None) -> int:
 
     p_infer = sub.add_parser("infer", help="inference over the linter's findings: schemas and, soon, the worklist")
     infer_sub = p_infer.add_subparsers(dest="infer_command", required=True)
-    infer_sub.add_parser("schema", help="print the JSON Schema of every document the exchange uses")
+    infer_sub.add_parser("instructions", help="print the agent's instructions for the inference workflow")
+    p_refs = infer_sub.add_parser("references", help="list the bundled references, or print one")
+    p_refs.add_argument("name", nargs="?", default=None, help="a name from the list (for example rubrics/class-cohesion)")
+    p_schema = infer_sub.add_parser("schema", help="print the JSON Schema of the documents the exchange uses")
+    p_schema.add_argument("name", nargs="?", default=None, choices=sorted(infer_schemas()),
+                          help="one document (default: all)")
+    p_next = infer_sub.add_parser("next", help="print the worklist: findings that need judgement")
+    p_next.add_argument("--root", default=".")
+    p_next.add_argument("--rule", default=None, help="only findings of this rule")
+    p_next.add_argument("--limit", type=int, default=None, help="at most this many items")
+    p_apply = infer_sub.add_parser("apply", help="store verdicts from a file or stdin and print a receipt")
+    p_apply.add_argument("file", nargs="?", default="-", help="verdicts JSON (default: stdin)")
+    p_apply.add_argument("--root", default=".")
 
     args = parser.parse_args(argv)
     try:
@@ -714,7 +802,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "hotspots":
             return hotspots_view(args.root, args.output, since=args.since, last=args.last)
         if args.command == "infer":
-            return infer_schema()
+            return infer_command(args)
     except Exception as exc:  # noqa: BLE001 — top-level boundary: any failure is exit 2
         print(f"slop: error: {exc}", file=sys.stderr)
         return 2

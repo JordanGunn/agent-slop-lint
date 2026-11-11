@@ -25,6 +25,7 @@ import os
 import re
 from collections.abc import Iterable
 from dataclasses import dataclass, field
+from operator import attrgetter
 from typing import Any
 
 from .config import AnalysisConfig
@@ -95,15 +96,11 @@ class Dispatcher:
 
         lines = _Lines()
         kept = [v for v in found if not lines.suppresses(v)]
-        kept.sort(key=_position)
+        kept.sort(key=attrgetter("position"))
         kept_warnings = [v for v in warned if not lines.suppresses(v)]
-        kept_warnings.sort(key=_position)
+        kept_warnings.sort(key=attrgetter("position"))
         return Report(violations=kept, warnings=kept_warnings, visited=visited, zero_visited=zero_visited,
                       root=str(corpus.root) if hasattr(corpus, "root") else None)
-
-
-def _position(violation: Violation) -> tuple[str, int, int, str]:
-    return (violation.path or "", violation.line, violation.column, violation.rule)
 
 
 class _Lines:

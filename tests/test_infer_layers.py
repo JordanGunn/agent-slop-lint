@@ -14,11 +14,12 @@ INFER = Path(__file__).resolve().parent.parent / "src" / "slop" / "infer"
 
 #: subpackage -> the only sibling subpackages it may import.
 ALLOWED: dict[str, set[str]] = {
+    "bundle": set(),
     "contract": set(),
     "ledger": {"contract"},
-    "frame": {"contract"},
+    "frame": {"bundle", "contract"},
     "source": {"contract", "frame"},
-    "apply": {"contract", "ledger"},
+    "apply": {"contract", "frame", "ledger", "source"},
 }
 
 

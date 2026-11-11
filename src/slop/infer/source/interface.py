@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
-from typing import ClassVar
+from typing import Any, ClassVar
 
 from ...dispatch import Report
 from ..contract import Residue
@@ -17,6 +17,8 @@ class Analysis:
 
     root: Path
     report: Report
+    #: The scope tree the report was made from; a source reads definitions' extents from it.
+    corpus: Any
 
 
 class Source(ABC):

@@ -43,4 +43,4 @@ class DuplicateStringRule(Rule):
                     rule=self.name, path=path, line=use.line, column=use.column,
                     message=f"string {use.value} appears {use.count} times in "
                             f"{component.qualname}; name it (limit {limit})",
-                    value=use.count, threshold=limit)
+                    value=use.count, threshold=limit, subject=component.qualname)
