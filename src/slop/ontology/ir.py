@@ -25,6 +25,7 @@ class OntologyError(ValueError):
     """The IR is missing, malformed, or declares nothing usable."""
 
 
+_DESCRIPTION = "description"
 _ENTITY = re.compile(r"^[A-Z][A-Za-z0-9]*$")
 _KEBAB = re.compile(r"^[a-z][a-z0-9-]*$")
 _FIELD = re.compile(r"^[a-z][a-z0-9_-]*/[a-z][a-z0-9_-]*$")
@@ -81,15 +82,15 @@ class OntologyIR(Vocabulary):
 
         terms: list[Term] = []
         for o in section("objectTypes"):
-            terms.append(Term(o["name"], TermKind.ENTITY, o.get("description"), keys(o.get("properties"))))
+            terms.append(Term(o["name"], TermKind.ENTITY, o.get(_DESCRIPTION), keys(o.get("properties"))))
         for r in section("linkTypes"):
-            terms.append(Term(r["name"], TermKind.RELATION, r.get("description"),
+            terms.append(Term(r["name"], TermKind.RELATION, r.get(_DESCRIPTION),
                               keys(r.get("properties")), (str(r.get("from", "")), str(r.get("to", "")))))
         for a in section("actionTypes"):
             inputs = tuple(str(i.get("name", "")) for i in a.get("input", []) if isinstance(i, dict))
-            terms.append(Term(a["name"], TermKind.ACTION, a.get("description"), inputs))
+            terms.append(Term(a["name"], TermKind.ACTION, a.get(_DESCRIPTION), inputs))
         for q in section("queryTypes"):
-            terms.append(Term(q["name"], TermKind.QUERY, q.get("description"), ()))
+            terms.append(Term(q["name"], TermKind.QUERY, q.get(_DESCRIPTION), ()))
 
         if not any(t.kind is TermKind.ENTITY for t in terms):
             raise OntologyError(f"{source}: declares no entities, so there is nothing to compare names against")
@@ -108,7 +109,7 @@ class OntologyIR(Vocabulary):
 
 
 def _term_ir(term: Term, item_kind: str) -> dict:
-    out: dict = {"kind": item_kind, "name": term.name, "description": term.description}
+    out: dict = {"kind": item_kind, "name": term.name, _DESCRIPTION: term.description}
     if term.kind is TermKind.ACTION:
         out["input"] = [{"name": name} for name in term.fields]
         return out
@@ -133,7 +134,12 @@ def _check_names(terms: Sequence[Term], source: str) -> None:
             raise OntologyError(f"{source}: the name {term.name!r} is declared more than once")
         seen.add(term.name)
         if term.kind in (TermKind.ENTITY, TermKind.RELATION):
-            for key in term.fields:
-                if not _FIELD.match(key):
-                    raise OntologyError(f"{source}: field {key!r} of {term.name} is not 'namespace/name' ({_FIELD.pattern})")
+            _check_fields(term, source)
+
+
+def _check_fields(term: Term, source: str) -> None:
+    """Raise unless every field key of ``term`` is ``namespace/name``."""
+    for key in term.fields:
+        if not _FIELD.match(key):
+            raise OntologyError(f"{source}: field {key!r} of {term.name} is not 'namespace/name' ({_FIELD.pattern})")
 

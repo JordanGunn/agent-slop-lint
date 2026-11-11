@@ -165,13 +165,11 @@ def _ontology_path(root: str | Path) -> Path:
     return _project_root(root, AnalysisConfig.load(root, RULE_REGISTRY)) / STATE_DIR / ONTOLOGY_FILENAME
 
 
-def _vocabulary(root: str | Path, ontology: str | Path | None) -> OntologyIR | None:
-    """The vocabulary at ``ontology``, else the project's; None (with the reason printed) if there is none."""
+def _vocabulary(root: str | Path, ontology: str | Path | None) -> OntologyIR:
+    """The vocabulary at ``ontology``, else the project's. Raises ``OntologyError`` if there is none."""
     path = Path(ontology) if ontology is not None else _ontology_path(root)
     if ontology is None and not path.exists():
-        print(f"slop: error: no vocabulary at {path}; pass --ontology FILE or run `slop ontology draft`",
-              file=sys.stderr)
-        return None
+        raise OntologyError(f"no vocabulary at {path}; pass --ontology FILE or run `slop ontology draft`")
     return OntologyIR.load(path)
 
 
@@ -529,8 +527,6 @@ def vocab_view(root: str | Path, ontology: str | Path | None, output: str = "hum
     unknown to the ontology, and declared but unused. Exit 0 whenever the comparison ran;
     gating on mismatches belongs to the lint layer."""
     vocabulary = _vocabulary(root, ontology)
-    if vocabulary is None:
-        return 2
     if term is not None:
         found = vocabulary.term(term)
         if output == "json":
