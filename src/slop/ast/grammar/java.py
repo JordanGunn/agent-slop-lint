@@ -16,6 +16,11 @@ class Java(ObjectOriented):
         return True
 
     @classmethod
+    def identifiers(cls) -> frozenset[str]:
+        """Names as written, including the type names (``type_identifier``)."""
+        return frozenset({"identifier", "type_identifier"})
+
+    @classmethod
     def member_access(cls) -> tuple[MemberAccess, ...]:
         """``this.x`` and ``this.m()``, which Java spells as two node types."""
         return (MemberAccess("field_access", "object", "field"), MemberAccess("method_invocation", "object", "name"))

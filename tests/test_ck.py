@@ -141,3 +141,25 @@ def test_an_imported_base_beats_a_nearer_homonym(tmp_path: Path):
 def test_a_resolved_import_leaves_no_ambiguity_note_on_the_child(tmp_path: Path):
     cs = _import_case(tmp_path)
     assert Structure.over(cs[("a/use.py", "Mad")]).ck().caveats == ()
+
+
+def _class_named(tmp_path: Path, files: dict[str, str], name: str):
+    for file, text in files.items():
+        (tmp_path / file).write_text(text)
+    return next(c for c in scan_corpus(tmp_path, config=None)._iter_classes() if c.name == name)
+
+
+def test_cbo_counts_classes_the_body_names_not_locals_that_share_a_name(tmp_path: Path):
+    cls = _class_named(tmp_path, {"m.py": "class Store:\n    pass\n\nclass Cache:\n    pass\n\n"
+                                          "class User:\n    def f(self, Cache):\n        Store = 1\n"
+                                          "        return Store + Cache\n    def g(self) -> Store:\n        return Store()\n"
+                                          "    def h(self):\n        from m import Cache as C\n        return C\n"}, "User")
+    # Cache is a parameter in f, so f's Cache is not coupling; h imports Cache, which is
+    assert sorted(c.name for c in cls.context.class_index.references[cls.id]) == ["Cache", "Store"]
+    assert Structure.over(cls).cbo() == 2
+
+
+def test_cbo_reads_type_positions_and_stays_in_one_language(tmp_path: Path):
+    cls = _class_named(tmp_path, {"A.java": "class Store {}\nclass Repo { Store s; Store make() { return null; } Cache c; }\n",
+                                  "c.py": "class Cache:\n    pass\n"}, "Repo")
+    assert Structure.over(cls).cbo() == 1                    # Store by its type; not the Python Cache

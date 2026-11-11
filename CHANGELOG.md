@@ -98,6 +98,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- CBO counts the classes a class's body references, resolved like base classes (same language,
+  nearest by module, import, package), instead of any capitalised name that matches a class
+  anywhere: a local or parameter named like a class is not coupling, an import is, and Java
+  type positions (`type_identifier`) and Ruby constants are now read. The class index keeps
+  these references as class-to-class edges.
 - A class's bases include generic, qualified and interface-inherited ones: `extends E<T>`,
   `implements r.S`, `interface A extends B`, `: N.Q`, `Store[int]`, `Mod::D`, `E<int>` were
   dropped (Java, TypeScript, JavaScript, C#, C++, Python, Ruby), and Julia's `<: Mod.Shape` read

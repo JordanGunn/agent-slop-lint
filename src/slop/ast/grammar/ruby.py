@@ -23,6 +23,11 @@ class Ruby(MultiPurpose):
         return True
 
     @classmethod
+    def identifiers(cls) -> frozenset[str]:
+        """Names as written, including the class and constant names (``constant``)."""
+        return frozenset({"identifier", "constant"})
+
+    @classmethod
     def member_access(cls) -> tuple[MemberAccess, ...]:
         """``self.m``; an instance variable (``@x``) is read from name binding."""
         return (MemberAccess("call", "receiver", "method"),)

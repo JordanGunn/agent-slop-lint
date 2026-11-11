@@ -11,6 +11,12 @@ name (the same module, then the same package) and left unresolved when that is s
 ambiguous. It is never merged into one class, which would hand every homonym the combined
 subclass count. An unresolved base is recorded in ``ambiguous`` so a consumer can say the
 numbers may undercount instead of reporting them as exact.
+
+A class's references (the classes its body names: in annotations, calls, constructions) are
+resolved the same way. A name counts only when name binding (``slop.ast.binding``) says it is
+not defined inside the class (one of its own parameters, locals, fields or methods), so a local
+that happens to share a class's name is not coupling. An import inside the class still names
+another module's class, so it counts.
 """
 from __future__ import annotations
 
@@ -18,6 +24,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from ...ast import NodeKind
+from ...ast.binding import SymbolKind
 from ...identity import ScopeId, ScopeKind
 
 
@@ -29,10 +36,7 @@ class ClassIndex:
     ambiguous: dict[ScopeId, tuple[str, ...]]  # class -> base names that matched several classes
     unattributed: dict[str, int]               # base name -> subclasses that named it but could
                                                # not be placed on any one class of that name
-
-    @property
-    def known(self) -> frozenset[str]:
-        return frozenset(self.by_name)
+    references: dict[ScopeId, tuple[Any, ...]]  # class -> classes its body names (resolved)
 
 
 def _enclosing(scope: Any, kind: ScopeKind) -> ScopeId | None:
@@ -97,6 +101,7 @@ def build(classes: list[Any],
                 ambiguous.setdefault(cls.id, []).append(base)
                 unattributed[base] = unattributed.get(base, 0) + 1
     return ClassIndex(
+        references={cls.id: _references(cls, by_name, imports) for cls in classes},
         parents={k: tuple(v) for k, v in parents.items()},
         children={k: tuple(v) for k, v in children.items()},
         by_name={k: tuple(v) for k, v in by_name.items()},
@@ -147,21 +152,28 @@ def noc(cls: Any, idx: ClassIndex) -> int:
 
 
 def cbo(cls: Any, idx: ClassIndex) -> int:
-    """Coupling Between Objects — distinct known-class references in the body.
+    """Coupling Between Objects: the distinct classes this class's body references, plus its
+    resolved parents, not counting itself."""
+    coupled = {c.id for c in idx.references.get(cls.id, ())} | {p.id for p in idx.parents.get(cls.id, ())}
+    coupled.discard(cls.id)
+    return len(coupled)
 
-    ``Node.walk(prune={CLASS})`` is the class-local DFS: it descends the class's
-    own body but not into nested classes (each owns its own metric). References are
-    counted by simple name, so homonyms count once."""
-    grammar = cls._grammar
-    ident_types = grammar.identifiers()
-    refs: set[str] = set()
-    for cur in cls._ast_node().walk(prune=frozenset({NodeKind.CLASS})):
-        if cur.type in ident_types:
-            text = cur.text
-            if text and text[0].isupper():
-                refs.add(text)
-    refs &= idx.known
-    for parent in idx.parents.get(cls.id, ()):
-        refs.add(parent.name)
-    refs.discard(cls.name)
-    return len(refs)
+
+def _references(cls: Any, by_name: dict[str, list[Any]], imports: dict[ScopeId, frozenset[ScopeId]]) -> tuple[Any, ...]:
+    """The classes ``cls``'s own body names (not its nested classes', which own their
+    coupling), each resolved to the nearest class of that name in the same language."""
+    realm = _enclosing(cls, ScopeKind.REALM)
+    bindings, identifiers = cls.bindings(), cls._grammar.identifiers()
+    inside = range(cls._node.start_byte, cls._node.end_byte)
+    found: dict[ScopeId, Any] = {}
+    for node in cls._ast_node().walk(prune=frozenset({NodeKind.CLASS})):
+        if node.type not in identifiers or node.text not in by_name:
+            continue
+        binding = bindings.get(node.raw.start_byte)
+        if binding is not None and binding.definition in inside and binding.kind is not SymbolKind.IMPORT:
+            continue
+        candidates = [c for c in by_name[node.text] if _enclosing(c, ScopeKind.REALM) == realm]
+        target = _nearest(cls, candidates, imports)
+        if target is not None:
+            found.setdefault(target.id, target)
+    return tuple(found.values())
