@@ -11,7 +11,7 @@ from slop import cli
 from slop.infer.bundle import prose
 from slop.infer.contract import schemas
 from slop.skill.catalog import SKILLS
-from slop.skill.install import InstallError, install
+from slop.skill.install import RECORD, InstallError, install
 from slop.skill.model import MAX_DESCRIPTION_LENGTH, Skill
 
 INFER = SKILLS["slop-infer"]
@@ -94,21 +94,76 @@ def test_a_description_with_quotes_and_colons_survives_the_frontmatter():
     assert _frontmatter(skill.manifest())["description"] == 'Use when: "quoted" and `ticked`'
 
 
-def test_install_writes_the_whole_tree_under_the_skill_name(tmp_path: Path):
+def _files(target: Path) -> dict[str, str]:
+    return {p.relative_to(target).as_posix(): p.read_text(encoding="utf-8") for p in target.rglob("*") if p.is_file()}
+
+
+def _skill(files: dict) -> Skill:
+    return Skill(name="slop-infer", description="d", body="b", files=files)
+
+
+def test_install_writes_the_whole_tree_and_records_what_it_wrote(tmp_path: Path):
     target = install(INFER, tmp_path)
     assert target == tmp_path / "slop-infer"
-    written = {p.relative_to(target).as_posix(): p.read_text(encoding="utf-8") for p in target.rglob("*") if p.is_file()}
+    written = _files(target)
+    record = json.loads(written.pop(RECORD))
     assert written == INFER.tree()
+    assert record["skill"] == "slop-infer" and record["files"] == sorted(INFER.tree()) and record["slop"]
 
 
-def test_install_refuses_to_overwrite_unless_asked_and_then_replaces_cleanly(tmp_path: Path):
+def test_install_refuses_an_existing_install_unless_asked(tmp_path: Path):
     target = install(INFER, tmp_path)
-    (target / "stale.md").write_text("from an older install", encoding="utf-8")
+    before = _files(target)
     with pytest.raises(InstallError, match="use --force"):
         install(INFER, tmp_path)
-    assert (target / "stale.md").exists()                                  # refused: nothing touched
-    install(INFER, tmp_path, replace=True)
-    assert not (target / "stale.md").exists() and (target / "SKILL.md").is_file()
+    assert _files(target) == before
+
+
+def test_replacing_keeps_what_the_user_added_and_drops_what_the_skill_no_longer_has(tmp_path: Path):
+    target = install(_skill({"references/old.md": lambda: "old", "references/keep.md": lambda: "v1"}), tmp_path)
+    (target / "references" / "notes.md").write_text("mine", encoding="utf-8")
+    install(_skill({"references/keep.md": lambda: "v2", "assets/new.json": lambda: "{}"}), tmp_path, replace=True)
+    files = _files(target)
+    assert files["references/keep.md"] == "v2" and files["assets/new.json"] == "{}"
+    assert "references/old.md" not in files                               # it wrote it before; it is gone now
+    assert files["references/notes.md"] == "mine"                          # the user's file stays
+
+
+def test_a_directory_left_empty_by_the_replacement_is_removed(tmp_path: Path):
+    target = install(_skill({"references/rubrics/a.md": lambda: "a"}), tmp_path)
+    install(_skill({"assets/b.json": lambda: "{}"}), tmp_path, replace=True)
+    assert not (target / "references").exists()
+
+
+def test_a_directory_slop_did_not_install_is_never_replaced(tmp_path: Path):
+    target = tmp_path / "slop-infer"
+    target.mkdir()
+    (target / "SKILL.md").write_text("someone else's", encoding="utf-8")
+    with pytest.raises(InstallError, match="was not installed by slop"):
+        install(INFER, tmp_path, replace=True)
+    assert _files(target) == {"SKILL.md": "someone else's"}
+
+
+def test_an_install_of_another_skill_or_a_damaged_record_is_never_replaced(tmp_path: Path):
+    target = install(INFER, tmp_path)
+    for record in ('{"skill": "other", "files": []}', "{not json", '{"skill": "slop-infer", "files": ["../../outside"]}'):
+        (target / RECORD).write_text(record, encoding="utf-8")
+        with pytest.raises(InstallError, match="was not installed by slop"):
+            install(INFER, tmp_path, replace=True)
+    (tmp_path / "outside").write_text("must survive", encoding="utf-8")
+    assert (tmp_path / "outside").read_text(encoding="utf-8") == "must survive"
+
+
+def test_a_skill_that_fails_to_build_leaves_the_installed_one_untouched(tmp_path: Path):
+    target = install(INFER, tmp_path)
+    before = _files(target)
+
+    def broken() -> str:
+        raise OSError("source unreadable")
+
+    with pytest.raises(OSError):
+        install(_skill({"references/x.md": broken}), tmp_path, replace=True)
+    assert _files(target) == before
 
 
 def test_install_never_replaces_something_that_is_not_a_directory(tmp_path: Path):

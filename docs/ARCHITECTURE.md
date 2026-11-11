@@ -139,12 +139,17 @@ job. It imports `infer`; nothing below it imports `skill`.
 |---|---|
 | `model.py` | `Skill`: name, description, manifest body, files; refuses what the spec forbids |
 | `catalog.py` | `SKILLS`, every skill by name; one function per skill, its body in `manifests/<name>.md` |
-| `install.py` | writes `DEST/<name>/` |
+| `install.py` | writes `DEST/<name>/`, replaces only a recorded earlier install |
 
 A skill's files are built from their single sources each time it is shown or installed:
 `slop-infer` takes its instructions and rubrics from `infer/bundle/` and its schemas from
-`infer/contract/`. Nothing is copied into the repository, so an installed skill cannot drift
-from the source it was built from; reinstalling updates it.
+`infer/contract/`. Nothing is copied into the repository. An installed skill is a snapshot of
+the slop that wrote it, and goes stale when slop is upgraded until it is reinstalled.
+
+`install` builds the whole tree before touching disk and records what it wrote in
+`.slop-skill.json` (the skill, the slop version, the files). `--force` replaces only a
+directory with that record for the same skill: it overwrites the skill's files, removes files
+the earlier install wrote that the skill no longer has, and leaves anything else in place.
 
 `slop skill list` lists them, `slop skill show NAME [FILE]` prints the manifest or one file, and
 `slop skill install NAME --dest DIR [--force]` writes the directory. A new skill is a new
