@@ -34,7 +34,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `slop rules` shows objective or subjective.
 - `duplicate-code` treats a body that is mostly literals as data: two such bodies are clones
   only if their literals are equal, so constant tables with different entries are no longer
-  clones. Logic still ignores literal values (slop: 37 to 32 findings; laszy: 24 to 19).
+  clones. Logic still ignores literal values. A member assigned through a receiver
+  (`self.x = ...`, `this.x = ...`) keeps its name in the fingerprint, since it names state a
+  different body cannot share by renaming: constructors that store different fields are not
+  clones. Applies where the grammar declares member access (Python, JavaScript, TypeScript).
+  slop: 37 to 0 findings; laszy: 24 to 15.
 - New rules `halstead-volume` (limit 1000), `magic-float` and `duplicate-string`: 15 rules.
   Only objective violations are reported (see `docs/ARCHITECTURE.md`). `magic-float` reports a
   float with a fractional part (not 0.5) used as an operand of an arithmetic, comparison,

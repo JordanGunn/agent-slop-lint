@@ -62,7 +62,7 @@ uv run slop rules
   exemptions or special cases to make a subjective case objective; the inferential layer,
   which is not built, will judge warnings.
 - A noisy rule is one of: (a) valid and just large, keep it; (b) broken, fix the measure
-  (`duplicate-code` once matched constant tables whose values differed; the fix treats a mostly-literal body as data and leaves logic Type-2); (c) trying to decide
+  (`duplicate-code` once matched constant tables whose values differed; the fix treats a table as data, keeps the name of a stored member (`self.x = ...`), and leaves the rest Type-2); (c) trying to decide
   a subjective case, mark it `subjective = True`. Classify findings by hand on slop's own
   source and on another corpus before choosing, and record the rate in the rule's docstring.
 - Exit codes: lint `0` no violations (warnings allowed) / `1` any violation / `2` error. Read-only commands `0`
