@@ -4,9 +4,10 @@ from __future__ import annotations
 from typing import Any, ClassVar
 
 from ..paradigm import MultiPurpose
+from .c_family import CFamily
 
 
-class Cpp(MultiPurpose):
+class Cpp(CFamily, MultiPurpose):
     id: ClassVar[str] = "cpp"
 
     @classmethod
@@ -45,48 +46,12 @@ class Cpp(MultiPurpose):
                           "conditional_expression", "try_statement", "catch_clause"})
 
     @classmethod
-    def compensating_decisions(cls) -> frozenset[str]:
-        return frozenset({"case_statement"})
-
-    @classmethod
-    def boolean_op_node(cls) -> str | None:
-        return "binary_expression"
-
-    @classmethod
-    def boolean_op_operators(cls) -> frozenset[str] | None:
-        return frozenset({"&&", "||"})
-
-    @classmethod
     def definition_unwrap_types(cls) -> frozenset[str]:
         return frozenset({"template_declaration"})
 
     @classmethod
     def loop_nodes(cls) -> frozenset[str]:
         return frozenset({"for_statement", "for_range_loop", "while_statement", "do_statement"})
-
-    @classmethod
-    def switch_nodes(cls) -> frozenset[str]:
-        return frozenset({"switch_statement"})
-
-    @classmethod
-    def case_nodes(cls) -> frozenset[str]:
-        return frozenset({"case_statement"})
-
-    @classmethod
-    def block_types(cls) -> frozenset[str]:
-        return frozenset({"compound_statement"})
-
-    @classmethod
-    def switch_body_types(cls) -> frozenset[str]:
-        return frozenset({"compound_statement"})
-
-    @classmethod
-    def numeric_literal_nodes(cls) -> frozenset[str]:
-        return frozenset({"number_literal"})
-
-    @classmethod
-    def string_literal_nodes(cls) -> frozenset[str]:
-        return frozenset({"raw_string_literal", "string_literal"})
 
     @classmethod
     def operator_nodes(cls) -> frozenset[str]:
@@ -113,17 +78,6 @@ class Cpp(MultiPurpose):
             "raw_string_literal", "concatenated_string", "user_defined_literal",
             "true", "false", "null", "nullptr", "this",
         })
-
-    @classmethod
-    def import_queries(cls) -> tuple[tuple[str, str], ...]:
-        return (
-            ("(preproc_include path: (string_literal (string_content) @module))", "include_local"),
-            ("(preproc_include path: (system_lib_string) @module)", "include_system"),
-        )
-
-    @classmethod
-    def call_node_types(cls) -> frozenset[str]:
-        return frozenset({"call_expression"})
 
     @classmethod
     def language_builtins(cls) -> frozenset[str]:

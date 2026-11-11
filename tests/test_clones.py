@@ -78,3 +78,9 @@ def test_logic_that_differs_only_in_a_literal_is_still_a_clone(tmp_path: Path):
            "def b(x):\n    y = x * 3\n    z = y + 9\n    if z > 7:\n        raise ValueError('too large')\n    return z\n")
     [cluster] = Structure.over(_module(tmp_path, src)).clone_clusters(min_leaf_nodes=5)
     assert {m.qualname for m in cluster.members} == {"r.a", "r.b"}
+
+
+def test_a_table_too_small_to_be_a_clone_is_not_one(tmp_path: Path):
+    # Two entries each: `return frozenset({"&&", "||"})` in many grammars is not duplication.
+    src = 'def a():\n    return frozenset({"&&", "||"})\n\ndef b():\n    return frozenset({"&&", "||"})\n'
+    assert Structure.over(_module(tmp_path, src)).clone_clusters() == []
