@@ -71,6 +71,10 @@ def test_constant_tables_with_the_same_entries_are_clones(tmp_path: Path):
     assert {m.qualname for m in cluster.members} == {"r.a", "r.b"}
 
 
-def test_numbers_are_compared_by_value_too(tmp_path: Path):
-    src = "def a(x):\n    return x * 11 + x * 12 + x * 13\n\ndef b(x):\n    return x * 21 + x * 22 + x * 23\n"
-    assert Structure.over(_module(tmp_path, src)).clone_clusters(min_leaf_nodes=5) == []
+def test_logic_that_differs_only_in_a_literal_is_still_a_clone(tmp_path: Path):
+    # Type-2: literal values are discarded. A constant in logic (`* 2` vs `* 3`, a different
+    # message) does not make two bodies different.
+    src = ("def a(x):\n    y = x * 2\n    z = y + 1\n    if z > 5:\n        raise ValueError('too big')\n    return z\n\n"
+           "def b(x):\n    y = x * 3\n    z = y + 9\n    if z > 7:\n        raise ValueError('too large')\n    return z\n")
+    [cluster] = Structure.over(_module(tmp_path, src)).clone_clusters(min_leaf_nodes=5)
+    assert {m.qualname for m in cluster.members} == {"r.a", "r.b"}

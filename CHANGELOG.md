@@ -32,8 +32,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `warnings` list in JSON, and never exit 1. `class-cohesion`, `rigid-package` and
   `useless-package` are subjective, and every rule is now on by default (`class-cohesion` was off).
   `slop rules` shows objective or subjective.
-- `duplicate-code` compares literal values, so constant tables with different entries are no
-  longer clones (slop: 37 to 29 findings; laszy: 24 to 12).
+- `duplicate-code` treats a body that is mostly literals as data: two such bodies are clones
+  only if their literals are equal, so constant tables with different entries are no longer
+  clones. Logic still ignores literal values (slop: 37 to 32 findings; laszy: 24 to 19).
 - New rules `halstead-volume` (limit 1000), `magic-float` and `duplicate-string`: 15 rules.
   Only objective violations are reported (see `docs/ARCHITECTURE.md`). `magic-float` reports a
   float with a fractional part (not 0.5) used as an operand of an arithmetic, comparison,

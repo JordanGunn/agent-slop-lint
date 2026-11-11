@@ -14,12 +14,13 @@ from .records import CloneCluster, CloneMember
 
 def clone_clusters(callables: list[Any], *, min_leaf_nodes: int = 10) -> list[CloneCluster]:
     """Type-2 clone clusters among ``callables``: bodies sharing an AST leaf-type
-    fingerprint. Identifier names are discarded; literal values are kept, so two constant
-    tables that differ only in their entries are not clones."""
+    fingerprint, with identifier names and literal values discarded. A body that is mostly
+    literals is data, not logic (a constant table), and two data bodies are clones only if
+    their literals are equal."""
     buckets: dict[str, list[tuple[str, int, Any]]] = {}
     for c in callables:
         body = _body_of(c._ast_node(), c._grammar.block_types())
-        leaves = _leaf_types(body, c._grammar)
+        leaves = _leaves(body, c._grammar)
         if len(leaves) < min_leaf_nodes:
             continue
         buckets.setdefault(_fingerprint(leaves), []).append((c.qualname, len(leaves), c))
@@ -48,12 +49,12 @@ def _body_of(node: Any, block_types: frozenset[str]) -> Any:
     return node
 
 
-def _leaf_types(node: Any, grammar: Any) -> list[str]:
-    """Leaf node types in order; a literal's leaf (a number, a string and its quotes and
-    content) also carries its text."""
+def _leaves(node: Any, grammar: Any) -> list[tuple[str, str | None]]:
+    """Leaf node types in order, each with its text when the leaf belongs to a literal (a
+    number, or a string with its quotes and content)."""
     literal_types = grammar.numeric_literal_nodes() | grammar.string_literal_nodes()
     stack = [node]
-    leaves: list[str] = []
+    leaves: list[tuple[str, str | None]] = []
     while stack:
         n = stack.pop()
         kids = n.children()
@@ -61,12 +62,13 @@ def _leaf_types(node: Any, grammar: Any) -> list[str]:
             stack.extend(reversed(kids))
             continue
         parent = n.parent
-        if n.type in literal_types or (parent is not None and parent.type in literal_types):
-            leaves.append(f"{n.type}={n.text}")
-        else:
-            leaves.append(n.type)
+        in_literal = n.type in literal_types or (parent is not None and parent.type in literal_types)
+        leaves.append((n.type, n.text if in_literal else None))
     return leaves
 
 
-def _fingerprint(leaves: list[str]) -> str:
-    return hashlib.sha1(",".join(leaves).encode(), usedforsecurity=False).hexdigest()[:12]
+def _fingerprint(leaves: list[tuple[str, str | None]]) -> str:
+    """Hash of the leaf types; a mostly-literal body also hashes its literal text."""
+    is_data = sum(1 for _, text in leaves if text is not None) * 2 > len(leaves)
+    parts = [f"{kind}={text}" if is_data and text is not None else kind for kind, text in leaves]
+    return hashlib.sha1(",".join(parts).encode(), usedforsecurity=False).hexdigest()[:12]
