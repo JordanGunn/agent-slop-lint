@@ -1,5 +1,6 @@
-"""Instance-member facts JavaScript and TypeScript share: a method reaches its own instance
-through ``this``, spelled ``this.member``; ``static`` methods have no instance."""
+"""Facts JavaScript and TypeScript share: callable, loop and decision node types, import
+queries, and instance members (a method reaches its own instance through ``this.member``;
+``static`` methods have no instance). TypeScript adds syntax; it does not redeclare these."""
 from __future__ import annotations
 
 from typing import Any
@@ -7,7 +8,7 @@ from typing import Any
 from ..paradigm.base import MemberAccess
 
 
-class EcmaScriptMembers:
+class EcmaScript:
     @classmethod
     def member_access(cls) -> MemberAccess | None:
         return MemberAccess("member_expression", "object", "property")
@@ -39,3 +40,43 @@ class EcmaScriptMembers:
     def assignment_nodes(cls) -> frozenset[str]:
         # ``this.v += 1`` can only update a member that exists, so it declares nothing.
         return frozenset({"assignment_expression"})
+
+    @classmethod
+    def callable(cls) -> frozenset[str]:
+        return frozenset({"function_declaration", "function_expression", "arrow_function",
+                          "method_definition", "generator_function_declaration"})
+
+    @classmethod
+    def functions(cls) -> frozenset[str]:
+        return frozenset({"function_declaration", "function_expression",
+                          "arrow_function", "generator_function_declaration"})
+
+    @classmethod
+    def decision_nodes(cls) -> frozenset[str]:
+        return frozenset({"if_statement", "for_statement", "for_in_statement", "for_of_statement",
+                          "while_statement", "do_statement", "switch_case", "catch_clause",
+                          "ternary_expression"})
+
+    @classmethod
+    def nesting_nodes(cls) -> frozenset[str]:
+        return frozenset({"if_statement", "for_statement", "for_in_statement", "for_of_statement",
+                          "while_statement", "do_statement", "switch_statement", "catch_clause",
+                          "ternary_expression"})
+
+    @classmethod
+    def boolean_op_operators(cls) -> frozenset[str] | None:
+        return frozenset({"&&", "||", "??"})
+
+    @classmethod
+    def loop_nodes(cls) -> frozenset[str]:
+        return frozenset({"for_statement", "for_in_statement", "for_of_statement",
+                          "while_statement", "do_statement"})
+
+    @classmethod
+    def import_queries(cls) -> tuple[tuple[str, str], ...]:
+        return (
+            ("(import_statement source: (string (string_fragment) @module))", "esm"),
+            ("((call_expression function: (identifier) @fn"
+             " arguments: (arguments (string (string_fragment) @module)))"
+             " (#eq? @fn \"require\"))", "require"),
+        )
