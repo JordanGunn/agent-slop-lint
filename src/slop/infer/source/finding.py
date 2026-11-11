@@ -5,7 +5,6 @@ corpus so the excerpt covers the whole definition, not just its first line.
 """
 from __future__ import annotations
 
-import os
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
@@ -14,6 +13,7 @@ from ...violation import Violation
 from ..contract import Residue
 from ..frame.excerpt import MAX_LINES, excerpt
 from ..frame.fingerprint import code_fingerprint, finding_id
+from ..frame.location import project_path
 from ..frame.rubric import has_rubric, rubric_for
 from .interface import Analysis, Source
 
@@ -38,7 +38,7 @@ def _residue(warning: Violation, root: Path, definition: Any | None) -> Residue:
         first, last = warning.line, warning.line + MAX_LINES - 1
     shown = excerpt(path, root, first, last)
     question, rubric = rubric_for(warning.rule)
-    relative = os.path.relpath(path, root).replace(os.sep, "/")
+    relative = project_path(path, root)
     return Residue(
         id=finding_id(warning.rule, relative, warning.subject), rule=warning.rule, path=relative,
         line=warning.line, column=warning.column, subject=warning.subject, message=warning.message,

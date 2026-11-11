@@ -148,7 +148,8 @@ def _analyse(root: str | Path, rules=None) -> InferAnalysis | None:
         print(f"slop: error: no source files found under {root}", file=sys.stderr)
         return None
     report = Dispatcher(RULE_REGISTRY if rules is None else rules, config).run(corpus)
-    return InferAnalysis(root=root, report=report, corpus=corpus)
+    project_root = config.anchor or (root if root.is_dir() else root.parent)
+    return InferAnalysis(root=project_root, report=report, corpus=corpus)
 
 
 def lint(root: str | Path, output: str = "human", *, rules=None) -> int:

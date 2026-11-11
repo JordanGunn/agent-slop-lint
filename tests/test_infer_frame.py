@@ -86,4 +86,4 @@ def test_a_path_outside_the_root_keeps_its_own_path(tmp_path: Path):
     path.write_text("a\n", encoding="utf-8")
     root = tmp_path / "root"
     root.mkdir()
-    assert excerpt(path, root, 1, 1).path == path.as_posix()
+    assert excerpt(path, root, 1, 1).path == path.resolve().as_posix()

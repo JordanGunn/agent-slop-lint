@@ -25,8 +25,9 @@ from .symbol import Module as ModuleABC
 
 
 class _Base(Descendants):
-    """Universal scope surface + container complexity aggregation. Mixed in
-    before the kind ABC so its concrete methods satisfy the abstract ones."""
+    """Universal scope surface: identity, location and children, with the bridges to the
+    lexicon and the AST. Mixed in before the kind ABC so its concrete methods satisfy the
+    abstract ones."""
 
     def __init__(
         self,

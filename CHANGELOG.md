@@ -34,7 +34,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `.slop/inferences.jsonl`. `slop lint` applies the rulings: `clear` drops a warning, `confirm`
   makes it a violation, `defer` or a stale ruling leaves it a warning. Instructions and
   references (the `class-cohesion` rubric) are bundled and printed by the CLI. `Violation`
-  gains `subject`; `slop/layout.py` holds `CONFIG_FILENAME` and `STATE_DIR`.
+  gains `subject`; `slop/layout.py` holds `CONFIG_FILENAME` and `STATE_DIR`. Finding paths and the
+  ledger are relative to the project root (the directory holding the config, else the scan root),
+  so a ruling holds whichever directory is scanned.
 - File discovery is one mechanism: inside a git work tree, tracked files plus untracked files
   `.gitignore` does not ignore; elsewhere every file except `.git`. The hard-coded skip list
   and the dot-directory rule are gone, so hidden directories are now read; use `exclude`.

@@ -1,12 +1,12 @@
 """Apply the ledger's rulings to a lint report."""
 from __future__ import annotations
 
-import os
 from dataclasses import replace
 from operator import attrgetter
 
 from ...dispatch import Report
 from ..contract import Outcome, Residue
+from ..frame.location import project_path
 from ..ledger.interface import Ledger
 from ..source.finding import FindingSource
 from ..source.interface import Analysis
@@ -37,5 +37,5 @@ def settle(analysis: Analysis, ledger: Ledger) -> Report:
 def _residue_of(warning, analysis: Analysis, by_place: dict) -> Residue | None:
     if warning.path is None:
         return None
-    path = os.path.relpath(warning.path, analysis.root).replace(os.sep, "/")
-    return by_place.get((warning.rule, path, warning.subject, warning.line, warning.column))
+    key = (warning.rule, project_path(warning.path, analysis.root), warning.subject, warning.line, warning.column)
+    return by_place.get(key)

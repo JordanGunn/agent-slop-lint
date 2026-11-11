@@ -15,6 +15,8 @@ from ..contract import Residue
 class Analysis:
     """The deterministic analysis of a project that a source may draw on."""
 
+    #: The project root: the directory holding the config, else the scan root. Finding paths and
+    #: the ledger are relative to it, so they do not depend on which directory was scanned.
     root: Path
     report: Report
     #: The scope tree the report was made from; a source reads definitions' extents from it.

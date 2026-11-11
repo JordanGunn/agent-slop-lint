@@ -121,8 +121,10 @@ or no ruling leaves it a warning. A ruling is stale when the excerpt's text or t
 changed, which `Ledger.current` checks through the fingerprint.
 
 Only `class-cohesion` has a rubric. A field is declared once with `described(...)`; the schema
-and the parser both read it. The ledger is `.slop/inferences.jsonl` under the scan root, one
-ruling per line.
+and the parser both read it. The ledger is `.slop/inferences.jsonl` under the project root, one ruling per line. The project
+root is the directory holding the config (`.slop.toml` or `[tool.slop]`), else the scan root, so
+a finding's id, its path and its ruling are the same whichever directory is scanned. Paths are
+labelled by `frame/location.py`.
 
 Constants: one used by a single module stays in it. One needed by a second module in the same
 subpackage moves to that subpackage; the contract's closed terms are in `contract/vocabulary.py`.
