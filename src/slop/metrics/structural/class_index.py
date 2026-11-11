@@ -48,7 +48,7 @@ def _enclosing(scope: Any, kind: ScopeKind) -> ScopeId | None:
     return None
 
 
-def _nearest(cls: Any, candidates: list[Any],
+def nearest(cls: Any, candidates: list[Any],
              imports: dict[ScopeId, frozenset[ScopeId]]) -> Any | None:
     """The class ``cls`` most plausibly means by a base name, or None if undecidable.
 
@@ -93,7 +93,7 @@ def build(classes: list[Any],
         for base in cls._base_names:
             # a class inherits only within its own language
             candidates = [c for c in by_name.get(base, []) if _enclosing(c, ScopeKind.REALM) == realm]
-            target = _nearest(cls, candidates, imports)
+            target = nearest(cls, candidates, imports)
             if target is not None:
                 parents.setdefault(cls.id, []).append(target)
                 children.setdefault(target.id, []).append(cls)
@@ -101,7 +101,7 @@ def build(classes: list[Any],
                 ambiguous.setdefault(cls.id, []).append(base)
                 unattributed[base] = unattributed.get(base, 0) + 1
     return ClassIndex(
-        references={cls.id: _references(cls, by_name, imports) for cls in classes},
+        references={cls.id: references(cls, by_name, imports) for cls in classes},
         parents={k: tuple(v) for k, v in parents.items()},
         children={k: tuple(v) for k, v in children.items()},
         by_name={k: tuple(v) for k, v in by_name.items()},
@@ -159,9 +159,10 @@ def cbo(cls: Any, idx: ClassIndex) -> int:
     return len(coupled)
 
 
-def _references(cls: Any, by_name: dict[str, list[Any]], imports: dict[ScopeId, frozenset[ScopeId]]) -> tuple[Any, ...]:
-    """The classes ``cls``'s own body names (not its nested classes', which own their
-    coupling), each resolved to the nearest class of that name in the same language."""
+def references(cls: Any, by_name: dict[str, list[Any]], imports: dict[ScopeId, frozenset[ScopeId]]) -> tuple[Any, ...]:
+    """The definitions in ``by_name`` that ``cls``'s own body names (not its nested classes',
+    which own their coupling), each resolved to the nearest definition of that name in the
+    same language. ``cls`` is any class or callable component; CBO passes the classes."""
     realm = _enclosing(cls, ScopeKind.REALM)
     bindings, identifiers = cls.bindings(), cls._grammar.identifiers()
     inside = range(cls._node.start_byte, cls._node.end_byte)
@@ -173,7 +174,7 @@ def _references(cls: Any, by_name: dict[str, list[Any]], imports: dict[ScopeId, 
         if binding is not None and binding.definition in inside and binding.kind is not SymbolKind.IMPORT:
             continue
         candidates = [c for c in by_name[node.text] if _enclosing(c, ScopeKind.REALM) == realm]
-        target = _nearest(cls, candidates, imports)
+        target = nearest(cls, candidates, imports)
         if target is not None:
             found.setdefault(target.id, target)
     return tuple(found.values())

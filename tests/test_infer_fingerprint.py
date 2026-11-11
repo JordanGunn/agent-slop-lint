@@ -1,7 +1,8 @@
 """Finding identity survives moves; the fingerprint changes when what a verdict rests on does."""
 from __future__ import annotations
 
-from slop.infer.frame.fingerprint import code_fingerprint, finding_id
+from slop.infer.frame.fingerprint import code_fingerprint
+from slop.violation import finding_id
 
 
 def test_a_finding_id_is_stable_and_depends_on_rule_path_and_subject():
@@ -9,6 +10,12 @@ def test_a_finding_id_is_stable_and_depends_on_rule_path_and_subject():
     assert base == finding_id("class-cohesion", "a.py", "a.A")
     assert len({base, finding_id("rigid-package", "a.py", "a.A"), finding_id("class-cohesion", "b.py", "a.A"),
                 finding_id("class-cohesion", "a.py", "a.B")}) == 4
+
+
+def test_a_key_tells_apart_findings_about_one_subject_and_no_key_keeps_the_old_id():
+    base = finding_id("duplicate-string", "a.py", "a")
+    assert len({base, finding_id("duplicate-string", "a.py", "a", '"x"'), finding_id("duplicate-string", "a.py", "a", '"y"')}) == 3
+    assert finding_id("class-cohesion", "a.py", "a.A") == "570232cdd89ce029"   # the id every stored ruling keys on
 
 
 def test_the_fields_of_an_id_cannot_run_together():

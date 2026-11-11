@@ -53,9 +53,10 @@ class Report:
     def relative_path(self, violation: Violation) -> str | None:
         """The violation's path relative to the scan root, so a report does not leak an
         absolute machine path."""
-        return self._relative(violation.path)
+        return self.relative(violation.path)
 
-    def _relative(self, path: str | None) -> str | None:
+    def relative(self, path: str | None) -> str | None:
+        """``path`` relative to the scan root, or as given when there is none."""
         if path and self.root:
             try:
                 return os.path.relpath(path, self.root)
@@ -69,7 +70,7 @@ class Report:
         entry["path"] = self.relative_path(violation)
         for scope in (entry["scope"], *entry["related"]):
             if scope is not None:
-                scope["path"] = self._relative(scope["path"])
+                scope["path"] = self.relative(scope["path"])
         return entry
 
     def as_dict(self) -> dict[str, Any]:

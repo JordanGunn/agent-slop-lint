@@ -101,3 +101,15 @@ def relative_path(scope_id: ScopeId, root: Path | str) -> str | None:
         except ValueError:
             return scope_id.spans[0].path
     return None
+
+
+def project_path(path: Path | str, root: Path) -> str:
+    """``path`` relative to the project ``root``, with ``/`` separators.
+
+    Both are resolved first, so a relative spelling or a symlink gives the same answer. A path
+    outside ``root`` comes back absolute."""
+    resolved = Path(path).resolve()
+    try:
+        return resolved.relative_to(root.resolve()).as_posix()
+    except ValueError:
+        return resolved.as_posix()

@@ -74,6 +74,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `slop lint --output json` lists `agglomerations`: groups of findings related by the code's
+  structure (Oizumi et al. 2016: intra-method, intra-class, hierarchical, intra-component,
+  cross-component), each with a lead scope and member finding ids. Every finding has an `id`;
+  `duplicate-string` and `magic-float` ids include the literal, so they no longer collide.
 - Read-only primitives that answer with facts and no limits: `slop find` / `--collisions`,
   `tree`, `shape`, `vocab --ontology IR.json` and `lexicon --ontology IR.json`; they report
   caveats for syntax-error files.

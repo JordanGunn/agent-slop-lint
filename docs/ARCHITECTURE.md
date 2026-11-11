@@ -11,6 +11,7 @@ slop is a linter on top of read-only primitives. Source: `src/slop/`.
 | Measures | `metrics/`, `lexicon/`, `graph/` | read-only views over a component |
 | Vocabulary | `ontology/`, `lexical/` | canonical vocabulary (Open Ontology JSON IR) and the comparison with names in code |
 | Lint | `rule.py`, `rules/`, `dispatch.py`, `violation.py`, `config.py` | rules compare a measure with a limit |
+| Agglomeration | `agglomeration.py` | groups the findings the code's structure relates (Oizumi et al. 2016); facts, never violations |
 | CLI | `cli/` (one module per command family) | `ast`, `tree`, `find`, `lexicon`, `deps`, `vocab`, `shape`, `hotspots` (primitives); `lint`, `check`, `rules` (lint); `init`, `doctor` |
 
 Primitive commands return facts and apply no limits. Only `rules/` and rule `limit` options
@@ -120,7 +121,12 @@ to each finding of a rule that has a rubric: the finding's id, the definition's 
 closed question, the rubric command and version, the fingerprint, and the ruling's `status`
 (`none`, `stale`, `defer` or `confirm`). The output also states `root`, the absolute scan root
 that finding paths are relative to, and `project_root`, the absolute root that residue paths are
-relative to, so the agent can open the code from any working directory. The agent reads the code
+relative to, so the agent can open the code from any working directory. Every finding has an
+`id` (rule, project-relative path, subject, and for `duplicate-string` and `magic-float` the
+literal), its `scope` and its `related` scopes. `agglomerations` lists the groups the findings
+form: an `id`, a `topology` (`intra-method`, `intra-class`, `hierarchical`, `intra-component`,
+`cross-component`), the `lead` scope, the `units` and the member finding ids. A group never
+changes the exit code. The agent reads the code
 at that span and the rubric, then sends verdicts. `slop infer` keeps only what nothing else does:
 
 | Command | Does |

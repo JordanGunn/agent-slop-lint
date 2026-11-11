@@ -14,7 +14,9 @@ from ..infer.contract import dump
 from ..infer.ledger.jsonl import JsonlLedger
 from ..infer.source.interface import Analysis
 from ..rules import RULE_REGISTRY
+from ..agglomeration import agglomerate
 from ..scope import scan_corpus
+from ..violation import scope_json as _scope
 from .render import add_output
 from .resolve import add_root, has_source, project_root
 
@@ -63,7 +65,7 @@ def lint(root: str | Path, output: str = "human", *, selected=None) -> int:
     settlement = settle(analysis, JsonlLedger.at(analysis.root))
     report = settlement.report
     if output == "json":
-        print(json.dumps(_with_residue(report.as_dict(), settlement, analysis.root), indent=2))
+        print(json.dumps(_annotated(report, settlement, analysis), indent=2))
     else:
         print(_human(report))
     return report.exit_code()
@@ -95,15 +97,26 @@ def rules(output: str = "human") -> int:
     return 0
 
 
-def _with_residue(doc: dict, settlement, root: Path) -> dict:
-    """``doc`` with each finding that can be put to inference carrying its ``residue``, and the
-    absolute ``project_root`` that every residue ``path`` is relative to."""
+def _annotated(report: Report, settlement, analysis: Analysis) -> dict:
+    """The report as JSON, with the absolute ``project_root`` every id and residue ``path`` is
+    relative to; each finding's ``id``, and its ``residue`` where it can be put to inference;
+    and the ``agglomerations`` its findings form (``slop.agglomeration``)."""
+    doc = report.as_dict()
+    root = analysis.root
     doc["project_root"] = str(root.resolve())
     for key in ("violations", "warnings"):
-        for entry, finding in zip(doc[key], getattr(settlement.report, key)):
+        for entry, finding in zip(doc[key], getattr(report, key)):
+            entry["id"] = finding.id(root)
             item = settlement.residue.get(finding.position)
             if item is not None:
                 entry["residue"] = dump(item)
+    groups = agglomerate([*report.violations, *report.warnings], analysis.corpus)
+    doc["agglomerations"] = [{"id": g.id, "topology": g.topology.value, "lead": _scope(g.lead),
+                              "units": [_scope(u) for u in g.units], "findings": [f.id(root) for f in g.findings]}
+                             for g in groups]
+    for group in doc["agglomerations"]:
+        for scope in (group["lead"], *group["units"]):
+            scope["path"] = report.relative(scope["path"])
     return doc
 
 

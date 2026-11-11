@@ -11,8 +11,8 @@ from typing import Any
 
 from ...violation import Violation
 from ..contract import Residue, Status
-from ..frame.fingerprint import code_fingerprint, finding_id
-from ..frame.location import project_path
+from ...identity import project_path
+from ..frame.fingerprint import code_fingerprint
 from ..frame.rubric import has_rubric, rubric_for
 from .interface import Analysis, Source
 
@@ -37,7 +37,7 @@ def _residue(warning: Violation, root: Path, definition: Any | None) -> Residue:
     question, rubric = rubric_for(warning.rule)
     path = project_path(warning.path, root)
     return Residue(
-        id=finding_id(warning.rule, path, warning.subject), rule=warning.rule, path=path,
+        id=warning.id(root), rule=warning.rule, path=path,
         subject=warning.subject, first_line=first, last_line=last, question=question, rubric=rubric,
         fingerprint=code_fingerprint(_lines(Path(warning.path), first, last), rubric.version),
         status=Status.NONE)

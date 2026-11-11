@@ -20,6 +20,9 @@ root (src-layout; package `agent-slop-lint`, import `slop`, CLI `slop.cli:main`)
   queries in `ast/grammar/locals/*.scm`; read through `Component.bindings()`.
 - `src/slop/ontology/`: the project's vocabulary (`.slop/ontology.json`, Open Ontology JSON IR);
   `draft.py` derives it from the code, `ir.py` reads and writes it (`slop ontology`, `slop vocab`).
+- `src/slop/agglomeration.py`: groups of related findings (Oizumi et al. 2016), in lint JSON
+  only; they relate through class and function references, inheritance, and imports between
+  modules, never through a file import alone.
 - Lint layer: `rule.py` (Rule), `rules/` (16 rules, `RULE_REGISTRY` in `rules/__init__.py`),
   `dispatch.py`, `violation.py`, `config.py`.
 - `src/slop/infer/`: inference layered over the linter (`contract`, `ledger`, `frame`, `source`,

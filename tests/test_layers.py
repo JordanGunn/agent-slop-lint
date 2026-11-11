@@ -29,12 +29,15 @@ ALLOWED: dict[str, set[str]] = {
     "layout": set(),
     "infer": {"dispatch", "identity", "layout", "span", "violation"},   # never cli or skill
     "skill": {"infer"},
+    "agglomeration": {"identity", "metrics", "scope", "violation"},   # reads findings; never rules or cli
 }
 
 #: package -> internal packages it must never import (everything else is unconstrained).
 FORBIDDEN: dict[str, set[str]] = {
-    "scope": {"rules", "rule", "dispatch", "cli", "ontology", "lexical"},
-    "rules": {"cli", "ontology", "lexical"},
+    "scope": {"rules", "rule", "dispatch", "cli", "ontology", "lexical", "agglomeration"},
+    "rules": {"cli", "ontology", "lexical", "agglomeration"},
+    "metrics": {"agglomeration"},
+    "dispatch": {"agglomeration"},
 }
 
 

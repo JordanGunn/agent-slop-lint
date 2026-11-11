@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 
 from slop import cli
-from slop.infer.frame.location import project_path
+from slop.identity import project_path
 
 TWO_GROUPS = "class A:\n    def f(self):\n        return self.a\n\n    def g(self):\n        return self.b\n"
 

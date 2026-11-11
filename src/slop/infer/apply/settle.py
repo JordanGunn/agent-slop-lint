@@ -7,8 +7,6 @@ from operator import attrgetter
 from ...dispatch import Report
 from ...violation import Violation
 from ..contract import Outcome, Residue, Ruling, Status
-from ..frame.fingerprint import finding_id
-from ..frame.location import project_path
 from ..ledger.interface import Ledger
 from ..source.finding import FindingSource
 from ..source.interface import Analysis
@@ -58,7 +56,7 @@ def settle(analysis: Analysis, ledger: Ledger) -> Settlement:
 def _id(warning: Violation, analysis: Analysis) -> str | None:
     if warning.path is None or warning.subject is None:
         return None
-    return finding_id(warning.rule, project_path(warning.path, analysis.root), warning.subject)
+    return warning.id(analysis.root)
 
 
 def _status(item: Residue, ruling: Ruling | None) -> Status | None:
