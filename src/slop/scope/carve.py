@@ -17,7 +17,6 @@ from ..ast.paradigm import ObjectOriented
 from ..ast.parse import detect_language, parse_file
 from . import components as C
 from .discover import source_files
-from .properties import class_properties
 
 _LAMBDA_TYPES = {"lambda", "arrow_function", "lambda_expression", "func_literal", "function_expression"}
 _METHOD_ONLY_TYPES = {"method_declaration", "method_definition", "singleton_method"}
@@ -225,8 +224,6 @@ def _make_class(node: Any, grammar: type, content: bytes, path: Path, parts: tup
     is_abs = grammar.is_abstract_scope(node.raw, content)
     klass = C.Class(
         is_abstract=bool(is_abs), bases=tuple(grammar.extract_superclasses(node.raw, content)),
-        properties=class_properties(
-            node.raw, content, grammar, [c for c in children if c.KIND == ScopeKind.CALLABLE]),
         id=ScopeId(ScopeKind.CLASS, qn, (span,)),
         name=name, owner=None, extent=Extent((span,)), files=(path,),
         children=children, node=node.raw, content=content, grammar=grammar,

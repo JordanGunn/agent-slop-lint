@@ -52,6 +52,7 @@ class _Base(Descendants):
         self._content = content
         self._grammar = grammar
         self._context = None  # AnalysisContext; carve hangs it on the Corpus root
+        self._bindings: dict | None = None  # a Module's name bindings, computed on first use
 
     # ---- universal identity / location -------------------------------
     @property
@@ -89,6 +90,17 @@ class _Base(Descendants):
         from .lexicon import build_lexicon
         return build_lexicon(self)
 
+    def bindings(self) -> dict:
+        """What each name in this component's file refers to, keyed by start byte
+        (``slop.ast.binding``): computed once per file, on its Module."""
+        module = self
+        while module.id.kind is not ScopeKind.MODULE and module._owner is not None:
+            module = module._owner
+        if module._bindings is None:
+            from ..ast.binding import bind
+            module._bindings = bind(module._node, module._content, module._grammar) if module._node is not None else {}
+        return module._bindings
+
     def _ast_node(self) -> Any:
         """This component's own subtree as a ``slop.ast.Node``. The component
         holds the raw node from carving; every ported metric consumes the
@@ -119,16 +131,21 @@ class Callable(_Base, CallableABC):
 class Class(_Base, ClassABC):
     KIND = ScopeKind.CLASS
 
-    def __init__(self, *, is_abstract: bool, bases: tuple[str, ...], properties: tuple[str, ...], **kw: Any) -> None:
+    def __init__(self, *, is_abstract: bool, bases: tuple[str, ...], **kw: Any) -> None:
         super().__init__(**kw)
         self._is_abstract = is_abstract
         self._base_names = bases
-        self._properties = properties
+        self._properties: tuple[str, ...] | None = None
 
     @property
     def is_abstract(self) -> bool: return self._is_abstract
     def methods(self): return self._children_of(ScopeKind.CALLABLE)
-    def properties(self): return self._properties
+    def properties(self) -> tuple[str, ...]:
+        """The fields this class declares (``slop.scope.properties``), read on first use."""
+        if self._properties is None:
+            from .properties import class_properties
+            self._properties = class_properties(self)
+        return self._properties
     def bases(self):
         idx = self.context.class_index
         if idx is None:

@@ -18,9 +18,9 @@ class Go(MultiPurpose):
     id: ClassVar[str] = "go"
 
     @classmethod
-    def member_access(cls) -> MemberAccess | None:
+    def member_access(cls) -> tuple[MemberAccess, ...]:
         """``r.x`` and the callee of ``r.m()``: Go always writes the receiver."""
-        return MemberAccess("selector_expression", "operand", "field")
+        return (MemberAccess("selector_expression", "operand", "field"),)
 
     @classmethod
     def instance_receiver(cls, method: Any, content: bytes) -> str | None:

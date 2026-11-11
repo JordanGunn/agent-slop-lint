@@ -83,6 +83,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Discovery of C `struct`/`union`/`enum`, Julia `struct`/`abstract type`, Java/C#/TypeScript
   enums, TypeScript type aliases, and every Go declared type.
 
+### Added
+
+- Name binding (`slop.ast.binding`): every name occurrence resolved to the parameter, local,
+  import, field or method it refers to, or free, from a tree-sitter locals query per grammar.
+  It replaces three partial mechanisms: LCOM4 is now measured for Java, C#, C++ and Ruby
+  (bare `x` for `this.x`, sibling calls, `@x`); every grammar's classes have properties (and
+  so `ontology draft` fields); clone detection renames locals in all eleven grammars, per
+  occurrence. `class_fields` and `assignment_nodes` leave the grammar contract;
+  `member_access` returns every spelling of `receiver.member`.
+
 ### Fixed
 
 - A class's bases include generic, qualified and interface-inherited ones: `extends E<T>`,
@@ -114,9 +124,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Known limits
 
 - `Structure.orphans` matches by name; it has no rule.
-- LCOM4 is unmeasurable for Java, C#, C++ and Ruby, where a bare name can mean an instance
-  member or a sibling method, and inapplicable to C and Julia (no instance methods); class
-  properties exist only for Python, JavaScript and TypeScript.
+- LCOM4 and properties count only a class's own members (no inherited ones). LCOM4 is
+  inapplicable to C and Julia (no instance methods). A C++ method defined outside its class
+  (`void A::f()`) does not see the class's fields.
+- Binding queries cover nested patterns to a fixed depth (two levels for JavaScript and
+  TypeScript destructuring, three C declarator wrappers); a Rust `if let` binding is visible in
+  its `else`; Julia function names are not bound; a Python method's fields are read through
+  `self` by name.
 - A nested JavaScript `function` rebinds `this`, which LCOM4 does not model.
 - A class qualname omits the package path, so distinct classes can share one; identity is
   the `ScopeId`.

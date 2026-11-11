@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import Any, ClassVar
 
 from ..paradigm import MultiPurpose
+from ..paradigm.base import MemberAccess, has_keyword
 from ..paradigm.heritage import heritage
 from .c_family import CFamily
 
@@ -14,6 +15,20 @@ _UTF8 = "utf-8"
 
 class Cpp(CFamily, MultiPurpose):
     id: ClassVar[str] = "cpp"
+
+    @classmethod
+    def class_scope_visible(cls) -> bool:
+        return True
+
+    @classmethod
+    def member_access(cls) -> tuple[MemberAccess, ...]:
+        """``this->x`` and the callee of ``this->m()``."""
+        return (MemberAccess("field_expression", "argument", "field"),)
+
+    @classmethod
+    def instance_receiver(cls, method: Any, content: bytes) -> str | None:
+        """``this``, except in a ``static`` member function, which has no instance."""
+        return None if has_keyword(method, content, "storage_class_specifier", "static") else "this"
 
     @classmethod
     def callable(cls) -> frozenset[str]:

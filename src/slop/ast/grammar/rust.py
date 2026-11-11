@@ -142,9 +142,9 @@ class Rust(MultiPurpose):
         return (found,) if found is not None else ()
 
     @classmethod
-    def member_access(cls) -> MemberAccess | None:
+    def member_access(cls) -> tuple[MemberAccess, ...]:
         """``self.x`` and the callee of ``self.m()``: Rust always writes the receiver."""
-        return MemberAccess("field_expression", "value", "field")
+        return (MemberAccess("field_expression", "value", "field"),)
 
     @classmethod
     def instance_receiver(cls, method: Any, content: bytes) -> str | None:

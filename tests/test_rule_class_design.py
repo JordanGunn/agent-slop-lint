@@ -161,7 +161,14 @@ def test_cohesion_boundary_and_cohesive_class(tmp_path: Path):
     assert _check(CohesionRule, whole["Whole"], _cfg(CohesionRule, 1)) == []
 
 
-def test_cohesion_silent_where_unmeasurable(tmp_path: Path):
+def test_cohesion_reads_bare_field_uses_in_java(tmp_path: Path):
     cs = _classes(tmp_path, JAVA, "Split.java")
+    assert Structure.over(cs["Split"]).cohesion().groups == (("f",), ("h",))
+    [v] = _check(CohesionRule, cs["Split"], _cfg(CohesionRule, 1))
+    assert v.value == 2
+
+
+def test_cohesion_silent_where_unmeasurable(tmp_path: Path):
+    cs = _classes(tmp_path, "struct Split { int a; int b; };\n", "split.c")
     assert Structure.over(cs["Split"]).cohesion() is None
     assert _check(CohesionRule, cs["Split"], _cfg(CohesionRule, 0)) == []

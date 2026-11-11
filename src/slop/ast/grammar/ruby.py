@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any, ClassVar
 
 from ..paradigm import MultiPurpose
-from ..paradigm.base import ModuleIndex, distinct
+from ..paradigm.base import MemberAccess, ModuleIndex, distinct
 from ..paradigm.heritage import heritage
 
 
@@ -17,6 +17,21 @@ _UNTIL = "until"
 
 class Ruby(MultiPurpose):
     id: ClassVar[str] = "ruby"
+
+    @classmethod
+    def class_scope_visible(cls) -> bool:
+        return True
+
+    @classmethod
+    def member_access(cls) -> tuple[MemberAccess, ...]:
+        """``self.m``; an instance variable (``@x``) is read from name binding."""
+        return (MemberAccess("call", "receiver", "method"),)
+
+    @classmethod
+    def instance_receiver(cls, method: Any, content: bytes) -> str | None:
+        """``self`` in an instance method; ``def self.m`` defines a method on the class itself."""
+        del content
+        return "self" if method.type == "method" else None
 
     @classmethod
     def callable(cls) -> frozenset[str]:

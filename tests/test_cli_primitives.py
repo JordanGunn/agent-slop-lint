@@ -330,7 +330,7 @@ def _shape_project(tmp_path: Path) -> Path:
     )
     (tmp_path / "pkg" / "whole.py").write_text(
         "class Whole:\n    def f(self): return self.a\n    def g(self): return self.a\n")
-    (tmp_path / "Thing.java").write_text("class Thing { int x; int f() { return x; } }")
+    (tmp_path / "thing.c").write_text("struct Thing { int x; };\n")
     return tmp_path
 
 

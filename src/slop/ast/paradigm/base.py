@@ -306,19 +306,33 @@ class Grammar(ABC):
         Default empty: most grammars do not list the receiver as a parameter at all."""
         return frozenset()
 
-    # ---- instance members (cohesion) ------------------------------------
-    #
-    # Cohesion asks which instance members each method touches, so a grammar must say
-    # how it spells ``receiver.member`` and what a method calls its own instance. A
-    # grammar that cannot say so soundly (Java/C#/C++ let a bare ``x`` mean ``this.x``,
-    # which needs name resolution, not syntax) leaves these at their defaults and the
-    # cohesion measure reports itself unmeasurable instead of undercounting.
+    @classmethod
+    def class_scope_visible(cls) -> bool:
+        """Whether a method sees the names its class body declares without a receiver: a bare
+        ``x`` meaning ``this.x`` (Java, C#, C++) or a bare ``helper`` calling ``self.helper``
+        (Ruby). False where a member is always reached through the receiver (Python,
+        JavaScript, TypeScript, Go, Rust), and where there are no methods (C, Julia)."""
+        return False
 
     @classmethod
-    def member_access(cls) -> MemberAccess | None:
-        """How ``receiver.member`` is spelled, or ``None`` when the language's instance
-        member access cannot be read from syntax alone."""
-        return None
+    def hoisted_bindings(cls) -> bool:
+        """Whether a name bound anywhere in a scope is bound throughout it: Python (an
+        assignment makes a name local to the whole function), JavaScript and TypeScript
+        (hoisting), Julia. False where a name is bound from its declaration on (Java, C#, C,
+        C++, Go, Rust, and Ruby, where a bare name before its assignment is a method call)."""
+        return False
+
+    # ---- instance members (cohesion) ------------------------------------
+    #
+    # Cohesion asks which instance members each method touches. A member reached through
+    # the instance is read here (``receiver.member``); a bare name that means a member
+    # (Java's ``x`` for ``this.x``) is read from name binding (``slop.ast.binding``).
+
+    @classmethod
+    def member_access(cls) -> tuple[MemberAccess, ...]:
+        """The spellings of ``receiver.member`` (Java has two: a field and a method call).
+        Empty where the language has no instance members."""
+        return ()
 
     @classmethod
     def instance_receiver(cls, method: Any, content: bytes) -> str | None:
@@ -333,22 +347,6 @@ class Grammar(ABC):
         """Method names that construct the instance. A constructor touches every member it
         initialises, so it would join every method into one group and hide a split."""
         return frozenset()
-
-    @classmethod
-    def class_fields(cls, node: Any, content: bytes) -> tuple[str, ...]:
-        """Names a class body declares itself (a Python class-level assignment, a
-        TypeScript field), from the raw class ``node``. Empty where the grammar does not say."""
-        del node, content
-        return ()
-
-    @classmethod
-    def assignment_nodes(cls) -> frozenset[str]:
-        """Node types that assign to the expression in their ``left`` field. A member
-        assigned through the instance receiver (``self.x = ...``) is a property the class
-        declares by use. Empty where the grammar cannot say."""
-        return frozenset()
-
-    # ---- class / package vocabulary -----------------------------------
 
     @classmethod
     def import_queries(cls) -> tuple[tuple[str, str], ...]:
@@ -430,6 +428,13 @@ def _child_of_type(node: Any, type_name: str) -> Any:
         if child.type == type_name:
             return child
     return None
+
+
+def has_keyword(node: Any, content: bytes, child_type: str, keyword: str) -> bool:
+    """Whether a direct child of ``node`` typed ``child_type`` reads ``keyword`` (C#'s ``modifier``
+    or C++'s ``storage_class_specifier`` reading ``static``)."""
+    return any(c.type == child_type and content[c.start_byte:c.end_byte].decode("utf-8", errors="replace") == keyword
+               for c in node.children)
 
 
 def type_specifier_name(node: Any, content: bytes) -> str:

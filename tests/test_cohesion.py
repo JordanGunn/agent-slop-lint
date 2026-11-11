@@ -149,13 +149,35 @@ def test_go_receiver_members_and_unnamed_receivers(tmp_path: Path):
     assert c.detached == ()                             # Zero has no instance, so it is not measured
 
 
-@pytest.mark.parametrize("name, src", [
-    ("A.java", "class A { int x; int f() { return x; } int g() { return this.x; } }"),
-    ("A.cs", "class A { int x; int F() { return x; } }"),
+@pytest.mark.parametrize("name, src, groups", [
+    ("A.java", "class A { int f() { return x; } int g() { return this.x; } int x; }", (("f", "g"),)),
+    ("A.java", "class A { int x; int y; A() { x = 0; y = 0; } int f() { return x; } int g() { return y; }"
+               " static int s() { return 1; } }", (("f",), ("g",))),
+    ("A.java", "class A { int x; int f() { return g(); } int g() { return x; } int h() { int x = 1; return x; } }",
+     (("f", "g"),)),
+    ("A.cs", "class A { int x; int F() { return x; } int G() { return this.x; } }", (("F", "G"),)),
+    ("a.cpp", "class A { int f() { return x; } int g() { return this->x; } int x; };", (("f", "g"),)),
+    ("a.rb", "class A\n  def f\n    @x\n  end\n  def g\n    f\n  end\n  def h\n    @y\n  end\nend\n",
+     (("f", "g"), ("h",))),
 ])
-def test_languages_with_implicit_this_are_unmeasurable_not_zero(tmp_path: Path, name: str, src: str):
-    # A bare `x` means `this.x` there; counting only explicit `this.` would invent splits.
-    assert _groups(tmp_path, name, src) is None
+def test_bare_names_reach_members_where_the_class_encloses_its_methods(tmp_path: Path, name, src, groups):
+    # A field declared after its use, a bare sibling call, `this.x`: all one member. The
+    # constructor (named after its class) and a static method are not measured; a local `x`
+    # shadows the field, so h touches nothing and is detached.
+    assert _groups(tmp_path, name, src) == groups
+
+
+def test_an_inner_class_does_not_reach_its_outer_class_fields(tmp_path: Path):
+    src = "class A { int x; int f() { return x; } class B { int g() { return x; } int h() { return 1; } } }"
+    (tmp_path / "A.java").write_text(src)
+    module = scan_corpus(tmp_path, config=None).realms()[0].packages()[0].modules()[0]
+    outer = next(c for c in module.children() if c.KIND.name == "CLASS")
+    inner = next(c for c in outer.children() if c.KIND.name == "CLASS")
+    assert Structure.over(inner).cohesion().groups == ()            # x is A's, not B's
+
+
+def test_a_language_without_instance_members_is_unmeasurable_not_zero(tmp_path: Path):
+    assert _groups(tmp_path, "a.c", "struct A { int x; };\nint f(struct A *a) { return a->x; }\n") is None
 
 
 _ENABLED = RuleConfig(name="class-cohesion", enabled=True, options={"limit": 1})

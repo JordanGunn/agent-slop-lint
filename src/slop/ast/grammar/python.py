@@ -13,6 +13,10 @@ class Python(MultiPurpose):
     id: ClassVar[str] = "python"
 
     @classmethod
+    def hoisted_bindings(cls) -> bool:
+        return True
+
+    @classmethod
     def docstring(cls, node: Any, content: bytes) -> str | None:
         """The string that opens a class or function body, without its quotes."""
         body = node.child_by_field_name("body")
@@ -34,8 +38,8 @@ class Python(MultiPurpose):
         return frozenset({"self", "cls"})
 
     @classmethod
-    def member_access(cls) -> MemberAccess | None:
-        return MemberAccess("attribute", "object", "attribute")
+    def member_access(cls) -> tuple[MemberAccess, ...]:
+        return (MemberAccess("attribute", "object", "attribute"),)
 
     @classmethod
     def instance_receiver(cls, method: Any, content: bytes) -> str | None:
@@ -54,27 +58,6 @@ class Python(MultiPurpose):
     @classmethod
     def constructor_names(cls) -> frozenset[str]:
         return frozenset({"__init__", "__new__"})
-
-    @classmethod
-    def class_fields(cls, node: Any, content: bytes) -> tuple[str, ...]:
-        """Names assigned or annotated directly in the class body (``x: int = 1``, ``y = 2``,
-        ``z: str``); a tuple target (``a, b = ...``) names several and is not read."""
-        body = node.child_by_field_name("body")
-        names: list[str] = []
-        for stmt in body.named_children if body is not None else ():
-            if stmt.type != "expression_statement" or not stmt.named_children:
-                continue
-            assignment = stmt.named_children[0]
-            target = assignment.child_by_field_name("left") if assignment.type == "assignment" else None
-            if target is not None and target.type == "identifier":
-                names.append(content[target.start_byte:target.end_byte].decode())
-        return tuple(names)
-
-    @classmethod
-    def assignment_nodes(cls) -> frozenset[str]:
-        # Augmented assignment (``self.v += 1``) is absent on purpose: it can only update an
-        # attribute that already exists, so it declares nothing.
-        return frozenset({"assignment"})
 
     @classmethod
     def callable(cls) -> frozenset[str]:

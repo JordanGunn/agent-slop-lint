@@ -11,8 +11,12 @@ from ..paradigm.base import MemberAccess, ModuleIndex, distinct
 
 class EcmaScript:
     @classmethod
-    def member_access(cls) -> MemberAccess | None:
-        return MemberAccess("member_expression", "object", "property")
+    def hoisted_bindings(cls) -> bool:
+        return True
+
+    @classmethod
+    def member_access(cls) -> tuple[MemberAccess, ...]:
+        return (MemberAccess("member_expression", "object", "property"),)
 
     @classmethod
     def instance_receiver(cls, method: Any, content: bytes) -> str | None:
@@ -22,25 +26,6 @@ class EcmaScript:
     @classmethod
     def constructor_names(cls) -> frozenset[str]:
         return frozenset({"constructor"})
-
-    @classmethod
-    def class_fields(cls, node: Any, content: bytes) -> tuple[str, ...]:
-        """Fields in the class body: TypeScript's ``public_field_definition`` (name in
-        ``name``) and JavaScript's ``field_definition`` (name in ``property``)."""
-        body = node.child_by_field_name("body")
-        field_of = {"public_field_definition": "name", "field_definition": "property"}
-        names: list[str] = []
-        for member in body.named_children if body is not None else ():
-            key = field_of.get(member.type)
-            target = member.child_by_field_name(key) if key else None
-            if target is not None:
-                names.append(content[target.start_byte:target.end_byte].decode())
-        return tuple(names)
-
-    @classmethod
-    def assignment_nodes(cls) -> frozenset[str]:
-        # ``this.v += 1`` can only update a member that exists, so it declares nothing.
-        return frozenset({"assignment_expression"})
 
     @classmethod
     def callable(cls) -> frozenset[str]:

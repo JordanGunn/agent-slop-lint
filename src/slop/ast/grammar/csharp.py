@@ -4,11 +4,26 @@ from __future__ import annotations
 from typing import Any, ClassVar
 
 from ..paradigm import ObjectOriented
+from ..paradigm.base import MemberAccess, has_keyword
 from ..paradigm.heritage import heritage
 
 
 class CSharp(ObjectOriented):
     id: ClassVar[str] = "c_sharp"
+
+    @classmethod
+    def class_scope_visible(cls) -> bool:
+        return True
+
+    @classmethod
+    def member_access(cls) -> tuple[MemberAccess, ...]:
+        """``this.X``, and the callee of ``this.M()``."""
+        return (MemberAccess("member_access_expression", "expression", "name"),)
+
+    @classmethod
+    def instance_receiver(cls, method: Any, content: bytes) -> str | None:
+        """``this``, except in a ``static`` method, which has no instance."""
+        return None if has_keyword(method, content, "modifier", "static") else "this"
 
     @classmethod
     def callable(cls) -> frozenset[str]:

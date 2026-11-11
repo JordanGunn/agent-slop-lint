@@ -15,9 +15,13 @@ every interface and every enum-like class would read as a pile of unrelated clas
 accesses inside its nested callables too: a closure captures ``self``. A nested JavaScript
 ``function`` rebinds ``this``, which this measure does not model.
 
-A grammar that cannot say how it spells instance member access (Java, C#, C++ allow a bare
-``x`` for ``this.x``) has no answer, and the measure returns ``None`` rather than a count
-that silently misses those accesses.
+A method reaches a member two ways: through its instance (``self.x``, ``this.x``, ``s.x``,
+the grammar's ``member_access``), or by a bare name that binds to a field or method of its own
+class (Java, C#, C++ ``x`` for ``this.x``, Ruby ``helper`` and ``@x``; ``slop.ast.binding``).
+Only the class's own members count: an inherited member is not visible without resolving the
+base class's file, and both PMD and the CK tool exclude them. Java, C# and C++ name a
+constructor after its class, so a method named like its class is a constructor too. A
+language without instance members (C, Julia) has no answer, and the measure returns ``None``.
 """
 from __future__ import annotations
 
@@ -25,6 +29,7 @@ from collections.abc import Iterator, Sequence
 from typing import Any
 
 from ...ast import NodeKind
+from ...ast.binding import SymbolKind
 from .records import Cohesion
 
 
@@ -38,15 +43,15 @@ def cohesion(methods: Sequence[Any], grammar: Any) -> Cohesion | None:
 
     ``methods`` are the class's method components (``name``, ``_node``, ``_content``,
     ``_ast_node()``)."""
-    access = grammar.member_access()
-    if access is None:
+    spellings = grammar.member_access()
+    if not spellings:
         return None
     constructors = grammar.constructor_names()
     parent: dict[str, str] = {}
     measured: list[str] = []
     for method in methods:
         name = _method_name(method)
-        if name in constructors:
+        if name in constructors or name == method.owner.name:
             continue
         receiver = grammar.instance_receiver(method._node, method._content)
         if receiver is None:
@@ -54,7 +59,7 @@ def cohesion(methods: Sequence[Any], grammar: Any) -> Cohesion | None:
         if name not in measured:
             measured.append(name)
         _find(parent, name)
-        for member in _accessed_members(method, access, receiver):
+        for member in _accessed_members(method, spellings, receiver):
             parent[_find(parent, member)] = _find(parent, name)
     return _split(measured, parent)
 
@@ -76,14 +81,29 @@ def _find(parent: dict[str, str], name: str) -> str:
     return name
 
 
-def _accessed_members(method: Any, access: Any, receiver: str) -> Iterator[str]:
-    """The member names ``method`` reaches through ``receiver``, nested callables included."""
+def _accessed_members(method: Any, spellings: Any, receiver: str) -> Iterator[str]:
+    """The member names ``method`` reaches through ``receiver`` or by a bare name bound to its
+    own class's field or method, nested callables included."""
+    by_type = {s.node_type: s for s in spellings}
     for node in method._ast_node().walk(prune=frozenset({NodeKind.CLASS})):
-        if node.type != access.node_type:
+        access = by_type.get(node.type)
+        if access is None:
             continue
         target, member = node.field(access.receiver_field), node.field(access.member_field)
         if target is not None and member is not None and target.text == receiver:
             yield member.text
+    yield from _bound_members(method)
+
+
+def _bound_members(method: Any) -> Iterator[str]:
+    """Bare names in ``method`` that bind to a field or method of the class that owns it."""
+    owner = method.owner._node
+    start, end = method._node.start_byte, method._node.end_byte
+    for at, binding in method.bindings().items():
+        if not (start <= at < end) or binding.kind not in (SymbolKind.FIELD, SymbolKind.METHOD):
+            continue
+        if binding.definition is None or owner.start_byte <= binding.definition < owner.end_byte:
+            yield binding.text
 
 
 def _split(measured: list[str], parent: dict[str, str]) -> Cohesion:

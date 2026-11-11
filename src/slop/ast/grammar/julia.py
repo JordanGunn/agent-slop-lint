@@ -13,6 +13,10 @@ class Julia(MultiPurpose):
     id: ClassVar[str] = "julia"
 
     @classmethod
+    def hoisted_bindings(cls) -> bool:
+        return True
+
+    @classmethod
     def classes(cls) -> frozenset[str]:
         return frozenset({"struct_definition", "abstract_definition", "primitive_definition"})
 

@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from slop.lexical import coverage
 from slop.lexicon import Role
 from slop.ontology import OntologyIR
@@ -67,8 +69,20 @@ def test_a_static_method_assigning_through_its_first_parameter_declares_nothing(
     assert _props(tmp_path, "m.py", src) == ()
 
 
-def test_a_grammar_that_cannot_say_yields_no_properties_not_a_guess(tmp_path: Path):
-    assert _props(tmp_path, "A.java", "class A { int x; void f() { this.y = 1; } }") == ()
+@pytest.mark.parametrize("name, src, cls, props", [
+    ("A.java", "class A { int x; String y; void f() { int z = 1; } class B { int w; } }", "A", ("x", "y")),
+    ("A.cs", "class A { int x; public string Name { get; set; } }", "A", ("x", "Name")),
+    ("a.cpp", "class A { int x; double y; void f() {} };", "A", ("x", "y")),
+    ("a.go", "package p\ntype A struct { x int; y string }\n", "A", ("x", "y")),
+    ("a.rs", "struct A { x: i32, y: String }\n", "A", ("x", "y")),
+    ("a.rb", "class A\n  def initialize\n    @x = 1\n    @y ||= 2\n  end\n  def f\n    @x += @z\n  end\nend\n",
+     "A", ("@x", "@y")),
+    ("a.jl", "struct A\n  x::Int\n  y\nend\n", "A", ("x", "y")),
+])
+def test_declared_fields_are_properties_in_every_language(tmp_path: Path, name, src, cls, props):
+    # A local is not a field, nor is a nested class's field. Ruby's `@y ||= 2` sets `@y` when it
+    # is unset, so it declares it.
+    assert _props(tmp_path, name, src, cls) == props
 
 
 def test_properties_enter_the_declared_lexicon_with_their_own_role(tmp_path: Path):

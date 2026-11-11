@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 
 from slop.identity import relative_path
 from slop.metrics.structural.view import Structure
@@ -190,3 +192,31 @@ def test_a_member_named_like_a_parameter_still_keeps_its_name(tmp_path: Path):
     src = ("class A:\n    def __init__(self, a, b, c):\n        self.a = a\n        self.b = b\n        self.c = c\n\n"
            "class B:\n    def __init__(self, x, y, z):\n        self.x = x\n        self.y = y\n        self.z = z\n")
     assert Structure.over(_module(tmp_path, src)).clone_clusters(min_leaf_nodes=5) == []
+
+
+def test_names_bound_outside_the_function_keep_their_text(tmp_path: Path):
+    # A module constant is bound, but not by the function: reading LIMIT or OTHER is different code.
+    body = "    total = n + {c}\n    scaled = total * 2\n    if scaled > {c}:\n        return scaled - 1\n    return scaled\n"
+    src = "LIMIT = 9\nOTHER = 7\n\ndef a(n):\n" + body.format(c="LIMIT") + "\ndef b(n):\n" + body.format(c="OTHER")
+    assert Structure.over(_module(tmp_path, src)).clone_clusters(min_leaf_nodes=5) == []
+
+
+def test_functions_that_import_different_names_are_different_code(tmp_path: Path):
+    # An imported name is bound by the body but names another module's entity: like a call to a
+    # different function, it is not a renameable local.
+    body = "    from pkg.extended import {n}\n    obj = {n}()\n    obj.prepare()\n    obj.run(1, 2)\n    return obj\n"
+    src = "def a():\n" + body.format(n="Six") + "\ndef b():\n" + body.format(n="Seven") + "\ndef c():\n" + body.format(n="Six")
+    [cluster] = Structure.over(_module(tmp_path, src)).clone_clusters(min_leaf_nodes=5)
+    assert {m.qualname for m in cluster.members} == {"r.a", "r.c"}
+
+
+@pytest.mark.parametrize("filename, src", [
+    ("M.java", "class M {\n  int a(int p) { int total = p + 1; int out = total * 2; return out - total; }\n"
+               "  int b(int q) { int acc = q + 1; int res = acc * 2; return res - acc; }\n}\n"),
+    ("m.go", "package m\nfunc a(p int) int { total := p + 1; out := total * 2; return out - total }\n"
+             "func b(q int) int { acc := q + 1; res := acc * 2; return res - acc }\n"),
+])
+def test_renamed_locals_are_clones_in_languages_that_declare_them(tmp_path: Path, filename, src):
+    # Binding reads Java's and Go's declarations, so a renamed local no longer hides a clone.
+    [cluster] = Structure.over(_module_in(tmp_path, filename, src)).clone_clusters(min_leaf_nodes=5)
+    assert len(cluster.members) == 2

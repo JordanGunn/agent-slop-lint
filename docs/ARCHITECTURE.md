@@ -43,7 +43,14 @@ typescript). It states:
 - node types for callables, identifiers, and the decision, nesting, loop, switch, try and
   catch constructs used by complexity measures;
 - operator and operand node types (Halstead), call nodes, language builtins;
-- how names, parameters, class fields, imports and member access (`MemberAccess`) are read, and
+- name binding: a tree-sitter locals query per grammar (`ast/grammar/locals/<id>.scm`:
+  `@local.scope`, `@local.definition.parameter|var|import|field|method`, `@local.reference`,
+  `@ignore`) and two facts, `hoisted_bindings` and `class_scope_visible`; `ast/binding.py`
+  resolves every name occurrence to a `SymbolKind` (parameter, local, import, field, method,
+  free) with the tree-sitter-highlight algorithm. Fields defined in a class are its properties;
+  clones rename only the parameters and locals a callable binds; LCOM4 reads members reached
+  through the receiver (`MemberAccess`) and bare names bound to the class's own fields and methods;
+- how names, parameters, imports and explicit member access (`MemberAccess`) are read, and
   which corpus modules an import loads (`resolve_import`): a file-relative import (Python dots,
   `./` and `../`, quoted `#include`, `require_relative`, Rust `self`/`super`/`crate`) is
   anchored at the importing file and never matched by a bare name;

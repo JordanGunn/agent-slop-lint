@@ -4,11 +4,26 @@ from __future__ import annotations
 from typing import Any, ClassVar
 
 from ..paradigm import ObjectOriented
+from ..paradigm.base import MemberAccess
 from ..paradigm.heritage import heritage
 
 
 class Java(ObjectOriented):
     id: ClassVar[str] = "java"
+
+    @classmethod
+    def class_scope_visible(cls) -> bool:
+        return True
+
+    @classmethod
+    def member_access(cls) -> tuple[MemberAccess, ...]:
+        """``this.x`` and ``this.m()``, which Java spells as two node types."""
+        return (MemberAccess("field_access", "object", "field"), MemberAccess("method_invocation", "object", "name"))
+
+    @classmethod
+    def instance_receiver(cls, method: Any, content: bytes) -> str | None:
+        """``this``, except in a ``static`` method, which has no instance."""
+        return None if _has_modifier(method, content, "static") else "this"
 
     @classmethod
     def callable(cls) -> frozenset[str]:
