@@ -40,6 +40,7 @@ Read-only (exit `0` answered, `2` could not answer):
 | `slop vocab --ontology IR.json` | class names compared with an [Open Ontology](https://open-ontology.com) JSON IR |
 | `slop shape` | each class's CK profile and cohesion groups |
 | `slop infer instructions`, `references`, `schema`, `next`, `apply` | inference over the subjective warnings: an agent reads the bundled instructions and rubric, takes the worklist, and returns verdicts; `slop lint` applies the rulings |
+| `slop skill list`, `show`, `install` | Agent Skills that teach an agent to use slop; `slop-infer` drives `slop infer` |
 | `slop hotspots` | files changed in a revision window (`--since REV`, `--last N`, plus uncommitted changes), ranked by churn × complexity |
 
 Lint:

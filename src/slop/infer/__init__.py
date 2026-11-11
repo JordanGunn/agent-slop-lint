@@ -4,12 +4,13 @@ Slop never calls a model. The host agent is the inferential instrument (``A``); 
 package frames its work (``Dpre``), fixes the shape of what it may return (``S``), and
 validates and routes the result (``Dpost``). Layers, bottom to top; an arrow is an import:
 
+    bundle      the prose slop prints: instructions, references. Imports nothing in slop.
     contract    the wire types, their JSON Schema, and strict parsing. Imports nothing in slop.
     ledger      persisted rulings.                              imports contract
-    frame       identity, excerpt and rubric for one finding.   imports contract
+    frame       identity, excerpt and rubric for one finding.   imports bundle, contract
     source      where residue comes from.                       imports contract, frame
-    apply       validate verdicts, route them, settle a report. imports contract, ledger
+    apply       validate, route, list outstanding, settle.      imports contract, frame, ledger, source
 
-Only ``cli`` imports this package. New kinds of residue (a project survey for bootstrap, a
+Only ``cli`` and ``skill`` import this package. New kinds of residue (a project survey for bootstrap, a
 candidate listing) are new ``source`` modules; the layers above and below do not change.
 """

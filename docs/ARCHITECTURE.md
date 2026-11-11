@@ -88,7 +88,7 @@ Contributor invariants:
 
 ## Inference
 
-`slop/infer/` is a layer over the linter, imported only by `cli.py` (pinned by
+`slop/infer/` is a layer over the linter, imported only by `cli.py` and `slop/skill/` (pinned by
 `tests/test_layers.py`). Slop never calls a model: the host agent does the inferring. This
 package frames what the agent sees, fixes the shape of what it may return, and validates and
 stores the result. It follows `Dpre(X) -> A(X' : Sigma) : S -> Dpost(Y)`.
@@ -129,3 +129,23 @@ labelled by `frame/location.py`.
 Constants: one used by a single module stays in it. One needed by a second module in the same
 subpackage moves to that subpackage; the contract's closed terms are in `contract/vocabulary.py`.
 One needed by a second package goes in `slop/layout.py` (`CONFIG_FILENAME`, `STATE_DIR`).
+
+## Skills
+
+`slop/skill/` packages Agent Skills (agentskills.io) that teach an agent to use slop, one per
+job. It imports `infer`; nothing below it imports `skill`.
+
+| Module | Role |
+|---|---|
+| `model.py` | `Skill`: name, description, manifest body, files; refuses what the spec forbids |
+| `catalog.py` | `SKILLS`, every skill by name; one function per skill, its body in `manifests/<name>.md` |
+| `install.py` | writes `DEST/<name>/` |
+
+A skill's files are built from their single sources each time it is shown or installed:
+`slop-infer` takes its instructions and rubrics from `infer/bundle/` and its schemas from
+`infer/contract/`. Nothing is copied into the repository, so an installed skill cannot drift
+from the source it was built from; reinstalling updates it.
+
+`slop skill list` lists them, `slop skill show NAME [FILE]` prints the manifest or one file, and
+`slop skill install NAME --dest DIR [--force]` writes the directory. A new skill is a new
+function in `catalog.py` and a manifest in `manifests/`.

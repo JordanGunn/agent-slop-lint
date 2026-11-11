@@ -27,7 +27,8 @@ ALLOWED: dict[str, set[str]] = {
     "ontology": {"lexicon", "scope", "span"},
     "lexical": {"lexicon", "ontology", "span"},      # never scope, rules or cli
     "layout": set(),
-    "infer": {"dispatch", "identity", "layout", "span", "violation"},   # never cli; only cli imports infer
+    "infer": {"dispatch", "identity", "layout", "span", "violation"},   # never cli or skill
+    "skill": {"infer"},
 }
 
 #: package -> internal packages it must never import (everything else is unconstrained).
@@ -37,11 +38,11 @@ FORBIDDEN: dict[str, set[str]] = {
 }
 
 
-def test_only_the_cli_imports_infer():
+def test_only_the_cli_and_skill_import_infer():
     offenders = []
     for path in sorted((SRC / "slop").rglob("*.py")):
         rel = path.relative_to(SRC)
-        if rel.parts[1] == "infer" or rel.parts[1] == "cli.py":
+        if rel.parts[1] in ("infer", "skill", "cli.py"):
             continue
         module = ".".join(rel.with_suffix("").parts)
         is_package = path.name == "__init__.py"

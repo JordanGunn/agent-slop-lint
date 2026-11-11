@@ -38,6 +38,8 @@ from .infer.frame.rubric import has_rubric
 from .infer.ledger.jsonl import JsonlLedger
 from .infer.source.interface import Analysis as InferAnalysis
 from .layout import CONFIG_FILENAME
+from .skill.catalog import SKILLS
+from .skill.install import InstallError, install as install_skill
 from .scope.find import walk as _walk
 from .scope.lexicon import build_declared_lexicon
 
@@ -630,6 +632,35 @@ def infer_apply(file: str, root: str | Path) -> int:
     return 1 if receipt.rejected else 0
 
 
+def skill_command(args: argparse.Namespace) -> int:
+    """Run one `slop skill` subcommand."""
+    if args.skill_command == "list":
+        for name, skill in sorted(SKILLS.items()):
+            print(f"{name}  {skill.description}")
+        return 0
+    if args.name not in SKILLS:
+        print(f"slop: error: no skill '{args.name}'. Try `slop skill list`.", file=sys.stderr)
+        return 2
+    skill = SKILLS[args.name]
+    if args.skill_command == "show":
+        tree = skill.tree()
+        if args.file is None:
+            print(tree["SKILL.md"], end="")
+            return 0
+        if args.file not in tree:
+            print(f"slop: error: skill '{args.name}' has no file '{args.file}'. Its files: "
+                  f"{', '.join(tree)}", file=sys.stderr)
+            return 2
+        print(tree[args.file], end="")
+        return 0
+    try:
+        print(install_skill(skill, Path(args.dest), replace=args.force))
+    except InstallError as exc:
+        print(f"slop: error: {exc}", file=sys.stderr)
+        return 2
+    return 0
+
+
 def init(root: str | Path) -> int:
     """Emit a ``.slop.toml`` template from each rule's default config."""
     path = Path(root) / CONFIG_FILENAME
@@ -771,6 +802,17 @@ def main(argv: list[str] | None = None) -> int:
     p_apply.add_argument("file", nargs="?", default="-", help="verdicts JSON (default: stdin)")
     p_apply.add_argument("--root", default=".")
 
+    p_skill = sub.add_parser("skill", help="Agent Skills that teach an agent to use slop")
+    skill_sub = p_skill.add_subparsers(dest="skill_command", required=True)
+    skill_sub.add_parser("list", help="list the skills slop ships")
+    p_show = skill_sub.add_parser("show", help="print a skill's SKILL.md, or one of its files")
+    p_show.add_argument("name")
+    p_show.add_argument("file", nargs="?", default=None, help="a path inside the skill (default: SKILL.md)")
+    p_install = skill_sub.add_parser("install", help="write a skill's directory under DEST")
+    p_install.add_argument("name")
+    p_install.add_argument("--dest", required=True, help="the skills directory, e.g. .claude/skills")
+    p_install.add_argument("--force", action="store_true", help="replace an existing install of this skill")
+
     args = parser.parse_args(argv)
     try:
         if args.command == "lint":
@@ -804,6 +846,8 @@ def main(argv: list[str] | None = None) -> int:
             return hotspots_view(args.root, args.output, since=args.since, last=args.last)
         if args.command == "infer":
             return infer_command(args)
+        if args.command == "skill":
+            return skill_command(args)
     except Exception as exc:  # noqa: BLE001 — top-level boundary: any failure is exit 2
         print(f"slop: error: {exc}", file=sys.stderr)
         return 2
