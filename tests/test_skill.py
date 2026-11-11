@@ -61,13 +61,15 @@ def test_the_infer_skill_carries_exactly_what_the_cli_prints():
 
 
 def test_the_infer_skill_follows_its_sources_when_they_change(tmp_path: Path, monkeypatch):
-    (tmp_path / "references" / "rubrics").mkdir(parents=True)
+    names = prose.references()
+    for name in names:                                                     # every reference, with new text
+        (tmp_path / "references" / f"{name}.md").parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / "references" / f"{name}.md").write_text(f"new {name}\n", encoding="utf-8")
     (tmp_path / "instructions.md").write_text("changed\n", encoding="utf-8")
-    (tmp_path / "references" / "rubrics" / "class-cohesion.md").write_text("new rubric\n", encoding="utf-8")
     monkeypatch.setattr(prose, "ROOT", tmp_path)
     rebuilt = SLOP.tree()                                                 # read when built, not copied
     assert rebuilt["references/infer.md"] == "changed\n"
-    assert rebuilt["references/rubrics/class-cohesion.md"] == "new rubric\n"
+    assert all(rebuilt[f"references/{name}.md"] == f"new {name}\n" for name in names)
 
 
 @pytest.mark.parametrize("name", ["Slop", "-slop", "slop-", "slop--infer", "a" * 65, ""])

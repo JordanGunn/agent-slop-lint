@@ -78,7 +78,7 @@ and say nothing about integers or short strings.
 
 Contributor invariants:
 
-- A rule subclasses `Rule` (`name`, `description`, `altitudes`, `default_config`, `check`);
+- A rule subclasses `Rule` (`name`, `description`, `altitudes`, `default_options`, `check`);
   most subclass `Limit` (`rules/limit.py`), which names one altitude and a default limit and
   reads the `limit` option.
 - A rule does not compute its measure and does not traverse beyond the component it is

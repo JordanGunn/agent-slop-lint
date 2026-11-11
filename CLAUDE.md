@@ -18,7 +18,7 @@ root (src-layout; package `agent-slop-lint`, import `slop`, CLI `slop.cli:main`)
   vocabulary (`slop lexicon`).
 - `src/slop/ontology/`: the project's vocabulary (`.slop/ontology.json`, Open Ontology JSON IR);
   `draft.py` derives it from the code, `ir.py` reads and writes it (`slop ontology`, `slop vocab`).
-- Lint layer: `rule.py` (Rule), `rules/` (15 rules, `RULE_REGISTRY` in `rules/__init__.py`),
+- Lint layer: `rule.py` (Rule), `rules/` (16 rules, `RULE_REGISTRY` in `rules/__init__.py`),
   `dispatch.py`, `violation.py`, `config.py`.
 - `src/slop/infer/`: inference layered over the linter (`contract`, `ledger`, `frame`, `source`,
   `apply`, `bundle`); only `cli.py` and `skill/` import it.
@@ -39,7 +39,8 @@ uv run slop rules
 ## Rule contract
 
 - A `Rule` declares `name`, `description`, `altitudes` (a set of `ScopeKind`),
-  `default_config()` (a `RuleConfig`: `enabled` plus flat options) and
+  `default_options` (its flat options and their defaults; `default_config()` builds the
+  `RuleConfig` from them) and
   `check(component, config) -> Iterable[Violation]`. The dispatcher
   calls `check` once per component at each declared altitude; a rule never walks the corpus.
 - A `Limit` (`rules/limit.py`) is a rule that compares one measure with its `limit` option. A subclass sets `altitude` and `default_limit` and implements

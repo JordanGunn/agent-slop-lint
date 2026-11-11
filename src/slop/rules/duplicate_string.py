@@ -30,9 +30,7 @@ class DuplicateStringRule(Rule):
     description = "a string literal is repeated in a module more often than the limit allows"
     altitudes = frozenset({ScopeKind.MODULE})
 
-    @classmethod
-    def default_config(cls) -> RuleConfig:
-        return RuleConfig(name=cls.name, enabled=True, options={"limit": 4, "min_length": 5})
+    default_options = {"limit": 4, "min_length": 5}
 
     def check(self, component: Scope, config: RuleConfig) -> Iterable[Violation]:
         limit = config.option("limit")

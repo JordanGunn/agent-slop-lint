@@ -26,9 +26,7 @@ class DuplicationRule(Rule):
     description = "callables have the same code up to renaming their own names (parameterized clones)"
     altitudes = frozenset({ScopeKind.CORPUS})
 
-    @classmethod
-    def default_config(cls) -> RuleConfig:
-        return RuleConfig(name=cls.name, options={"min_leaf_nodes": 10})
+    default_options = {"min_leaf_nodes": 10}
 
     def check(self, component: Scope, config: RuleConfig) -> Iterable[Violation]:
         clusters = Structure.over(component).clone_clusters(

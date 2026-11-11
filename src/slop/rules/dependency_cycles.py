@@ -23,9 +23,6 @@ class DependencyCyclesRule(Rule):
     description = "modules import each other in a cycle (Acyclic Dependencies Principle)"
     altitudes = frozenset({ScopeKind.CORPUS})
 
-    @classmethod
-    def default_config(cls) -> RuleConfig:
-        return RuleConfig(name=cls.name)
 
     def check(self, component: Scope, config: RuleConfig) -> Iterable[Violation]:
         mod_by_id = {m.id: m for m in component._iter_modules()}

@@ -23,9 +23,7 @@ class MagicFloatRule(Rule):
     description = "a float literal is used as an operand more often than the limit allows"
     altitudes = frozenset({ScopeKind.MODULE})
 
-    @classmethod
-    def default_config(cls) -> RuleConfig:
-        return RuleConfig(name=cls.name, enabled=True, options={"limit": 0})
+    default_options = {"limit": 0}
 
     def check(self, component: Scope, config: RuleConfig) -> Iterable[Violation]:
         limit = config.option("limit")

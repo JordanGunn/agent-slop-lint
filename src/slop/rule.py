@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
-from typing import ClassVar
+from typing import Any, ClassVar
 
 from .config import RuleConfig
 from .scope.base import Scope
@@ -35,13 +35,14 @@ class Rule(ABC):
     #: alone. A subjective rule reports a warning (WARN) that never fails the run; judging
     #: it is left to a layer that reads context.
     subjective: ClassVar[bool] = False
+    #: the rule's options and their defaults: the only options a config may set for it, with
+    #: the types a config must use.
+    default_options: ClassVar[dict[str, Any]] = {}
 
     @classmethod
-    @abstractmethod
     def default_config(cls) -> RuleConfig:
-        """The rule's shipped settings. Its ``options`` are the only options a config may
-        set for it, and their types are the types a config must use."""
-        ...
+        """The rule's shipped settings: on, with its ``default_options``."""
+        return RuleConfig(name=cls.name, options=dict(cls.default_options))
 
     @abstractmethod
     def check(self, component: Scope, config: RuleConfig) -> Iterable[Violation]:
