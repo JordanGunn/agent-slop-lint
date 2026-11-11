@@ -1,9 +1,11 @@
 """Ruby grammar — classes + modules + methods; flat-body; positional names."""
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any, ClassVar
 
 from ..paradigm import MultiPurpose
+from ..paradigm.base import ModuleIndex, distinct
 
 
 class Ruby(MultiPurpose):
@@ -125,12 +127,21 @@ class Ruby(MultiPurpose):
 
     @classmethod
     def import_queries(cls) -> tuple[tuple[str, str], ...]:
-        return ((
-            "((call method: (identifier) @method"
-            " arguments: (argument_list (string (string_content) @module)))"
-            " (#match? @method \"^(require|require_relative|load)$\"))",
-            "ruby_require",
-        ),)
+        return (
+            ("((call method: (identifier) @method"
+             " arguments: (argument_list (string (string_content) @module)))"
+             " (#match? @method \"^(require|load)$\"))", "ruby_require"),
+            ("((call method: (identifier) @method"
+             " arguments: (argument_list (string (string_content) @module)))"
+             " (#eq? @method \"require_relative\"))", "ruby_require_relative"),
+        )
+
+    @classmethod
+    def resolve_import(cls, decl: Any, importer: Path, index: ModuleIndex) -> tuple[Any, ...]:
+        """``require_relative`` names a file beside the requiring one, ``.rb`` optional."""
+        if decl.kind != "ruby_require_relative":
+            return super().resolve_import(decl, importer, index)
+        return distinct([index.at(importer.parent / decl.specifier)])
 
     @classmethod
     def call_node_types(cls) -> frozenset[str]:

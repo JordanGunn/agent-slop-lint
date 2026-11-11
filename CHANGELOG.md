@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed (breaking)
 
+- `slop/cli.py` is the package `slop/cli/`, one module per command family. The entry point
+  `slop.cli:main` is unchanged.
 - The lint layer is a plain linter: a rule reports a `Violation(rule, path, line, column,
   message, value, threshold)` when its measure is strictly greater than its limit. No
   severity, verdict, observation or prescription.
@@ -82,6 +84,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Import resolution anchors relative imports at the importing file. Before, a relative import
+  (`from ..scope.find import x`, `./util`, `#include "x.h"`, `require_relative`, `super::`) and
+  any dotted name (`dask.distributed`) fell back to the first corpus module sharing its last
+  segment, so `import-cycle`, `rigid-package`, `useless-package`, `main-sequence` and `deps` read
+  wrong edges. Both of laszy's reported cycles were such false edges. Python's
+  `from pkg import mod` now depends on `mod`, and on `pkg` only when it takes an attribute.
 - `exclude` in config takes effect for every command.
 - Same-named modules and classes are no longer merged in cycles, clone clusters and CK metrics.
 - `find --collisions` ignores a name defined once per language.

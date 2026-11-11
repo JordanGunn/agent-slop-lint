@@ -207,7 +207,7 @@ def test_the_cli_names_what_it_cannot_find(capsys):
 def test_the_slop_skill_names_every_top_level_command_and_no_other():
     from slop import cli
     import argparse
-    parser = cli._parser()
+    parser = cli.parser()
     [commands] = [a for a in parser._actions if isinstance(a, argparse._SubParsersAction)]
     table = SLOP.body.split("## Capabilities", 1)[1].split("\n## ", 1)[0]
     named = set(re.findall(r"`slop (\w+)", table))

@@ -42,7 +42,7 @@ def test_only_the_cli_and_skill_import_infer():
     offenders = []
     for path in sorted((SRC / "slop").rglob("*.py")):
         rel = path.relative_to(SRC)
-        if rel.parts[1] in ("infer", "skill", "cli.py"):
+        if rel.parts[1] in ("infer", "skill", "cli"):
             continue
         module = ".".join(rel.with_suffix("").parts)
         is_package = path.name == "__init__.py"

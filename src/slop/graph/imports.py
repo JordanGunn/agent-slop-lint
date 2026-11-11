@@ -3,8 +3,8 @@
 Run the grammar's import_queries against the module's AST root via
 ``Node.query(..., capture="module")``, then filter to module-level (drop
 TYPE_CHECKING-guarded and function-local imports — they are not runtime edges).
-Resolution into a graph lives in model/dependency.py. tree-sitter is no longer
-touched here: the query goes through the AST proxy.
+Resolution into a graph lives in graph/build.py, through the grammar's
+``resolve_import``. tree-sitter is not touched here: the query goes through the AST proxy.
 """
 from __future__ import annotations
 
@@ -29,7 +29,8 @@ def module_imports(module: Any) -> list[ImportDecl]:
                 continue
             text = node.text.strip(_STRIP)
             if text:
-                out.append(ImportDecl(specifier=text, kind=kind, line=node.line))
+                out.append(ImportDecl(specifier=text, kind=kind, line=node.line,
+                                      names=grammar.import_names(node)))
     return out
 
 

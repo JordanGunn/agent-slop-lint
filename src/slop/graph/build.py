@@ -1,8 +1,8 @@
 """Concrete DependencyGraph — Module-level import edges over a Corpus.
 
 Implements ``slop.graph.dependency.DependencyGraph``. Nodes are Module
-ComponentIds; edges come from each Module's raw imports resolved against a
-corpus name index (ported from the legacy structure/imports.py). Cycles via
+ComponentIds; edges come from each Module's raw imports, resolved by its grammar
+against the corpus's ``ModuleIndex`` and the importing file. Cycles via
 Tarjan SCC. Neighbour-set accessors (beyond the ABC's count-returning
 afferent/efferent) support Package-level contraction for Martin metrics.
 """
@@ -11,6 +11,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from ..ast.paradigm.base import ModuleIndex
 from ..identity import ScopeId, Span, relative_path
 from .dependency import DependencyCycle
 from .dependency import DependencyEdge, DependencyGraph
@@ -88,28 +89,12 @@ class ConcreteDependencyGraph(DependencyGraph):
 def build(corpus: Any) -> ConcreteDependencyGraph:
     modules = list(corpus._iter_modules())
     label: dict[ScopeId, str] = {m.id: relative_path(m.id, corpus.root) or m.qualname for m in modules}
-    module_ids = set(label)
-    index: dict[str, ScopeId] = {}
-    for m in modules:
-        if not m.files:
-            continue
-        init_name = m._grammar.package_init_name() if m._grammar is not None else None
-        for name in _module_names_for_path(m.files[0], init_name):
-            index.setdefault(name, m.id)
-
+    index = _index(modules)
+    edges = [edge for m in modules for edge in _edges(m, index, set(label))]
     efferent: dict[ScopeId, set[ScopeId]] = {m.id: set() for m in modules}
-    edges: list[DependencyEdge] = []
-    for m in modules:
-        src_span = Span(str(m.files[0]), 0, 0) if m.files else Span("", 0, 0)
-        for imp in module_imports(m):
-            target = m._grammar.resolve_module(imp.specifier, index)
-            resolved = target is not None and target != m.id and target in module_ids
-            edges.append(DependencyEdge(
-                from_=m.id, to=target if resolved else None, kind=imp.kind,
-                raw_specifier=imp.specifier, source=src_span, resolved=bool(resolved),
-            ))
-            if resolved:
-                efferent[m.id].add(target)
+    for edge in edges:
+        if edge.resolved:
+            efferent[edge.from_].add(edge.to)
 
     afferent: dict[ScopeId, set[ScopeId]] = {m.id: set() for m in modules}
     for src, tgts in efferent.items():
@@ -122,6 +107,36 @@ def build(corpus: Any) -> ConcreteDependencyGraph:
         {k: frozenset(v) for k, v in afferent.items()},
         label,
     )
+
+
+def _index(modules: list) -> ModuleIndex:
+    """Every module by the spellings an import can use, and by its file."""
+    index = ModuleIndex(by_name={}, by_path={})
+    for m in modules:
+        if not m.files:
+            continue
+        init_name = m._grammar.package_init_name() if m._grammar is not None else None
+        for name in _module_names_for_path(m.files[0], init_name):
+            index.by_name.setdefault(name, m.id)
+        for key in ModuleIndex.keys(m.files[0]):
+            index.by_path.setdefault(key, m.id)
+    return index
+
+
+def _edges(module: Any, index: ModuleIndex, module_ids: set[ScopeId]) -> list[DependencyEdge]:
+    """One edge per corpus module each of ``module``'s imports loads; one unresolved edge for an
+    import that loads none here (a self-import, or something outside the corpus)."""
+    if not module.files:
+        return []
+    source = Span(str(module.files[0]), 0, 0)
+    edges = []
+    for imp in module_imports(module):
+        targets = [t for t in module._grammar.resolve_import(imp, module.files[0], index)
+                   if t != module.id and t in module_ids]
+        edges += [DependencyEdge(from_=module.id, to=target, kind=imp.kind, raw_specifier=imp.specifier,
+                                 source=source, resolved=target is not None)
+                  for target in targets or [None]]
+    return edges
 
 
 def _module_names_for_path(fp: Path, init_name: str | None = None) -> list[str]:

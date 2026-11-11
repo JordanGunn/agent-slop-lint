@@ -115,7 +115,7 @@ def test_a_pyproject_without_a_slop_table_does_not_hide_a_config_above_it(tmp_pa
 
 
 def test_the_init_template_loads_as_written_and_changes_nothing(tmp_path: Path):
-    cli.init(tmp_path)
+    cli.config.init(tmp_path)
     template = (tmp_path / ".slop.toml").read_text()
     # Uncomment every generated setting: the result must be the defaults, not an error.
     uncommented = "\n".join(

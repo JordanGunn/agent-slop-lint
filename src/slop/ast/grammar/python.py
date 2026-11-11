@@ -1,10 +1,11 @@
 """Python grammar — multi-paradigm (classes + free functions + lambdas)."""
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any, ClassVar
 
 from ..paradigm import MultiPurpose
-from ..paradigm.base import MemberAccess
+from ..paradigm.base import MemberAccess, ModuleIndex, distinct
 
 
 class Python(MultiPurpose):
@@ -180,6 +181,48 @@ class Python(MultiPurpose):
             ("(import_statement name: (aliased_import name: (dotted_name) @module))", "import"),
             ("(import_from_statement module_name: (relative_import) @module)", "from_import"),
         )
+
+    @classmethod
+    def import_names(cls, node: Any) -> tuple[str, ...]:
+        """``from X import a, b as c`` takes ``a`` and ``b`` from ``X``; either may be a submodule."""
+        statement = node.parent
+        if statement is None or statement.type != "import_from_statement":
+            return ()
+        names = []
+        for child in statement.children():
+            if child.type == "dotted_name" and child.text != node.text:
+                names.append(child.text)
+            elif child.type == "aliased_import" and child.field("name") is not None:
+                names.append(child.field("name").text)
+        return tuple(names)
+
+    @classmethod
+    def resolve_import(cls, decl: Any, importer: Path, index: ModuleIndex) -> tuple[Any, ...]:
+        """The modules the code takes something from: each imported name that is a submodule,
+        and the named module itself when it supplies anything else (an attribute, ``*``, or
+        the whole module in ``import x``). ``from . import a`` therefore depends on ``a``, not
+        on the package. Leading dots anchor at the importer's package, one more level up per
+        dot; an absolute name must match a module path exactly, never by its last segment
+        alone, so ``os.path`` cannot resolve to a local ``path.py``."""
+        spec = decl.specifier
+        dots = len(spec) - len(spec.lstrip("."))
+        if dots == 0:
+            def lookup(spelling: str) -> Any | None:
+                return index.by_name.get(spelling)
+            submodules = [lookup(f"{spec}.{name}") for name in decl.names]
+            container = spec
+        else:
+            base = importer.parent
+            for _ in range(dots - 1):
+                base = base.parent
+            module = base.joinpath(*spec[dots:].split(".")) if spec[dots:] else base
+
+            def lookup(place: Path) -> Any | None:
+                return index.at(place) or index.at(place / "__init__")
+            submodules = [lookup(module / name) for name in decl.names]
+            container = module
+        takes_attribute = not decl.names or None in submodules
+        return distinct([*submodules, lookup(container) if takes_attribute else None])
 
     @classmethod
     def extract_superclasses(cls, node: Any, content: bytes) -> list[str]:

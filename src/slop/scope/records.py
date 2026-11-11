@@ -19,3 +19,4 @@ class ImportDecl:
     specifier: str   # the raw module string as written
     kind: str        # import | from | include | require | use | ...
     line: int
+    names: tuple[str, ...] = ()   # what it takes from the module, where a name can be a module

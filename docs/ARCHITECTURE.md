@@ -11,7 +11,7 @@ slop is a linter on top of read-only primitives. Source: `src/slop/`.
 | Measures | `metrics/`, `lexicon/`, `graph/` | read-only views over a component |
 | Vocabulary | `ontology/`, `lexical/` | canonical vocabulary (Open Ontology JSON IR) and the comparison with names in code |
 | Lint | `rule.py`, `rules/`, `dispatch.py`, `violation.py`, `config.py` | rules compare a measure with a limit |
-| CLI | `cli.py` | `ast`, `tree`, `find`, `lexicon`, `deps`, `vocab`, `shape`, `hotspots` (primitives); `lint`, `check`, `rules` (lint); `init`, `doctor` |
+| CLI | `cli/` (one module per command family) | `ast`, `tree`, `find`, `lexicon`, `deps`, `vocab`, `shape`, `hotspots` (primitives); `lint`, `check`, `rules` (lint); `init`, `doctor` |
 
 Primitive commands return facts and apply no limits. Only `rules/` and rule `limit` options
 encode limits.
@@ -43,7 +43,10 @@ typescript). It states:
 - node types for callables, identifiers, and the decision, nesting, loop, switch, try and
   catch constructs used by complexity measures;
 - operator and operand node types (Halstead), call nodes, language builtins;
-- how names, parameters, class fields, imports and member access (`MemberAccess`) are read;
+- how names, parameters, class fields, imports and member access (`MemberAccess`) are read, and
+  which corpus modules an import loads (`resolve_import`): a file-relative import (Python dots,
+  `./` and `../`, quoted `#include`, `require_relative`, Rust `self`/`super`/`crate`) is
+  anchored at the importing file and never matched by a bare name;
 - implicit receiver names (`self`), constructor names, special methods.
 
 Languages that share facts inherit them from a family parent instead of repeating them:
@@ -56,7 +59,7 @@ elsewhere.
 
 ## How a rule runs
 
-1. `cli.lint` loads `AnalysisConfig` (validated against `RULE_REGISTRY` in `rules/__init__.py`;
+1. `cli.lint.lint` loads `AnalysisConfig` (validated against `RULE_REGISTRY` in `rules/__init__.py`;
    unknown keys, unknown rules and options, and wrongly typed values are errors) and calls `scan_corpus`.
 2. `Dispatcher.run` walks the tree once and indexes components by `ScopeKind`. For each
    enabled rule it calls `rule.check(component, rule_config)` at every component of each
@@ -88,7 +91,7 @@ Contributor invariants:
 
 ## Inference
 
-`slop/infer/` is a layer over the linter, imported only by `cli.py` and `slop/skill/` (pinned by
+`slop/infer/` is a layer over the linter, imported only by `cli/` and `slop/skill/` (pinned by
 `tests/test_layers.py`). Slop never calls a model: the host agent does the inferring. This
 package frames what the agent sees, fixes the shape of what it may return, and validates and
 stores the result. It follows `Dpre(X) -> A(X' : Sigma) : S -> Dpost(Y)`.

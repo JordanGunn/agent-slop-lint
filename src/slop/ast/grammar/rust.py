@@ -9,9 +9,15 @@ nested in a helper).
 """
 from __future__ import annotations
 
+from itertools import dropwhile
+from pathlib import Path
 from typing import Any, ClassVar
 
 from ..paradigm import MultiPurpose
+from ..paradigm.base import ModuleIndex
+
+#: files that hold the module of their directory rather than a module named for themselves
+_DIRECTORY_MODULES = ("mod", "lib", "main")
 
 
 class Rust(MultiPurpose):
@@ -119,6 +125,23 @@ class Rust(MultiPurpose):
         )
 
     @classmethod
+    def resolve_import(cls, decl: Any, importer: Path, index: ModuleIndex) -> tuple[Any, ...]:
+        """``self::``, ``super::`` and ``crate::`` paths walk the module tree from the importer.
+        A path names modules and then items, so the longest prefix that is a module file is
+        the dependency; with none, the module the path starts in. Other paths (external
+        crates, ``std``) take the default."""
+        anchored = _anchor(decl.specifier.split("::"), importer, index)
+        if anchored is None:
+            return super().resolve_import(decl, importer, index)
+        base, rest = anchored
+        for k in range(len(rest), 0, -1):
+            found = _module_at(base.joinpath(*rest[:k]), index)
+            if found is not None:
+                return (found,)
+        found = _module_at(base, index)
+        return (found,) if found is not None else ()
+
+    @classmethod
     def is_abstract_scope(cls, node: Any, content: bytes) -> bool | None:
         del content
         if node.type == "trait_item":
@@ -147,4 +170,37 @@ def _rust_target_type_name(type_node: Any, content: bytes) -> str | None:
         for child in type_node.children:
             if child.type == "type_identifier":
                 return content[child.start_byte:child.end_byte].decode("utf-8", errors="replace")
+    return None
+
+
+def _directory(file: Path) -> Path:
+    """The directory holding a module file's child modules."""
+    return file.parent if file.stem in _DIRECTORY_MODULES else file.parent / file.stem
+
+
+def _anchor(segments: list[str], importer: Path, index: ModuleIndex) -> tuple[Path, list[str]] | None:
+    """The directory a ``self``/``crate``/``super`` path starts in and the segments after its
+    prefix, else None (the path is not relative to the crate)."""
+    head, *rest = segments
+    if head == "self":
+        return _directory(importer), rest
+    if head == "crate":
+        root = next((d for d in importer.parents
+                     if index.at(d / "lib") is not None or index.at(d / "main") is not None), None)
+        return (root, rest) if root is not None else None
+    ups = len(segments) - len(list(dropwhile(lambda s: s == "super", segments)))
+    if ups == 0:
+        return None
+    base = _directory(importer)
+    for _ in range(ups):
+        base = base.parent
+    return base, segments[ups:]
+
+
+def _module_at(place: Path, index: ModuleIndex) -> Any | None:
+    """The module whose children live in ``place``, or whose file is ``place``."""
+    for candidate in (place, *(place / stem for stem in _DIRECTORY_MODULES)):
+        found = index.at(candidate)
+        if found is not None:
+            return found
     return None

@@ -6,15 +6,13 @@ adapter is the *grammar*). It is tabular metadata + extractor classmethods —
 never a walker. A ``Realm`` owns one ``Grammar``; carving and the metric layer
 read it.
 
-Faithful port (this encodes real tree-sitter / language constraints), with two
-deliberate omissions, per the governing principle that legacy structure is
+Faithful port (this encodes real tree-sitter / language constraints), with one
+deliberate omission, per the governing principle that legacy structure is
 suspect not sacred:
 
 - ``post_scan_adjust`` — the legacy walked generically then *rewrote* mis-parented
   Go-receiver / Rust-impl records. Carving will parent correctly by construction;
   the fixup hook should not exist.
-- ``resolve_module`` — import-string → path resolution feeds the DependencyGraph,
-  which is out of scope for this build.
 
 Defaults use raw tree-sitter node-type strings (the legacy's per-category
 constant modules were over-organised; a shared node vocabulary can be extracted
@@ -22,6 +20,7 @@ later if multiple grammars want it).
 """
 from __future__ import annotations
 
+import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
@@ -30,6 +29,35 @@ from collections.abc import Iterable
 from typing import Any, ClassVar
 
 from ..parse import load_ts_language
+
+
+def _normal(path: Path) -> Path:
+    """``path`` with ``.`` and ``..`` collapsed, without touching the filesystem."""
+    return Path(os.path.normpath(path))
+
+
+@dataclass(frozen=True)
+class ModuleIndex:
+    """The corpus's modules, as an import can name them: ``by_name`` holds every spelling a
+    module path can take (``find``, ``scope.find``, ``scope/find``, ...), ``by_path`` the
+    module's file, with and without its suffix. Values are module ids."""
+
+    by_name: dict[str, Any]
+    by_path: dict[Path, Any]
+
+    def at(self, path: Path) -> Any | None:
+        """The module whose file is ``path`` (or ``path`` plus a suffix), else None."""
+        return self.by_path.get(_normal(path))
+
+    @staticmethod
+    def keys(file: Path) -> tuple[Path, Path]:
+        """The ``by_path`` keys of a module's file."""
+        return _normal(file), _normal(file).with_suffix("")
+
+
+def distinct(found: Iterable[Any]) -> tuple[Any, ...]:
+    """The modules in ``found``, first occurrence kept, misses (None) dropped."""
+    return tuple(dict.fromkeys(m for m in found if m is not None))
 
 
 class Paradigm(Enum):
@@ -325,18 +353,30 @@ class Grammar(ABC):
         return ()
 
     @classmethod
-    def resolve_module(cls, module: str, candidates: dict[str, Any]) -> Any | None:
-        """Resolve a raw import specifier to a candidate (a module id), via the
-        corpus name index. Default: exact match, then trailing segment after a
-        ``.``/``::``/``/`` separator. Grammars with bespoke resolution override."""
-        if module in candidates:
-            return candidates[module]
+    def import_names(cls, node: Any) -> tuple[str, ...]:
+        """The names an import statement takes from the module ``node`` captured, where one
+        of them can itself be a module (Python's ``from pkg import mod``). Default: none."""
+        del node
+        return ()
+
+    @classmethod
+    def resolve_import(cls, decl: Any, importer: Path, index: ModuleIndex) -> tuple[Any, ...]:
+        """The corpus modules an import (an ``ImportDecl``) in the file ``importer`` loads.
+
+        Default, for specifiers that name a module wherever it sits: an exact spelling, else
+        the trailing segment after a ``.``/``::``/``/`` separator. A grammar whose language
+        has file-relative imports overrides this to anchor them at ``importer``: a relative
+        specifier names one place, so it never falls back to a bare-name match."""
+        del importer
+        spec = decl.specifier
+        if spec in index.by_name:
+            return (index.by_name[spec],)
         for sep in (".", "::", "/"):
-            if sep in module:
-                tail = module.rsplit(sep, 1)[1]
-                if tail in candidates:
-                    return candidates[tail]
-        return None
+            if sep in spec:
+                tail = spec.rsplit(sep, 1)[1]
+                if tail in index.by_name:
+                    return (index.by_name[tail],)
+        return ()
 
     @classmethod
     def resolve_packages(cls, root: Path, files: list[Path]) -> dict[str, list[Path]]:

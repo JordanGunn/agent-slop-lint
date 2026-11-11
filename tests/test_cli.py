@@ -17,17 +17,17 @@ def test_version_flag_prints_and_exits_zero(capsys):
     assert exc.value.code == 0
     out = capsys.readouterr().out
     assert out.startswith("slop ")
-    assert cli._version() in out
+    assert cli.version() in out
 
 
 def test_version_helper_resolves_installed_distribution():
     # The package is installed (editable) in the dev env, so metadata resolves to a
     # real version rather than the source-tree "unknown" fallback.
-    assert cli._version() != "unknown"
+    assert cli.version() != "unknown"
 
 
 def test_rules_lists_registry(capsys):
-    rc = cli.rules_cmd("human")
+    rc = cli.lint.rules("human")
     out = capsys.readouterr().out
     assert rc == 0
     assert "cyclomatic-complexity" in out
@@ -35,7 +35,7 @@ def test_rules_lists_registry(capsys):
 
 
 def test_rules_json(capsys):
-    rc = cli.rules_cmd("json")
+    rc = cli.lint.rules("json")
     data = json.loads(capsys.readouterr().out)
     assert rc == 0
     by_name = {r["name"]: r for r in data}
@@ -48,7 +48,7 @@ def test_rules_json(capsys):
 
 
 def test_rules_human_marks_subjective_rules(capsys):
-    cli.rules_cmd("human")
+    cli.lint.rules("human")
     lines = capsys.readouterr().out.splitlines()
     [cohesion] = [ln for ln in lines if "class-cohesion" in ln]
     [cyclomatic] = [ln for ln in lines if "cyclomatic-complexity" in ln]
@@ -56,19 +56,19 @@ def test_rules_human_marks_subjective_rules(capsys):
 
 
 def test_check_unknown_target_errors(capsys):
-    assert cli.check(["nonsense-rule"], ".", "human") == 2
+    assert cli.lint.check(["nonsense-rule"], ".", "human") == 2
 
 
 def test_a_family_or_prefix_is_not_a_rule(capsys):
-    assert cli.check(["complexity"], ".", "human") == 2
-    assert cli.check(["cyclomatic"], ".", "human") == 2
+    assert cli.lint.check(["complexity"], ".", "human") == 2
+    assert cli.lint.check(["cyclomatic"], ".", "human") == 2
 
 
 def test_nonexistent_root_errors(tmp_path: Path, capsys):
     # A missing root must error (exit 2), not report "clean": the CLI-boundary form
     # of "not-flagged != clean".
     missing = tmp_path / "does-not-exist"
-    assert cli.lint(missing, "human") == 2
+    assert cli.lint.lint(missing, "human") == 2
     assert "does not exist" in capsys.readouterr().err
 
 
@@ -76,7 +76,7 @@ def test_empty_root_errors(tmp_path: Path, capsys):
     # An existing root with no source files would visit zero components and read as
     # clean; that is a false pass, so it errors.
     (tmp_path / "notes.txt").write_text("not source\n")
-    assert cli.lint(tmp_path, "human") == 2
+    assert cli.lint.lint(tmp_path, "human") == 2
     assert "no source files" in capsys.readouterr().err
 
 
@@ -85,7 +85,7 @@ _TANGLED = "def f(a, b):\n" + "".join(f"    if a == {i}: b += {i}\n" for i in ra
 
 def test_lint_human_output_is_one_located_line_per_violation(tmp_path: Path, capsys):
     (tmp_path / "m.py").write_text(_TANGLED)
-    assert cli.lint(tmp_path, "human") == 1
+    assert cli.lint.lint(tmp_path, "human") == 1
     lines = capsys.readouterr().out.splitlines()
     cyclomatic = [ln for ln in lines if " cyclomatic-complexity " in ln]
     assert len(cyclomatic) == 1
@@ -97,7 +97,7 @@ def test_lint_human_output_is_one_located_line_per_violation(tmp_path: Path, cap
 def test_lint_human_output_uses_the_singular_for_one_violation(tmp_path: Path, capsys):
     (tmp_path / "m.py").write_text(_BRANCHY)
     (tmp_path / ".slop.toml").write_text(_LOW)
-    assert cli.lint(tmp_path, "human") == 1
+    assert cli.lint.lint(tmp_path, "human") == 1
     lines = capsys.readouterr().out.splitlines()
     assert len(lines) == 2 and lines[0].startswith("m.py:1:1: cyclomatic-complexity ")
     assert lines[1] == "Found 1 violation."
@@ -105,7 +105,7 @@ def test_lint_human_output_uses_the_singular_for_one_violation(tmp_path: Path, c
 
 def test_lint_clean_source_exits_zero_with_no_violations(tmp_path: Path, capsys):
     (tmp_path / "m.py").write_text("def f(x):\n    return x\n")
-    assert cli.lint(tmp_path, "human") == 0
+    assert cli.lint.lint(tmp_path, "human") == 0
     assert capsys.readouterr().out.strip() == "No violations."
 
 
@@ -143,7 +143,7 @@ def test_check_exits_zero_when_its_rules_are_clean_though_others_are_not(tmp_pat
 def test_check_with_a_config_for_another_rule(tmp_path: Path, capsys):
     (tmp_path / ".slop.toml").write_text("[rules.god-module]\nenabled = false\n")
     (tmp_path / "m.py").write_text("def f(x): return x\n")
-    assert cli.check(["cyclomatic-complexity"], tmp_path, "json") == 0
+    assert cli.lint.check(["cyclomatic-complexity"], tmp_path, "json") == 0
 
 
 def test_an_invalid_config_is_exit_two_not_a_clean_run(tmp_path: Path, capsys):
@@ -169,7 +169,7 @@ def test_a_subjective_rule_warns_and_never_fails_the_run(tmp_path: Path, capsys)
     assert code == 0 and doc["violations"] == [] and doc["summary"]["warnings"] == 1
     [w] = doc["warnings"]
     assert (w["rule"], w["path"], w["value"], w["threshold"]) == ("class-cohesion", "m.py", 2, 1)
-    cli.lint(tmp_path, "human")
+    cli.lint.lint(tmp_path, "human")
     out = capsys.readouterr().out.splitlines()
     assert out[0].startswith("m.py:1:1: WARN class-cohesion ")
     assert out[-1] == "No violations and 1 warning."
@@ -181,7 +181,7 @@ def test_a_subjective_rule_warns_and_never_fails_the_run(tmp_path: Path, capsys)
 
 
 def test_doctor_runs(capsys):
-    rc = cli.doctor()
+    rc = cli.doctor.doctor()
     out = capsys.readouterr().out
     assert "tree-sitter" in out
     assert rc in (0, 2)
@@ -192,7 +192,7 @@ def test_ast_default_is_named_skeleton(tmp_path: Path, capsys):
     # or "(", but the named structure (function_definition, identifier) is present.
     src = tmp_path / "m.py"
     src.write_text("def add(a, b):\n    return a + b\n")
-    assert cli.ast_view(src, "human") == 0
+    assert cli.ast.view(src, "human") == 0
     out = capsys.readouterr().out
     assert "function_definition" in out
     assert "identifier" in out
@@ -207,7 +207,7 @@ def test_ast_json_carries_lines_and_name(tmp_path: Path, capsys):
     import json
     src = tmp_path / "m.py"
     src.write_text("def add(a, b):\n    return a + b\n")
-    assert cli.ast_view(src, "json") == 0
+    assert cli.ast.view(src, "json") == 0
     tree = json.loads(capsys.readouterr().out)
     assert tree["lines"][0] == 1
     fn = next(c for c in tree["children"] if c["type"] == "function_definition")
@@ -218,7 +218,7 @@ def test_ast_json_carries_lines_and_name(tmp_path: Path, capsys):
 def test_ast_raw_keeps_anonymous_tokens(tmp_path: Path, capsys):
     src = tmp_path / "m.py"
     src.write_text("def add(a, b):\n    return a + b\n")
-    assert cli.ast_view(src, "human", raw=True) == 0
+    assert cli.ast.view(src, "human", raw=True) == 0
     out = capsys.readouterr().out
     assert '"def"' in out and '"("' in out
 
@@ -227,7 +227,7 @@ def test_ast_json_and_max_depth(tmp_path: Path, capsys):
     import json
     src = tmp_path / "m.py"
     src.write_text("def add(a, b):\n    return a + b\n")
-    assert cli.ast_view(src, "json", max_depth=1) == 0
+    assert cli.ast.view(src, "json", max_depth=1) == 0
     tree = json.loads(capsys.readouterr().out)
     assert tree["type"] == "module"
     # depth 1 is the deepest emitted; its children are elided with a truncated marker.
@@ -237,11 +237,11 @@ def test_ast_json_and_max_depth(tmp_path: Path, capsys):
 
 
 def test_ast_errors(tmp_path: Path, capsys):
-    assert cli.ast_view(tmp_path / "nope.py", "human") == 2          # missing
-    assert cli.ast_view(tmp_path, "human") == 2                       # a directory
+    assert cli.ast.view(tmp_path / "nope.py", "human") == 2          # missing
+    assert cli.ast.view(tmp_path, "human") == 2                       # a directory
     unknown = tmp_path / "x.unknownext"
     unknown.write_text("x")
-    assert cli.ast_view(unknown, "human") == 2                       # no grammar
+    assert cli.ast.view(unknown, "human") == 2                       # no grammar
 
 
 def _mini_pkg(tmp_path: Path) -> Path:
@@ -255,10 +255,10 @@ def _mini_pkg(tmp_path: Path) -> Path:
 
 def test_lexicon_corpus_and_json(tmp_path: Path, capsys):
     root = _mini_pkg(tmp_path)
-    assert cli.lexicon_view(root, "human") == 0
+    assert cli.lexicon.view(root, "human") == 0
     assert capsys.readouterr().out.startswith("lexicon ")
     import json
-    assert cli.lexicon_view(root, "json") == 0
+    assert cli.lexicon.view(root, "json") == 0
     data = json.loads(capsys.readouterr().out)
     assert data["distinct"] > 0 and "zipf_alpha" in data
 
@@ -272,35 +272,35 @@ def test_lexicon_norm_delta_shown_and_suppressed(tmp_path: Path, capsys):
     (pkg / "wide.py").write_text(body + "\n")
     (pkg / "tiny.py").write_text("def f():\n    return 1\n")
 
-    assert cli.lexicon_view(tmp_path, "human", scope="pkg/wide.py") == 0
+    assert cli.lexicon.view(tmp_path, "human", scope="pkg/wide.py") == 0
     assert "norm" in capsys.readouterr().out          # deviation annotated
 
-    assert cli.lexicon_view(tmp_path, "human", scope="pkg/tiny.py") == 0
+    assert cli.lexicon.view(tmp_path, "human", scope="pkg/tiny.py") == 0
     assert "small sample" in capsys.readouterr().out   # too few tokens; norms suppressed
 
 
 def test_lexicon_scope_by_path(tmp_path: Path, capsys):
     root = _mini_pkg(tmp_path)
-    assert cli.lexicon_view(root, "human", scope="pkg/a.py") == 0
+    assert cli.lexicon.view(root, "human", scope="pkg/a.py") == 0
     out = capsys.readouterr().out
     assert "pkg/a.py" in out and "(module)" in out
 
 
 def test_lexicon_unknown_scope_errors(tmp_path: Path, capsys):
     root = _mini_pkg(tmp_path)
-    assert cli.lexicon_view(root, "human", scope="no/such.py") == 2
+    assert cli.lexicon.view(root, "human", scope="no/such.py") == 2
     assert "no scope" in capsys.readouterr().err
 
 
 def test_deps_human_and_json(tmp_path: Path, capsys):
     root = _mini_pkg(tmp_path)
-    assert cli.deps_view(root, "human") == 0
+    assert cli.deps.view(root, "human") == 0
     out = capsys.readouterr().out
     assert out.startswith("deps ")
     # b imports a — a resolved edge labelled by path
     assert "pkg/b.py" in out and "pkg/a.py" in out
     import json
-    assert cli.deps_view(root, "json") == 0
+    assert cli.deps.view(root, "json") == 0
     data = json.loads(capsys.readouterr().out)
     assert data["modules"] >= 2
     assert any(e["from"].endswith("b.py") and (e["to"] or "").endswith("a.py")
@@ -309,7 +309,7 @@ def test_deps_human_and_json(tmp_path: Path, capsys):
 
 def test_deps_scope_filter(tmp_path: Path, capsys):
     root = _mini_pkg(tmp_path)
-    assert cli.deps_view(root, "human", scope="pkg/a.py") == 0
+    assert cli.deps.view(root, "human", scope="pkg/a.py") == 0
     out = capsys.readouterr().out
     assert "pkg/a.py" in out
 
@@ -318,17 +318,17 @@ def test_deps_unknown_scope_errors(tmp_path: Path, capsys):
     # Parity with lexicon: an unknown --scope is an error (exit 2), not a silent
     # zero-edge result that reads as "no dependencies".
     root = _mini_pkg(tmp_path)
-    assert cli.deps_view(root, "human", scope="pkg/nope.py") == 2
+    assert cli.deps.view(root, "human", scope="pkg/nope.py") == 2
     assert "no scope" in capsys.readouterr().err
 
 
 def test_init_writes_a_template_of_every_rule_and_refuses_to_overwrite(tmp_path: Path, capsys):
-    assert cli.init(tmp_path) == 0
+    assert cli.config.init(tmp_path) == 0
     cfg = (tmp_path / ".slop.toml").read_text()
     assert "# [rules.cyclomatic-complexity]" in cfg and "# limit = 10" in cfg
     assert "# [rules.duplicate-code]" in cfg and "# min_leaf_nodes = 10" in cfg
     assert "# exclude" in cfg
-    assert cli.init(tmp_path) == 2
+    assert cli.config.init(tmp_path) == 2
 
 
 def test_lint_and_check_drop_excluded_files(tmp_path: Path, capsys):
@@ -358,7 +358,7 @@ _LOW = "[rules.cyclomatic-complexity]\nlimit = 2\n"
 
 def _lint_json(root: Path, capsys, *, check: list[str] | None = None) -> tuple[int, dict]:
     capsys.readouterr()
-    code = cli.check(check, root, "json") if check else cli.lint(root, "json")
+    code = cli.lint.check(check, root, "json") if check else cli.lint.lint(root, "json")
     return code, json.loads(capsys.readouterr().out)
 
 
@@ -407,7 +407,7 @@ def _leaf_commands(parser, path=()):
 
 
 def test_every_command_has_a_handler():
-    leaves = dict(_leaf_commands(cli._parser()))
+    leaves = dict(_leaf_commands(cli.parser()))
     assert {("lint",), ("doctor",), ("infer", "apply"), ("skill", "install")} <= set(leaves)
     missing = [" ".join(path) for path, parser in leaves.items() if not callable(parser.get_default("run"))]
     assert missing == []
@@ -419,43 +419,44 @@ def test_a_command_runs_its_own_handler(capsys):
 
 
 _WIRING = [
-    (["lint", "--root", "r", "--output", "json"], "lint", ("r", "json"), {}),
-    (["check", "a", "b", "--root", "r"], "check", (["a", "b"], "r", "human"), {}),
-    (["rules", "--output", "json"], "rules_cmd", ("json",), {}),
-    (["doctor"], "doctor", (), {}),
-    (["init", "--root", "r"], "init", ("r",), {}),
-    (["ast", "f.py", "--raw", "--max-depth", "3"], "ast_view", ("f.py", "human"), {"raw": True, "max_depth": 3}),
+    (["lint", "--root", "r", "--output", "json"], "lint.lint", ("r", "json"), {}),
+    (["check", "a", "b", "--root", "r"], "lint.check", (["a", "b"], "r", "human"), {}),
+    (["rules", "--output", "json"], "lint.rules", ("json",), {}),
+    (["doctor"], "doctor.doctor", (), {}),
+    (["init", "--root", "r"], "config.init", ("r",), {}),
+    (["ast", "f.py", "--raw", "--max-depth", "3"], "ast.view", ("f.py", "human"), {"raw": True, "max_depth": 3}),
     (["lexicon", "--root", "r", "--scope", "s", "--top", "5", "--scope-kind", "module", "--ontology", "o.json"],
-     "lexicon_view", ("r", "human"), {"scope": "s", "top": 5, "scope_kind": "module", "ontology": "o.json"}),
-    (["deps", "--root", "r", "--scope", "s", "--cycles"], "deps_view", ("r", "human"), {"scope": "s", "cycles_only": True}),
-    (["find", "N", "--root", "r", "--kind", "class", "--collisions"], "find_view", ("r", "N", "human"),
+     "lexicon.view", ("r", "human"), {"scope": "s", "top": 5, "scope_kind": "module", "ontology": "o.json"}),
+    (["deps", "--root", "r", "--scope", "s", "--cycles"], "deps.view", ("r", "human"), {"scope": "s", "cycles_only": True}),
+    (["find", "N", "--root", "r", "--kind", "class", "--collisions"], "find.view", ("r", "N", "human"),
      {"kind": "class", "collisions": True}),
-    (["tree", "--root", "r", "--scope", "s", "--depth", "2", "--kind", "class", "--scope-kind", "package"], "tree_view",
+    (["tree", "--root", "r", "--scope", "s", "--depth", "2", "--kind", "class", "--scope-kind", "package"], "tree.view",
      ("r", "human"), {"scope": "s", "depth": 2, "kind": "class", "scope_kind": "package"}),
-    (["vocab", "--ontology", "o.json", "--root", "r", "--term", "T"], "vocab_view", ("r", "o.json", "human"), {"term": "T"}),
-    (["shape", "--root", "r", "--scope", "s", "--scope-kind", "class"], "shape_view", ("r", "human"),
+    (["vocab", "--ontology", "o.json", "--root", "r", "--term", "T"], "ontology.vocab", ("r", "o.json", "human"), {"term": "T"}),
+    (["shape", "--root", "r", "--scope", "s", "--scope-kind", "class"], "shape.view", ("r", "human"),
      {"scope": "s", "scope_kind": "class"}),
-    (["hotspots", "--root", "r", "--since", "HEAD~3"], "hotspots_view", ("r", "human"), {"since": "HEAD~3", "last": None}),
-    (["infer", "instructions"], "infer_instructions", (), {}),
-    (["infer", "references", "rubrics/x"], "infer_references", ("rubrics/x",), {}),
-    (["infer", "schema", "verdicts"], "infer_schema", ("verdicts",), {}),
-    (["infer", "apply", "v.json", "--root", "r"], "infer_apply", ("v.json", "r"), {}),
-    (["ontology", "draft", "--root", "r", "--force"], "ontology_draft", ("r", True), {}),
-    (["ontology", "check", "--root", "r"], "ontology_check", ("r",), {}),
-    (["skill", "list"], "skill_list", (), {}),
-    (["skill", "show", "slop", "SKILL.md"], "skill_show", ("slop", "SKILL.md"), {}),
-    (["skill", "install", "slop", "--dest", "d", "--force"], "skill_install", ("slop", "d", True), {}),
+    (["hotspots", "--root", "r", "--since", "HEAD~3"], "hotspots.view", ("r", "human"), {"since": "HEAD~3", "last": None}),
+    (["infer", "instructions"], "infer.instructions", (), {}),
+    (["infer", "references", "rubrics/x"], "infer.references", ("rubrics/x",), {}),
+    (["infer", "schema", "verdicts"], "infer.schema", ("verdicts",), {}),
+    (["infer", "apply", "v.json", "--root", "r"], "infer.apply", ("v.json", "r"), {}),
+    (["ontology", "draft", "--root", "r", "--force"], "ontology.draft", ("r", True), {}),
+    (["ontology", "check", "--root", "r"], "ontology.check", ("r",), {}),
+    (["skill", "list"], "skill.catalog", (), {}),
+    (["skill", "show", "slop", "SKILL.md"], "skill.show", ("slop", "SKILL.md"), {}),
+    (["skill", "install", "slop", "--dest", "d", "--force"], "skill.install", ("slop", "d", True), {}),
 ]
 
 
 @pytest.mark.parametrize("argv,handler,args,kwargs", _WIRING, ids=[" ".join(w[0][:2]) for w in _WIRING])
 def test_each_command_reaches_its_handler_with_its_arguments(monkeypatch, argv, handler, args, kwargs):
     calls = []
-    monkeypatch.setattr(cli, handler, lambda *a, **k: calls.append((a, k)) or 0)
+    module, function = handler.split(".")
+    monkeypatch.setattr(getattr(cli, module), function, lambda *a, **k: calls.append((a, k)) or 0)
     assert cli.main(argv) == 0
     assert calls == [(args, kwargs)]
 
 
 def test_the_wiring_table_covers_every_command():
     covered = {tuple(argv[:2]) if argv[0] in ("infer", "ontology", "skill") else (argv[0],) for argv, *_ in _WIRING}
-    assert covered == set(dict(_leaf_commands(cli._parser())))
+    assert covered == set(dict(_leaf_commands(cli.parser())))

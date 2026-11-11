@@ -3,9 +3,10 @@ queries, and instance members (a method reaches its own instance through ``this.
 ``static`` methods have no instance). TypeScript adds syntax; it does not redeclare these."""
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
-from ..paradigm.base import MemberAccess
+from ..paradigm.base import MemberAccess, ModuleIndex, distinct
 
 
 class EcmaScript:
@@ -80,3 +81,13 @@ class EcmaScript:
              " arguments: (arguments (string (string_fragment) @module)))"
              " (#eq? @fn \"require\"))", "require"),
         )
+
+    @classmethod
+    def resolve_import(cls, decl: Any, importer: Path, index: ModuleIndex) -> tuple[Any, ...]:
+        """``./`` and ``../`` name a file beside the importer: as written, without its extension
+        (``./x.js`` for ``x.ts``), or a directory's ``index``. Bare specifiers (packages, path
+        aliases) take the default."""
+        if not decl.specifier.startswith(("./", "../")):
+            return super().resolve_import(decl, importer, index)
+        place = importer.parent / decl.specifier
+        return distinct([index.at(place) or index.at(place.with_suffix("")) or index.at(place / "index")])
