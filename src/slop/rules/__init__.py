@@ -3,8 +3,8 @@ consume. Each entry is a stateless ``Rule`` instance; its ``name``, ``descriptio
 ``altitudes`` are class-level, and ``default_config`` ships its defaults.
 
 Every rule checks one measure that has a published source (McCabe, Campbell, Nejmeh,
-Halstead, Martin, Lakos, Chidamber and Kemerer, Hitz and Montazeri) or a standard concept (Type-2
-clones, module size, magic numbers) against a limit. A rule is a threshold on a measure and nothing more.
+Halstead, Martin, Lakos, Chidamber and Kemerer, Hitz and Montazeri) or a standard concept
+(parameterized clones, module size, magic numbers) against a limit. A rule is a threshold on a measure and nothing more.
 """
 from __future__ import annotations
 

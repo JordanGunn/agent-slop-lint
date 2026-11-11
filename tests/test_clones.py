@@ -1,7 +1,8 @@
-"""Type-2 clone clusters over a module's callables."""
+"""Parameterized clone clusters over a module's callables."""
 from __future__ import annotations
 
 from pathlib import Path
+
 
 from slop.identity import relative_path
 from slop.metrics.structural.view import Structure
@@ -72,7 +73,7 @@ def test_constant_tables_with_the_same_entries_are_clones(tmp_path: Path):
 
 
 def test_logic_that_differs_only_in_a_literal_is_still_a_clone(tmp_path: Path):
-    # Type-2: literal values are discarded. A constant in logic (`* 2` vs `* 3`, a different
+    # Literal values are discarded. A constant in logic (`* 2` vs `* 3`, a different
     # message) does not make two bodies different.
     src = ("def a(x):\n    y = x * 2\n    z = y + 1\n    if z > 5:\n        raise ValueError('too big')\n    return z\n\n"
            "def b(x):\n    y = x * 3\n    z = y + 9\n    if z > 7:\n        raise ValueError('too large')\n    return z\n")
@@ -130,14 +131,50 @@ def test_javascript_constructors_follow_the_same_rule(tmp_path: Path):
     assert len(cluster.members) == 2
 
 
-def test_members_that_are_only_read_do_not_keep_their_names(tmp_path: Path):
-    # `self._p` on the right of an assignment, or inside an expression, is a load: renameable.
-    src = ("class A:\n    def m(self):\n        v = self._p\n        x = self._q + self._r\n        y = x * 2\n"
-           "        if y > 9:\n            return y - v\n        return y\n\n"
-           "class B:\n    def m(self):\n        v = self._a\n        x = self._b + self._c\n        y = x * 2\n"
-           "        if y > 9:\n            return y - v\n        return y\n")
+def _reader(cls: str, members: tuple[str, str, str], local: str) -> str:
+    a, b, c = members
+    return (f"class {cls}:\n    def m(self):\n        {local} = self.{a}\n        x = self.{b} + self.{c}\n"
+            f"        y = x * 2\n        if y > 9:\n            return y - {local}\n        return y\n\n")
+
+
+def test_methods_that_read_different_members_are_different_code(tmp_path: Path):
+    src = _reader("A", ("_p", "_q", "_r"), "v") + _reader("B", ("_a", "_b", "_c"), "v")
+    assert Structure.over(_module(tmp_path, src)).clone_clusters(min_leaf_nodes=5) == []
+
+
+def test_methods_that_read_the_same_members_through_renamed_locals_are_clones(tmp_path: Path):
+    src = _reader("A", ("_p", "_q", "_r"), "v") + _reader("B", ("_p", "_q", "_r"), "w")
     [cluster] = Structure.over(_module(tmp_path, src)).clone_clusters(min_leaf_nodes=5)
     assert {m.qualname for m in cluster.members} == {"r.A.m", "r.B.m"}
+
+
+def test_calling_a_different_function_or_keyword_is_different_code(tmp_path: Path):
+    # The two dispatch lambdas that started this: same shape, different callee and keywords.
+    src = ("def a(o):\n    return lexicon(o.root, o.out, scope=o.scope, top=o.top, kind=o.kind)\n\n"
+           "def b(o):\n    return tree(o.root, o.out, scope=o.scope, depth=o.depth, kind=o.kind)\n")
+    assert Structure.over(_module(tmp_path, src)).clone_clusters(min_leaf_nodes=5) == []
+
+
+def test_renamed_loop_variables_and_tuple_targets_are_still_clones(tmp_path: Path):
+    src = ("def a(rows):\n    total, n = 0, 0\n    for row in rows:\n        total = total + row\n        n = n + 1\n    return total / n\n\n"
+           "def b(items):\n    acc, k = 0, 0\n    for it in items:\n        acc = acc + it\n        k = k + 1\n    return acc / k\n")
+    [cluster] = Structure.over(_module(tmp_path, src)).clone_clusters(min_leaf_nodes=5)
+    assert {m.qualname for m in cluster.members} == {"r.a", "r.b"}
+
+
+def test_swapped_roles_of_bound_names_are_not_a_clone(tmp_path: Path):
+    # Consistent renaming only: a body that uses its two parameters the other way round differs.
+    src = ("def a(x, y):\n    z = x - y\n    w = z * x\n    return w + y + x\n\n"
+           "def b(x, y):\n    z = y - x\n    w = z * y\n    return w + x + y\n")
+    assert Structure.over(_module(tmp_path, src)).clone_clusters(min_leaf_nodes=5) == []
+
+
+def test_renamed_parameters_locals_and_loop_variables_are_clones_in_javascript_too(tmp_path: Path):
+    src = ("function a(xs) { let t = 0; for (const v of xs) { t = t + v * 2; } return t; }\n\n"
+           "function b(ys) { let s = 0; for (const w of ys) { s = s + w * 2; } return s; }\n")
+    (tmp_path / "m.js").write_text(src, encoding="utf-8")
+    [cluster] = Structure.over(scan_corpus(tmp_path, config=None)).clone_clusters(min_leaf_nodes=5)
+    assert {m.qualname for m in cluster.members} == {"m.a", "m.b"}
 
 
 def test_the_receiver_of_a_stored_member_is_renameable(tmp_path: Path):
@@ -146,3 +183,10 @@ def test_the_receiver_of_a_stored_member_is_renameable(tmp_path: Path):
            "def b(node, p, q):\n    node._x = p\n    node._y = q\n    node._z = p + q\n    node._w = q - p\n")
     [cluster] = Structure.over(_module(tmp_path, src)).clone_clusters(min_leaf_nodes=5)
     assert {m.qualname for m in cluster.members} == {"r.a", "r.b"}
+
+
+def test_a_member_named_like_a_parameter_still_keeps_its_name(tmp_path: Path):
+    # `self.a = a`: the member is state the class defines, even though a parameter shares its name.
+    src = ("class A:\n    def __init__(self, a, b, c):\n        self.a = a\n        self.b = b\n        self.c = c\n\n"
+           "class B:\n    def __init__(self, x, y, z):\n        self.x = x\n        self.y = y\n        self.z = z\n")
+    assert Structure.over(_module(tmp_path, src)).clone_clusters(min_leaf_nodes=5) == []

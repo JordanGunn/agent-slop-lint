@@ -1,4 +1,5 @@
-"""Type-2 clone clusters among a set of callables.
+"""Parameterized clone clusters among a set of callables (Baker 1995: a match up to a
+consistent renaming of names), where only names the body binds may be renamed.
 
 Operates on duck-typed component objects (``_ast_node()``, ``_grammar``, ``qualname``) so it
 does not import the concrete scope classes (avoids a cycle).
@@ -13,23 +14,27 @@ from .records import CloneCluster, CloneMember
 
 
 def clone_clusters(callables: list[Any], *, min_leaf_nodes: int = 10) -> list[CloneCluster]:
-    """Type-2 clone clusters among ``callables``: bodies sharing an AST leaf-type
-    fingerprint, with identifier names and literal values discarded.
+    """Clone clusters among ``callables``: bodies whose leaves match token for token, except
+    for what a refactor could pass in as a parameter.
 
-    One kind of identifier keeps its name: a member assigned through a receiver
-    (``self.x = ...``). It names state the object defines, which a different body cannot
-    share by renaming, so constructors that store different fields are not clones.
+    Every name keeps its text, except a name the body itself binds (a parameter, or a plain
+    name it assigns), which is replaced by its order of first appearance: renaming a local
+    consistently does not hide a clone, but calling a different function, reading a different
+    member or passing a different keyword argument is different code. Where the grammar does
+    not declare assignment, only parameters count as bound. A member name (``self.x``) never
+    counts as bound, where the grammar says how members are spelled.
 
-    A body counts as logic when it has ``min_leaf_nodes`` leaves that are neither literal
-    text nor punctuation. A body with fewer logic leaves but ``min_leaf_nodes`` literal
-    leaves is a constant table: two tables are clones only if their literals are equal.
-    Anything smaller is too small to call a clone."""
+    A body counts as logic when it has ``min_leaf_nodes`` leaves that are neither literal text
+    nor punctuation; its literal values are ignored. A body with fewer logic leaves but
+    ``min_leaf_nodes`` literal leaves is a constant table: two tables are clones only if their
+    literals are equal. Anything smaller is too small to call a clone."""
     buckets: dict[str, list[tuple[str, int, Any]]] = {}
     for c in callables:
         body = _body_of(c._ast_node(), c._grammar.block_types())
-        leaves = _leaves(body, c._grammar)
-        literal = sum(1 for leaf in leaves if leaf.literal is not None)
-        logic = sum(1 for leaf in leaves if leaf.literal is None and leaf.kind not in _PUNCTUATION)
+        parameters = tuple(c.parameters() or ())
+        leaves = _leaves(body, c._grammar, parameters, _bound_names(c, body))
+        literal = sum(1 for leaf in leaves if leaf.literal)
+        logic = sum(1 for leaf in leaves if not leaf.literal and leaf.kind not in _PUNCTUATION)
         if logic >= min_leaf_nodes:
             by_value = False
         elif literal >= min_leaf_nodes:
@@ -67,16 +72,54 @@ _PUNCTUATION = frozenset({",", ":", ";", "(", ")", "[", "]", "{", "}"})
 
 class _Leaf(NamedTuple):
     kind: str
-    #: the text, when the leaf belongs to a literal (a number, or a string with its quotes)
-    literal: str | None
-    #: the member name, when the leaf names a member assigned through a receiver
-    member: str | None
+    text: str
+    #: True when the leaf belongs to a literal (a number, or a string with its quotes)
+    literal: bool
+    #: the order of first appearance of the name, when the body binds it; else None
+    bound: int | None
 
 
-def _leaves(node: Any, grammar: Any) -> list[_Leaf]:
-    """Leaves in order, each with its literal text or stored-member name where it has one."""
+#: Fields of a loop node that hold the name it binds, across grammars (``for x in``, ``for x :``).
+_LOOP_BINDING_FIELDS = ("left", "pattern", "name")
+
+
+def _bound_names(callable_: Any, body: Any) -> set[str]:
+    """The names ``body`` binds: the callable's parameters, the names it assigns (``x = ...``,
+    ``a, b = ...``) and the names its loops bind (``for x in ...``)."""
+    grammar = callable_._grammar
+    names = set(callable_.parameters() or ())
+    assigning, loops = grammar.assignment_nodes(), grammar.loop_nodes()
+    identifiers, access = grammar.identifiers(), grammar.member_access()
+    for node in body.walk():
+        targets = []
+        if node.type in assigning:
+            targets.append(node.field("left"))
+        elif node.type in loops:
+            targets.extend(node.field(f) for f in _LOOP_BINDING_FIELDS)
+            targets.extend(c.field("left") for c in node.children() if c.type == "range_clause")
+        for target in targets:
+            if target is not None:
+                names.update(_names_in(target, identifiers, access))
+    return names
+
+
+def _names_in(node: Any, identifiers: frozenset[str], access: Any) -> set[str]:
+    """The plain names in ``node``, not counting member names."""
+    found = set()
+    for n in node.walk():
+        if n.type in identifiers and not _is_member(n, n.parent, access):
+            found.add(n.text)
+    return found
+
+
+def _leaves(node: Any, grammar: Any, parameters: tuple[str, ...], bound: set[str]) -> list[_Leaf]:
+    """Leaves in order, with their text, whether they are literal, and their bound-name index.
+
+    Parameters are numbered by their place in the signature, since calling order is behaviour;
+    other bound names by their first appearance in the body."""
     literal_types = grammar.numeric_literal_nodes() | grammar.string_literal_nodes()
-    access, assigning = grammar.member_access(), grammar.assignment_nodes()
+    identifiers, access = grammar.identifiers(), grammar.member_access()
+    order: dict[str, int] = {name: i for i, name in enumerate(dict.fromkeys(parameters))}
     stack = [node]
     leaves: list[_Leaf] = []
     while stack:
@@ -87,29 +130,28 @@ def _leaves(node: Any, grammar: Any) -> list[_Leaf]:
             continue
         parent = n.parent
         in_literal = n.type in literal_types or (parent is not None and parent.type in literal_types)
-        stored = _is_stored_member(n, parent, access, assigning)
-        leaves.append(_Leaf(n.type, n.text if in_literal else None, n.text if stored else None))
+        index = None
+        if n.type in identifiers and n.text in bound and not _is_member(n, parent, access):
+            index = order.setdefault(n.text, len(order))
+        leaves.append(_Leaf(n.type, n.text, in_literal, index))
     return leaves
 
 
-def _is_stored_member(leaf: Any, parent: Any, access: Any, assigning: Any) -> bool:
-    """True when ``leaf`` is the member name of ``receiver.member`` on the left of an assignment."""
-    if access is None or not assigning or parent is None or parent.type != access.node_type:
-        return False
-    if parent.field(access.member_field) != leaf:
-        return False
-    assignment = parent.parent
-    return assignment is not None and assignment.type in assigning and assignment.field("left") == parent
+def _is_member(leaf: Any, parent: Any, access: Any) -> bool:
+    """True when ``leaf`` is the member name of ``receiver.member``."""
+    return (access is not None and parent is not None and parent.type == access.node_type
+            and parent.field(access.member_field) == leaf)
 
 
 def _fingerprint(leaves: list[_Leaf], by_value: bool) -> str:
-    """Hash of the leaf types, plus stored-member names, plus (for a constant table) literals."""
+    """Hash of the leaves: a bound name by its index, a literal by its kind (or, in a constant
+    table, its text), anything else by its text."""
     parts = []
     for leaf in leaves:
-        part = leaf.kind
-        if leaf.member is not None:
-            part += f"@{leaf.member}"
-        if by_value and leaf.literal is not None:
-            part += f"={leaf.literal}"
-        parts.append(part)
-    return hashlib.sha1(",".join(parts).encode(), usedforsecurity=False).hexdigest()[:12]
+        if leaf.literal:
+            parts.append(f"{leaf.kind}={leaf.text}" if by_value else leaf.kind)
+        elif leaf.bound is not None:
+            parts.append(f"${leaf.bound}")
+        else:
+            parts.append(leaf.text)
+    return hashlib.sha1("\x00".join(parts).encode(), usedforsecurity=False).hexdigest()[:12]

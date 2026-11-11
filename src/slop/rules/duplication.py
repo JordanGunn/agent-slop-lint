@@ -1,8 +1,9 @@
-"""duplicate-code: callables with structurally identical bodies (Type-2 clones).
+"""duplicate-code: callables whose bodies are the same code up to renaming (Baker 1995).
 
-Defined at the corpus altitude. A Type-2 clone is a set of callables whose bodies have the
-same AST leaf-type fingerprint, differing only in identifiers and literals: the
-copy-paste-then-rename signature. The rule reports one violation per cluster, at its first
+Defined at the corpus altitude. A clone is a set of callables whose bodies match token for
+token, except for the names each body binds (parameters, assigned locals, loop variables),
+which may be consistently renamed, and literal values: the copy-paste-then-rename signature.
+A different callee, member or keyword argument is different code. The rule reports one violation per cluster, at its first
 member (by path, then line), and names every member as ``path:line qualname``.
 
 ``min_leaf_nodes`` (default 10) skips trivial bodies.
@@ -22,7 +23,7 @@ from ..violation import Violation
 
 class DuplicationRule(Rule):
     name = "duplicate-code"
-    description = "callables have structurally identical bodies (Type-2 clones)"
+    description = "callables have the same code up to renaming their own names (parameterized clones)"
     altitudes = frozenset({ScopeKind.CORPUS})
 
     @classmethod
@@ -43,7 +44,7 @@ class DuplicationRule(Rule):
                 path=span.path if span else None,
                 line=first.line or 1,
                 column=1,
-                message=f"{len(cluster.members)} Type-2 clones ({cluster.leaf_count} leaf nodes): {members}",
+                message=f"{len(cluster.members)} clones ({cluster.leaf_count} leaf nodes): {members}",
                 value=len(cluster.members),
                 threshold=2,
                 subject=first.qualname,

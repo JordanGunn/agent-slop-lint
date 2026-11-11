@@ -1,4 +1,4 @@
-"""duplicate-code: Type-2 clone clusters, one violation per cluster."""
+"""duplicate-code: parameterized clone clusters, one violation per cluster."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -10,7 +10,7 @@ from slop.scope import scan_corpus
 from slop.scope.identity import ScopeKind
 
 # alpha and beta are structurally identical (same AST leaf-type fingerprint),
-# differing only in identifiers: a Type-2 clone pair. gamma is different.
+# differing only in the names each binds: a clone pair. gamma is different.
 CLONES = '''\
 def alpha(values):
     total = 0

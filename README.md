@@ -70,7 +70,7 @@ A rule reports a violation when its measure is strictly greater than `limit`.
 | `rigid-package` (subjective) | package | D' 0.7 | Martin (1994, 2002) |
 | `useless-package` (subjective) | package | D' 0.7 | Martin (1994, 2002) |
 | `import-cycle` | corpus | any cycle | Acyclic Dependencies Principle |
-| `duplicate-code` | corpus | clone of 2+ callables (`min_leaf_nodes` 10) | Type-2 clones |
+| `duplicate-code` | corpus | clone of 2+ callables (`min_leaf_nodes` 10) | parameterized clones (Baker 1995) |
 | `class-coupling` | class | CBO 8 | Chidamber & Kemerer (1994) |
 | `class-inheritance-depth` | class | DIT 4 | Chidamber & Kemerer (1994) |
 | `class-children` | class | NOC 10 | Chidamber & Kemerer (1994) |

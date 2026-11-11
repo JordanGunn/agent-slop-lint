@@ -45,6 +45,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and keeps files a user added. Reinstall after upgrading slop. Slop ships one skill, `slop`
   (`/slop`): a conversational interface over the CLI, which also carries the `slop infer`
   workflow, rubrics and schemas.
+- `duplicate-code` finds parameterized clones (Baker 1995): bodies that match token for token
+  except for the names each binds (parameters by position, assigned locals, loop variables) and
+  literal values. A different callee, member or keyword argument is different code, so
+  same-shaped calls and constructors storing different fields are no longer clones. A body
+  that is mostly literals is a constant table and matches only on equal values. Recall: Go,
+  Java, C#, Rust, C, C++, Ruby and Julia declare no assignment facts, so their renamed locals
+  hide a clone.
 - File discovery is one mechanism: inside a git work tree, tracked files plus untracked files
   `.gitignore` does not ignore; elsewhere every file except `.git`. The hard-coded skip list
   and the dot-directory rule are gone, so hidden directories are now read; use `exclude`.

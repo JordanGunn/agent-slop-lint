@@ -138,7 +138,7 @@ class CloneMember:
 
 @dataclass(frozen=True)
 class CloneCluster:
-    """Type-2 clone cluster (identical AST leaf-type fingerprint). Legacy: duplication."""
+    """A clone cluster: callables whose bodies match up to renaming the names they bind."""
 
     members: tuple[CloneMember, ...]
     leaf_count: int
