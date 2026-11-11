@@ -43,5 +43,6 @@ class HomonymRule(Rule):
         for name, matches in groups.items():
             where = "; ".join(f"{m.path}:{m.line} {m.qualname}" for m in matches)
             first = located[(matches[0].qualname, matches[0].path)]
+            others = tuple(located[(m.qualname, m.path)].id for m in matches[1:])
             yield Violation.at(first, self.name, f"class name '{name}' is defined {len(matches)} times: {where}",
-                               value=len(matches), threshold=limit)
+                               value=len(matches), threshold=limit, related=others)

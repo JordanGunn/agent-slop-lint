@@ -32,7 +32,8 @@ class DependencyCyclesRule(Rule):
             anchor = mod_by_id.get(cycle.scopes[0]) if cycle.scopes else None
             message = f"import cycle across {len(members)} modules: {loop}"
             if anchor is not None:
-                yield Violation.at(anchor, self.name, message, value=len(members), threshold=0)
+                yield Violation.at(anchor, self.name, message, value=len(members), threshold=0,
+                                   related=tuple(cycle.scopes[1:]))
             else:
                 yield Violation(rule=self.name, path=None, line=1, column=1, message=message,
-                                value=len(members), threshold=0)
+                                value=len(members), threshold=0, related=tuple(cycle.scopes))

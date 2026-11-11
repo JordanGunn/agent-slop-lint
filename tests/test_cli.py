@@ -117,7 +117,8 @@ def test_lint_json_shape(tmp_path: Path, capsys):
     assert "findings" not in doc
     v = next(v for v in doc["violations"] if v["rule"] == "cyclomatic-complexity")
     assert v == {"rule": "cyclomatic-complexity", "path": "m.py", "line": 1, "column": 1,
-                 "message": v["message"], "value": 16, "threshold": 10, "subject": "m.f"}
+                 "message": v["message"], "value": 16, "threshold": 10, "subject": "m.f",
+                 "scope": {"kind": "callable", "qualname": "m.f", "path": "m.py"}, "related": []}
 
 
 def test_lint_json_of_clean_source(tmp_path: Path, capsys):

@@ -46,4 +46,6 @@ class DuplicationRule(Rule):
                 value=len(cluster.members),
                 threshold=2,
                 subject=first.qualname,
+                scope=first.scope,
+                related=tuple(m.scope for m in cluster.members[1:]),
             )

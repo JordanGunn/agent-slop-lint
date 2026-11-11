@@ -79,7 +79,8 @@ def test_a_package_is_located_at_its_directory(tmp_path: Path):
 def test_as_dict_has_exactly_the_reported_fields():
     v = Violation("r.x", "a/b.py", 2, 3, "msg", value=5, threshold=4, subject="b.f")
     assert v.as_dict() == {"rule": "r.x", "path": "a/b.py", "line": 2, "column": 3,
-                           "message": "msg", "value": 5, "threshold": 4, "subject": "b.f"}
+                           "message": "msg", "value": 5, "threshold": 4, "subject": "b.f",
+                           "scope": None, "related": []}
     assert not {"severity", "action", "prescription", "confidence", "evidence"} & set(v.as_dict())
 
 

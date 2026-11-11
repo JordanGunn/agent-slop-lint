@@ -2,8 +2,10 @@
 
 This is everything a rule reports, and deliberately no more, as in flake8, ruff or pylint:
 which rule, where (``path:line:column``), and one factual message. A rule that measures
-something also records the ``value`` it measured and the ``threshold`` it exceeded, so a
-reader sees the numbers without parsing the message. A violation does not advise, rank,
+something also records the ``value`` it measured and the ``threshold`` it exceeded, and every
+violation records the ``scope`` it is about and the ``related`` scopes it names (the other
+clones, the other definitions, the rest of a cycle), so a reader or a later layer sees the
+numbers and the structure without parsing the message. A violation does not advise, rank,
 or say how sure it is: deciding what a violation *means* is judgement, and judgement is
 a separate layer from checking.
 """
@@ -13,6 +15,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from .identity import ScopeId
 from .scope.identity import ScopeKind
 
 
@@ -31,10 +34,14 @@ class Violation:
     threshold: float | int | None = None
     #: Qualified name of the class, callable, module or package the violation is about.
     subject: str | None = None
+    #: Identity of that class, callable, module or package (qualnames can repeat; this cannot).
+    scope: ScopeId | None = None
+    #: The other scopes the violation names, in the order the message names them.
+    related: tuple[ScopeId, ...] = ()
 
     @classmethod
-    def at(cls, scope: Any, rule: str, message: str, *,
-           value: float | int | None = None, threshold: float | int | None = None) -> Violation:
+    def at(cls, scope: Any, rule: str, message: str, *, value: float | int | None = None,
+           threshold: float | int | None = None, related: tuple[ScopeId, ...] = ()) -> Violation:
         """A violation located at the definition of ``scope``: a module, class or callable
         (its first source line), or a package (its directory)."""
         node = getattr(scope, "_node", None)
@@ -53,6 +60,8 @@ class Violation:
             value=value,
             threshold=threshold,
             subject=scope.qualname,
+            scope=scope.id,
+            related=related,
         )
 
     @property
@@ -70,4 +79,14 @@ class Violation:
             "value": self.value,
             "threshold": self.threshold,
             "subject": self.subject,
+            "scope": _scope(self.scope),
+            "related": [_scope(r) for r in self.related],
         }
+
+
+def _scope(scope: ScopeId | None) -> dict[str, Any] | None:
+    """A scope as JSON: its kind, qualified name, and the file it is in."""
+    if scope is None:
+        return None
+    return {"kind": scope.kind.value, "qualname": scope.qualname,
+            "path": scope.spans[0].path if scope.spans else None}

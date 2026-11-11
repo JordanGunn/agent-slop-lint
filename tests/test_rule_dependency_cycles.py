@@ -60,3 +60,11 @@ def test_same_named_modules_are_both_named_by_path(tmp_path: Path):
 
 def test_silent_without_cycle(tmp_path: Path):
     assert _check(_corpus(tmp_path, cyclic=False)) == []
+
+
+def test_the_finding_names_the_rest_of_the_cycle(tmp_path: Path):
+    for name, dep in (("a", "b"), ("b", "c"), ("c", "a")):
+        (tmp_path / f"{name}.py").write_text(f"import {dep}\n")
+    [v] = _check(scan_corpus(tmp_path, config=None))
+    assert Path(v.scope.spans[0].path).name == "a.py"
+    assert sorted(Path(r.spans[0].path).name for r in v.related) == ["b.py", "c.py"]

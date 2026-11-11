@@ -85,6 +85,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Every violation records the `scope` it is about and the `related` scopes it names (the other
+  clones, the other definitions of a homonym, the rest of an import cycle), in lint JSON as
+  `{kind, qualname, path}` with root-relative paths.
 - Name binding (`slop.ast.binding`): every name occurrence resolved to the parameter, local,
   import, field or method it refers to, or free, from a tree-sitter locals query per grammar.
   It replaces three partial mechanisms: LCOM4 is now measured for Java, C#, C++ and Ruby

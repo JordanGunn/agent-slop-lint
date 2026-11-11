@@ -72,6 +72,7 @@ def test_one_violation_per_cluster_at_first_member(tmp_path: Path):
     assert v.value == 2 and v.threshold == 2
     assert "m.py:1 m.alpha" in v.message and "m.py:8 m.beta" in v.message
     assert "gamma" not in v.message
+    assert (v.scope.qualname, [r.qualname for r in v.related]) == ("m.alpha", ["m.beta"])
 
 
 def test_min_leaf_nodes_filters_small_clones(tmp_path: Path):

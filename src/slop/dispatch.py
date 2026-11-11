@@ -53,12 +53,24 @@ class Report:
     def relative_path(self, violation: Violation) -> str | None:
         """The violation's path relative to the scan root, so a report does not leak an
         absolute machine path."""
-        if violation.path and self.root:
+        return self._relative(violation.path)
+
+    def _relative(self, path: str | None) -> str | None:
+        if path and self.root:
             try:
-                return os.path.relpath(violation.path, self.root)
+                return os.path.relpath(path, self.root)
             except ValueError:
                 pass
-        return violation.path
+        return path
+
+    def _entry(self, violation: Violation) -> dict[str, Any]:
+        """One finding as JSON, with its path and its scopes' paths relative to the root."""
+        entry = violation.as_dict()
+        entry["path"] = self.relative_path(violation)
+        for scope in (entry["scope"], *entry["related"]):
+            if scope is not None:
+                scope["path"] = self._relative(scope["path"])
+        return entry
 
     def as_dict(self) -> dict[str, Any]:
         """The report as JSON-ready data. ``root`` is the absolute scan root that each ``path``
@@ -67,8 +79,8 @@ class Report:
             "root": str(Path(self.root).resolve()) if self.root else None,
             "summary": {"violations": len(self.violations), "warnings": len(self.warnings),
                         "exit_code": self.exit_code()},
-            "violations": [{**v.as_dict(), "path": self.relative_path(v)} for v in self.violations],
-            "warnings": [{**v.as_dict(), "path": self.relative_path(v)} for v in self.warnings],
+            "violations": [self._entry(v) for v in self.violations],
+            "warnings": [self._entry(v) for v in self.warnings],
             "zero_visited": self.zero_visited,
         }
 

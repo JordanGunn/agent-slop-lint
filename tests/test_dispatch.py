@@ -104,8 +104,10 @@ def test_as_dict_paths_are_relative_to_the_root(tmp_path: Path):
     assert doc["summary"] == {"violations": 1, "warnings": 0, "exit_code": 1}
     [v] = doc["violations"]
     assert v["path"] == "pkg/m.py" and (v["line"], v["column"]) == (1, 1)
-    assert set(v) == {"rule", "path", "line", "column", "message", "value", "threshold", "subject"}
+    assert set(v) == {"rule", "path", "line", "column", "message", "value", "threshold", "subject",
+                      "scope", "related"}
     assert v["subject"] == "m.f"
+    assert v["scope"] == {"kind": "callable", "qualname": "m.f", "path": "pkg/m.py"} and v["related"] == []
     assert (v["value"], v["threshold"]) == (3, 2)
     assert doc["zero_visited"] == []
 

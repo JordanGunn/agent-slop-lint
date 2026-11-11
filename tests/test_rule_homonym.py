@@ -51,3 +51,11 @@ def test_lint_reports_it_as_a_warning_with_a_residue_to_rule_on(tmp_path: Path, 
     residue = warning["residue"]
     assert (residue["subject"], residue["first_line"], residue["last_line"]) == ("store.Store", 1, 3)
     assert residue["rubric"]["command"] == "slop infer references rubrics/homonym"
+
+
+def test_the_finding_names_its_scope_and_the_other_definitions(tmp_path: Path):
+    _files(tmp_path, {"a/store.py": "class Store:\n    pass\n", "b/store.py": "class Store:\n    pass\n",
+                      "c/store.py": "class Store:\n    pass\n"})
+    [v] = _check(tmp_path)
+    assert v.scope.qualname == "store.Store" and v.scope.spans[0].path == str(tmp_path / "a" / "store.py")
+    assert [r.spans[0].path for r in v.related] == [str(tmp_path / p / "store.py") for p in ("b", "c")]
