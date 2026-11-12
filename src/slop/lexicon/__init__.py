@@ -15,7 +15,7 @@ standard library — never on ``component``, ``rules``, or ``linter``. It is a p
 decides what counts as vocabulary.
 
 Current surface (consumer-driven; grows as rules need it):
-``Role``, ``Lexeme``, ``Lexicon``, ``split_tokens``, ``STOP_WORDS``.
+``Role``, ``Lexeme``, ``Lexicon``, ``split_tokens``, ``stem``, ``plural``, ``STOP_WORDS``.
 """
 from __future__ import annotations
 
@@ -27,6 +27,7 @@ from .comparison import (
     js_similarity,
 )
 from .corpus import Lexicon
+from .inflection import plural, stem
 from .distribution import (
     TokenDistribution,
     token_distribution,
@@ -41,6 +42,8 @@ __all__ = [
     "Lexeme",
     "Lexicon",
     "split_tokens",
+    "stem",
+    "plural",
     "STOP_WORDS",
     "Vocabulary",
     "TokenDistribution",

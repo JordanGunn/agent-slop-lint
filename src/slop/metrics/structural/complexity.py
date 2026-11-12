@@ -4,7 +4,7 @@ Encodes the McCabe 1976 / Campbell 2018 / Nejmeh 1988 definitions — real
 algorithms, not navigation. All three now run on the ``slop.ast`` ``Node``
 proxy: ``node.body()`` / ``node.unwrap()`` replace the hand-rolled body
 resolution, and child/field access goes through ``Node``. The decision/boolean
-*vocabulary* (which raw types count) stays as grammar data — that is the
+node types (which raw types count) stay as grammar data — that is the
 language fact, not traversal. Each walker is body-local: it does not descend
 into nested callables, so container aggregates sum each leaf exactly once.
 """
@@ -45,17 +45,15 @@ def cognitive(node: Any, grammar: Any) -> int:
     decision_nodes = grammar.decision_nodes()
     if not decision_nodes:
         return 0
-    vocab = _CognitiveVocab(
+    return _cognitive_walk(node.body(), _CognitiveGrammar(
         decision_nodes, grammar.nesting_nodes(), grammar.compensating_decisions(),
         grammar.boolean_op_node(), grammar.boolean_op_operators(), grammar.callable(),
-    )
-    return _cognitive_walk(node.body(), vocab)
+    ))
 
 
 def combinatorial(node: Any, grammar: Any) -> int:
     """Nejmeh (1988) NPath — multiplicative acyclic path count."""
-    vocab = _NPathVocab.for_grammar(grammar)
-    return max(1, _npath_walk(node.unwrap(), vocab))
+    return max(1, _npath_walk(node.unwrap(), _NPathGrammar.for_grammar(grammar)))
 
 
 # ---- shared helper -------------------------------------------------------
@@ -81,7 +79,9 @@ def _bool_op_text(node: Any) -> str:
 # ---- combinatorial (NPath) -----------------------------------------------
 
 @dataclass(frozen=True)
-class _NPathVocab:
+class _NPathGrammar:
+    """The grammar's node types and fields that NPath reads, gathered once per callable."""
+
     if_nodes: frozenset[str]
     elif_nodes: frozenset[str]
     else_nodes: frozenset[str]
@@ -98,7 +98,7 @@ class _NPathVocab:
     nested_callables: frozenset[str]
 
     @classmethod
-    def for_grammar(cls, g: Any) -> "_NPathVocab":
+    def for_grammar(cls, g: Any) -> "_NPathGrammar":
         return cls(
             if_nodes=g.if_nodes(), elif_nodes=g.elif_nodes(), else_nodes=g.else_nodes(),
             loop_nodes=g.loop_nodes(), switch_nodes=g.switch_nodes(), case_nodes=g.case_nodes(),
@@ -109,164 +109,166 @@ class _NPathVocab:
         )
 
 
-def _npath_walk(callable_node: Any, vocab: _NPathVocab) -> int:
-    if vocab.body_field:
-        body = callable_node.field(vocab.body_field)
+def _npath_walk(callable_node: Any, grammar: _NPathGrammar) -> int:
+    if grammar.body_field:
+        body = callable_node.field(grammar.body_field)
         if body is None:
             return 1
-        return _npath_of_block(body, vocab)
-    return _npath_of_flat_body(callable_node, vocab)
+        return _npath_of_block(body, grammar)
+    return _npath_of_flat_body(callable_node, grammar)
 
 
-def _npath_of_block(node: Any, vocab: _NPathVocab) -> int:
+def _npath_of_block(node: Any, grammar: _NPathGrammar) -> int:
     if node is None:
         return 1
-    if node.type in vocab.block_types:
+    if node.type in grammar.block_types:
         result = 1
         for child in node.children():
-            result *= _npath_of_node(child, vocab)
+            result *= _npath_of_node(child, grammar)
         return result
-    return _npath_of_node(node, vocab)
+    return _npath_of_node(node, grammar)
 
 
-def _npath_of_flat_body(node: Any, vocab: _NPathVocab) -> int:
+def _npath_of_flat_body(node: Any, grammar: _NPathGrammar) -> int:
     result = 1
     for child in node.children():
-        if child.type in vocab.body_skip_types:
+        if child.type in grammar.body_skip_types:
             continue
-        cn = _npath_of_node(child, vocab)
+        cn = _npath_of_node(child, grammar)
         if cn > 1:
             result *= cn
     return result
 
 
-def _npath_of_node(node: Any, vocab: _NPathVocab) -> int:
+def _npath_of_node(node: Any, grammar: _NPathGrammar) -> int:
     ntype = node.type
-    if ntype in vocab.if_nodes or ntype in vocab.elif_nodes:
-        return _npath_of_if(node, vocab)
-    if ntype in vocab.loop_nodes:
-        if vocab.body_field:
-            body = node.field(vocab.body_field)
-            return _npath_of_block(body, vocab) + 1
-        return _npath_of_flat_body(node, vocab) + 1
-    if ntype in vocab.switch_nodes:
-        return _npath_of_switch(node, vocab)
-    if ntype in vocab.try_nodes:
-        return _npath_of_try(node, vocab)
-    if ntype in vocab.nested_callables:
+    if ntype in grammar.if_nodes or ntype in grammar.elif_nodes:
+        return _npath_of_if(node, grammar)
+    if ntype in grammar.loop_nodes:
+        if grammar.body_field:
+            body = node.field(grammar.body_field)
+            return _npath_of_block(body, grammar) + 1
+        return _npath_of_flat_body(node, grammar) + 1
+    if ntype in grammar.switch_nodes:
+        return _npath_of_switch(node, grammar)
+    if ntype in grammar.try_nodes:
+        return _npath_of_try(node, grammar)
+    if ntype in grammar.nested_callables:
         return 1
     result = 1
     for child in node.children():
-        cn = _npath_of_node(child, vocab)
+        cn = _npath_of_node(child, grammar)
         if cn > 1:
             result *= cn
     return result
 
 
-def _npath_of_switch(node: Any, vocab: _NPathVocab) -> int:
+def _npath_of_switch(node: Any, grammar: _NPathGrammar) -> int:
     def iter_cases(parent: Any):
         for child in parent.children():
-            if child.type in vocab.case_nodes:
+            if child.type in grammar.case_nodes:
                 yield child
-            elif child.type in vocab.switch_body_types:
+            elif child.type in grammar.switch_body_types:
                 yield from iter_cases(child)
     total = 0
     for case_child in iter_cases(node):
         case_np = 1
         for cc in case_child.children():
-            if cc.type in vocab.block_types:
-                case_np = _npath_of_block(cc, vocab)
+            if cc.type in grammar.block_types:
+                case_np = _npath_of_block(cc, grammar)
         total += case_np
     return max(total, 1)
 
 
-def _npath_of_try(node: Any, vocab: _NPathVocab) -> int:
+def _npath_of_try(node: Any, grammar: _NPathGrammar) -> int:
     try_body_np = 1
     handler_sum = 0
     for child in node.children():
-        if child.type in vocab.block_types:
-            try_body_np = _npath_of_block(child, vocab)
-        elif child.type in vocab.catch_nodes:
-            if vocab.body_field:
-                catch_body = child.field(vocab.body_field)
-                handler_sum += _npath_of_block(catch_body, vocab) if catch_body is not None else 1
+        if child.type in grammar.block_types:
+            try_body_np = _npath_of_block(child, grammar)
+        elif child.type in grammar.catch_nodes:
+            if grammar.body_field:
+                catch_body = child.field(grammar.body_field)
+                handler_sum += _npath_of_block(catch_body, grammar) if catch_body is not None else 1
             else:
-                handler_sum += _npath_of_flat_body(child, vocab)
+                handler_sum += _npath_of_flat_body(child, grammar)
     return try_body_np if handler_sum == 0 else try_body_np + handler_sum
 
 
-def _npath_of_if(node: Any, vocab: _NPathVocab) -> int:
+def _npath_of_if(node: Any, grammar: _NPathGrammar) -> int:
     children = list(node.children())
     alternatives: list[int] = []
     has_terminal = False
     for child in children:
-        if child.type in vocab.elif_nodes:
-            alternatives.append(_npath_of_elif(child, vocab))
-        elif child.type in vocab.else_nodes:
+        if child.type in grammar.elif_nodes:
+            alternatives.append(_npath_of_elif(child, grammar))
+        elif child.type in grammar.else_nodes:
             has_terminal = True
-            alternatives.extend(_npath_of_else(child, vocab))
-    if vocab.bare_else_keyword and not has_terminal:
-        bare = _npath_of_bare_else(children, vocab)
+            alternatives.extend(_npath_of_else(child, grammar))
+    if grammar.bare_else_keyword and not has_terminal:
+        bare = _npath_of_bare_else(children, grammar)
         if bare is not None:
             has_terminal = True
             alternatives.extend(bare)
     implicit_else = 0 if has_terminal else 1
-    return _npath_of_then(node, vocab) + sum(alternatives) + implicit_else
+    return _npath_of_then(node, grammar) + sum(alternatives) + implicit_else
 
 
-def _npath_of_then(node: Any, vocab: _NPathVocab) -> int:
+def _npath_of_then(node: Any, grammar: _NPathGrammar) -> int:
     consequence = node.field("consequence")
-    if consequence is not None and consequence.type in vocab.block_types:
-        return _npath_of_block(consequence, vocab)
+    if consequence is not None and consequence.type in grammar.block_types:
+        return _npath_of_block(consequence, grammar)
     for child in node.children():
-        if child.type in vocab.block_types:
-            return _npath_of_block(child, vocab)
+        if child.type in grammar.block_types:
+            return _npath_of_block(child, grammar)
     return 1
 
 
-def _npath_of_elif(node: Any, vocab: _NPathVocab) -> int:
+def _npath_of_elif(node: Any, grammar: _NPathGrammar) -> int:
     result = 1
     for child in node.children():
-        if child.type in vocab.block_types:
-            result = _npath_of_block(child, vocab)
+        if child.type in grammar.block_types:
+            result = _npath_of_block(child, grammar)
     return result
 
 
-def _npath_of_else(node: Any, vocab: _NPathVocab) -> list[int]:
+def _npath_of_else(node: Any, grammar: _NPathGrammar) -> list[int]:
     """Path counts of an else clause: its blocks and chained ifs, else one empty path."""
     paths = [
-        _npath_of_branch(child, vocab)
+        _npath_of_branch(child, grammar)
         for child in node.children()
-        if child.type in vocab.block_types or child.type in vocab.if_nodes
+        if child.type in grammar.block_types or child.type in grammar.if_nodes
     ]
-    if not paths and not vocab.body_field:
+    if not paths and not grammar.body_field:
         paths.append(1)
     return paths
 
 
-def _npath_of_bare_else(children: list[Any], vocab: _NPathVocab) -> list[int] | None:
+def _npath_of_bare_else(children: list[Any], grammar: _NPathGrammar) -> list[int] | None:
     """Path counts after bare ``else`` keywords among siblings; None when there is none."""
     found = False
     paths: list[int] = []
     for child, following in zip(children, children[1:]):
-        if child.type != vocab.bare_else_keyword:
+        if child.type != grammar.bare_else_keyword:
             continue
         found = True
-        if following.type in vocab.block_types or following.type in vocab.if_nodes:
-            paths.append(_npath_of_branch(following, vocab))
+        if following.type in grammar.block_types or following.type in grammar.if_nodes:
+            paths.append(_npath_of_branch(following, grammar))
     return paths if found else None
 
 
-def _npath_of_branch(node: Any, vocab: _NPathVocab) -> int:
-    if node.type in vocab.block_types:
-        return _npath_of_block(node, vocab)
-    return _npath_of_if(node, vocab)
+def _npath_of_branch(node: Any, grammar: _NPathGrammar) -> int:
+    if node.type in grammar.block_types:
+        return _npath_of_block(node, grammar)
+    return _npath_of_if(node, grammar)
 
 
 # ---- cognitive -----------------------------------------------------------
 
 @dataclass(frozen=True)
-class _CognitiveVocab:
+class _CognitiveGrammar:
+    """The grammar's node types that Cognitive Complexity reads, gathered once per callable."""
+
     decision_nodes: frozenset[str]
     nesting_nodes: frozenset[str]
     compensating: frozenset[str]
@@ -300,14 +302,14 @@ class _CognitiveVocab:
         return self.decision_cost(node.type, depth) + self.bool_op_cost(node)
 
 
-def _cognitive_walk(root: Any, vocab: _CognitiveVocab) -> int:
+def _cognitive_walk(root: Any, grammar: _CognitiveGrammar) -> int:
     cog = 0
     stack: list[tuple[Any, int]] = [(root, 0)]
     while stack:
         node, depth = stack.pop()
-        if node.type in vocab.nested_callables and node is not root:
+        if node.type in grammar.nested_callables and node is not root:
             continue
-        cog += vocab.node_cost(node, depth)
-        child_depth = depth + 1 if node.type in vocab.nesting_nodes else depth
+        cog += grammar.node_cost(node, depth)
+        child_depth = depth + 1 if node.type in grammar.nesting_nodes else depth
         stack.extend((child, child_depth) for child in reversed(node.children()))
     return cog

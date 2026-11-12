@@ -1,0 +1,4263 @@
+{
+  "version": 1,
+  "scheme": "agent-slop-lint",
+  "terms": [
+    {
+      "prefLabel": "Node",
+      "definition": "One vertex of a parsed syntax tree: a typed span of source with its children.",
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "name",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "content",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Scope",
+      "definition": "A region of code that owns names: a corpus, realm, package, module, class or callable.",
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "root",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "path",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "kind",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "types",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Class",
+      "definition": "A declared type whose instances share fields and methods.",
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [
+        "Scope"
+      ],
+      "related": []
+    },
+    {
+      "prefLabel": "Rule",
+      "definition": "A check that compares one measure of a scope with a stated limit and reports a violation when the measure crosses it.",
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": [
+        "Limit",
+        "Measure"
+      ]
+    },
+    {
+      "prefLabel": "Grammar",
+      "definition": "The facts slop knows about one language: which syntax nodes are callables, classes, decisions and imports, and how names bind.",
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": [
+        "Language"
+      ]
+    },
+    {
+      "prefLabel": "Method",
+      "definition": "A callable declared in a class and called on its instances.",
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [
+        "Callable"
+      ],
+      "related": []
+    },
+    {
+      "prefLabel": "View",
+      "definition": "A read-only computation over a scope, such as its structure or its lexicon.",
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Callable",
+      "definition": "A function, method or lambda: a scope that runs when called.",
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [
+        "Scope"
+      ],
+      "related": []
+    },
+    {
+      "prefLabel": "Import",
+      "definition": "A statement that makes another module, or names from it, available in this one.",
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Module",
+      "definition": "One source file, or in Go the files sharing one package declaration.",
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [
+        "Scope"
+      ],
+      "related": []
+    },
+    {
+      "prefLabel": "Corpus",
+      "definition": "The whole body of source slop analyses in one run: the root of the ownership tree.",
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [
+        "Scope"
+      ],
+      "related": []
+    },
+    {
+      "prefLabel": "Component",
+      "definition": "A scope as slop carves it: one element of the ownership tree, with an identity, an extent and children.",
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [
+        "Scope"
+      ],
+      "related": []
+    },
+    {
+      "prefLabel": "Literal",
+      "definition": "A value written directly in source: a number, string or boolean.",
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "op",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "operator",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Limit",
+      "definition": "The value a rule allows its measure to reach; crossing it is a violation.",
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "decision",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Config",
+      "definition": "A project's settings for slop: which rules run and their limits.",
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "value",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "identifier",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "files",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "body",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "boolean",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "line",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "default",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "switch",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "description",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Language",
+      "definition": "A programming language slop parses with one grammar.",
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": [
+        "Realm"
+      ]
+    },
+    {
+      "prefLabel": "extract",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "member",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "text",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "altitude",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "abstract",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "parameters",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "string",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Receiver",
+      "definition": "The name a method uses for its own instance: self, this, or a Go receiver.",
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": [
+        "Method"
+      ]
+    },
+    {
+      "prefLabel": "output",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "span",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "label",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "word",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "token",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "decl",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "count",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Package",
+      "definition": "A directory of modules that its language treats as one unit.",
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [
+        "Scope"
+      ],
+      "related": []
+    },
+    {
+      "prefLabel": "Measure",
+      "definition": "A number computed from a scope's syntax, such as complexity, coupling or volume.",
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "loop",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "register",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "sub",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "block",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "case",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "queries",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "children",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Binding",
+      "definition": "What a name occurrence refers to: a parameter, local, import, field, method, or nothing in its file.",
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "check",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "compensating",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "nesting",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "operand",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "analysis",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "units",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "npath",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "numeric",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "describe",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "depth",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "parse",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "finding",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "raw",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "edges",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "access",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "instance",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Lexicon",
+      "definition": "The words the code declares, split from its identifiers and counted by stem.",
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "definition",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "resolve",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Vocabulary",
+      "definition": "The words a project agrees on, what each means, and how they relate: the project's ontology file.",
+      "altLabel": [
+        "vocab"
+      ],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": [
+        "Lexicon"
+      ]
+    },
+    {
+      "prefLabel": "term",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "source",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "superclasses",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "parent",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "dict",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "residue",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "field",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Realm",
+      "definition": "The part of a corpus written in one language.",
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [
+        "Scope"
+      ],
+      "related": []
+    },
+    {
+      "prefLabel": "top",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Dependency",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "else",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "role",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "zone",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "catch",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "graph",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "importer",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "try",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "version",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "extent",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "last",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "base",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "symbols",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "named",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "schema",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "comp",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "function",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "PARADIGM",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "visible",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "cycles",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "relative",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "target",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "ruling",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "verdicts",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Violation",
+      "definition": "A rule's report that a scope crossed a limit, at a source location.",
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": [
+        "Rule"
+      ]
+    },
+    {
+      "prefLabel": "elif",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "hoisted",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Ledger",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "options",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "walk",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "cohesion",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "keyword",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "owner",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "properties",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "report",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "rubric",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "scheme",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "afferent",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "cognitive",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "efferent",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "groups",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "iter",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "nested",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "occurrences",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "only",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "references",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "new",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "old",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "builtins",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "call",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "first",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "has",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "init",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "ontology",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Accessor",
+      "definition": "A method whose only statement returns one instance member or assigns a plain value to one: a getter or setter.",
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [
+        "Method"
+      ],
+      "related": []
+    },
+    {
+      "prefLabel": "bare",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "cyclomatic",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "fingerprint",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "halstead",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "hotspots",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "preferred",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "skill",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Agglomeration",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Clone",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "context",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "declaration",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "distribution",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "float",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "magic",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "tree",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "captures",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "structure",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "carve",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "tp",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "ast",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "constructor",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Error",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "qualname",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "reparent",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "skip",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "spellings",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "volume",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "build",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "byte",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "child",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "combinatorial",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "end",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "find",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "hapax",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "ident",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "leaf",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "match",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Metrics",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "min",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "object",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "parser",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "ratio",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "since",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "stopwords",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "bound",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "coverage",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "defined",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "install",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "locations",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "max",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "region",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "render",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "where",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "bool",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "edits",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "go",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "idx",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "meta",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "repo",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "visited",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "apply",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "caveats",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "cbo",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "ck",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "clusters",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "code",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "column",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "common",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "directory",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "dit",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "document",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "entry",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "found",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "level",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "load",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "noc",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Outcome",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "pkg",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "read",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "records",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "scan",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Script",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "slop",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "specifier",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "status",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "subjective",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "total",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "unwrap",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "warning",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "add",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "canonical",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "collisions",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "data",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "declarator",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "descendants",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "draft",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "duplication",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "item",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Java",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "julia",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "leaves",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "locus",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "PROCEDURAL",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "question",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "related",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "subject",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "uselessness",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "clauses",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "cost",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "home",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "INTRA",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "make",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "parts",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "rust",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "settle",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "topology",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "under",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "zipf",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Aggregate",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "ancestor",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "anchor",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "append",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "BRANCH",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "catalog",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "churn",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "command",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "complexity",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Concrete",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Contract",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "dep",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "discover",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "distinct",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "dump",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "enclosing",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "from",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "git",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "head",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "identity",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "implicit",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "infer",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "instructions",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "interface",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "key",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "latest",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Lexeme",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "list",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "main",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "matches",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "model",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "most",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "MULTI",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "neighbours",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "ORIENTED",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "OTHER",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "place",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "position",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Profile",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "project",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "PURPOSE",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "rename",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "repeated",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "resolved",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Settlement",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "show",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "significant",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "slice",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "sloc",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "special",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "split",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "STOP",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Use",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "CONFIRM",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Container",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "covered",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Cpp",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "declared",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "DEFER",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "dis",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "doctor",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Duplicate",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "exclude",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Family",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "fn",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "God",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "heritage",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "HIERARCHICAL",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "inner",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Jsonl",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "lcom",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "lead",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "lint",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "LOCAL",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "lookup",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "martin",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "message",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Observed",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "offset",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "over",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Python",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "reason",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Rigidity",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "route",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Ruby",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "run",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "selected",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Selection",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "threshold",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "union",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "validate",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "zero",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "abstractness",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "accept",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "accepted",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "accessed",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "after",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "agglomerate",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "all",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "alpha",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "alt",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "ambiguous",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "analyse",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "annotated",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "argv",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "before",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "bind",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "broader",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "bundle",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "cache",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "candidates",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "captured",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "checked",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "cl",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "classify",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "CLEAR",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "cli",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "cm",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "collect",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "comparison",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "concentration",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "connected",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "contained",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "containment",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "cosine",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "counter",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Coupling",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "cov",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "CROSS",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "csharp",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "ctype",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "current",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "decorator",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "defines",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "described",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "design",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "dest",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "detached",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "detect",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "difficulty",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "digest",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "dispatch",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Dispatcher",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "dist",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "distance",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "divergence",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "docstring",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Ecma",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "ecmascript",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "effort",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "elements",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "enabled",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "existing",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "exit",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "fit",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "flat",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "force",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "fp",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "frame",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "FREE",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "freq",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "frequencies",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "header",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "help",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "hidden",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "holding",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "human",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "indent",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "inflection",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Inheritance",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "inside",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "instability",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "interpolated",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "jaccard",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "javascript",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "json",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "kept",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "kl",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "kv",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "LAMBDA",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "lang",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "layout",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "leftmost",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "lexical",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "linked",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "locate",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "logical",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "manifest",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "measured",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "mod",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "modifier",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "multipurpose",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "narrower",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "narrowest",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "nearest",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "newest",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "nom",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "non",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "NONE",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "normal",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "numstat",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "objectoriented",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "optional",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "order",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "out",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "outline",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "outside",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "pain",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "pair",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "pattern",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "plural",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "pref",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "prefix",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "problems",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "projection",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "prose",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "prune",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "pure",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "ranked",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Receipt",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "recorded",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Ref",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "rejected",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Rejection",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "rel",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "remove",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "replace",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "respell",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "same",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "save",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "scalar",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "segments",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "select",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "sequence",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "shape",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "Sharp",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "signature",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "similarity",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "sort",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "spectrum",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "spread",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "STALE",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "statistics",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "stem",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "strongconnect",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "structural",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "style",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "styled",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "sum",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "summary",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "suppresses",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "table",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "tagged",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "template",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "then",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "tokenize",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "touching",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "typescript",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "unattributed",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "undefined",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "unmeasurable",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "unused",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "unwrapped",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "virtual",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "visit",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "warned",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    },
+    {
+      "prefLabel": "wrap",
+      "definition": null,
+      "altLabel": [],
+      "hiddenLabel": [],
+      "broader": [],
+      "related": []
+    }
+  ]
+}

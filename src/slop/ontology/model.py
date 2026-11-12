@@ -8,12 +8,15 @@ A ``Term`` is one concept named by a single word. It carries the SKOS lexical la
 A term is *defined* when it has a definition. Only defined terms bind the code: an undefined
 term is a draft candidate, a word the code uses that nobody has given a meaning yet.
 
-Words compare case-insensitively, as the lexicon counts them (``Laz``, ``LAZ``, ``laz``).
+Words compare by stem, as the lexicon counts them (``slop.lexicon.inflection``): ``Laz``, ``LAZ``
+and ``laz`` are one word, and so are ``Node`` and ``nodes``.
 """
 from __future__ import annotations
 
 from collections.abc import Iterable
 from dataclasses import dataclass
+
+from ..lexicon.inflection import stem
 
 
 @dataclass(frozen=True)
@@ -43,17 +46,17 @@ class Scheme:
         self._by_word: dict[str, Term] = {}
         for term in self.terms:
             for label in term.labels():
-                self._by_word.setdefault(label.lower(), term)
+                self._by_word.setdefault(stem(label), term)
 
     def term(self, word: str) -> Term | None:
         """The term any of whose labels is ``word``, or None."""
-        return self._by_word.get(word.lower())
+        return self._by_word.get(stem(word))
 
     def preferred(self, word: str) -> str | None:
         """The preferred label of the defined term that lists ``word`` as an alternative or
         hidden label; None when ``word`` is a preferred label or names no defined term."""
         term = self.term(word)
-        if term is None or not term.defined or term.pref_label.lower() == word.lower():
+        if term is None or not term.defined or stem(term.pref_label) == stem(word):
             return None
         return term.pref_label
 
@@ -62,9 +65,9 @@ class Scheme:
 
     def narrower(self, label: str) -> tuple[Term, ...]:
         """The terms whose ``broader`` names ``label``."""
-        wanted = label.lower()
-        return tuple(t for t in self.terms if any(b.lower() == wanted for b in t.broader))
+        wanted = stem(label)
+        return tuple(t for t in self.terms if any(stem(b) == wanted for b in t.broader))
 
     def words(self, *, defined_only: bool = True) -> dict[str, Term]:
-        """Every label, lower-cased, mapped to its term."""
+        """Every label, by stem, mapped to its term."""
         return {w: t for w, t in self._by_word.items() if t.defined or not defined_only}

@@ -33,6 +33,17 @@ def test_the_preferred_word_replaces_alternative_and_retired_words_of_defined_te
     assert scheme.preferred("unknown") is None
 
 
+def test_an_inflection_names_the_same_term_and_replaces_only_where_the_word_does():
+    scheme = _scheme(LAZ, Term("Tile", "One square of a grid.", alt_labels=("Chunk",)))
+    assert scheme.term("tiles") is scheme.term("Tile")
+    assert scheme.preferred("Tiles") is None                   # the preferred word, inflected
+    assert scheme.preferred("chunks") == "Tile"                # an alternative word, inflected
+
+
+def test_two_terms_cannot_share_a_word_through_its_inflection():
+    assert any("already names Tile" in p for p in ontology.problems(_scheme(Term("Tile", "x"), Term("Tiles", "y"))))
+
+
 def test_narrower_terms_are_those_that_name_it_broader():
     assert _scheme(LAZ, COPC).narrower("laz") == (COPC,)
 

@@ -37,3 +37,7 @@ packages = ["src/slop"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+# slop on its own source: the table marks this directory as the project root, so the vocabulary
+# (.slop/ontology.json) and the rulings (.slop/inferences.jsonl) live here whatever is scanned.
+[tool.slop]

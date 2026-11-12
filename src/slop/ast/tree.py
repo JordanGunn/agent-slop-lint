@@ -84,7 +84,7 @@ class Node:
 
     @property
     def kind(self) -> NodeKind:
-        """Neutral category, derived from the grammar's own vocabulary."""
+        """Neutral category, derived from the grammar's own node-type sets."""
         return _classify(self._raw.type, self._grammar)
 
     @property
@@ -323,7 +323,7 @@ class AST:
 
 # ---- raw type -> neutral kind (grammar-driven; cached per grammar) -------
 
-_VOCAB_CACHE: dict = {}
+_CATEGORY_CACHE: dict = {}
 
 # Specific (loop/switch/...) before generic BRANCH: the formers are subsets
 # of decision_nodes, so order disambiguates the overlap.
@@ -343,11 +343,11 @@ _CLASSIFICATION_ORDER = (
 )
 
 
-def _grammar_vocab(grammar: Any) -> dict:
+def _categories(grammar: Any) -> dict:
     """The grammar's category sets, computed once. The grammar already
     classifies raw types (``callable()``/``decision_nodes()``/...); classification
-    orders those sets into the neutral vocabulary."""
-    cached = _VOCAB_CACHE.get(grammar)
+    orders those sets into the neutral categories."""
+    cached = _CATEGORY_CACHE.get(grammar)
     if cached is not None:
         return cached
     bon = grammar.boolean_op_node()
@@ -365,12 +365,12 @@ def _grammar_vocab(grammar: Any) -> dict:
         "identifier": grammar.identifiers(),
         "literal": grammar.numeric_literal_nodes(),
     }
-    _VOCAB_CACHE[grammar] = v
+    _CATEGORY_CACHE[grammar] = v
     return v
 
 
 def _classify(raw_type: str, grammar: Any) -> NodeKind:
-    v = _grammar_vocab(grammar)
+    v = _categories(grammar)
     for category, kind in _CLASSIFICATION_ORDER:
         if raw_type in v[category]:
             return kind

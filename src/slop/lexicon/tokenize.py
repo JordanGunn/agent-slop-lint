@@ -39,26 +39,17 @@ def split_tokens(name: str) -> tuple[str, ...]:
 class Lexeme:
     """One tokenised identifier with its provenance.
 
-    ``text`` is the identifier as written; ``tokens`` is the case-preserving split;
-    ``lower`` is the lowercased split (the form measurement uses). ``role`` and
+    ``text`` is the identifier as written; ``tokens`` is the case-preserving split. ``role`` and
     ``span`` are the provenance — the span doubles as the cross-view join key when a
     rule correlates a lexical finding with a structural one.
     """
 
     text: str
     tokens: tuple[str, ...]
-    lower: tuple[str, ...]
     role: Role
     span: Span
 
     @classmethod
     def of(cls, text: str, *, role: Role, span: Span) -> "Lexeme":
         """Tokenise ``text`` once and capture its provenance."""
-        toks = split_tokens(text)
-        return cls(
-            text=text,
-            tokens=toks,
-            lower=tuple(t.lower() for t in toks),
-            role=role,
-            span=span,
-        )
+        return cls(text=text, tokens=split_tokens(text), role=role, span=span)

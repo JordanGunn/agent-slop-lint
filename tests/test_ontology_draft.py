@@ -69,3 +69,8 @@ def test_draft_orders_equal_frequencies_by_spread_then_word_and_uses_majority_ca
     assert [term.pref_label for term in result.terms] == ["Gateway", "beta", "ALPHA", "delta", "gamma"]
     assert draft(lexicon, None, "names").terms == result.terms
     assert not problems(result)
+
+
+def test_draft_offers_one_candidate_per_word_whatever_its_inflection():
+    lexicon = _lexicon(("node", "a.py"), ("nodes", "a.py"), ("walk_nodes", "b.py"), ("entries", "a.py"), ("entry", "b.py"))
+    assert [t.pref_label for t in draft(lexicon, None, "x").terms] == ["nodes", "entries", "walk"]

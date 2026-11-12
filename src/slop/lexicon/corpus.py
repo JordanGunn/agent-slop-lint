@@ -1,7 +1,7 @@
 """Lexicon — the analysable identifier token-space over some extent.
 
 The kernel's central object: a bag of role-tagged, span-located identifier tokens,
-cleaned (split, lowercased, stop-word stripped) and ready for descriptive
+cleaned (split, stop-word stripped, stemmed) and ready for descriptive
 measurement. There is **one** ``Lexicon`` type; a narrower scope is a narrower
 *extent*, never a subclass — ``slice`` produces a sub-lexicon over a path subset,
 reusing the parent's tokenisation.
@@ -18,11 +18,13 @@ component ``Extent`` type need not be imported.
 from __future__ import annotations
 
 from collections import Counter
+from dataclasses import replace
 from typing import Any, Iterable
 
 from ..span import Span
 from .distribution import TokenDistribution, token_distribution
 from .roles import Role
+from .inflection import stem
 from .stopwords import STOP_WORDS
 from .tokenize import Lexeme
 
@@ -31,9 +33,10 @@ class Lexicon:
     """A cleaned, role-tagged identifier token-space.
 
     Built from a stream of ``(text, role, span)`` units. Each unit is tokenised
-    once into a :class:`Lexeme`; the significant token-space is the lowercased
-    tokens with stop words removed, retaining provenance for slicing and future
-    cross-view joins.
+    once into a :class:`Lexeme`; the significant token-space is the tokens that are
+    not stop words, each counted under its stem (``slop.lexicon.inflection``, so
+    ``node`` and ``Nodes`` are one word), retaining provenance for slicing and
+    future cross-view joins.
     """
 
     def __init__(
@@ -47,12 +50,11 @@ class Lexicon:
         self._lexemes: list[Lexeme] = [
             Lexeme.of(text, role=role, span=span) for text, role, span in self._units
         ]
-        # Significant tokens: lowercased, stop-word stripped, provenance retained.
         self._tokens: list[tuple[str, Role, Span]] = []
         for lex in self._lexemes:
-            for low in lex.lower:
-                if low and low not in stopwords:
-                    self._tokens.append((low, lex.role, lex.span))
+            for token in lex.tokens:
+                if token.lower() not in stopwords:
+                    self._tokens.append((stem(token), lex.role, lex.span))
         self._counter: Counter[str] = Counter(t for t, _, _ in self._tokens)
 
     # ---- descriptive measurements ------------------------------------
@@ -100,20 +102,24 @@ class Lexicon:
 
     def spellings(self) -> dict[str, str]:
         """Significant token -> the spelling the code uses for it most often (``Laz`` for
-        ``laz`` when ``LazReader`` and ``laz_path`` and ``LazHeader`` occur); ties go to the
-        alphabetically first."""
+        ``laz`` when ``LazReader`` and ``laz_path`` and ``LazHeader`` occur, ``node`` for
+        ``node`` when ``node`` occurs more often than ``nodes``); ties go to the alphabetically
+        first."""
         counts: dict[str, dict[str, int]] = {}
         for lexeme in self._lexemes:
-            for token, lower in zip(lexeme.tokens, lexeme.lower):
-                if lower in self._counter:
-                    seen = counts.setdefault(lower, {})
+            for token in lexeme.tokens:
+                key = stem(token)
+                if key in self._counter:
+                    seen = counts.setdefault(key, {})
                     seen[token] = seen.get(token, 0) + 1
-        return {lower: min(seen, key=lambda t: (-seen[t], t)) for lower, seen in counts.items()}
+        return {key: min(seen, key=lambda t: (-seen[t], t)) for key, seen in counts.items()}
 
     def distribution(self, *, top: int = 15) -> TokenDistribution:
-        """This token-space as a measured Zipfian distribution. See
-        :mod:`slop.lexicon.distribution`."""
-        return token_distribution(self._counter, top=top)
+        """This token-space as a measured Zipfian distribution, its top words in the code's
+        spelling. See :mod:`slop.lexicon.distribution`."""
+        measured = token_distribution(self._counter, top=top)
+        spellings = self.spellings()
+        return replace(measured, top=[(spellings.get(t, t), c) for t, c in measured.top])
 
     # ---- corpus selection --------------------------------------------
     def slice(self, extent: Any) -> "Lexicon":

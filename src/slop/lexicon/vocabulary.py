@@ -12,6 +12,6 @@ from typing import Protocol
 
 class Vocabulary(Protocol):
     def preferred(self, word: str) -> str | None:
-        """The word to use instead of ``word`` (case-insensitive), or None when ``word`` is
+        """The word to use instead of ``word`` (compared by stem, so case and inflection aside), or None when ``word`` is
         already the preferred one or the vocabulary does not name it."""
         ...

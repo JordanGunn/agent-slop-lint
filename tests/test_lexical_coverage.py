@@ -65,7 +65,7 @@ def test_coverage_splits_observed_tokens_into_defined_and_undefined():
     observed = _lexicon(("Ticket", "a.py"), ("triage_ticket", "a.py"), ("triage", "b.py"),
                         ("priority", "b.py"), ("sla_deadline", "b.py"))
     result = coverage(observed, SUPPORT_DESK)
-    assert [o.token for o in result.covered] == ["ticket", "priority"]   # most used first
+    assert [o.token for o in result.covered] == ["Ticket", "priority"]   # most used first, as the code spells it
     assert result.covered[0].count == 2 and result.covered[0].files == 1
     assert result.covered[0].defined_by == ("Ticket",)
     assert [(o.token, o.count, o.files) for o in result.undefined] == [
@@ -83,15 +83,15 @@ def test_undefined_is_ordered_by_count_then_spread_then_name_and_is_never_filter
 
 def test_a_canonical_word_the_code_never_uses_is_reported_unused():
     result = coverage(_lexicon(("ticket", "a.py")), SUPPORT_DESK)
-    assert "engineer" in result.unused and "ticket" not in result.unused
+    assert "Engineer" in result.unused and "Ticket" not in result.unused
 
 
 def test_a_canonical_word_the_noise_list_strips_is_unmeasurable_not_unused():
     # 'key' is in the Newman-14 noise list, so a Lexicon can never contain it. Calling it
     # "unused" would blame the code for something no measurement could see.
     result = coverage(_lexicon(("ticket", "a.py")), _words("Key", "Ticket"))
-    assert result.unmeasurable == ("key",)
-    assert "key" not in result.unused
+    assert result.unmeasurable == ("Key",)
+    assert "Key" not in result.unused
 
 
 def test_coverage_refuses_a_vacuous_comparison():
@@ -162,9 +162,9 @@ def test_lexicon_reports_coverage_against_an_ontology(tmp_path: Path, capsys):
                      "--output", "json"]) == 0
     canonical = json.loads(capsys.readouterr().out)["canonical"]
     assert canonical["basis"] == "declared names"
-    assert {"ticket", "close", "reason"} <= {o["token"] for o in canonical["covered"]}
+    assert {"Ticket", "close", "reason"} <= {o["token"] for o in canonical["covered"]}
     assert {"triage", "sla", "deadline"} <= {o["token"] for o in canonical["undefined"]}
-    assert "engineer" in canonical["unused"] and "by" in canonical["unmeasurable"]
+    assert "Engineer" in canonical["unused"] and "By" in canonical["unmeasurable"]
 
 
 def test_lexicon_human_output_names_its_basis(tmp_path: Path, capsys):
@@ -195,3 +195,10 @@ def test_a_freshly_drafted_vocabulary_is_reported_as_covering_nothing_not_an_err
     assert "no term has a definition yet" in capsys.readouterr().out
     assert cli.main(["lexicon", "--root", str(tmp_path), "--output", "json"]) == 0
     assert json.loads(capsys.readouterr().out)["canonical"]["defined"] == 0
+
+
+def test_inflections_of_a_word_are_one_word_in_the_code_spelling_used_most():
+    observed = _lexicon(("tickets", "a.py"), ("ticket_id", "a.py"), ("open_tickets", "b.py"), ("priorities", "b.py"))
+    result = coverage(observed, SUPPORT_DESK)
+    assert [(o.token, o.count, o.files) for o in result.covered] == [("tickets", 3, 2), ("priorities", 1, 1)]
+    assert "Priority" not in result.unused

@@ -106,3 +106,11 @@ def test_a_parameter_is_renamed_only_in_its_own_file(tmp_path: Path):
     (tmp_path / "b.py").write_text("print(get_x)\n", encoding="utf-8")
     plan = rename("get", "fetch", scan_corpus(tmp_path, config=None))
     assert [(Path(e.path).name, e.line, e.after) for e in plan] == [("a.py", 1, "fetch_x"), ("a.py", 2, "fetch_x")]
+
+
+def test_rename_reaches_inflections_and_keeps_them_plural(tmp_path: Path):
+    (tmp_path / "m.py").write_text("def load_entries(entry):\n    return entry\n", encoding="utf-8")
+    corpus = scan_corpus(tmp_path, config=None)
+    assert {o.identifier for o in occurrences("entry", corpus)} == {"load_entries", "entry"}
+    plan = rename("entry", "record", corpus)
+    assert {(e.before, e.after) for e in plan} == {("load_entries", "load_records"), ("entry", "record")}

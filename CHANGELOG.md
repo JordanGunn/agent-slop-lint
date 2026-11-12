@@ -112,6 +112,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Words are one word whatever their inflection: the lexicon counts, and the vocabulary,
+  `preferred-term`, `ontology check`, `occurrences` and `rename` compare, by stem
+  (`slop.lexicon.inflection.stem`: Porter 1980 steps 1a and 1c), so `node` and `nodes` are one
+  draft candidate, `Tiles` is the preferred `Tile`, and `chunks` is replaced like `chunk`.
+  Output shows the code's spelling, never a stem. `rename` keeps a plural token plural.
+- slop's own vocabulary is defined (`.slop/ontology.json`, 25 terms) and `pyproject.toml` marks
+  the repository as the project root. The NPath and Cognitive grammar projections are
+  `_NPathGrammar` and `_CognitiveGrammar` (they were named `vocab`, which the vocabulary
+  reserves for itself).
 - `rigid-package` and `useless-package` warnings can be ruled on. A residue is placed by its
   subject's extent rather than its syntax node, so a package shows every module in it; both
   rules ship rubrics that ask what the measure cannot see (will the package keep changing, do

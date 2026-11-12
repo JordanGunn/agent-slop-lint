@@ -4,6 +4,9 @@ This compares the *words* the code declares (class, function, parameter, propert
 module names, split into words) with the words the project's vocabulary defines: the
 labels of its defined terms. Four facts, none of them a judgment:
 
+Words are matched by stem (``slop.lexicon.inflection``) and shown as the code spells them, or
+for canonical words, as the vocabulary does.
+
 - ``covered``: observed tokens the vocabulary defines.
 - ``undefined``: observed tokens it does not define, most used first. This is the list
   that shows vocabulary the ontology has not named yet.
@@ -21,7 +24,7 @@ from __future__ import annotations
 from collections.abc import Collection
 from dataclasses import dataclass
 
-from ..lexicon import STOP_WORDS, Lexicon
+from ..lexicon import STOP_WORDS, Lexicon, stem
 from ..ontology import Scheme
 
 
@@ -71,8 +74,13 @@ class Coverage:
 
 
 def canonical_tokens(scheme: Scheme) -> dict[str, tuple[str, ...]]:
-    """Each word a defined term is labelled with -> that term's preferred label."""
+    """The stem of each word a defined term is labelled with -> that term's preferred label."""
     return {word: (term.pref_label,) for word, term in sorted(scheme.words().items())}
+
+
+def _labels(scheme: Scheme) -> dict[str, str]:
+    """The stem of each label of a defined term -> the label as the vocabulary writes it."""
+    return {stem(label): label for term in scheme.defined() for label in term.labels()}
 
 
 def coverage(lexicon: Lexicon, vocabulary: Scheme, *,
@@ -87,19 +95,19 @@ def coverage(lexicon: Lexicon, vocabulary: Scheme, *,
     canonical = canonical_tokens(vocabulary)
     if not canonical:
         raise ValueError(f"{vocabulary.name} defines no words yet: give its terms definitions")
-    spread = lexicon.spread()
+    spread, spellings, labels = lexicon.spread(), lexicon.spellings(), _labels(vocabulary)
 
     def observed(token: str) -> Observed:
-        return Observed(token, frequencies[token], spread.get(token, 0), canonical.get(token, ()))
+        return Observed(spellings.get(token, token), frequencies[token], spread.get(token, 0), canonical.get(token, ()))
 
     ranked = lexicon.ranked()
     covered = tuple(observed(t) for t in ranked if t in canonical)
     undefined = tuple(observed(t) for t in ranked if t not in canonical)
-    measurable = {w for w in canonical if w not in stopwords}
+    stopped = {w for w in canonical if labels[w].lower() in stopwords}
     return Coverage(
         vocabulary=vocabulary.name,
         covered=covered,
         undefined=undefined,
-        unused=tuple(sorted(w for w in measurable if w not in frequencies)),
-        unmeasurable=tuple(sorted(w for w in canonical if w in stopwords)),
+        unused=tuple(sorted(labels[w] for w in canonical if w not in stopped and w not in frequencies)),
+        unmeasurable=tuple(sorted(labels[w] for w in stopped)),
     )

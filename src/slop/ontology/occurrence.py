@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any, Iterator
 
 from ..ast.binding import SymbolKind
-from ..lexicon import Role, split_tokens
+from ..lexicon import Role, plural, split_tokens, stem
 from ..scope.find import walk
 from ..scope.identity import ScopeKind
 from ..scope.lexicon import declared_units
@@ -115,19 +115,23 @@ def _importer_edits(decl: _Declaration, modules: dict[str, _Module], home: _Modu
 # ---- spelling -------------------------------------------------------------------------
 
 def _has_word(identifier: str, word: str) -> bool:
-    return word.lower() in (t.lower() for t in split_tokens(identifier))
+    """``identifier`` contains ``word`` or an inflection of it."""
+    return stem(word) in (stem(t) for t in split_tokens(identifier))
 
 
 def _respell(identifier: str, old: str, new: str) -> str:
-    """``identifier`` with each token equal to ``old`` replaced by ``new`` in that token's case style."""
+    """``identifier`` with each token that is ``old`` or an inflection of it replaced by ``new``
+    in that token's case style. A token that adds an ``-s`` to ``old`` (``nodes`` for ``node``)
+    gets the plural of ``new``; any other inflection gets ``new`` as given."""
     out, cursor, copied = [], 0, 0
     for token in split_tokens(identifier):
         at = identifier.index(token, cursor)
         cursor = at + len(token)
-        if token.lower() != old.lower():
+        if stem(token) != stem(old):
             continue
+        plural_form = token.lower() != old.lower() and token.lower().endswith("s") and not old.lower().endswith("s")
         out.append(identifier[copied:at])
-        out.append(_styled(new, token, identifier))
+        out.append(_styled(plural(new) if plural_form else new, token, identifier))
         copied = cursor
     out.append(identifier[copied:])
     return "".join(out)
