@@ -40,21 +40,31 @@ def view(root: str | Path, output: str = "human", *, scope: str | None = None, t
         return 2
     canonical = ontology.load(Path(ontology_file)) if ontology_file is not None else resolve.vocabulary(root)
     dist = target.lexicon().distribution(top=top)
-    cov = coverage(build_declared_lexicon(target), canonical) if canonical is not None else None
+    section, notes = _canonical(target, canonical, top)
     name = label(target, corpus)
     if output == "json":
         payload = {"scope": name, "kind": target.id.kind.value, **dist.as_dict()}
-        if cov is not None:
-            payload["canonical"] = {"basis": "declared names", **cov.as_dict(top=top)}
+        if section is not None:
+            payload["canonical"] = section
         print(json.dumps(payload, indent=2))
         return 0
     lines = [header("lexicon", f"{name} ({target.id.kind.value})", f"{dist.distinct} tokens · {dist.n} occ"),
              _statistics(dist),
              "  top: " + " ".join(f"{t}({c})" for t, c in dist.top) if dist.top else "  top: —"]
-    if cov is not None:
-        lines += _coverage(cov, top)
-    print("\n".join(lines))
+    print("\n".join(lines + notes))
     return 0
+
+
+def _canonical(target, canonical: ontology.Scheme | None, top: int) -> tuple[dict | None, list[str]]:
+    """The vocabulary's coverage of ``target``'s declared words, as JSON and as human lines. A
+    vocabulary with no defined term yet (just drafted) covers nothing: that is said, not an error."""
+    if canonical is None:
+        return None, []
+    if not canonical.defined():
+        return ({"basis": "declared names", "vocabulary": canonical.name, "defined": 0},
+                [f"  vocabulary {canonical.name}: no term has a definition yet, so it covers nothing"])
+    cov = coverage(build_declared_lexicon(target), canonical)
+    return {"basis": "declared names", **cov.as_dict(top=top)}, _coverage(cov, top)
 
 
 def _norm(value: float, norm: float, *, eps: float, qualifier: bool = False) -> str:

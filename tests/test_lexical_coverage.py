@@ -186,3 +186,13 @@ def test_lexicon_ontology_errors_are_exit_2(tmp_path: Path, capsys):
     _project(tmp_path)
     assert cli.main(["lexicon", "--root", str(tmp_path), "--ontology", "/nonexistent.json"]) == 2
     assert "no vocabulary at /nonexistent.json" in capsys.readouterr().err
+
+
+def test_a_freshly_drafted_vocabulary_is_reported_as_covering_nothing_not_an_error(tmp_path: Path, capsys):
+    _project(tmp_path)
+    assert cli.main(["ontology", "draft", "--root", str(tmp_path)]) == 0
+    capsys.readouterr()
+    assert cli.main(["lexicon", "--root", str(tmp_path)]) == 0
+    assert "no term has a definition yet" in capsys.readouterr().out
+    assert cli.main(["lexicon", "--root", str(tmp_path), "--output", "json"]) == 0
+    assert json.loads(capsys.readouterr().out)["canonical"]["defined"] == 0
