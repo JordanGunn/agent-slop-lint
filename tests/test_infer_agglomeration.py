@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 
 from slop import cli
-from slop.infer.frame.rubric import has_rubric, rubric_for
+from slop.infer.frame.rubric import rubric_for
 
 _TANGLED = "    if a == {i}:\n        b {op}= {i}\n"
 
@@ -47,7 +47,7 @@ def _rule(capsys, root: Path, group_id: str, outcome: str) -> int:
 
 def test_the_question_is_closed_and_has_a_rubric():
     question, rubric = rubric_for("agglomeration")
-    assert has_rubric("agglomeration") and question.id == "agglomeration.one-cause"
+    assert question.id == "agglomeration" and question.text.endswith("?")
     assert rubric.command == "slop infer references rubrics/agglomeration"
 
 

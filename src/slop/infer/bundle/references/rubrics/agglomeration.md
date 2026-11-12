@@ -1,5 +1,7 @@
 # agglomeration
 
+Question: Do these related findings share one cause that a single change would remove?
+
 A group of findings was reported because the code's structure relates them: they sit on one
 method or class (intra-method, intra-class), on classes of one inheritance tree (hierarchical),
 or on classes, functions and modules that name, inherit from or import one another

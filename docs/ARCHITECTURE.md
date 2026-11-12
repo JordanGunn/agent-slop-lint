@@ -119,8 +119,9 @@ stores the result. It follows `Dpre(X) -> A(X' : Sigma) : S -> Dpost(Y)`.
 survey for bootstrapping, is a new module in `source/`; the other layers do not change.
 
 The agent works from the linter's own output. `slop lint --output json` attaches a `residue`
-to each finding of a rule that has a rubric, and to each agglomeration: the id, the `locations`
-to read (a finding's definition; a group's lead and then each member's), the closed question, the rubric command and version, the fingerprint, and the ruling's `status`
+to each warning and to each agglomeration: the id, the `locations`
+to read (the whole lines of the subject's extent, so a class shows its definition and a package
+every module in it; for a group, the lead's extent and then each unit's), the closed question, the rubric command and version, the fingerprint, and the ruling's `status`
 (`none`, `stale`, `defer` or `confirm`). The output also states `root`, the absolute scan root
 that finding paths are relative to, and `project_root`, the absolute root that residue paths are
 relative to, so the agent can open the code from any working directory. Every finding has an
@@ -144,15 +145,15 @@ stale ruling or no ruling leaves it a warning. A ruling is stale when the defini
 the rubric changed since it was given, which the fingerprint records. A new ruling for the same
 id replaces the old one, so a confirmed finding can be ruled on again.
 
-A rule whose findings are packages (`rigid-package`, `useless-package`) needs a package span and
-fingerprint before it can have a rubric: the finding source reads a file's line range.
-
-`class-cohesion` and `agglomeration` have rubrics; a confirmed agglomeration is
+Every subjective rule ships a rubric, and so does `agglomeration`; a test pins that, because a
+warning without one could never be ruled on and would stay a warning forever. A rubric is one
+bundled file, `references/rubrics/<rule>.md`, that states its closed question on a
+`Question:` line and the criteria for each outcome; the question's id is the rule. A confirmed agglomeration is
 recorded and shown but never fails the run. A field is declared once with `described(...)`; the schema
 and the parser both read it. The ledger is `.slop/inferences.jsonl` under the project root, one ruling per line. The project
 root is the directory holding the config (`.slop.toml` or `[tool.slop]`), else the scan root, so
-a finding's id, its path and its ruling are the same whichever directory is scanned. Paths are
-labelled by `frame/location.py`.
+a finding's id, its path and its ruling are the same whichever directory is scanned.
+`frame/location.py` turns an extent's byte spans into the lines a residue shows and fingerprints.
 
 Constants: one used by a single module stays in it. One needed by a second module in the same
 subpackage moves to that subpackage; the contract's closed terms are in `contract/vocabulary.py`.

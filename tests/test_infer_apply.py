@@ -155,10 +155,10 @@ def test_a_ruling_applies_only_to_its_own_finding(tmp_path: Path, outcome: Outco
 
 def test_editing_the_rubric_makes_earlier_rulings_stale(tmp_path: Path, monkeypatch):
     from slop.infer.bundle import prose
+    import shutil
     bundle = tmp_path / "bundle"
-    (bundle / "references" / "rubrics").mkdir(parents=True)
+    shutil.copytree(prose.ROOT / "references", bundle / "references")
     rubric = bundle / "references" / "rubrics" / "class-cohesion.md"
-    rubric.write_text(prose.reference("rubrics/class-cohesion"), encoding="utf-8")
     monkeypatch.setattr(prose, "ROOT", bundle)
     project = tmp_path / "project"
     project.mkdir()

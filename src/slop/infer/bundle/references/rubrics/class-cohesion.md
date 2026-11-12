@@ -1,5 +1,7 @@
 # class-cohesion
 
+Question: Does this class have one responsibility, or does it combine unrelated ones?
+
 A class was reported because its methods fall into groups that share no instance member
 (LCOM4 above 1). The measure sees which members each method touches. It cannot see why.
 

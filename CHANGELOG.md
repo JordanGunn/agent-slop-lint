@@ -112,6 +112,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `rigid-package` and `useless-package` warnings can be ruled on. A residue is placed by its
+  subject's extent rather than its syntax node, so a package shows every module in it; both
+  rules ship rubrics that ask what the measure cannot see (will the package keep changing, do
+  its abstractions have users). Every subjective rule now has a rubric.
+- A rubric file states its own question (`Question: ...`); the question id is the rule name.
+  Rubrics changed, so earlier rulings are stale and come back as warnings until ruled again.
+- An agglomeration's residue reads the lead and every unit the group sits on, packages included.
 - `class-cohesion` (LCOM4) leaves getters and setters out of its method groups and lists
   them as `accessors`, so a value class is no longer split one group per field. An accessor
   is a method whose only statement returns one instance member or assigns a plain value to

@@ -1,55 +1,35 @@
 """Residue from the linter's own subjective findings: the warnings.
 
-Only a warning of a rule that has a rubric becomes residue. Its subject is looked up in the
-corpus, so the span and the fingerprint cover the whole definition, not just its first line.
+Every warning becomes residue: every subjective rule has a rubric (``frame.rubric``). Its subject's extent places it, so a
+class or callable shows its whole definition and a package every module in it. A warning is
+made at a scope of the corpus (``Violation.at``), so its scope is always found.
 """
 from __future__ import annotations
 
 from collections.abc import Iterator
-from pathlib import Path
-from typing import Any
 
+from ...span import Span
 from ...violation import Violation
-from ..contract import Location, Residue, Status
-from ...identity import project_path
-from ..frame.fingerprint import code_fingerprint, read_lines
-from ..frame.rubric import has_rubric, rubric_for
-from .interface import Analysis, Source
+from ..contract import Residue, Status
+from ..frame.fingerprint import code_fingerprint
+from ..frame.location import code, locations
+from ..frame.rubric import rubric_for
+from .interface import Analysis, Source, scopes
 
 
 class FindingSource(Source):
     name = "finding"
 
     def residue(self, analysis: Analysis) -> Iterator[Residue]:
-        definitions = _definitions(analysis.corpus)
+        found = scopes(analysis.corpus)
         for warning in analysis.report.warnings:
-            if warning.path is None or warning.subject is None or not has_rubric(warning.rule):
-                continue
-            yield _residue(warning, analysis.root, definitions.get((warning.path, warning.subject)))
+            yield _residue(warning, analysis, found[warning.scope].extent.spans)
 
 
-def _residue(warning: Violation, root: Path, definition: Any | None) -> Residue:
-    if definition is not None:
-        node = definition._ast_node()
-        first, last = node.line, node.end_line
-    else:                                       # not found in the corpus: the finding's own line
-        first = last = warning.line
+def _residue(warning: Violation, analysis: Analysis, spans: tuple[Span, ...]) -> Residue:
     question, rubric = rubric_for(warning.rule)
-    path = project_path(warning.path, root)
     return Residue(
-        id=warning.id(root), rule=warning.rule, subject=warning.subject,
-        locations=(Location(path=path, first_line=first, last_line=last),), question=question, rubric=rubric,
-        fingerprint=code_fingerprint(read_lines(Path(warning.path), first, last), rubric.version),
-        status=Status.NONE)
+        id=warning.id(analysis.root), rule=warning.rule, subject=warning.subject,
+        locations=locations(spans, analysis.root), question=question, rubric=rubric,
+        fingerprint=code_fingerprint(code(spans), rubric.version), status=Status.NONE)
 
-
-def _definitions(corpus: Any) -> dict[tuple[str, str], Any]:
-    """Every definition in the corpus by (file path, qualified name)."""
-    found: dict[tuple[str, str], Any] = {}
-    stack = [corpus]
-    while stack:
-        component = stack.pop()
-        if component.files and component.qualname:
-            found.setdefault((str(component.files[0]), component.qualname), component)
-        stack.extend(component.children())
-    return found

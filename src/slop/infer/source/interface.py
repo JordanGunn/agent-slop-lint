@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, ClassVar
 
 from ...dispatch import Report
+from ...identity import ScopeId
 from ..contract import Residue
 
 
@@ -30,3 +31,14 @@ class Source(ABC):
     @abstractmethod
     def residue(self, analysis: Analysis) -> Iterator[Residue]:
         """The items of ``analysis`` that need judgement, one residue each."""
+
+
+def scopes(corpus: Any) -> dict[ScopeId, Any]:
+    """Every scope of ``corpus`` by its id."""
+    found: dict[ScopeId, Any] = {}
+    stack = [corpus]
+    while stack:
+        component = stack.pop()
+        found[component.id] = component
+        stack.extend(component.children())
+    return found

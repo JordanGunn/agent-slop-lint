@@ -49,8 +49,8 @@ def test_a_moved_class_keeps_its_id_and_fingerprint_but_an_edited_one_only_its_i
     assert edited.id == original.id and edited.fingerprint != original.fingerprint
 
 
-def test_a_subjective_rule_without_a_rubric_is_not_residue(tmp_path: Path):
-    # `lib` is stable (three dependents) and concrete: rigid-package warns, and has no rubric.
+def test_a_package_warning_is_residue_that_reads_every_module_in_the_package(tmp_path: Path):
+    # `lib` is stable (three dependents) and concrete: rigid-package warns.
     for package in ("lib", "a", "b", "c"):
         (tmp_path / package).mkdir()
         (tmp_path / package / "__init__.py").write_text("", encoding="utf-8")
@@ -58,8 +58,9 @@ def test_a_subjective_rule_without_a_rubric_is_not_residue(tmp_path: Path):
     for package in ("a", "b", "c"):
         (tmp_path / package / "m.py").write_text("from lib import core\n\ndef g():\n    return core.f()\n", encoding="utf-8")
     analysis = _analyse(tmp_path)
-    assert "rigid-package" in {w.rule for w in analysis.report.warnings}      # the fixture really warns
-    assert list(FindingSource().residue(analysis)) == []
+    [residue] = [r for r in FindingSource().residue(analysis) if r.rule == "rigid-package"]
+    assert residue.subject == "lib"
+    assert [(loc.path, loc.first_line, loc.last_line) for loc in residue.locations] == [("lib/__init__.py", 1, 1), ("lib/core.py", 1, 5)]
 
 
 def test_an_objective_violation_is_never_residue(tmp_path: Path):

@@ -1,42 +1,36 @@
 """The closed question and the rubric for a rule.
 
-A rubric is a bundled reference named ``rubrics/<rule>``. Only a rule that has a question
-here and a rubric there can be put to inference. The version is a hash of the rubric's text,
-so editing a rubric makes every earlier ruling under it stale.
+A rubric is a bundled reference named ``rubrics/<rule>``. Every subjective rule ships one, so
+every warning can be put to inference; a warning that could never be ruled on would stay a
+warning forever. The rubric states its one question on a line of its own,
+``Question: ...``; the outcomes are always every ``Outcome``. The version is a hash of the
+rubric's text, so editing a rubric makes every earlier ruling under it stale.
 """
 from __future__ import annotations
 
 from ..bundle import prose
 from ..contract import Outcome, Question, RubricRef
 
-#: rule -> (question id, question text). The outcomes are always every Outcome.
-_QUESTIONS: dict[str, tuple[str, str]] = {
-    "class-cohesion": (
-        "class-cohesion.responsibility",
-        "Does this class have one responsibility, or does it combine unrelated ones?",
-    ),
-    "agglomeration": (
-        "agglomeration.one-cause",
-        "Do these related findings share one cause that a single change would remove?",
-    ),
-}
-
-
-def has_rubric(rule: str) -> bool:
-    """True if ``rule`` can be put to inference."""
-    return rule in _QUESTIONS and _name(rule) in prose.references()
+_QUESTION = "Question:"
 
 
 def rubric_for(rule: str) -> tuple[Question, RubricRef]:
     """The question to ask about a finding of ``rule``, and the rubric that governs it.
 
-    Raises ``KeyError`` for a rule without a rubric."""
-    if not has_rubric(rule):
+    Raises ``KeyError`` for a rule without a rubric, and ``ValueError`` for a rubric that does
+    not state its question."""
+    name = _name(rule)
+    if name not in prose.references():
         raise KeyError(rule)
-    question_id, text = _QUESTIONS[rule]
-    return (Question(id=question_id, text=text, outcomes=tuple(Outcome)),
-            RubricRef(command=f"slop infer references {_name(rule)}",
-                      version=prose.reference_version(_name(rule))))
+    return (Question(id=rule, text=_question(name), outcomes=tuple(Outcome)),
+            RubricRef(command=f"slop infer references {name}", version=prose.reference_version(name)))
+
+
+def _question(name: str) -> str:
+    for line in prose.reference(name).splitlines():
+        if line.startswith(_QUESTION):
+            return line.removeprefix(_QUESTION).strip()
+    raise ValueError(f"rubric {name} states no '{_QUESTION}' line")
 
 
 def _name(rule: str) -> str:
