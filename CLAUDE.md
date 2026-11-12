@@ -23,7 +23,7 @@ root (src-layout; package `agent-slop-lint`, import `slop`, CLI `slop.cli:main`)
 - `src/slop/agglomeration.py`: groups of related findings (Oizumi et al. 2016), in lint JSON
   only; they relate through class and function references, inheritance, and imports between
   modules, never through a file import alone.
-- Lint layer: `rule.py` (Rule), `rules/` (16 rules, `RULE_REGISTRY` in `rules/__init__.py`),
+- Lint layer: `rule.py` (Rule), `rules/` (15 rules, `RULE_REGISTRY` in `rules/__init__.py`),
   `dispatch.py`, `violation.py`, `config.py`.
 - `src/slop/infer/`: inference layered over the linter (`contract`, `ledger`, `frame`, `source`,
   `apply`, `bundle`); only `cli/` and `skill/` import it.

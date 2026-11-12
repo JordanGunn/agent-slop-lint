@@ -8,7 +8,7 @@ Base classes are written as simple names (``extract_superclasses`` yields ``Para
 ``transform.grid.Params``), and simple names repeat: one corpus can hold several ``Params``
 or ``Store`` classes. Each base name is therefore resolved to the *nearest* class of that
 name (the same module, then the same package) and left unresolved when that is still
-ambiguous. It is never merged into one class, which would hand every homonym the combined
+ambiguous. It is never merged into one class, which would hand every same-named class the combined
 subclass count. An unresolved base is recorded in ``ambiguous`` so a consumer can say the
 numbers may undercount instead of reporting them as exact.
 

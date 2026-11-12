@@ -145,7 +145,7 @@ id replaces the old one, so a confirmed finding can be ruled on again.
 A rule whose findings are packages (`rigid-package`, `useless-package`) needs a package span and
 fingerprint before it can have a rubric: the finding source reads a file's line range.
 
-`class-cohesion`, `homonym` and `agglomeration` have rubrics; a confirmed agglomeration is
+`class-cohesion` and `agglomeration` have rubrics; a confirmed agglomeration is
 recorded and shown but never fails the run. A field is declared once with `described(...)`; the schema
 and the parser both read it. The ledger is `.slop/inferences.jsonl` under the project root, one ruling per line. The project
 root is the directory holding the config (`.slop.toml` or `[tool.slop]`), else the scan root, so

@@ -18,7 +18,6 @@ from .duplication import DuplicationRule
 from .duplicate_string import DuplicateStringRule
 from .god_module import GodModuleRule
 from .halstead import HalsteadVolumeRule
-from .homonym import HomonymRule
 from .magic_float import MagicFloatRule
 from .rigidity import RigidityRule
 from .uselessness import UselessnessRule
@@ -32,7 +31,6 @@ RULE_REGISTRY: list[Rule] = [
     DuplicateStringRule(),
     GodModuleRule(),
     DuplicationRule(),
-    HomonymRule(),
     DependencyCyclesRule(),
     RigidityRule(),
     UselessnessRule(),
@@ -55,7 +53,6 @@ __all__ = [
     "DuplicationRule",
     "GodModuleRule",
     "HalsteadVolumeRule",
-    "HomonymRule",
     "InheritanceDepthRule",
     "MagicFloatRule",
     "RigidityRule",

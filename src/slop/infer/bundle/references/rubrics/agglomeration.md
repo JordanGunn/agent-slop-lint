@@ -20,8 +20,6 @@ were confirmed, all one cause (concrete classes reusing their abstract bases' na
   layer): one definition, referenced everywhere, would remove them
 - one oversized element drives the rest: the module or class that the others reference most
   does several jobs, and splitting it would remove the findings on it and around it
-- a name means two things (a homonym) and the code that tells them apart is where the other
-  findings are
 
 ## clear: the findings are independent
 

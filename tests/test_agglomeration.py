@@ -89,13 +89,14 @@ def test_lint_json_lists_groups_by_finding_id(tmp_path: Path, capsys):
 def test_one_tree_holds_a_group_per_rule_each_with_its_own_id(tmp_path: Path):
     from slop.cli.lint import analyse as _analyse
     split = "    def {a}(self):\n        return self.{a}_\n    def {b}(self):\n        return self.{b}_\n"
-    files = {"m.py": "class Base:\n    pass\n\nclass A(Base):\n" + split.format(a="p", b="q") +
-             "\nclass B(Base):\n" + split.format(a="r", b="s"),
-             "n.py": "class A:\n    pass\n\nclass B:\n    pass\n"}            # homonyms of m.A and m.B
+    uses_other = "    def other(self):\n        return Other()\n"
+    files = {"m.py": "class Other:\n    pass\n\nclass Base:\n    pass\n\nclass A(Base):\n" + split.format(a="p", b="q")
+             + uses_other + "\nclass B(Base):\n" + split.format(a="r", b="s") + uses_other,
+             ".slop.toml": "[rules.class-coupling]\nlimit = 1\n"}            # A and B: Base and Other
     for name, text in files.items():
         (tmp_path / name).write_text(text, encoding="utf-8")
     analysis = _analyse(tmp_path)
     groups = [g for g in agglomerate([*analysis.report.violations, *analysis.report.warnings], analysis.corpus)
               if g.topology is Topology.HIERARCHICAL]
-    assert sorted(g.rule for g in groups) == ["class-cohesion", "homonym"]
+    assert sorted(g.rule for g in groups) == ["class-cohesion", "class-coupling"]
     assert len({g.id for g in groups}) == 2

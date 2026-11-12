@@ -32,7 +32,7 @@ enabled = false
 ```
 
 - `enabled`: boolean, default `true` for every rule. A subjective rule (`class-cohesion`,
-  `homonym`, `rigid-package`, `useless-package`) that is enabled reports warnings, which never exit 1.
+  `rigid-package`, `useless-package`) that is enabled reports warnings, which never exit 1.
 - Options: `limit` for every rule except `import-cycle`; `duplicate-code` also takes
   `min_leaf_nodes`, and `duplicate-string` also takes `min_length`. An integer option needs an integer; `rigid-package` and
   `useless-package` take an integer or float.

@@ -2,7 +2,7 @@
 
 A linter and code-structure query tool. It parses source with tree-sitter into an ownership
 tree (Corpus › Realm › Package › Module › Class › Callable). Read-only commands answer
-questions about that tree with facts and no limits. The linter checks 16 measures
+questions about that tree with facts and no limits. The linter checks 15 measures
 against limits and prints `path:line:column: rule message`.
 
 ```
@@ -76,7 +76,6 @@ A rule reports a violation when its measure is strictly greater than `limit`.
 | `class-inheritance-depth` | class | DIT 4 | Chidamber & Kemerer (1994) |
 | `class-children` | class | NOC 10 | Chidamber & Kemerer (1994) |
 | `class-cohesion` (subjective) | class | LCOM4 groups 1 | Hitz & Montazeri (1995) |
-| `homonym` (subjective) | corpus | one class name defined more than once in a language (limit 1) | overloaded words |
 
 A rule marked subjective reports warnings, not violations. Suppress inline, on the reported line: `# slop: ignore[cyclomatic-complexity]`.
 

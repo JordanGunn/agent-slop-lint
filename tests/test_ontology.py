@@ -118,7 +118,7 @@ def test_compare_groups_every_class_that_agrees_with_one_term():
     twins = [_match("Ticket", "a.py"), _match("Ticket", "b.py")]
     ((term, matches),) = compare(twins, vocab).matched
     assert term.name == "Ticket"
-    assert [m.path for m in matches] == ["a.py", "b.py"]     # a homonym stays visible
+    assert [m.path for m in matches] == ["a.py", "b.py"]     # both same-named classes stay visible
 
 
 def test_compare_does_not_accept_a_near_miss():

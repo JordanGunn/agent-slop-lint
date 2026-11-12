@@ -52,10 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   docstring's first sentence as description) for user and agent to curate. Reading an IR now
   enforces Open Ontology's naming rules. `slop vocab` and `slop lexicon` use the project's
   vocabulary by default. Grammars gain a `docstring` fact (Python).
-- New subjective rule `homonym` (16 rules): one class name defined more than once in a language,
-  an overloaded word. Private names are left out. It has a rubric, so `slop infer` can rule on
-  it; on slop's own source all 7 are aliased or used side by side. Rules declare
-  `default_options` instead of writing `default_config`.
+- Rules declare `default_options` instead of writing `default_config`.
 - `duplicate-code` finds parameterized clones (Baker 1995): bodies that match token for token
   except for the names each binds (parameters by position, assigned locals, loop variables) and
   literal values. A different callee, member or keyword argument is different code, so
@@ -94,7 +91,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Every violation records the `scope` it is about and the `related` scopes it names (the other
-  clones, the other definitions of a homonym, the rest of an import cycle), in lint JSON as
+  clones, the rest of an import cycle), in lint JSON as
   `{kind, qualname, path}` with root-relative paths.
 - Name binding (`slop.ast.binding`): every name occurrence resolved to the parameter, local,
   import, field or method it refers to, or free, from a tree-sitter locals query per grammar.

@@ -15,10 +15,6 @@ _QUESTIONS: dict[str, tuple[str, str]] = {
         "class-cohesion.responsibility",
         "Does this class have one responsibility, or does it combine unrelated ones?",
     ),
-    "homonym": (
-        "homonym.one-meaning",
-        "Does this class name mean one thing wherever it is used, or is it overloaded?",
-    ),
     "agglomeration": (
         "agglomeration.one-cause",
         "Do these related findings share one cause that a single change would remove?",

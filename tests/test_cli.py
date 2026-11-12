@@ -40,9 +40,9 @@ def test_rules_json(capsys):
     assert rc == 0
     by_name = {r["name"]: r for r in data}
     assert "cyclomatic-complexity" in by_name and "class-coupling" in by_name
-    assert len(by_name) == 16
+    assert len(by_name) == 15
     subjective = {n for n, r in by_name.items() if r["subjective"]}
-    assert subjective == {"class-cohesion", "homonym", "rigid-package", "useless-package"}
+    assert subjective == {"class-cohesion", "rigid-package", "useless-package"}
     assert all(r["enabled"] for r in by_name.values())
     assert by_name["cyclomatic-complexity"]["altitudes"] == ["callable"]
 

@@ -51,8 +51,7 @@ The project's vocabulary is `.slop/ontology.json` under the project root, an Ope
 IR: the words the user and you agree the code uses, and what each means. `slop ontology draft`
 writes a first version from the classes; it is complete and noisy. Curate it with the user:
 keep the words that name domain concepts, drop incidental ones, write a one-sentence
-`description` for each, and raise any word that names two things: `homonym` warnings in
-`slop lint` list them. After every edit run
+`description` for each, and raise any word that names two things. After every edit run
 `slop ontology check`. `slop vocab` and `slop lexicon` then compare the code with it. The file
 is committed, so each agreement is a reviewable diff.
 
