@@ -40,7 +40,7 @@ def test_rules_json(capsys):
     assert rc == 0
     by_name = {r["name"]: r for r in data}
     assert "cyclomatic-complexity" in by_name and "class-coupling" in by_name
-    assert len(by_name) == 15
+    assert len(by_name) == 16
     subjective = {n for n, r in by_name.items() if r["subjective"]}
     assert subjective == {"class-cohesion", "rigid-package", "useless-package"}
     assert all(r["enabled"] for r in by_name.values())
@@ -430,13 +430,12 @@ _WIRING = [
     (["init", "--root", "r"], "config.init", ("r",), {}),
     (["ast", "f.py", "--raw", "--max-depth", "3"], "ast.view", ("f.py", "human"), {"raw": True, "max_depth": 3}),
     (["lexicon", "--root", "r", "--scope", "s", "--top", "5", "--scope-kind", "module", "--ontology", "o.json"],
-     "lexicon.view", ("r", "human"), {"scope": "s", "top": 5, "scope_kind": "module", "ontology": "o.json"}),
+     "lexicon.view", ("r", "human"), {"scope": "s", "top": 5, "scope_kind": "module", "ontology_file": "o.json"}),
     (["deps", "--root", "r", "--scope", "s", "--cycles"], "deps.view", ("r", "human"), {"scope": "s", "cycles_only": True}),
     (["find", "N", "--root", "r", "--kind", "class", "--collisions"], "find.view", ("r", "N", "human"),
      {"kind": "class", "collisions": True}),
     (["tree", "--root", "r", "--scope", "s", "--depth", "2", "--kind", "class", "--scope-kind", "package"], "tree.view",
      ("r", "human"), {"scope": "s", "depth": 2, "kind": "class", "scope_kind": "package"}),
-    (["vocab", "--ontology", "o.json", "--root", "r", "--term", "T"], "ontology.vocab", ("r", "o.json", "human"), {"term": "T"}),
     (["shape", "--root", "r", "--scope", "s", "--scope-kind", "class"], "shape.view", ("r", "human"),
      {"scope": "s", "scope_kind": "class"}),
     (["hotspots", "--root", "r", "--since", "HEAD~3"], "hotspots.view", ("r", "human"), {"since": "HEAD~3", "last": None}),
@@ -444,7 +443,10 @@ _WIRING = [
     (["infer", "references", "rubrics/x"], "infer.references", ("rubrics/x",), {}),
     (["infer", "schema", "verdicts"], "infer.schema", ("verdicts",), {}),
     (["infer", "apply", "v.json", "--root", "r"], "infer.apply", ("v.json", "r"), {}),
-    (["ontology", "draft", "--root", "r", "--force"], "ontology.draft", ("r", True), {}),
+    (["ontology", "draft", "--root", "r"], "ontology.draft", ("r",), {}),
+    (["ontology", "show", "Laz", "--root", "r"], "ontology.show", ("Laz", "r", "human"), {}),
+    (["ontology", "occurrences", "laz", "--root", "r", "--output", "json"], "ontology.occurrences", ("laz", "r", "json"), {}),
+    (["ontology", "rename", "get", "fetch", "--root", "r"], "ontology.rename", ("get", "fetch", "r", "human"), {}),
     (["ontology", "check", "--root", "r"], "ontology.check", ("r",), {}),
     (["skill", "list"], "skill.catalog", (), {}),
     (["skill", "show", "slop", "SKILL.md"], "skill.show", ("slop", "SKILL.md"), {}),

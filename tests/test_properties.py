@@ -7,11 +7,9 @@ import pytest
 
 from slop.lexical import coverage
 from slop.lexicon import Role
-from slop.ontology import OntologyIR
+from slop.ontology import Scheme, Term
 from slop.scope import scan_corpus
 from slop.scope.lexicon import build_declared_lexicon
-
-FIXTURE = Path(__file__).parent / "fixtures" / "support_desk.ir.json"
 
 
 def _props(tmp_path: Path, name: str, source: str, cls: str = "A") -> tuple[str, ...]:
@@ -91,9 +89,9 @@ def test_properties_enter_the_declared_lexicon_with_their_own_role(tmp_path: Pat
     assert ("escalation", Role.PROPERTY) in {(t, r) for t, r, _span in lexicon._units}
 
 
-def test_a_property_named_like_an_ontology_field_is_covered(tmp_path: Path):
+def test_a_property_named_like_a_vocabulary_word_is_covered(tmp_path: Path):
     # `status` is never a parameter or a function name here; only the property declares it.
     (tmp_path / "m.py").write_text("class Ticket:\n    def __init__(self):\n        self.status = 'open'\n")
     declared = build_declared_lexicon(scan_corpus(tmp_path, config=None))
-    result = coverage(declared, OntologyIR.load(FIXTURE))
+    result = coverage(declared, Scheme("desk", [Term("Status", "Where a ticket is in its life.")]))
     assert "status" in {o.token for o in result.covered}

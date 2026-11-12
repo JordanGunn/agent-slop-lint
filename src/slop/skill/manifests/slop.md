@@ -27,8 +27,8 @@ answer in prose.
 | what a package or module contains | `slop tree` |
 | what depends on what, and whether imports cycle | `slop deps` |
 | how a class is shaped: coupling, depth, cohesion groups | `slop shape` |
-| the vocabulary of a scope, or how it matches an ontology | `slop lexicon`, `slop vocab` |
-| what the project's words mean: draft or check its vocabulary | `slop ontology` |
+| the vocabulary of a scope, and how much of it the project's vocabulary defines | `slop lexicon` |
+| what the project's words mean; draft, check or show its vocabulary; where a word reaches the code; a rename plan | `slop ontology` |
 | what is complex and changing right now | `slop hotspots` |
 | the parse tree of one file | `slop ast` |
 | whether the `WARN` findings are real problems | `slop infer`: follow `references/infer.md` |
@@ -47,12 +47,19 @@ and `slop infer schema`.
 
 ## Agreeing on vocabulary
 
-The project's vocabulary is `.slop/ontology.json` under the project root, an Open Ontology JSON
-IR: the words the user and you agree the code uses, and what each means. `slop ontology draft`
-writes a first version from the classes; it is complete and noisy. Curate it with the user:
-keep the words that name domain concepts, drop incidental ones, write a one-sentence
-`description` for each, and raise any word that names two things. After every edit run
-`slop ontology check`. `slop vocab` and `slop lexicon` then compare the code with it. The file
+The project's vocabulary is `.slop/ontology.json` under the project root: one term per word, with
+its definition, other accepted words (`altLabel`), retired words (`hiddenLabel`) and `broader`
+or `related` terms (W3C SKOS names). It says what words mean in the project's domain, so it may
+hold words the code does not use. `slop ontology draft` seeds it with every word the code
+declares, most used first, without definitions, and keeps terms already agreed. Curate it with
+the user: write a one-sentence `definition` for each word that names a domain concept, delete
+incidental words, and when two words mean one thing keep one and list the other as `altLabel`
+or `hiddenLabel`. After every edit run `slop ontology check`.
+
+Then the vocabulary corrects the code. `slop lint` reports `preferred-term` wherever a declared
+name uses an alternative or retired word. `slop ontology occurrences WORD` shows where a word
+reaches the code, and `slop ontology rename OLD NEW` lists every edit a rename makes; apply
+those edits yourself. `slop lexicon` reports the code's words that no term defines yet. The file
 is committed, so each agreement is a reviewable diff.
 
 ## Files

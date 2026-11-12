@@ -93,6 +93,23 @@ class Lexicon:
                 files.setdefault(token, set()).add(span.path)
         return {token: len(paths) for token, paths in files.items()}
 
+    def ranked(self) -> list[str]:
+        """Significant tokens, most used first, then in the most files, then alphabetically."""
+        frequencies, spread = self.frequencies(), self.spread()
+        return sorted(frequencies, key=lambda t: (-frequencies[t], -spread.get(t, 0), t))
+
+    def spellings(self) -> dict[str, str]:
+        """Significant token -> the spelling the code uses for it most often (``Laz`` for
+        ``laz`` when ``LazReader`` and ``laz_path`` and ``LazHeader`` occur); ties go to the
+        alphabetically first."""
+        counts: dict[str, dict[str, int]] = {}
+        for lexeme in self._lexemes:
+            for token, lower in zip(lexeme.tokens, lexeme.lower):
+                if lower in self._counter:
+                    seen = counts.setdefault(lower, {})
+                    seen[token] = seen.get(token, 0) + 1
+        return {lower: min(seen, key=lambda t: (-seen[t], t)) for lower, seen in counts.items()}
+
     def distribution(self, *, top: int = 15) -> TokenDistribution:
         """This token-space as a measured Zipfian distribution. See
         :mod:`slop.lexicon.distribution`."""

@@ -37,6 +37,7 @@ from .distribution import (
 from .roles import Role
 from .stopwords import STOP_WORDS
 from .tokenize import Lexeme, split_tokens
+from .vocabulary import Vocabulary
 
 __all__ = [
     "Role",
@@ -44,6 +45,7 @@ __all__ = [
     "Lexicon",
     "split_tokens",
     "STOP_WORDS",
+    "Vocabulary",
     "TokenDistribution",
     "token_distribution",
     "ZIPF_ALPHA_NORM",

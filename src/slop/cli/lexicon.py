@@ -4,11 +4,11 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from .. import ontology
 from ..lexical import coverage
 from ..scope.lexicon import build_declared_lexicon
-from .ontology import path as vocabulary_path, vocabulary
+from . import resolve
 from .render import add_output, header, label
-from .resolve import add_root, add_scope, scan, target as select_target
 
 #: below this many distinct tokens the Zipf fit and hapax ratio are not compared with norms
 _MIN_DISTINCT = 15
@@ -16,30 +16,29 @@ _MIN_DISTINCT = 15
 
 def register(sub) -> None:
     p_lex = sub.add_parser("lexicon", help="print a scope's vocabulary distribution")
-    add_root(p_lex)
-    add_scope(p_lex, "qualname of a sub-scope (default: whole corpus)")
+    resolve.add_root(p_lex)
+    resolve.add_scope(p_lex, "qualname of a sub-scope (default: whole corpus)")
     p_lex.add_argument("--top", type=int, default=15, help="number of top tokens to show")
     p_lex.add_argument("--ontology", default=None,
-                       help="Open Ontology IR JSON: also report coverage of the observed tokens")
+                       help="a vocabulary file (default: the project's .slop/ontology.json, when it exists)")
     add_output(p_lex)
     p_lex.set_defaults(run=lambda a: view(a.root, a.output, scope=a.scope, top=a.top,
-                                          scope_kind=a.scope_kind, ontology=a.ontology))
+                                          scope_kind=a.scope_kind, ontology_file=a.ontology))
 
 
 def view(root: str | Path, output: str = "human", *, scope: str | None = None, top: int = 15,
-         scope_kind: str | None = None, ontology: str | Path | None = None) -> int:
+         scope_kind: str | None = None, ontology_file: str | Path | None = None) -> int:
     """Print a scope's vocabulary distribution: the Zipf fit and the head, not a token dump.
 
     With a vocabulary (``--ontology``, or the project's when it exists) it also reports how
     much of the declared names the vocabulary covers (see ``slop.lexical``)."""
-    corpus = scan(root)
+    corpus = resolve.scan(root)
     if corpus is None:
         return 2
-    target = select_target(corpus, scope, scope_kind)
+    target = resolve.target(corpus, scope, scope_kind)
     if target is None:
         return 2
-    canonical = (vocabulary(root, ontology)
-                 if ontology is not None or vocabulary_path(root).exists() else None)
+    canonical = ontology.load(Path(ontology_file)) if ontology_file is not None else resolve.vocabulary(root)
     dist = target.lexicon().distribution(top=top)
     cov = coverage(build_declared_lexicon(target), canonical) if canonical is not None else None
     name = label(target, corpus)

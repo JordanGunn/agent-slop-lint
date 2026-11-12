@@ -1,8 +1,7 @@
 """slop.lexical — lexical analysis: observed identifier vocabulary against a canonical one.
 
 Sits above ``slop.lexicon`` (the observed token-space) and ``slop.ontology`` (the
-canonical vocabulary), and depends on neither's internals: :func:`coverage` takes a
-``Lexicon`` and a ``Vocabulary``.
+canonical vocabulary): :func:`coverage` takes a ``Lexicon`` and a ``Scheme``.
 """
 from __future__ import annotations
 

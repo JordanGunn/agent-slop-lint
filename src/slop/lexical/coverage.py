@@ -1,9 +1,8 @@
 """Observed vocabulary against a canonical vocabulary, at the level of word tokens.
 
-``vocab`` compares whole class names with the ontology's entities. This compares the
-*words* the code actually uses, everywhere an identifier appears (class, function,
-parameter, local, attribute), with the words the ontology defines. Four facts, none of
-them a judgment:
+This compares the *words* the code declares (class, function, parameter, property and
+module names, split into words) with the words the project's vocabulary defines: the
+labels of its defined terms. Four facts, none of them a judgment:
 
 - ``covered``: observed tokens the vocabulary defines.
 - ``undefined``: observed tokens it does not define, most used first. This is the list
@@ -14,16 +13,16 @@ them a judgment:
   as unused would be wrong.
 
 There are no thresholds here. ``undefined`` is ordered, not filtered; how long a prefix
-of it matters is the reader's call. The canonical tokens are the words of term names and
-field keys; descriptions are prose and are not tokenised.
+of it matters is the reader's call. An undefined term (a draft candidate) defines nothing,
+and definitions are prose, not tokenised.
 """
 from __future__ import annotations
 
 from collections.abc import Collection
 from dataclasses import dataclass
 
-from ..lexicon import STOP_WORDS, Lexicon, split_tokens
-from ..ontology import Vocabulary
+from ..lexicon import STOP_WORDS, Lexicon
+from ..ontology import Scheme
 
 
 @dataclass(frozen=True)
@@ -33,7 +32,7 @@ class Observed:
     token: str
     count: int
     files: int
-    defined_by: tuple[str, ...] = ()   # the canonical terms that contain this word, if any
+    defined_by: tuple[str, ...] = ()   # the defined term this word names, if any
 
     def as_dict(self) -> dict:
         return {"token": self.token, "count": self.count, "files": self.files,
@@ -71,20 +70,12 @@ class Coverage:
         }
 
 
-def canonical_tokens(vocabulary: Vocabulary) -> dict[str, tuple[str, ...]]:
-    """Each word the vocabulary defines -> the terms that contain it (names and field keys)."""
-    owners: dict[str, set[str]] = {}
-    for term in vocabulary.terms():
-        words = list(split_tokens(term.name.replace("-", "_")))
-        for key in term.fields:
-            for part in key.split("/"):
-                words.extend(split_tokens(part.replace("-", "_")))
-        for word in words:
-            owners.setdefault(word.lower(), set()).add(term.name)
-    return {word: tuple(sorted(names)) for word, names in sorted(owners.items())}
+def canonical_tokens(scheme: Scheme) -> dict[str, tuple[str, ...]]:
+    """Each word a defined term is labelled with -> that term's preferred label."""
+    return {word: (term.pref_label,) for word, term in sorted(scheme.words().items())}
 
 
-def coverage(lexicon: Lexicon, vocabulary: Vocabulary, *,
+def coverage(lexicon: Lexicon, vocabulary: Scheme, *,
              stopwords: Collection[str] = STOP_WORDS) -> Coverage:
     """Compare ``lexicon`` (observed) with ``vocabulary`` (canonical).
 
@@ -95,13 +86,13 @@ def coverage(lexicon: Lexicon, vocabulary: Vocabulary, *,
         raise ValueError("no identifier tokens were observed, so the comparison would be vacuous")
     canonical = canonical_tokens(vocabulary)
     if not canonical:
-        raise ValueError(f"{vocabulary.name} defines no words to compare against")
+        raise ValueError(f"{vocabulary.name} defines no words yet: give its terms definitions")
     spread = lexicon.spread()
 
     def observed(token: str) -> Observed:
         return Observed(token, frequencies[token], spread.get(token, 0), canonical.get(token, ()))
 
-    ranked = sorted(frequencies, key=lambda t: (-frequencies[t], -spread.get(t, 0), t))
+    ranked = lexicon.ranked()
     covered = tuple(observed(t) for t in ranked if t in canonical)
     undefined = tuple(observed(t) for t in ranked if t not in canonical)
     measurable = {w for w in canonical if w not in stopwords}

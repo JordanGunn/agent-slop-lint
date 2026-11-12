@@ -9,10 +9,10 @@ slop is a linter on top of read-only primitives. Source: `src/slop/`.
 | AST | `ast/` | tree-sitter parse behind a `Node`/`AST` proxy; one `Grammar` class per language |
 | Scope tree | `scope/` | `scan_corpus` carves the sources into a tree of components |
 | Measures | `metrics/`, `lexicon/`, `graph/` | read-only views over a component |
-| Vocabulary | `ontology/`, `lexical/` | canonical vocabulary (Open Ontology JSON IR) and the comparison with names in code |
+| Vocabulary | `ontology/`, `lexical/` | the project's vocabulary (SKOS terms) and the comparison with the words in code |
 | Lint | `rule.py`, `rules/`, `dispatch.py`, `violation.py`, `config.py` | rules compare a measure with a limit |
 | Agglomeration | `agglomeration.py` | groups the findings the code's structure relates (Oizumi et al. 2016); facts, never violations |
-| CLI | `cli/` (one module per command family) | `ast`, `tree`, `find`, `lexicon`, `deps`, `vocab`, `shape`, `hotspots` (primitives); `lint`, `check`, `rules` (lint); `init`, `doctor` |
+| CLI | `cli/` (one module per command family) | `ast`, `tree`, `find`, `lexicon`, `deps`, `shape`, `hotspots` (primitives); `ontology`; `lint`, `check`, `rules` (lint); `init`, `doctor` |
 
 Primitive commands return facts and apply no limits. Only `rules/` and rule `limit` options
 encode limits.
@@ -158,17 +158,25 @@ One needed by a second package goes in `slop/layout.py` (`CONFIG_FILENAME`, `STA
 
 ## Vocabulary
 
-`slop/ontology/` is the project's vocabulary: the words user and agent agree the code uses, and
-what each means. It is stored as an Open Ontology JSON IR at `<project root>/.slop/ontology.json`,
-beside the inference ledger, and committed.
+The lexicon says which words the code uses; the ontology says what words mean in the project's
+domain, whether or not the code uses them. `slop/ontology/` holds the project's vocabulary as
+W3C SKOS terms in `<project root>/.slop/ontology.json`, beside the inference ledger, committed:
+each term is one word (`prefLabel`) with its `definition`, other accepted words (`altLabel`),
+retired or misspelt words (`hiddenLabel`), and `broader` and `related` terms. A term binds the
+code only once it has a definition; an undefined term is a draft candidate.
 
-- `draft.py` derives a first version from the code (`slop ontology draft`): one entity per
-  public class, its properties as fields, its docstring's first sentence as description. It is
-  complete and noisy; curating it is judgement, done by the agent with the user.
-- `ir.py` reads and writes the IR. Reading enforces Open Ontology's naming rules, so a
-  vocabulary slop accepts is one Open Ontology accepts; `slop ontology check` exposes that.
-- `compare.py` and `lexical/` compare the code with it (`slop vocab`, `slop lexicon`), which use
-  the project's vocabulary unless `--ontology` names another.
+| module | role |
+|---|---|
+| `model.py` | `Term`, `Scheme` (lookup by any label, `preferred`, `narrower`) |
+| `fs.py` | strict reading and writing of the file |
+| `check.py` | integrity: single-word labels, SKOS S13, S14 extended to the scheme (one word, one term), S27, links and `broader` cycles |
+| `draft.py` | seeds the vocabulary from the words the code declares, keeping what is agreed |
+| `occurrence.py` | where a word reaches the code, and the edits a rename would make (declarations and references, case preserved) |
+
+The vocabulary flows down without lower layers importing it: `lexicon.Vocabulary` is a protocol
+(`preferred(word)`), the lint command loads the file and passes it to `scan_corpus`, and the
+`preferred-term` rule reads it from the analysis context. `lexical/` compares the code's declared
+words with the defined terms (`slop lexicon`).
 
 ## Skills
 

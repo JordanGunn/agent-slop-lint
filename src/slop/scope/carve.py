@@ -24,7 +24,7 @@ _METHOD_ONLY_TYPES = {"method_declaration", "method_definition", "singleton_meth
 _ROOT_NAME = "<root>"
 
 
-def scan_corpus(root: Path, config: Any) -> C.Corpus:
+def scan_corpus(root: Path, config: Any, *, vocabulary: Any = None) -> C.Corpus:
     """Build a Corpus from ``root``. One Realm per detected language; modules grouped into
     packages by directory. Files matched by ``config.exclude`` are not carved
     (``config=None`` excludes nothing)."""
@@ -40,7 +40,7 @@ def scan_corpus(root: Path, config: Any) -> C.Corpus:
     )
     for realm in realms:
         realm._owner = corpus
-    corpus._context = _analysis_context(corpus)
+    corpus._context = _analysis_context(corpus, vocabulary)
     return corpus
 
 
@@ -68,7 +68,7 @@ def _carve_realms(root: Path, files_by_language: dict[str, list[Path]]) -> list[
     return realms
 
 
-def _analysis_context(corpus: C.Corpus) -> Any:
+def _analysis_context(corpus: C.Corpus, vocabulary: Any = None) -> Any:
     """The corpus-global analysis context: the class hierarchy for CK plus the module
     dependency graph for Martin, hung on the Corpus root (regions reach it via
     ``region.context``, not through entity attributes).
@@ -87,7 +87,8 @@ def _analysis_context(corpus: C.Corpus) -> Any:
         module.id: pkg.id
         for realm in corpus.realms() for pkg in realm.packages() for module in pkg.modules()
     }
-    return AnalysisContext(class_index=index, dep_graph=graph, module_pkg=module_pkg)
+    return AnalysisContext(class_index=index, dep_graph=graph, module_pkg=module_pkg,
+                           vocabulary=vocabulary)
 
 
 def _resolved_imports(graph: Any) -> dict[Any, set[Any]]:

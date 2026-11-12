@@ -24,7 +24,7 @@ ALLOWED: dict[str, set[str]] = {
     "lexicon": {"span"},
     "ast": {"span"},
     "metrics": {"ast", "identity", "span"},          # never scope
-    "ontology": {"lexicon", "scope", "span"},
+    "ontology": {"ast", "lexicon", "scope", "span"},
     "lexical": {"lexicon", "ontology", "span"},      # never scope, rules or cli
     "layout": set(),
     "infer": {"agglomeration", "dispatch", "identity", "layout", "span", "violation"},   # never cli or skill

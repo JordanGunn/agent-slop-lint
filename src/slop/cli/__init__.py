@@ -1,7 +1,7 @@
 """slop CLI.
 
 Primitives (read-only views over the layers): ``ast`` / ``tree`` / ``find`` / ``lexicon`` /
-``deps`` / ``vocab`` / ``shape`` / ``hotspots``. Lint: ``lint`` / ``check`` / ``rules``.
+``deps`` / ``shape`` / ``hotspots``. Lint: ``lint`` / ``check`` / ``rules``.
 Inference: ``infer``. Vocabulary: ``ontology``. Housekeeping: ``doctor`` / ``init`` / ``skill``.
 
 The primitives answer questions and exit 0 whenever they answered (an empty result is an

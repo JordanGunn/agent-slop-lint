@@ -47,11 +47,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and keeps files a user added. Reinstall after upgrading slop. Slop ships one skill, `slop`
   (`/slop`): a conversational interface over the CLI, which also carries the `slop infer`
   workflow, rubrics and schemas.
-- `slop ontology draft | check`: the project's vocabulary at `.slop/ontology.json`, an Open
-  Ontology JSON IR drafted from the code (one entity per public class, properties as fields,
-  docstring's first sentence as description) for user and agent to curate. Reading an IR now
-  enforces Open Ontology's naming rules. `slop vocab` and `slop lexicon` use the project's
-  vocabulary by default. Grammars gain a `docstring` fact (Python).
+- The project's vocabulary, `.slop/ontology.json`: what the project's words mean, as W3C SKOS
+  terms (one word each, with a `definition`, `altLabel` and `hiddenLabel` words, and `broader`
+  and `related` terms). It is seeded from the code and then corrects it:
+  - `slop ontology draft` adds every word the code declares, most used first, without a
+    definition, keeping the terms already agreed; `check` enforces single-word labels, one word
+    per term (SKOS S13, S14 across the scheme) and SKOS S27; `show WORD` prints a term and its
+    links; `occurrences WORD` lists the declared names a word reaches; `rename OLD NEW` lists
+    every edit a rename makes, declarations and references, case preserved.
+  - New objective rule `preferred-term`: a declared name uses an alternative or retired word of
+    a defined term. The vocabulary reaches it through the `lexicon.Vocabulary` protocol on the
+    analysis context, so the lint layer never imports the ontology.
+  - `slop lexicon` reports the code's declared words that no defined term covers.
+- Identifier words split on every non-letter (`agent-slop-lint`, `slop/ast`); a package declares
+  its own directory name, its `__init__` module and a realm declare none.
 - Rules declare `default_options` instead of writing `default_config`.
 - `duplicate-code` finds parameterized clones (Baker 1995): bodies that match token for token
   except for the names each binds (parameters by position, assigned locals, loop variables) and
@@ -80,7 +89,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   cross-component), each with a lead scope and member finding ids. Every finding has an `id`;
   `duplicate-string` and `magic-float` ids include the literal, so they no longer collide.
 - Read-only primitives that answer with facts and no limits: `slop find` / `--collisions`,
-  `tree`, `shape`, `vocab --ontology IR.json` and `lexicon --ontology IR.json`; they report
+  `tree`, `shape` and `lexicon`; they report
   caveats for syntax-error files.
 - LCOM4 cohesion for Python, JavaScript, TypeScript, Go and Rust (each always writes the
   receiver: `self.x`, `this.x`, `s.x`); `null` elsewhere. Class properties enter the
@@ -96,8 +105,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Name binding (`slop.ast.binding`): every name occurrence resolved to the parameter, local,
   import, field or method it refers to, or free, from a tree-sitter locals query per grammar.
   It replaces three partial mechanisms: LCOM4 is now measured for Java, C#, C++ and Ruby
-  (bare `x` for `this.x`, sibling calls, `@x`); every grammar's classes have properties (and
-  so `ontology draft` fields); clone detection renames locals in all eleven grammars, per
+  (bare `x` for `this.x`, sibling calls, `@x`); every grammar's classes have properties;
+  clone detection renames locals in all eleven grammars, per
   occurrence. `class_fields` and `assignment_nodes` leave the grammar contract;
   `member_access` returns every spelling of `receiver.member`.
 

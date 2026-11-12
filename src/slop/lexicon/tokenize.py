@@ -26,11 +26,13 @@ _CAMEL_UPPER_TITLE = re.compile(r"([A-Z]+)([A-Z][a-z])")
 
 
 def split_tokens(name: str) -> tuple[str, ...]:
-    """Split an identifier into word tokens (snake_case + CamelCase aware)."""
+    """Split an identifier into word tokens (snake_case + CamelCase aware). Anything that is
+    not a letter separates words: underscores, digits, and the ``-``, ``.`` or ``/`` of a file
+    or directory name."""
     cleaned = name.strip("_")
     cleaned = _CAMEL_LOWER_UPPER.sub(r"\1_\2", cleaned)
     cleaned = _CAMEL_UPPER_TITLE.sub(r"\1_\2", cleaned)
-    return tuple(p for p in re.split(r"[_\d]+", cleaned) if p)
+    return tuple(p for p in re.split(r"[^A-Za-z]+", cleaned) if p)
 
 
 @dataclass(frozen=True)

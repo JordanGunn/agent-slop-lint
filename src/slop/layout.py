@@ -13,5 +13,5 @@ CONFIG_FILENAME = ".slop.toml"
 #: the vocabulary).
 STATE_DIR = ".slop"
 
-#: The project's vocabulary, an Open Ontology JSON IR under ``STATE_DIR``.
+#: The project's vocabulary (SKOS terms as JSON) under ``STATE_DIR``.
 ONTOLOGY_FILENAME = "ontology.json"

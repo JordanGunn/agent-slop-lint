@@ -16,7 +16,6 @@ import pytest
 
 from slop import cli
 
-IR = str(Path(__file__).parent / "fixtures" / "support_desk.ir.json")
 
 
 def _ask(capsys, *argv: str) -> tuple[int, dict | str, str]:
@@ -141,39 +140,13 @@ def test_which_names_are_defined_more_than_once(sample_project: Path, capsys):
 
 # ---- Q4: what is the canonical term for Z? --------------------------------
 
-def test_what_a_word_means_canonically(capsys):
-    code, answer, _ = _ask(capsys, "vocab", "--ontology", IR, "--term", "customer", "--output", "json")
-    assert code == 0
-    assert answer["canonical"]["name"] == "Customer"
-    assert answer["canonical"]["description"] == "An organisation that raises tickets."
-    assert answer["canonical"]["kind"] == "entity"
-
-
-def test_a_non_canonical_word_is_an_answer_not_an_error(capsys):
-    code, answer, _ = _ask(capsys, "vocab", "--ontology", IR, "--term", "Bogus", "--output", "json")
-    assert code == 0 and answer["canonical"] is None
-
-
-def test_code_names_against_the_ontology(tmp_path: Path, capsys):
-    (tmp_path / "m.py").write_text(
-        "class Ticket:\n    pass\n\nclass Customer:\n    pass\n\nclass TicketManager:\n    pass\n")
-    code, answer, _ = _ask(capsys, "vocab", "--ontology", IR, "--root", str(tmp_path), "--output", "json")
-    assert code == 0
-    assert [m["term"] for m in answer["matched"]] == ["Customer", "Ticket"]
-    assert [m["name"] for m in answer["unknown"]] == ["TicketManager"]   # a near miss is not a match
-    assert answer["unused"] == ["Engineer"]
-
-
-# ---- the primitives fail loudly -------------------------------------------
-
 @pytest.mark.parametrize("argv,fragment", [
     (["find"], "needs a NAME"),
     (["find", "X", "--kind", "banana"], "unknown kind"),
-    (["vocab", "--ontology", "/nonexistent/ir.json", "--term", "x"], "cannot read ontology"),
 ])
 def test_unanswerable_questions_exit_2_with_a_reason(capsys, tmp_path: Path, argv, fragment):
     (tmp_path / "m.py").write_text("class A:\n    pass\n")
-    code = cli.main([*argv, "--root", str(tmp_path)] if argv[0] != "vocab" else argv)
+    code = cli.main([*argv, "--root", str(tmp_path)])
     assert code == 2
     assert fragment in capsys.readouterr().err
 
@@ -184,22 +157,6 @@ def test_a_source_free_root_is_an_error_not_an_empty_answer(tmp_path: Path, caps
     assert code == 2
     assert "no source files" in capsys.readouterr().err
 
-
-def test_a_root_with_no_classes_cannot_be_compared(tmp_path: Path, capsys):
-    (tmp_path / "m.py").write_text("def only_a_function():\n    return 1\n")
-    code = cli.main(["vocab", "--ontology", IR, "--root", str(tmp_path)])
-    assert code == 2
-    assert "vacuous" in capsys.readouterr().err
-
-
-def test_a_file_that_is_not_an_ontology_is_rejected(tmp_path: Path, capsys):
-    bad = tmp_path / "bad.json"
-    bad.write_text('{"kind": "nope"}')
-    assert cli.main(["vocab", "--ontology", str(bad), "--term", "x"]) == 2
-    assert "not an Open Ontology IR" in capsys.readouterr().err
-
-
-# ---- determinism ----------------------------------------------------------
 
 def test_two_runs_print_identical_bytes(sample_project: Path, capsys):
     outputs = []
@@ -235,14 +192,6 @@ def test_class_bearing_grammars_find_a_defined_class(tmp_path: Path, capsys, fil
     _, answer, _ = _ask(capsys, "find", "Widget", "--kind", "class", "--root", str(tmp_path),
                         "--output", "json")
     assert [m["name"] for m in answer["matches"]] == ["Widget"]
-    assert answer["caveats"] == []
-
-
-def test_vocab_matches_a_c_struct_against_the_ontology(tmp_path: Path, capsys):
-    (tmp_path / "a.py").write_text("class Ticket:\n    pass\n")
-    (tmp_path / "b.c").write_text("struct Customer { int x; };\n")
-    _, answer, _ = _ask(capsys, "vocab", "--ontology", IR, "--root", str(tmp_path), "--output", "json")
-    assert [m["term"] for m in answer["matched"]] == ["Customer", "Ticket"]
     assert answer["caveats"] == []
 
 

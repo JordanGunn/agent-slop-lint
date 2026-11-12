@@ -7,6 +7,8 @@ import sys
 from dataclasses import replace
 from pathlib import Path
 
+from .. import ontology
+from . import resolve
 from ..config import AnalysisConfig
 from ..dispatch import Dispatcher, Report
 from ..infer.apply.settle import settle
@@ -48,7 +50,12 @@ def analyse(root: str | Path, selected=None) -> Analysis | None:
     if selected is not None:
         config = replace(config, rules={
             **config.rules, **{r.name: replace(config.rules[r.name], enabled=True) for r in selected}})
-    corpus = scan_corpus(root, config)
+    try:
+        vocabulary = resolve.vocabulary(root)
+    except ontology.OntologyError as exc:
+        print(f"slop: error: {exc}", file=sys.stderr)
+        return None
+    corpus = scan_corpus(root, config, vocabulary=vocabulary)
     if not has_source(corpus):
         print(f"slop: error: no source files found under {root}", file=sys.stderr)
         return None

@@ -17,19 +17,6 @@ class Python(MultiPurpose):
         return True
 
     @classmethod
-    def docstring(cls, node: Any, content: bytes) -> str | None:
-        """The string that opens a class or function body, without its quotes."""
-        body = node.child_by_field_name("body")
-        first = body.named_children[0] if body is not None and body.named_children else None
-        if first is None or first.type != "expression_statement" or not first.named_children:
-            return None
-        string = first.named_children[0]
-        if string.type != "string":
-            return None
-        parts = [c for c in string.named_children if c.type == "string_content"]
-        return "".join(content[c.start_byte:c.end_byte].decode("utf-8", errors="replace") for c in parts) or None
-
-    @classmethod
     def is_special_method(cls, name: str) -> bool:
         return name.startswith("__") and name.endswith("__")
 

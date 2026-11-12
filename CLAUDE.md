@@ -18,8 +18,10 @@ root (src-layout; package `agent-slop-lint`, import `slop`, CLI `slop.cli:main`)
   vocabulary (`slop lexicon`).
 - `src/slop/ast/binding.py`: name binding (what each name refers to) from the per-grammar locals
   queries in `ast/grammar/locals/*.scm`; read through `Component.bindings()`.
-- `src/slop/ontology/`: the project's vocabulary (`.slop/ontology.json`, Open Ontology JSON IR);
-  `draft.py` derives it from the code, `ir.py` reads and writes it (`slop ontology`, `slop vocab`).
+- `src/slop/ontology/`: the project's vocabulary (`.slop/ontology.json`, SKOS terms: one word,
+  its definition, alt/hidden labels, broader/related); `model.py`, `fs.py`, `check.py`,
+  `draft.py` (seed from declared words), `occurrence.py` (where a word reaches the code, rename
+  plans). It reaches lint through the `lexicon.Vocabulary` protocol on the analysis context.
 - `src/slop/agglomeration.py`: groups of related findings (Oizumi et al. 2016), in lint JSON
   only; they relate through class and function references, inheritance, and imports between
   modules, never through a file import alone.

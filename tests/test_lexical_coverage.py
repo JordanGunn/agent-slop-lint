@@ -1,14 +1,12 @@
 """slop.lexical — observed vocabulary against a canonical one.
 
-The canonical side is the real Open Ontology IR for ``support-desk`` (see
-``test_ontology``), so the words asserted here are the ones the tool actually extracts.
-The observed side is a hand-built :class:`~slop.lexicon.Lexicon` and, for the declared
-names, a carved project.
+The canonical side is a support-desk vocabulary of defined terms (with one draft term, which
+defines nothing). The observed side is a hand-built :class:`~slop.lexicon.Lexicon` and, for
+the declared names, a carved project.
 """
 from __future__ import annotations
 
 import json
-from collections.abc import Sequence
 from pathlib import Path
 
 import pytest
@@ -16,12 +14,28 @@ import pytest
 from slop import cli
 from slop.lexical import canonical_tokens, coverage
 from slop.lexicon import Lexicon, Role
-from slop.ontology import OntologyIR, Term, TermKind, Vocabulary
+from slop import ontology
+from slop.ontology import Scheme, Term
 from slop.scope import scan_corpus
 from slop.scope.lexicon import build_declared_lexicon
 from slop.span import Span
 
-FIXTURE = Path(__file__).parent / "fixtures" / "support_desk.ir.json"
+SUPPORT_DESK = Scheme("support-desk", [
+    Term("Ticket", "A customer's request, tracked until it is closed.", alt_labels=("Case",)),
+    Term("Customer", "An organisation that raises tickets."),
+    Term("Engineer", "A person who works tickets."),
+    Term("Close", "End a ticket's life, with a reason."),
+    Term("Reason", "Why a ticket was closed."),
+    Term("Priority", "How soon a ticket must be worked."),
+    Term("By", "Who did something to a ticket."),
+    Term("Triage"),                                  # a draft: no definition, so it defines nothing
+])
+
+
+def _file(root: Path) -> Path:
+    path = root / "support_desk.json"
+    path.write_text(json.dumps(ontology.dump(SUPPORT_DESK)), encoding="utf-8")
+    return path
 
 
 def _lexicon(*units: tuple[str, str]) -> Lexicon:
@@ -29,33 +43,20 @@ def _lexicon(*units: tuple[str, str]) -> Lexicon:
     return Lexicon([(text, Role.CALLABLE, Span(path, 0, 1)) for text, path in units])
 
 
-class _Words(Vocabulary):
-    """A vocabulary that does not come from Open Ontology: proves the seam."""
-
-    def __init__(self, *names: str) -> None:
-        self._terms = tuple(Term(n, TermKind.ENTITY, None, ()) for n in names)
-
-    @property
-    def name(self) -> str:
-        return "words"
-
-    def terms(self) -> Sequence[Term]:
-        return self._terms
+def _words(*names: str) -> Scheme:
+    return Scheme("words", [Term(n, f"the word {n}") for n in names])
 
 
 # ---- the canonical side ---------------------------------------------------
 
-def test_canonical_tokens_are_the_words_of_names_and_field_keys():
-    words = canonical_tokens(OntologyIR.load(FIXTURE))
-    assert words["ticket"] == ("Ticket", "close-ticket", "escalate-ticket", "open-ticket")
-    assert words["opened"] == ("Ticket",)            # from the field key ticket/opened-at
-    assert words["escalated"] == ("escalated-to",)   # a different word from 'escalate'
-    assert "escalate" in words and "tickets" in words  # no stemming: near misses stay apart
+def test_canonical_tokens_are_every_label_of_a_defined_term():
+    words = canonical_tokens(SUPPORT_DESK)
+    assert words["ticket"] == ("Ticket",) and words["case"] == ("Ticket",)   # an alternative label counts
+    assert "triage" not in words                                            # a draft defines nothing
 
 
-def test_descriptions_are_prose_and_are_not_tokenised():
-    # Customer's description is "An organisation that raises tickets."
-    assert "organisation" not in canonical_tokens(OntologyIR.load(FIXTURE))
+def test_definitions_are_prose_and_are_not_tokenised():
+    assert "organisation" not in canonical_tokens(SUPPORT_DESK)
 
 
 # ---- coverage -------------------------------------------------------------
@@ -63,10 +64,10 @@ def test_descriptions_are_prose_and_are_not_tokenised():
 def test_coverage_splits_observed_tokens_into_defined_and_undefined():
     observed = _lexicon(("Ticket", "a.py"), ("triage_ticket", "a.py"), ("triage", "b.py"),
                         ("priority", "b.py"), ("sla_deadline", "b.py"))
-    result = coverage(observed, OntologyIR.load(FIXTURE))
+    result = coverage(observed, SUPPORT_DESK)
     assert [o.token for o in result.covered] == ["ticket", "priority"]   # most used first
     assert result.covered[0].count == 2 and result.covered[0].files == 1
-    assert "Ticket" in result.covered[0].defined_by
+    assert result.covered[0].defined_by == ("Ticket",)
     assert [(o.token, o.count, o.files) for o in result.undefined] == [
         ("triage", 2, 2), ("deadline", 1, 1), ("sla", 1, 1),
     ]
@@ -76,33 +77,33 @@ def test_coverage_splits_observed_tokens_into_defined_and_undefined():
 def test_undefined_is_ordered_by_count_then_spread_then_name_and_is_never_filtered():
     observed = _lexicon(("alpha", "a.py"), ("alpha", "a.py"), ("beta", "a.py"), ("beta", "b.py"),
                         ("gamma", "a.py"), ("delta", "a.py"))
-    undefined = [(o.token, o.count, o.files) for o in coverage(observed, _Words("zzz")).undefined]
+    undefined = [(o.token, o.count, o.files) for o in coverage(observed, _words("zzz")).undefined]
     assert undefined == [("beta", 2, 2), ("alpha", 2, 1), ("delta", 1, 1), ("gamma", 1, 1)]
 
 
 def test_a_canonical_word_the_code_never_uses_is_reported_unused():
-    result = coverage(_lexicon(("ticket", "a.py")), OntologyIR.load(FIXTURE))
+    result = coverage(_lexicon(("ticket", "a.py")), SUPPORT_DESK)
     assert "engineer" in result.unused and "ticket" not in result.unused
 
 
 def test_a_canonical_word_the_noise_list_strips_is_unmeasurable_not_unused():
     # 'key' is in the Newman-14 noise list, so a Lexicon can never contain it. Calling it
     # "unused" would blame the code for something no measurement could see.
-    result = coverage(_lexicon(("ticket", "a.py")), _Words("Key", "Ticket"))
+    result = coverage(_lexicon(("ticket", "a.py")), _words("Key", "Ticket"))
     assert result.unmeasurable == ("key",)
     assert "key" not in result.unused
 
 
 def test_coverage_refuses_a_vacuous_comparison():
     with pytest.raises(ValueError, match="vacuous"):
-        coverage(Lexicon([]), OntologyIR.load(FIXTURE))
+        coverage(Lexicon([]), SUPPORT_DESK)
     with pytest.raises(ValueError, match="defines no words"):
-        coverage(_lexicon(("ticket", "a.py")), _Words())
+        coverage(_lexicon(("ticket", "a.py")), _words())
 
 
 def test_coverage_is_deterministic():
     observed = _lexicon(("alpha", "a.py"), ("beta", "b.py"), ("ticket", "a.py"))
-    vocabulary = OntologyIR.load(FIXTURE)
+    vocabulary = SUPPORT_DESK
     assert coverage(observed, vocabulary) == coverage(observed, vocabulary)
 
 
@@ -158,7 +159,7 @@ def _project(root: Path) -> Path:
 
 def test_lexicon_reports_coverage_against_an_ontology(tmp_path: Path, capsys):
     _project(tmp_path)
-    assert cli.main(["lexicon", "--root", str(tmp_path), "--ontology", str(FIXTURE),
+    assert cli.main(["lexicon", "--root", str(tmp_path), "--ontology", str(_file(tmp_path)),
                      "--output", "json"]) == 0
     canonical = json.loads(capsys.readouterr().out)["canonical"]
     assert canonical["basis"] == "declared names"
@@ -169,7 +170,7 @@ def test_lexicon_reports_coverage_against_an_ontology(tmp_path: Path, capsys):
 
 def test_lexicon_human_output_names_its_basis(tmp_path: Path, capsys):
     _project(tmp_path)
-    assert cli.main(["lexicon", "--root", str(tmp_path), "--ontology", str(FIXTURE)]) == 0
+    assert cli.main(["lexicon", "--root", str(tmp_path), "--ontology", str(_file(tmp_path))]) == 0
     out = capsys.readouterr().out
     assert "over declared names" in out and "undefined (most used first" in out
     assert "triage(" in out
@@ -184,4 +185,4 @@ def test_lexicon_without_an_ontology_is_unchanged(tmp_path: Path, capsys):
 def test_lexicon_ontology_errors_are_exit_2(tmp_path: Path, capsys):
     _project(tmp_path)
     assert cli.main(["lexicon", "--root", str(tmp_path), "--ontology", "/nonexistent.json"]) == 2
-    assert "cannot read ontology" in capsys.readouterr().err
+    assert "no vocabulary at /nonexistent.json" in capsys.readouterr().err

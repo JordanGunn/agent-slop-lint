@@ -52,10 +52,12 @@ def build_lexicon(component: Any) -> Lexicon:
 
 
 def _fs_name_unit(comp: Any, role: Role) -> tuple[str, Role, Span]:
-    """A filesystem-named component as a lexicon unit; a fileless name gets an empty
-    path, counted in full and excluded from any slice."""
+    """A filesystem-named component as a lexicon unit: the name it declares, which for a
+    package is its own directory's name (``grammar``, not ``slop/ast/grammar``: the parents
+    declare theirs). A fileless name gets an empty path, counted in full and excluded from any
+    slice."""
     path = comp.files[0] if comp.files else None
-    return comp.name, role, Span(str(path) if path is not None else "", 0, 0)
+    return comp.name.rsplit("/", 1)[-1], role, Span(str(path) if path is not None else "", 0, 0)
 
 
 _UNNAMED = frozenset({"<anonymous>", "<lambda>"})
@@ -75,16 +77,26 @@ def build_declared_lexicon(component: Any) -> Lexicon:
     declared. ``build_lexicon`` keeps the undifferentiated occurrence stream."""
     units: list[tuple[str, Role, Span]] = []
     for comp in _iter_all(component):
-        units.extend(_declared_units(comp))
+        units.extend(declared_units(comp))
     return Lexicon(units)
 
 
-def _declared_units(comp: Any) -> list[tuple[str, Role, Span]]:
-    """The names ``comp`` declares, each tagged with the role of its kind."""
+def _is_package_init(comp: Any) -> bool:
+    grammar = comp._grammar
+    init = grammar.package_init_name() if grammar is not None else None
+    return comp.KIND is ScopeKind.MODULE and init is not None and bool(comp.files) and comp.files[0].name == init
+
+
+def declared_units(comp: Any) -> list[tuple[str, Role, Span]]:
+    """The names ``comp`` itself declares (not its children's), each with the role of its kind:
+    a module's or package's own name; a class's name and properties; a callable's name and
+    parameters. A package's init module (Python's ``__init__.py``) is the package itself, so it
+    declares nothing the package does not; a realm is slop's grouping by language, so its name
+    (``python``) is not a word the project chose."""
     kind = comp.KIND
     fs_role = _FS_ROLE.get(kind)
     if fs_role is not None:
-        return [_fs_name_unit(comp, fs_role)]
+        return [] if _is_package_init(comp) or kind is ScopeKind.REALM else [_fs_name_unit(comp, fs_role)]
     if kind is ScopeKind.CLASS:
         return _class_units(comp)
     if kind is ScopeKind.CALLABLE:

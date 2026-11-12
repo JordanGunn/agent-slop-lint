@@ -45,7 +45,8 @@ class Violation:
 
     @classmethod
     def at(cls, scope: Any, rule: str, message: str, *, value: float | int | None = None,
-           threshold: float | int | None = None, related: tuple[ScopeId, ...] = ()) -> Violation:
+           threshold: float | int | None = None, related: tuple[ScopeId, ...] = (),
+           key: str | None = None) -> Violation:
         """A violation located at the definition of ``scope``: a module, class or callable
         (its first source line), or a package (its directory)."""
         node = getattr(scope, "_node", None)
@@ -66,6 +67,7 @@ class Violation:
             subject=scope.qualname,
             scope=scope.id,
             related=related,
+            key=key,
         )
 
     def id(self, root: Path) -> str:

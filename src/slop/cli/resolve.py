@@ -4,10 +4,13 @@ Every function that can fail prints why and returns None, so a command answers w
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
+from .. import ontology
 from ..config import AnalysisConfig
+from ..layout import ONTOLOGY_FILENAME, STATE_DIR
 from ..identity import relative_path
 from ..rules import RULE_REGISTRY
 from ..scope import scan_corpus
@@ -107,3 +110,24 @@ def target(corpus, scope: str | None, scope_kind: str | None):
     """The scope a view reports on: ``scope`` if given, else the whole corpus. None if
     ``scope`` names no single scope."""
     return corpus if scope is None else select(corpus, scope, parse_kind(scope_kind))
+
+
+def ontology_path(root: str | Path) -> Path:
+    """Where the project's vocabulary lives: ``.slop/ontology.json`` under the project root."""
+    root = Path(root)
+    return project_root(root, AnalysisConfig.load(root, RULE_REGISTRY)) / STATE_DIR / ONTOLOGY_FILENAME
+
+
+def vocabulary(root: str | Path) -> ontology.Scheme | None:
+    """The project's vocabulary, or None when it has none yet. Raises ``OntologyError`` when the
+    file exists but cannot be read."""
+    file = ontology_path(root)
+    return ontology.load(file) if file.exists() else None
+
+
+def relative(path: str, corpus) -> str:
+    """``path`` relative to the corpus root, for display."""
+    try:
+        return os.path.relpath(path, corpus.root)
+    except ValueError:
+        return path
