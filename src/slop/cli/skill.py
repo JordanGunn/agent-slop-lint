@@ -5,7 +5,6 @@ import sys
 from pathlib import Path
 
 from ..skill.catalog import SKILLS
-from ..skill.install import InstallError, install as install_skill
 
 
 def register(sub) -> None:
@@ -46,12 +45,13 @@ def show(name: str, file: str | None) -> int:
 
 def install(name: str, dest: str, force: bool) -> int:
     """Write a skill's directory under ``dest`` and print where."""
+    from ..skill import install
     skill = _skill(name)
     if skill is None:
         return 2
     try:
-        print(install_skill(skill, Path(dest), replace=force))
-    except InstallError as exc:
+        print(install.install(skill, Path(dest), replace=force))
+    except install.InstallError as exc:
         print(f"slop: error: {exc}", file=sys.stderr)
         return 2
     return 0

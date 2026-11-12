@@ -17,7 +17,7 @@ from ..infer.ledger.jsonl import JsonlLedger
 from ..infer.source.interface import Analysis
 from ..rules import RULE_REGISTRY
 from ..scope import scan_corpus
-from ..violation import scope_json as _scope
+from .. import violation
 from .render import add_output
 from .resolve import add_root, has_source, project_root
 
@@ -116,8 +116,8 @@ def _annotated(report: Report, settlement, analysis: Analysis) -> dict:
             item = settlement.residue.get(finding.position)
             if item is not None:
                 entry["residue"] = dump(item)
-    doc["agglomerations"] = [{"id": g.id, "topology": g.topology.value, "lead": _scope(g.lead),
-                              "units": [_scope(u) for u in g.units], "findings": [f.id(root) for f in g.findings],
+    doc["agglomerations"] = [{"id": g.id, "topology": g.topology.value, "lead": violation.scope_json(g.lead),
+                              "units": [violation.scope_json(u) for u in g.units], "findings": [f.id(root) for f in g.findings],
                               **({"residue": dump(settlement.groups[g.id])} if g.id in settlement.groups else {})}
                              for g in settlement.agglomerations]
     for group in doc["agglomerations"]:

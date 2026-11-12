@@ -23,11 +23,8 @@ from __future__ import annotations
 from typing import Any
 
 from ...identity import ScopeKind
-from . import class_index, complexity, halstead, literals
-from .cohesion import cohesion as _cohesion
-from .hotspots import DEFAULT_LAST as _HOTSPOT_LAST, hotspots as _hotspots
+from . import class_index, clones, cohesion, complexity, halstead, hotspots, literals
 from .records import CKMetrics, Cohesion, PackageMetrics
-from .clones import clone_clusters as _clone_clusters
 
 # Zone boundaries on the instability and abstractness axes: the zone of pain is both below
 # the first, the zone of uselessness both above the second.
@@ -112,7 +109,7 @@ class Structure:
         """The class's method groups and detached methods, or ``None`` when the language's
         instance member access cannot be read from syntax."""
         r = self._r
-        return _cohesion(r.methods(), r._grammar)
+        return cohesion.cohesion(r.methods(), r._grammar)
 
     def _class_index(self):
         idx = self._r.context.class_index if self._r.context else None
@@ -126,7 +123,7 @@ class Structure:
                    if c.KIND in (ScopeKind.CALLABLE, ScopeKind.CLASS))
 
     def clone_clusters(self, *, min_leaf_nodes: int = 10):
-        return _clone_clusters(list(self._r._iter_callables()), min_leaf_nodes=min_leaf_nodes)
+        return clones.clone_clusters(list(self._r._iter_callables()), min_leaf_nodes=min_leaf_nodes)
 
     # ---- Package measures: Robert C. Martin (1994) ------------------------
     def _martin_raw(self) -> tuple[int, int, int, int]:
@@ -177,10 +174,10 @@ class Structure:
 
     # ---- Corpus measures: analysis-wide -----------------------------------
     def duplication(self):
-        return _clone_clusters(list(self._r._iter_callables()))
+        return clones.clone_clusters(list(self._r._iter_callables()))
 
-    def hotspots(self, *, since: str | None = None, last: int = _HOTSPOT_LAST):
-        return _hotspots(self._r, since=since, last=last)
+    def hotspots(self, *, since: str | None = None, last: int = hotspots.DEFAULT_LAST):
+        return hotspots.hotspots(self._r, since=since, last=last)
 
     def dependency_cycles(self):
         ctx = self._r.context

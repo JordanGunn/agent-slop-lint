@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import argparse
 import sys
-from importlib.metadata import PackageNotFoundError, version as _pkg_version
+from importlib import metadata
 
 from . import ast, config, deps, doctor, find, hotspots, infer, lexicon, lint, ontology, shape, skill, tree
 
@@ -26,8 +26,8 @@ def version() -> str:
     """The installed distribution version, or ``unknown`` when running from a source
     tree that was never installed (no dist metadata to read)."""
     try:
-        return _pkg_version("agent-slop-lint")
-    except PackageNotFoundError:
+        return metadata.version("agent-slop-lint")
+    except metadata.PackageNotFoundError:
         return "unknown"
 
 

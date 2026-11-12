@@ -15,7 +15,7 @@ from .identity import CallableKind, ScopeId, ScopeKind, Extent, Span
 from ..ast import AST, GRAMMARS_BY_ID
 from ..ast.paradigm import ObjectOriented
 from ..ast.parse import detect_language, parse_file
-from . import components as C
+from . import components
 from .discover import source_files
 
 _LAMBDA_TYPES = {"lambda", "arrow_function", "lambda_expression", "func_literal", "function_expression"}
@@ -24,14 +24,14 @@ _METHOD_ONLY_TYPES = {"method_declaration", "method_definition", "singleton_meth
 _ROOT_NAME = "<root>"
 
 
-def scan_corpus(root: Path, config: Any, *, vocabulary: Any = None) -> C.Corpus:
+def scan_corpus(root: Path, config: Any, *, vocabulary: Any = None) -> components.Corpus:
     """Build a Corpus from ``root``. One Realm per detected language; modules grouped into
     packages by directory. Files matched by ``config.exclude`` are not carved
     (``config=None`` excludes nothing)."""
     root = Path(root)
     realms = _carve_realms(root, _files_by_language(root, config))
     name = root.name or _ROOT_NAME
-    corpus = C.Corpus(
+    corpus = components.Corpus(
         root=root, config=config,
         id=ScopeId(ScopeKind.CORPUS, name, ()),
         name=name, owner=None,
@@ -58,9 +58,9 @@ def _files_by_language(root: Path, config: Any) -> dict[str, list[Path]]:
     return files_by_language
 
 
-def _carve_realms(root: Path, files_by_language: dict[str, list[Path]]) -> list[C.Realm]:
+def _carve_realms(root: Path, files_by_language: dict[str, list[Path]]) -> list[components.Realm]:
     """One Realm per language that carved at least one module, in language order."""
-    realms: list[C.Realm] = []
+    realms: list[components.Realm] = []
     for lang, paths in sorted(files_by_language.items()):
         realm = _carve_realm(root, lang, GRAMMARS_BY_ID[lang], paths)
         if realm is not None:
@@ -68,7 +68,7 @@ def _carve_realms(root: Path, files_by_language: dict[str, list[Path]]) -> list[
     return realms
 
 
-def _analysis_context(corpus: C.Corpus, vocabulary: Any = None) -> Any:
+def _analysis_context(corpus: components.Corpus, vocabulary: Any = None) -> Any:
     """The corpus-global analysis context: the class hierarchy for CK plus the module
     dependency graph for Martin, hung on the Corpus root (regions reach it via
     ``region.context``, not through entity attributes).
@@ -76,9 +76,9 @@ def _analysis_context(corpus: C.Corpus, vocabulary: Any = None) -> Any:
     The metrics and graph layers are imported here, not at module import, to keep the
     package import direction one-way."""
     from ..metrics.structural import class_index
-    from ..graph.build import build as build_dependency_graph
+    from ..graph import build
     from .context import AnalysisContext
-    graph = build_dependency_graph(corpus)
+    graph = build.build(corpus)
     index = class_index.build(
         list(corpus._iter_classes()),
         {key: frozenset(value) for key, value in _resolved_imports(graph).items()},
@@ -102,12 +102,12 @@ def _resolved_imports(graph: Any) -> dict[Any, set[Any]]:
     return imports
 
 
-def _carve_realm(root: Path, lang: str, grammar: type, paths: list[Path]) -> C.Realm | None:
+def _carve_realm(root: Path, lang: str, grammar: type, paths: list[Path]) -> components.Realm | None:
     # Carve modules, then group into packages via the grammar's own
     # resolve_packages rule (Python: __init__-gated; flat, rel-path-named —
     # matching the legacy package model). Files in no package fall back to a
     # per-directory package so no module is lost.
-    module_by_file: dict[Path, C.Module] = {}
+    module_by_file: dict[Path, components.Module] = {}
     for path in sorted(paths):
         module = _carve_module(path, grammar)
         if module is not None:
@@ -116,7 +116,7 @@ def _carve_realm(root: Path, lang: str, grammar: type, paths: list[Path]) -> C.R
         return None
 
     pkg_map = grammar.resolve_packages(root, list(module_by_file.keys()))
-    packages: list[C.Package] = []
+    packages: list[components.Package] = []
     covered: set[Path] = set()
     for pkg_name, files in sorted(pkg_map.items()):
         mods = [module_by_file[f] for f in files if f in module_by_file]
@@ -126,14 +126,14 @@ def _carve_realm(root: Path, lang: str, grammar: type, paths: list[Path]) -> C.R
         packages.append(_make_package(pkg_name, mods))
 
     # Fallback for files in no resolve_packages group (loose scripts).
-    uncovered: dict[Path, list[C.Module]] = {}
+    uncovered: dict[Path, list[components.Module]] = {}
     for path, module in module_by_file.items():
         if path not in covered:
             uncovered.setdefault(path.parent, []).append(module)
     for directory, mods in sorted(uncovered.items()):
         packages.append(_make_package(_rel_name(directory, root), mods))
 
-    realm = C.Realm(
+    realm = components.Realm(
         root=root, grammar=grammar, language=lang,
         id=ScopeId(ScopeKind.REALM, lang, ()),
         name=lang, owner=None,
@@ -145,10 +145,10 @@ def _carve_realm(root: Path, lang: str, grammar: type, paths: list[Path]) -> C.R
     return realm
 
 
-def _make_package(pkg_name: str, modules: list[C.Module]) -> C.Package:
+def _make_package(pkg_name: str, modules: list[components.Module]) -> components.Package:
     """Build a (flat) Package from its modules; directory inferred from them."""
     directory = modules[0].files[0].parent
-    pkg = C.Package(
+    pkg = components.Package(
         path=directory,
         id=ScopeId(ScopeKind.PACKAGE, pkg_name, ()),
         name=pkg_name, owner=None,
@@ -160,7 +160,7 @@ def _make_package(pkg_name: str, modules: list[C.Module]) -> C.Package:
     return pkg
 
 
-def _carve_module(path: Path, grammar: type) -> C.Module | None:
+def _carve_module(path: Path, grammar: type) -> components.Module | None:
     parsed = parse_file(path, grammar.id)
     if parsed is None:
         return None
@@ -178,7 +178,7 @@ def _carve_module(path: Path, grammar: type) -> C.Module | None:
         parts=(qualname,), in_class=False,
     )
     children = _reparent_callables(children, grammar, content)
-    module = C.Module(
+    module = components.Module(
         id=ScopeId(ScopeKind.MODULE, qualname, (span,)),
         name=qualname, owner=None, extent=Extent((span,)), files=(path,),
         children=children, node=root.raw, content=content, grammar=grammar,
@@ -213,7 +213,7 @@ def _carve_decls(
     return tuple(out)
 
 
-def _make_class(node: Any, grammar: type, content: bytes, path: Path, parts: tuple[str, ...]) -> C.Class:
+def _make_class(node: Any, grammar: type, content: bytes, path: Path, parts: tuple[str, ...]) -> components.Class:
     name = grammar.extract_name(node.raw, content) or "<anonymous>"
     qn = ".".join((*parts, name))
     span = node.span
@@ -223,7 +223,7 @@ def _make_class(node: Any, grammar: type, content: bytes, path: Path, parts: tup
         parts=(*parts, name), in_class=True,
     )
     is_abs = grammar.is_abstract_scope(node.raw, content)
-    klass = C.Class(
+    klass = components.Class(
         is_abstract=bool(is_abs), bases=tuple(grammar.extract_superclasses(node.raw, content)),
         id=ScopeId(ScopeKind.CLASS, qn, (span,)),
         name=name, owner=None, extent=Extent((span,)), files=(path,),
@@ -237,7 +237,7 @@ def _make_class(node: Any, grammar: type, content: bytes, path: Path, parts: tup
 def _make_callable(
     node: Any, grammar: type, content: bytes, path: Path,
     parts: tuple[str, ...], in_class: bool,
-) -> C.Callable:
+) -> components.Callable:
     name = grammar.extract_name(node.raw, content) or "<anonymous>"
     qn = ".".join((*parts, name))
     span = node.span
@@ -248,7 +248,7 @@ def _make_callable(
         parts=(*parts, name), in_class=False,
     )
     params = tuple(n for n, _anno in grammar.extract_parameters(node.raw, content))
-    callable_ = C.Callable(
+    callable_ = components.Callable(
         kind=_callable_kind(node.type, in_class), parameters=params,
         id=ScopeId(ScopeKind.CALLABLE, qn, (span,)),
         name=name, owner=None, extent=Extent((span,)), files=(path,),

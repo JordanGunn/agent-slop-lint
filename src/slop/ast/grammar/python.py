@@ -225,12 +225,11 @@ class Python(MultiPurpose):
     @classmethod
     def resolve_packages(cls, root, files):
         """A Python package is a directory containing ``__init__.py``."""
-        from pathlib import Path as _Path
         by_dir = super().resolve_packages(root, files)
         return {
             name: dir_files
             for name, dir_files in by_dir.items()
-            if any(_Path(f).name == "__init__.py" for f in dir_files)
+            if any(Path(f).name == "__init__.py" for f in dir_files)
         }
 
     @classmethod

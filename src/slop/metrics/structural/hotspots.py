@@ -19,7 +19,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Any, Iterator
 
-from .complexity import cyclomatic as _cyclomatic
+from . import complexity
 from .records import Hotspot
 
 DEFAULT_LAST = 10
@@ -116,4 +116,4 @@ def _repo_relative(path: Path, repo: Path) -> str | None:
 
 def _module_cyclomatic(mod: Any) -> int:
     """Summed cyclomatic complexity of the module's callables."""
-    return sum(_cyclomatic(c._ast_node(), c._grammar) for c in mod._iter_callables())
+    return sum(complexity.cyclomatic(c._ast_node(), c._grammar) for c in mod._iter_callables())

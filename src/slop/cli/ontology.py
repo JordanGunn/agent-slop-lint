@@ -11,7 +11,7 @@ import sys
 from pathlib import Path
 
 from .. import ontology
-from ..ontology import draft as seed, occurrence
+from ..ontology import occurrence
 from . import resolve
 from .render import add_output, header
 
@@ -48,6 +48,7 @@ def register(sub) -> None:
 
 def draft(root: str | Path) -> int:
     """Write the vocabulary with every word the code declares and it does not yet hold."""
+    from ..ontology import draft
     corpus = resolve.scan(root)
     if corpus is None:
         return 2
@@ -57,7 +58,7 @@ def draft(root: str | Path) -> int:
     except ontology.OntologyError as exc:
         print(f"slop: error: {exc}", file=sys.stderr)
         return 2
-    scheme = seed.draft(corpus.lexicon(), existing, file.parent.parent.resolve().name.lower() or "project")
+    scheme = draft.draft(corpus.lexicon(), existing, file.parent.parent.resolve().name.lower() or "project")
     ontology.save(scheme, file)
     added = len(scheme.terms) - (len(existing.terms) if existing else 0)
     print(f"{file}  {len(scheme.terms)} terms ({added} new), {len(scheme.defined())} defined")

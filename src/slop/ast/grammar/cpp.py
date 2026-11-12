@@ -101,8 +101,8 @@ class Cpp(CFamily, MultiPurpose):
 
     @classmethod
     def language_builtins(cls) -> frozenset[str]:
-        from .c import C as _C
-        return _C.language_builtins() | frozenset({
+        from . import c
+        return c.C.language_builtins() | frozenset({
             "make_unique", "make_shared", "move", "forward", "begin", "end",
             "cbegin", "cend", "rbegin", "rend", "size", "empty", "front", "back",
             "push_back", "pop_back", "emplace", "emplace_back", "insert", "erase",

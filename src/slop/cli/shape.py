@@ -5,11 +5,12 @@ import json
 from pathlib import Path
 
 from ..metrics.structural.view import Structure
-from ..scope import find as discovery
+from ..scope import find
 from ..scope.find import walk
 from ..scope.identity import ScopeKind
 from .render import add_output, header, label, where
-from .resolve import add_root, add_scope, scan, target as select_target
+from . import resolve
+from .resolve import add_root, add_scope, scan
 
 
 def register(sub) -> None:
@@ -28,12 +29,12 @@ def view(root: str | Path, output: str = "human", *, scope: str | None = None,
     corpus = scan(root)
     if corpus is None:
         return 2
-    target = select_target(corpus, scope, scope_kind)
+    target = resolve.target(corpus, scope, scope_kind)
     if target is None:
         return 2
-    located = discovery.locate((s for s in walk(target) if s.id.kind is ScopeKind.CLASS), corpus.root)
+    located = find.locate((s for s in walk(target) if s.id.kind is ScopeKind.CLASS), corpus.root)
     rows = [(match, Structure.over(cls).ck().as_dict()) for cls, match in located]
-    notes = discovery.caveats(corpus, ScopeKind.CLASS, under=target)
+    notes = find.caveats(corpus, ScopeKind.CLASS, under=target)
     name = label(target, corpus)
     if output == "json":
         print(json.dumps({"scope": name, "kind": target.id.kind.value,

@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from ..scope import find as discovery
+from ..scope import find
 from ..scope.identity import ScopeKind
 from .render import add_output, header, where
 from .resolve import add_root, parse_kind, scan
@@ -32,8 +32,8 @@ def view(root: str | Path, name: str | None, output: str = "human", *,
         return _collisions(corpus, scope_kind or ScopeKind.CLASS, output)
     if name is None:
         raise ValueError("find needs a NAME, or --collisions")
-    found = discovery.find(corpus, name, kind=scope_kind)
-    notes = discovery.caveats(corpus, scope_kind)
+    found = find.find(corpus, name, kind=scope_kind)
+    notes = find.caveats(corpus, scope_kind)
     if output == "json":
         print(json.dumps({"name": name, "matches": [m.as_dict() for m in found], "caveats": notes}, indent=2))
         return 0
@@ -46,8 +46,8 @@ def view(root: str | Path, name: str | None, output: str = "human", *,
 
 def _collisions(corpus, kind: ScopeKind, output: str) -> int:
     """Every name more than one scope of ``kind`` defines."""
-    groups = discovery.collisions(corpus, kind=kind)
-    notes = discovery.caveats(corpus, kind)
+    groups = find.collisions(corpus, kind=kind)
+    notes = find.caveats(corpus, kind)
     if output == "json":
         print(json.dumps({"kind": kind.value,
                           "collisions": {n: [m.as_dict() for m in ms] for n, ms in groups.items()},

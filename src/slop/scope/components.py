@@ -14,14 +14,9 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
-from .aggregate import Corpus as CorpusABC
+from . import aggregate, symbol
 from .descendants import Descendants
-from .aggregate import Package as PackageABC
-from .aggregate import Realm as RealmABC
 from .identity import CallableKind, ScopeId, ScopeKind, Extent
-from .symbol import Callable as CallableABC
-from .symbol import Class as ClassABC
-from .symbol import Module as ModuleABC
 
 
 class _Base(Descendants):
@@ -113,7 +108,7 @@ class _Base(Descendants):
 
 # ============================ symbol containers ============================
 
-class Callable(_Base, CallableABC):
+class Callable(_Base, symbol.Callable):
     KIND = ScopeKind.CALLABLE
 
     def __init__(self, *, kind: CallableKind, parameters: tuple[str, ...], **kw: Any) -> None:
@@ -128,7 +123,7 @@ class Callable(_Base, CallableABC):
     def symbols(self): return self._children
 
 
-class Class(_Base, ClassABC):
+class Class(_Base, symbol.Class):
     KIND = ScopeKind.CLASS
 
     def __init__(self, *, is_abstract: bool, bases: tuple[str, ...], **kw: Any) -> None:
@@ -155,7 +150,7 @@ class Class(_Base, ClassABC):
     def symbols(self): return self._children
 
 
-class Module(_Base, ModuleABC):
+class Module(_Base, symbol.Module):
     KIND = ScopeKind.MODULE
 
     def imports(self):
@@ -166,7 +161,7 @@ class Module(_Base, ModuleABC):
 
 # ============================ aggregate containers ========================
 
-class Package(_Base, PackageABC):
+class Package(_Base, aggregate.Package):
     KIND = ScopeKind.PACKAGE
 
     def __init__(self, *, path: Path, **kw: Any) -> None:
@@ -178,7 +173,7 @@ class Package(_Base, PackageABC):
     def modules(self): return self._children_of(ScopeKind.MODULE)
 
 
-class Realm(_Base, RealmABC):
+class Realm(_Base, aggregate.Realm):
     KIND = ScopeKind.REALM
 
     def __init__(self, *, root: Path, grammar: type, language: str, **kw: Any) -> None:
@@ -196,7 +191,7 @@ class Realm(_Base, RealmABC):
     def packages(self): return self._children_of(ScopeKind.PACKAGE)
 
 
-class Corpus(_Base, CorpusABC):
+class Corpus(_Base, aggregate.Corpus):
     KIND = ScopeKind.CORPUS
 
     def __init__(self, *, root: Path, config: Any, **kw: Any) -> None:
