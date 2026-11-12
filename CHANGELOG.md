@@ -112,6 +112,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `slop lexicon` measures the words a scope declares (package, module, class, property, callable
+  and parameter names), as the distribution was first measured, instead of every identifier
+  occurrence, whose head was `self`, `frozenset`, `cls` and `int`. The population norms are
+  removed: their measurement could not be reproduced. Over declared names slop and laszy both sit
+  near Zipf α 1.0, R² 0.94, hapax ratio 0.36.
 - CBO counts the classes a class's body references, resolved like base classes (same language,
   nearest by module, import, package), instead of any capitalised name that matches a class
   anywhere: a local or parameter named like a class is not coupling, an import is, and Java

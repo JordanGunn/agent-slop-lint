@@ -135,8 +135,7 @@ def test_declared_names_exclude_references_receivers_special_methods_and_unnamed
     declared = set(build_declared_lexicon(corpus).frequencies())
     assert {"shop", "ticket", "title", "close", "reason", "triage", "queue", "depth"} <= declared
     assert not declared & {"self", "init", "np", "float", "numpy", "sorted", "lambda"}
-    # The occurrence stream keeps the library and receiver noise; that is why it is not used.
-    assert {"self", "np"} <= set(corpus.lexicon().frequencies())
+    assert set(corpus.lexicon().frequencies()) == declared          # a component's lexicon is its declared names
 
 
 def test_declared_names_carry_the_role_they_name(tmp_path: Path):

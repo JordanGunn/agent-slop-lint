@@ -9,7 +9,7 @@ from pathlib import Path
 
 from slop.scope import scan_corpus, Selection
 from slop.scope.identity import ScopeKind
-from slop.scope.lexicon import build_lexicon
+from slop.scope.lexicon import build_declared_lexicon
 from slop.metrics.structural.view import Structure
 
 SRC = '''\
@@ -47,9 +47,9 @@ def test_additive_metric_sums_over_the_union(tmp_path: Path):
 def test_lexicon_over_the_union_is_the_combined_vocabulary(tmp_path: Path):
     alpha, beta = _classes(tmp_path)
     sel = Selection([alpha, beta])
-    toks_a = set(build_lexicon(alpha).tokens())
-    toks_b = set(build_lexicon(beta).tokens())
-    toks_union = set(build_lexicon(sel).tokens())
+    toks_a = set(build_declared_lexicon(alpha).tokens())
+    toks_b = set(build_declared_lexicon(beta).tokens())
+    toks_union = set(build_declared_lexicon(sel).tokens())
     assert toks_union == toks_a | toks_b
     # each scope contributes vocabulary the other lacks (genuine union)
     assert "alpha" in toks_a and "alpha" in toks_union and "alpha" not in toks_b

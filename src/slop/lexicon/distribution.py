@@ -1,28 +1,19 @@
 """Distribution — the identifier token-space as a measured Zipfian object.
 
-An identifier vocabulary is a frequency distribution, and engineered code sits at a
-remarkably tight near-invariant: a Zipf exponent around 0.9 with R² around 0.93, and
-roughly half the vocabulary appearing exactly once. Those are *population norms*, not
-limits, so this module measures the shape and reports it beside the norm; it checks
-nothing against it.
+An identifier vocabulary is a frequency distribution: its Zipf exponent and fit, the share
+of words used once (hapax legomena), how concentrated its head is. This module measures the
+shape and checks nothing against it. Lexicography a corpus linguist would recognise, so it
+lives in the kernel.
 
-This is lexicography a corpus linguist would recognise (Zipf/Heaps, hapax legomena),
-so it lives in the kernel. The norm constants are reference values, not thresholds.
+No population norm is reported beside it: the norms once stored here could not be traced to
+a reproducible measurement, and over declared names slop and laszy both sit near Zipf α 1.0,
+R² 0.94 and a hapax ratio of 0.36, which is no population either.
 """
 from __future__ import annotations
 
 import math
 from dataclasses import dataclass
 from typing import Any, Mapping
-
-# Population norms measured across engineered Python corpora (2026-05-29; see project
-# memory `lexical-distribution-invariance`). Identifier vocabularies cluster tightly
-# here regardless of size or discipline — closer to a Zipf/Heaps constant than a
-# quality dial. They anchor the narration as "typical", never as pass/fail.
-ZIPF_ALPHA_NORM = 0.90
-ZIPF_R2_NORM = 0.93
-HAPAX_RATIO_NORM = 0.49
-
 
 def _zipf_fit(counts: list[int]) -> tuple[float, float]:
     """OLS fit of ``log(freq) ~ log(rank)``; return ``(alpha, r2)``.
@@ -81,11 +72,6 @@ class TokenDistribution:
             "head_concentration": round(self.head_concentration, 4),
             "spectrum": self.spectrum,
             "top": [{"token": t, "count": c} for t, c in self.top],
-            "norms": {
-                "zipf_alpha": ZIPF_ALPHA_NORM,
-                "zipf_r2": ZIPF_R2_NORM,
-                "hapax_ratio": HAPAX_RATIO_NORM,
-            },
         }
 
 

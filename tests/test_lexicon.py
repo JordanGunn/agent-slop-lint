@@ -28,13 +28,13 @@ def test_lexicon_exists_at_every_scope(tmp_path: Path):
 def test_tokenisation_and_noise(tmp_path: Path):
     mod = _corpus(tmp_path).realms()[0].packages()[0].modules()[0]
     toks = set(mod.lexicon().tokens())
-    assert {"process", "data", "raw", "input", "parse", "parsed", "value", "render", "widget", "state"} <= toks
-    assert "result" not in toks  # Newman-14 noise
+    assert toks == {"proc", "process", "data", "raw", "input", "widget", "render"}   # the names it declares
+    assert not toks & {"parse", "parsed", "value", "state", "self"}   # a call, a local, a member read, the receiver
 
 def test_class_lexicon_scoped(tmp_path: Path):
     mod = _corpus(tmp_path).realms()[0].packages()[0].modules()[0]
     cls = next(x for x in mod.children() if x.KIND == ScopeKind.CLASS)
-    assert set(cls.lexicon().tokens()) == {"render", "self", "state", "widget"}
+    assert set(cls.lexicon().tokens()) == {"render", "widget"}
 
 def test_hapax_in_range(tmp_path: Path):
     c = _corpus(tmp_path)
@@ -50,7 +50,7 @@ def test_slice_is_per_file_superset(tmp_path: Path):
 # ---- kernel used standalone (no component layer) -----------------------
 
 def _lex(*texts: str) -> Lexicon:
-    return Lexicon([(t, Role.BODY_REF, Span("x.py", i, i + 1)) for i, t in enumerate(texts)])
+    return Lexicon([(t, Role.CALLABLE, Span("x.py", i, i + 1)) for i, t in enumerate(texts)])
 
 
 def test_distribution_measures_the_token_space():

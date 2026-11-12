@@ -12,7 +12,6 @@ from pathlib import Path
 
 from .. import ontology
 from ..ontology import draft as seed, occurrence
-from ..scope.lexicon import build_declared_lexicon
 from . import resolve
 from .render import add_output, header
 
@@ -58,7 +57,7 @@ def draft(root: str | Path) -> int:
     except ontology.OntologyError as exc:
         print(f"slop: error: {exc}", file=sys.stderr)
         return 2
-    scheme = seed.draft(build_declared_lexicon(corpus), existing, file.parent.parent.resolve().name.lower() or "project")
+    scheme = seed.draft(corpus.lexicon(), existing, file.parent.parent.resolve().name.lower() or "project")
     ontology.save(scheme, file)
     added = len(scheme.terms) - (len(existing.terms) if existing else 0)
     print(f"{file}  {len(scheme.terms)} terms ({added} new), {len(scheme.defined())} defined")

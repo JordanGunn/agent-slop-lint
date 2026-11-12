@@ -267,20 +267,23 @@ def test_lexicon_corpus_and_json(tmp_path: Path, capsys):
     assert data["distinct"] > 0 and "zipf_alpha" in data
 
 
-def test_lexicon_norm_delta_shown_and_suppressed(tmp_path: Path, capsys):
+def test_lexicon_marks_a_small_sample(tmp_path: Path, capsys):
     pkg = tmp_path / "pkg"
     pkg.mkdir()
     (pkg / "__init__.py").write_text("")
-    # ≥15 distinct identifiers → norm deltas annotated.
-    body = "\n".join(f"def func_{i}(arg_{i}):\n    return arg_{i} + {i}" for i in range(20))
+    # 15 or more distinct declared words: a fit worth reporting without a caveat.
+    words = ["alpha", "bravo", "charlie", "delta", "echo", "foxtrot", "golf", "hotel", "india", "juliet",
+             "kilo", "lima", "mike", "november", "oscar", "papa", "quebec", "romeo", "sierra", "tango"]
+    body = "\n".join(f"def {w}_value({w}_count):\n    return {w}_count" for w in words)
     (pkg / "wide.py").write_text(body + "\n")
     (pkg / "tiny.py").write_text("def f():\n    return 1\n")
 
     assert cli.lexicon.view(tmp_path, "human", scope="pkg/wide.py") == 0
-    assert "norm" in capsys.readouterr().out          # deviation annotated
+    wide = capsys.readouterr().out
+    assert "Zipf" in wide and "small sample" not in wide and "norm" not in wide
 
     assert cli.lexicon.view(tmp_path, "human", scope="pkg/tiny.py") == 0
-    assert "small sample" in capsys.readouterr().out   # too few tokens; norms suppressed
+    assert "small sample" in capsys.readouterr().out   # too few words for a fit to say much
 
 
 def test_lexicon_scope_by_path(tmp_path: Path, capsys):

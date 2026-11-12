@@ -7,20 +7,11 @@ that would couple the lexicon upward to the component model and break the rule t
 ``ScopeKind`` + identifier position onto a ``Role`` as units cross the boundary;
 nothing AST- or component-shaped enters here.
 
-Role-tagging is what lets later consumers select by provenance without re-walking
-syntax: named-entity analysis wants ``CLASS``/``CALLABLE`` names, first-parameter
-clustering wants ``PARAMETER``, scope-overlap wants ``BODY_REF``.
-
-Emission status (kept honest with the consumer-driven build):
-
-- ``build_lexicon`` (the occurrence stream) emits ``REALM``/``PACKAGE``/``MODULE``
-  (filesystem-derived names) and ``BODY_REF`` (every identifier the AST walk yields — the
-  undifferentiated occurrence bucket).
-- ``build_declared_lexicon`` (the declared names) emits ``REALM``/``PACKAGE``/``MODULE``
-  plus ``CLASS``/``CALLABLE``/``PARAMETER``/``PROPERTY``, split out by what each name
-  declares; it has no ``BODY_REF``, because a reference to a builtin or library is not
-  chosen vocabulary. Local variables are not emitted: they are implementation detail, not
-  vocabulary a canonical model governs.
+Role-tagging lets a consumer select by provenance without re-walking syntax.
+``build_declared_lexicon`` emits ``PACKAGE``/``MODULE`` (filesystem names) and
+``CLASS``/``CALLABLE``/``PARAMETER``/``PROPERTY``, each for what the name declares. A
+reference to a builtin or a library is not the project's word, and a local variable is
+implementation detail, so neither is emitted.
 """
 from __future__ import annotations
 
@@ -37,4 +28,3 @@ class Role(Enum):
     CALLABLE = "callable"
     PARAMETER = "parameter"
     PROPERTY = "property"
-    BODY_REF = "body_ref"

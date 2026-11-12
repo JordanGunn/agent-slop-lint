@@ -28,9 +28,6 @@ from .comparison import (
 )
 from .corpus import Lexicon
 from .distribution import (
-    HAPAX_RATIO_NORM,
-    ZIPF_ALPHA_NORM,
-    ZIPF_R2_NORM,
     TokenDistribution,
     token_distribution,
 )
@@ -48,9 +45,6 @@ __all__ = [
     "Vocabulary",
     "TokenDistribution",
     "token_distribution",
-    "ZIPF_ALPHA_NORM",
-    "ZIPF_R2_NORM",
-    "HAPAX_RATIO_NORM",
     # pairwise comparison (relational lexicostatistics)
     "jaccard",
     "containment",

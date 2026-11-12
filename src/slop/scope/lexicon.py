@@ -1,19 +1,12 @@
 """The component -> lexicon bridge.
 
-Lives in the component/model layer — *above* both ``slop.ast`` and ``slop.lexicon``
-— because it is the one place allowed to know both: it pulls identifier tokens from
-the AST proxy, tags each with a lexicon ``Role``, unions the filesystem-derived
-component names, and feeds the plain ``(text, role, span)`` stream to a
-``slop.lexicon.Lexicon``. Neither bottom-layer package imports the other; this bridge
-is what wires them.
+Lives in the scope layer, above ``slop.lexicon``: it walks the scope tree, takes the
+names each scope declares (a package's or module's own name, a class and its properties,
+a callable and its parameters), tags each with a lexicon ``Role`` and feeds the plain
+``(text, role, span)`` stream to a ``slop.lexicon.Lexicon``.
 
-``slop.ast`` yields identifiers *as written* (``Node.identifiers()``); the lexicon
-decides what counts as vocabulary (tokenise/lowercase/strip). The split is the clean
-seam between the two.
-
-Role assignment is coarse by design for now (see ``slop.lexicon.roles``): fs names ->
-``REALM``/``PACKAGE``/``MODULE``; every AST identifier -> ``BODY_REF``. The finer
-``CLASS``/``CALLABLE``/``PARAMETER`` partition is wired when a rule first needs it.
+A project's vocabulary is the names it declares. Names it only refers to (``self``,
+``int``, ``np``, a library call) are someone else's words, so they are not counted.
 """
 from __future__ import annotations
 
@@ -30,25 +23,6 @@ _FS_ROLE = {
     ScopeKind.PACKAGE: Role.PACKAGE,
     ScopeKind.MODULE: Role.MODULE,
 }
-
-
-def build_lexicon(component: Any) -> Lexicon:
-    """Build a Lexicon over a component: AST identifiers ∪ fs-derived names.
-
-    Identifier tokens come from the ``slop.ast`` proxy via ``Node.identifiers()``
-    (the AST's own ``NodeKind.IDENTIFIER`` classification, walked over each
-    node-holding component in the extent), tagged ``BODY_REF``. Module/package/realm
-    names come from the filesystem, tagged with their kind's role; a fileless name
-    gets an empty path (counted in full, excluded from any slice)."""
-    units: list[tuple[str, Role, Span]] = []
-    for node in _node_holding_nodes(component):
-        for text, span in node.identifiers():
-            units.append((text, Role.BODY_REF, span))
-    for comp in _iter_all(component):
-        role = _FS_ROLE.get(comp.KIND)
-        if role is not None:
-            units.append(_fs_name_unit(comp, role))
-    return Lexicon(units)
 
 
 def _fs_name_unit(comp: Any, role: Role) -> tuple[str, Role, Span]:
@@ -74,7 +48,7 @@ def build_declared_lexicon(component: Any) -> Lexicon:
     language branches here.
 
     This is the vocabulary a canonical vocabulary governs: it is chosen where a name is
-    declared. ``build_lexicon`` keeps the undifferentiated occurrence stream."""
+    declared."""
     units: list[tuple[str, Role, Span]] = []
     for comp in _iter_all(component):
         units.extend(declared_units(comp))

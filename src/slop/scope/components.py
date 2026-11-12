@@ -87,8 +87,8 @@ class _Base(Descendants):
 
     # ---- projections --------------------------------------------------
     def lexicon(self):
-        from .lexicon import build_lexicon
-        return build_lexicon(self)
+        from .lexicon import build_declared_lexicon
+        return build_declared_lexicon(self)
 
     def bindings(self) -> dict:
         """What each name in this component's file refers to, keyed by start byte
