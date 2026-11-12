@@ -12,7 +12,7 @@ from slop import cli
 from slop.infer.bundle import prose
 from slop.infer.contract import Residue, parse
 
-TWO_GROUPS = "class A:\n    def f(self):\n        return self.a\n\n    def g(self):\n        return self.b\n"
+TWO_GROUPS = "class A:\n    def f(self):\n        return self.a * 2\n\n    def g(self):\n        return self.b * 2\n"
 
 
 def _project(root: Path) -> None:

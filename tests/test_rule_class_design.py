@@ -33,30 +33,30 @@ class Leaf(Mid):
 SPLIT = '''\
 class Split:
     def f(self):
-        return self.a
+        return self.a * 2
 
     def g(self):
-        self.a = 1
+        self.a = 1 * 2
 
     def h(self):
-        return self.b
+        return self.b * 2
 '''
 
 COHESIVE = '''\
 class Whole:
     def f(self):
-        return self.a
+        return self.a * 2
 
     def g(self):
-        self.a = 1
+        self.a = 1 * 2
 '''
 
 JAVA = '''\
 class Split {
     int a;
     int b;
-    int f() { return a; }
-    int h() { return b; }
+    int f() { return a * 2; }
+    int h() { return b * 2; }
 }
 '''
 

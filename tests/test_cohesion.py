@@ -27,10 +27,10 @@ def _groups(tmp_path: Path, name: str, source: str, cls: str = "A"):
 def test_independent_attribute_clusters_are_separate_groups(tmp_path: Path):
     src = (
         "class A:\n"
-        "    def get_a(self): return self.a\n"
-        "    def set_a(self, v): self.a = v\n"
-        "    def get_b(self): return self.b\n"
-        "    def set_b(self, v): self.b = v\n"
+        "    def get_a(self): return self.a * 2\n"
+        "    def set_a(self, v): self.a = v * 2\n"
+        "    def get_b(self): return self.b * 2\n"
+        "    def set_b(self, v): self.b = v * 2\n"
     )
     assert _groups(tmp_path, "m.py", src) == (("get_a", "set_a"), ("get_b", "set_b"))
 
@@ -40,7 +40,7 @@ def test_a_call_through_self_joins_methods(tmp_path: Path):
         "class A:\n"
         "    def run(self): return self.step()\n"
         "    def step(self): return 1\n"
-        "    def other(self): return self.z\n"
+        "    def other(self): return self.z * 2\n"
     )
     assert _groups(tmp_path, "m.py", src) == (("run", "step"), ("other",))
 
@@ -49,10 +49,10 @@ def test_constructor_does_not_join_everything(tmp_path: Path):
     src = (
         "class A:\n"
         "    def __init__(self):\n"
-        "        self.a = 1\n"
-        "        self.b = 2\n"
-        "    def use_a(self): return self.a\n"
-        "    def use_b(self): return self.b\n"
+        "        self.a = 1 * 2\n"
+        "        self.b = 2 * 2\n"
+        "    def use_a(self): return self.a * 2\n"
+        "    def use_b(self): return self.b * 2\n"
     )
     assert _groups(tmp_path, "m.py", src) == (("use_a",), ("use_b",))
 
@@ -60,7 +60,7 @@ def test_constructor_does_not_join_everything(tmp_path: Path):
 def test_static_and_class_methods_have_no_instance_and_are_left_out(tmp_path: Path):
     src = (
         "class A:\n"
-        "    def f(self): return self.x\n"
+        "    def f(self): return self.x * 2\n"
         "    @staticmethod\n"
         "    def s(): return 1\n"
         "    @classmethod\n"
@@ -74,7 +74,7 @@ def test_a_closure_inside_a_method_counts_toward_that_method(tmp_path: Path):
         "class A:\n"
         "    def f(self):\n"
         "        return lambda: self.shared\n"
-        "    def g(self): return self.shared\n"
+        "    def g(self): return self.shared * 2\n"
     )
     assert _groups(tmp_path, "m.py", src) == (("f", "g"),)
 
@@ -83,9 +83,9 @@ def test_property_setter_redefinition_is_one_method(tmp_path: Path):
     src = (
         "class A:\n"
         "    @property\n"
-        "    def v(self): return self._v\n"
+        "    def v(self): return self._v * 2\n"
         "    @v.setter\n"
-        "    def v(self, x): self._v = x\n"
+        "    def v(self, x): self._v = x * 2\n"
     )
     assert _groups(tmp_path, "m.py", src) == (("v",),)
 
@@ -105,9 +105,9 @@ def test_typescript_this_members_and_static(tmp_path: Path):
         "class A {\n"
         "  constructor() { this.a = 1; this.b = 2 }\n"
         "  static make() { return new A() }\n"
-        "  getA() { return this.a }\n"
-        "  setA(v) { this.a = v }\n"
-        "  getB() { return this.b }\n"
+        "  getA() { return this.a * 2 }\n"
+        "  setA(v) { this.a = v * 2 }\n"
+        "  getB() { return this.b * 2 }\n"
         "}\n"
     )
     assert _groups(tmp_path, "m.ts", src) == (("getA", "setA"), ("getB",))
@@ -123,10 +123,10 @@ def test_rust_self_members_and_associated_functions(tmp_path: Path):
         "struct A { a: i32, b: i32 }\n"
         "impl A {\n"
         "    fn new() -> Self { A { a: 0, b: 0 } }\n"
-        "    fn get_a(&self) -> i32 { self.a }\n"
+        "    fn get_a(&self) -> i32 { self.a * 2 }\n"
         "    fn bump(&mut self) { self.a += 1; self.helper(); }\n"
         "    fn helper(&self) {}\n"
-        "    fn get_b(self) -> i32 { self.b }\n"
+        "    fn get_b(self) -> i32 { self.b * 2 }\n"
         "}\n"
     )
     c = _cohesion(tmp_path, "m.rs", src)
@@ -138,10 +138,10 @@ def test_go_receiver_members_and_unnamed_receivers(tmp_path: Path):
     src = (
         "package p\n"
         "type A struct { a int; b int }\n"
-        "func (s *A) GetA() int { return s.a }\n"
+        "func (s *A) GetA() int { return s.a * 2 }\n"
         "func (s *A) Bump() { s.a++; s.helper() }\n"
         "func (s *A) helper() {}\n"
-        "func (t A) GetB() int { return t.b }\n"
+        "func (t A) GetB() int { return t.b * 2 }\n"
         "func (A) Zero() int { return 0 }\n"
     )
     c = _cohesion(tmp_path, "m.go", src)
@@ -150,14 +150,14 @@ def test_go_receiver_members_and_unnamed_receivers(tmp_path: Path):
 
 
 @pytest.mark.parametrize("name, src, groups", [
-    ("A.java", "class A { int f() { return x; } int g() { return this.x; } int x; }", (("f", "g"),)),
-    ("A.java", "class A { int x; int y; A() { x = 0; y = 0; } int f() { return x; } int g() { return y; }"
+    ("A.java", "class A { int f() { return x * 2; } int g() { return this.x * 2; } int x; }", (("f", "g"),)),
+    ("A.java", "class A { int x; int y; A() { x = 0; y = 0; } int f() { return x * 2; } int g() { return y * 2; }"
                " static int s() { return 1; } }", (("f",), ("g",))),
-    ("A.java", "class A { int x; int f() { return g(); } int g() { return x; } int h() { int x = 1; return x; } }",
+    ("A.java", "class A { int x; int f() { return g(); } int g() { return x * 2; } int h() { int x = 1; return x * 2; } }",
      (("f", "g"),)),
-    ("A.cs", "class A { int x; int F() { return x; } int G() { return this.x; } }", (("F", "G"),)),
-    ("a.cpp", "class A { int f() { return x; } int g() { return this->x; } int x; };", (("f", "g"),)),
-    ("a.rb", "class A\n  def f\n    @x\n  end\n  def g\n    f\n  end\n  def h\n    @y\n  end\nend\n",
+    ("A.cs", "class A { int x; int F() { return x * 2; } int G() { return this.x * 2; } }", (("F", "G"),)),
+    ("a.cpp", "class A { int f() { return x * 2; } int g() { return this->x * 2; } int x; };", (("f", "g"),)),
+    ("a.rb", "class A\n  def f\n    @x * 2\n  end\n  def g\n    f\n  end\n  def h\n    @y * 2\n  end\nend\n",
      (("f", "g"), ("h",))),
 ])
 def test_bare_names_reach_members_where_the_class_encloses_its_methods(tmp_path: Path, name, src, groups):
@@ -168,7 +168,7 @@ def test_bare_names_reach_members_where_the_class_encloses_its_methods(tmp_path:
 
 
 def test_an_inner_class_does_not_reach_its_outer_class_fields(tmp_path: Path):
-    src = "class A { int x; int f() { return x; } class B { int g() { return x; } int h() { return 1; } } }"
+    src = "class A { int x; int f() { return x * 2; } class B { int g() { return x * 2; } int h() { return 1; } } }"
     (tmp_path / "A.java").write_text(src)
     module = scan_corpus(tmp_path, config=None).realms()[0].packages()[0].modules()[0]
     outer = next(c for c in module.children() if c.KIND.name == "CLASS")
@@ -191,8 +191,8 @@ def _first_class(root: Path):
 def test_cohesion_rule_lists_the_groups_in_its_message(tmp_path: Path):
     (tmp_path / "m.py").write_text(
         "class A:\n"
-        "    def f(self): return self.a\n"
-        "    def g(self): return self.b\n"
+        "    def f(self): return self.a * 2\n"
+        "    def g(self): return self.b * 2\n"
     )
     cls = _first_class(tmp_path)
     [v] = list(CohesionRule().check(cls, _ENABLED))
@@ -236,7 +236,7 @@ def test_cohesion_rule_is_silent_for_a_class_with_only_detached_methods(tmp_path
 
 def test_cohesion_rule_respects_its_limit(tmp_path: Path):
     (tmp_path / "m.py").write_text(
-        "class A:\n    def f(self): return self.a\n    def g(self): return self.b\n")
+        "class A:\n    def f(self): return self.a * 2\n    def g(self): return self.b * 2\n")
     cls = _first_class(tmp_path)
     assert list(CohesionRule().check(cls, replace(_ENABLED, options={"limit": 2}))) == []
     assert len(list(CohesionRule().check(cls, _ENABLED))) == 1
@@ -250,7 +250,7 @@ def test_class_field_arrow_functions_are_distinct_methods(tmp_path: Path):
         "  x = 1;\n"
         "  handler = () => this.x;\n"
         "  other = () => this.y;\n"
-        "  third() { return this.x }\n"
+        "  third() { return this.x * 2 }\n"
         "}\n"
     )
     groups = _groups(tmp_path, "m.ts", src)
@@ -261,3 +261,35 @@ def test_class_field_arrow_functions_are_distinct_methods(tmp_path: Path):
 def test_a_class_with_no_methods_has_nothing_measured_not_perfect_cohesion(tmp_path: Path):
     c = _cohesion(tmp_path, "m.py", "class A:\n    x = 1\n")
     assert (c.groups, c.detached, c.lcom4) == ((), (), 0)
+
+
+@pytest.mark.parametrize("name, source, accessors", [
+    ("m.py", "class A:\n    def a(self):\n        return self._a\n    def set_a(self, v):\n        self._a = v\n"
+             "    def b(self):\n        '''The b.'''\n        return self._b\n", ("a", "set_a", "b")),
+    ("A.java", "class A { int x; int y; int getX() { return x; } int getY() { return this.y; } }", ("getX", "getY")),
+    ("m.rs", "struct A { a: i32, b: i32 }\nimpl A {\n    fn a(&self) -> i32 { self.a }\n    fn b(&self) -> i32 { self.b }\n}\n", ("a", "b")),
+    ("m.go", "package p\ntype A struct { a int }\nfunc (s A) Get() int { return s.a }\nfunc (s *A) Set(v int) { s.a = v }\n", ("Get", "Set")),
+])
+def test_getters_and_setters_are_accessors_outside_every_group(tmp_path: Path, name, source, accessors):
+    c = _cohesion(tmp_path, name, source)
+    assert c.groups == () and c.lcom4 == 0
+    assert c.accessors == accessors
+
+
+@pytest.mark.parametrize("body", [
+    "return self.step()",            # a call through the receiver does work
+    "return self.a + 1",             # so does arithmetic on a member
+    "self.a = self.b",               # copying one member to another reaches two
+])
+def test_one_line_methods_that_do_work_are_not_accessors(tmp_path: Path, body):
+    src = f"class A:\n    def f(self):\n        {body}\n    def step(self):\n        return self.a * self.b\n"
+    c = _cohesion(tmp_path, "m.py", src)
+    assert c.accessors == ()
+
+
+def test_a_class_split_only_by_accessors_is_not_flagged(tmp_path: Path):
+    src = ("class A:\n    @property\n    def a(self):\n        return self._a\n"
+           "    @property\n    def b(self):\n        return self._b\n"
+           "    def total(self):\n        return self._a + self._b\n")
+    c = _cohesion(tmp_path, "m.py", src)
+    assert c.groups == (("total",),) and c.accessors == ("a", "b")

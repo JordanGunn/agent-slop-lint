@@ -168,7 +168,7 @@ def test_a_disabled_rule_reports_nothing_but_check_still_runs_it(tmp_path: Path,
 
 def test_a_subjective_rule_warns_and_never_fails_the_run(tmp_path: Path, capsys):
     (tmp_path / "m.py").write_text(
-        "class A:\n    def f(self): return self.a\n    def g(self): return self.b\n")
+        "class A:\n    def f(self): return self.a * 2\n    def g(self): return self.b * 2\n")
     code, doc = _lint_json(tmp_path, capsys)
     assert code == 0 and doc["violations"] == [] and doc["summary"]["warnings"] == 1
     [w] = doc["warnings"]

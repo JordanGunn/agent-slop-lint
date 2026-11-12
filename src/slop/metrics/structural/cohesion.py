@@ -11,7 +11,10 @@ Static and class methods have no instance, and constructors touch every member t
 initialise (joining everything), so both are left out. A method that reaches no instance
 member and is reached by no method (an abstract method, a property returning a constant) is
 *detached*: it has no state to share or to split, so it is reported apart and is not a group. Without that,
-every interface and every enum-like class would read as a pile of unrelated classes. A method counts the instance
+every interface and every enum-like class would read as a pile of unrelated classes. A getter
+or setter (``CallableKind.ACCESSOR``, ``slop.ast.accessor``) touches one field by definition, so
+it is listed apart too; counting it would split every value class into one group per field
+(Sharma, "Revisiting LCOM", 2017). A method counts the instance
 accesses inside its nested callables too: a closure captures ``self``. A nested JavaScript
 ``function`` rebinds ``this``, which this measure does not model.
 
@@ -26,10 +29,12 @@ language without instance members (C, Julia) has no answer, and the measure retu
 from __future__ import annotations
 
 from collections.abc import Iterator, Sequence
+from dataclasses import replace
 from typing import Any
 
 from ...ast import NodeKind
 from ...ast.binding import SymbolKind
+from ...identity import CallableKind
 from .records import Cohesion
 
 
@@ -49,6 +54,7 @@ def cohesion(methods: Sequence[Any], grammar: Any) -> Cohesion | None:
     constructors = grammar.constructor_names()
     parent: dict[str, str] = {}
     measured: list[str] = []
+    accessors: list[str] = []
     for method in methods:
         name = _method_name(method)
         if name in constructors or name == method.owner.name:
@@ -56,12 +62,15 @@ def cohesion(methods: Sequence[Any], grammar: Any) -> Cohesion | None:
         receiver = grammar.instance_receiver(method._node, method._content)
         if receiver is None:
             continue
+        if method.kind is CallableKind.ACCESSOR:
+            accessors.append(name)
+            continue
         if name not in measured:
             measured.append(name)
         _find(parent, name)
         for member in _accessed_members(method, spellings, receiver):
             parent[_find(parent, member)] = _find(parent, name)
-    return _split(measured, parent)
+    return replace(_split(measured, parent), accessors=tuple(accessors))
 
 
 def _method_name(method: Any) -> str:

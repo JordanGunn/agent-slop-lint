@@ -124,7 +124,7 @@ def test_the_default_registry_runs_end_to_end_and_flags_a_tangled_function(tmp_p
 
 
 def test_a_warning_is_suppressed_by_an_inline_ignore_like_a_violation(tmp_path: Path):
-    src = "class A:  # slop: ignore[class-cohesion]\n    def f(self): return self.a\n    def g(self): return self.b\n"
+    src = "class A:  # slop: ignore[class-cohesion]\n    def f(self): return self.a * 2\n    def g(self): return self.b * 2\n"
     (tmp_path / "m.py").write_text(src)
     cfg = AnalysisConfig.defaults(RULE_REGISTRY)
     report = Dispatcher(RULE_REGISTRY, cfg).run(scan_corpus(tmp_path, cfg))

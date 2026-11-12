@@ -62,7 +62,10 @@ class CohesionRule(Limit):
     description = "a class's methods fall into more groups sharing no instance member (LCOM4) than the limit"
     altitude = ScopeKind.CLASS
     default_limit = 1
-    subjective = True       # LCOM4 flags accessor and value classes, whose methods share no member by design
+    # Accessors are left out of the groups (slop.ast.accessor). Measured 2026-11-12, that removed
+    # 6 of 20 warnings on slop and laszy, every one a class split only by getters; the rest are
+    # mostly records with two independent views, which only judgement can tell from two jobs.
+    subjective = True
 
     def measure(self, view: Structure) -> int | None:
         cohesion = view.cohesion()

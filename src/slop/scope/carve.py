@@ -273,6 +273,7 @@ def _reparent_callables(children: tuple[Any, ...], grammar: type, content: bytes
             if cls is not None:
                 ch._id = ScopeId(ScopeKind.CALLABLE, f"{cls.qualname}.{ch.name}", ch._extent.spans)
                 ch._owner = cls
+                ch._kind = CallableKind.METHOD
                 cls._children = (*cls._children, ch)
                 continue
         kept.append(ch)

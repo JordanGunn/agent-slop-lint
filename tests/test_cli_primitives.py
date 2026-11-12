@@ -273,12 +273,12 @@ def _shape_project(tmp_path: Path) -> Path:
     (tmp_path / "pkg" / "__init__.py").write_text("")
     (tmp_path / "pkg" / "split.py").write_text(
         "class Split:\n"
-        "    def f(self): return self.a\n"
-        "    def g(self): return self.b\n"
+        "    def f(self): return self.a * 2\n"
+        "    def g(self): return self.b * 2\n"
         "    def h(self): return 1\n"
     )
     (tmp_path / "pkg" / "whole.py").write_text(
-        "class Whole:\n    def f(self): return self.a\n    def g(self): return self.a\n")
+        "class Whole:\n    def f(self): return self.a * 2\n    def g(self): return self.a * 2\n")
     (tmp_path / "thing.c").write_text("struct Thing { int x; };\n")
     return tmp_path
 
@@ -324,7 +324,7 @@ def test_shape_scoped_to_a_class_returns_it_and_what_it_nests(tmp_path: Path, ca
     (tmp_path / "pkg").mkdir()
     (tmp_path / "pkg" / "__init__.py").write_text("")
     (tmp_path / "pkg" / "split.py").write_text(
-        "class Split:\n    def f(self): return self.a\n    class Inner:\n        def g(self): return self.b\n")
+        "class Split:\n    def f(self): return self.a * 2\n    class Inner:\n        def g(self): return self.b * 2\n")
     (tmp_path / "pkg" / "other.py").write_text("class Split:\n    pass\n")
     code, answer, err = _ask(capsys, "shape", "--root", str(tmp_path), "--scope", "split.Split",
                              "--output", "json")

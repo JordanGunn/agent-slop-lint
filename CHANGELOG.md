@@ -112,6 +112,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `class-cohesion` (LCOM4) leaves getters and setters out of its method groups and lists
+  them as `accessors`, so a value class is no longer split one group per field. An accessor
+  is a method whose only statement returns one instance member or assigns a plain value to
+  one; `Callable.kind` reports it as `CallableKind.ACCESSOR`, shown by `slop shape`.
+- Rust `impl` and Go receiver functions attached to their type are methods
+  (`CallableKind.METHOD`), not functions.
 - slop's own imports use namespaces instead of invented aliases (`aggregate.Corpus`, not
   `Corpus as CorpusABC`): 24 aliases removed across 13 modules.
 - `slop lexicon` measures the words a scope declares (package, module, class, property, callable

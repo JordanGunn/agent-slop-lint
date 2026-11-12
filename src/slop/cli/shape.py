@@ -58,5 +58,7 @@ def _class(match, ck: dict) -> list[str]:
         lines.append("    groups: " + " ".join("{" + ", ".join(g) + "}" for g in ck["method_groups"]))
     if ck["detached"]:
         lines.append("    detached: " + ", ".join(ck["detached"]))
+    if ck["accessors"]:
+        lines.append("    accessors: " + ", ".join(ck["accessors"]))
     lines += [f"    note: {c}" for c in ck["caveats"]]
     return lines

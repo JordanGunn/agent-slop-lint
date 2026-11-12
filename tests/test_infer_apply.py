@@ -17,7 +17,7 @@ from slop.infer.source.interface import Analysis
 from slop.rules import RULE_REGISTRY
 from slop.scope import scan_corpus
 
-TWO_GROUPS = "class A:\n    def f(self):\n        return self.a\n\n    def g(self):\n        return self.b\n"
+TWO_GROUPS = "class A:\n    def f(self):\n        return self.a * 2\n\n    def g(self):\n        return self.b * 2\n"
 
 
 def _item(item_id: str = "a1", outcomes: tuple[Outcome, ...] = tuple(Outcome)) -> Residue:

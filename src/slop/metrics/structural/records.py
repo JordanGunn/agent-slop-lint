@@ -55,12 +55,14 @@ class Cohesion:
 
     ``groups`` are the sets of methods joined through shared members, in declaration order;
     ``len(groups)`` is LCOM4 (1 = cohesive). ``detached`` are methods that reach no instance
-    member and are reached by none, so they have no state to be cohesive about. An LCOM4 of
+    member and are reached by none, so they have no state to be cohesive about. ``accessors``
+    are getters and setters (one statement reaching one member), left out of the groups. An LCOM4 of
     0 means nothing was measurable (no instance methods, or every one detached), not a
     perfectly cohesive class."""
 
     groups: tuple[tuple[str, ...], ...]
     detached: tuple[str, ...]
+    accessors: tuple[str, ...] = ()
 
     @property
     def lcom4(self) -> int:
@@ -68,7 +70,7 @@ class Cohesion:
 
     def as_dict(self) -> dict[str, Any]:
         return {"lcom4": self.lcom4, "method_groups": [list(g) for g in self.groups],
-                "detached": list(self.detached)}
+                "detached": list(self.detached), "accessors": list(self.accessors)}
 
 
 @dataclass(frozen=True)
@@ -101,6 +103,7 @@ class CKMetrics:
                 "method_groups": None if self.cohesion is None
                 else [list(g) for g in self.cohesion.groups],
                 "detached": None if self.cohesion is None else list(self.cohesion.detached),
+                "accessors": None if self.cohesion is None else list(self.cohesion.accessors),
                 "caveats": list(self.caveats)}
 
     @property

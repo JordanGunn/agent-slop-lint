@@ -50,7 +50,9 @@ typescript). It states:
   resolves every name occurrence to a `SymbolKind` (parameter, local, import, field, method,
   free) with the tree-sitter-highlight algorithm. Fields defined in a class are its properties;
   clones rename only the parameters and locals a callable binds; LCOM4 reads members reached
-  through the receiver (`MemberAccess`) and bare names bound to the class's own fields and methods;
+  through the receiver (`MemberAccess`) and bare names bound to the class's own fields and methods,
+  and leaves out accessors (`ast/accessor.py`: one statement returning or plainly assigning one
+  member), which `Callable.kind` reports as `CallableKind.ACCESSOR`;
 - how names, parameters, imports and explicit member access (`MemberAccess`) are read, and
   which corpus modules an import loads (`resolve_import`): a file-relative import (Python dots,
   `./` and `../`, quoted `#include`, `require_relative`, Rust `self`/`super`/`crate`) is

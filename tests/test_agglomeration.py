@@ -66,7 +66,7 @@ def test_an_import_alone_does_not_relate_two_functions(tmp_path: Path):
 
 
 def test_one_rule_on_classes_of_one_tree_is_a_hierarchical_group(tmp_path: Path):
-    split = "    def {a}(self):\n        return self.{a}_\n    def {b}(self):\n        return self.{b}_\n"
+    split = "    def {a}(self):\n        return self.{a}_ * 2\n    def {b}(self):\n        return self.{b}_ * 2\n"
     groups = _groups(tmp_path, {"m.py": "class Base:\n    pass\n\n"
                                         "class A(Base):\n" + split.format(a="p", b="q") + "\n"
                                         "class B(Base):\n" + split.format(a="r", b="s") + "\n"
@@ -88,7 +88,7 @@ def test_lint_json_lists_groups_by_finding_id(tmp_path: Path, capsys):
 
 def test_one_tree_holds_a_group_per_rule_each_with_its_own_id(tmp_path: Path):
     from slop.cli.lint import analyse as _analyse
-    split = "    def {a}(self):\n        return self.{a}_\n    def {b}(self):\n        return self.{b}_\n"
+    split = "    def {a}(self):\n        return self.{a}_ * 2\n    def {b}(self):\n        return self.{b}_ * 2\n"
     uses_other = "    def other(self):\n        return Other()\n"
     files = {"m.py": "class Other:\n    pass\n\nclass Base:\n    pass\n\nclass A(Base):\n" + split.format(a="p", b="q")
              + uses_other + "\nclass B(Base):\n" + split.format(a="r", b="s") + uses_other,
