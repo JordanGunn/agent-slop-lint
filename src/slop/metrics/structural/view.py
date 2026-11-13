@@ -140,8 +140,7 @@ class Structure:
 
     def _abstract_and_concrete(self) -> tuple[int, int]:
         """Counts of abstract and concrete classes; classes whose grammar cannot say are skipped."""
-        verdicts = [cls._grammar.is_abstract_scope(cls._node, cls._content)
-                    for cls in self._r._iter_classes()]
+        verdicts = [cls.is_abstract for cls in self._r._iter_classes()]
         return verdicts.count(True), verdicts.count(False)
 
     def martin_metrics(self) -> PackageMetrics:

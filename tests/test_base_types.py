@@ -54,6 +54,8 @@ def test_bases_are_the_classes_the_heritage_clause_names(tmp_path: Path, file, s
 def test_a_base_name_never_resolves_to_a_class_in_another_language(tmp_path: Path):
     (tmp_path / "s.rs").write_text("struct S { a: i32 }\n", encoding="utf-8")
     (tmp_path / "h.ts").write_text("class Base {}\nclass H extends S {}\nclass K extends Base {}\n", encoding="utf-8")
-    classes = {s.qualname: s for s in walk(scan_corpus(tmp_path, config=None)) if s.id.kind is ScopeKind.CLASS}
-    assert classes["h.H"].bases() == ()                      # S exists only in Rust
-    assert [b.qualname for b in classes["h.K"].bases()] == ["h.Base"]   # same language still resolves
+    corpus = scan_corpus(tmp_path, config=None)
+    classes = {s.qualname: s for s in walk(corpus) if s.id.kind is ScopeKind.CLASS}
+    parents = corpus.context.class_index.parents
+    assert parents.get(classes["h.H"].id, ()) == ()                       # S exists only in Rust
+    assert [b.qualname for b in parents.get(classes["h.K"].id, ())] == ["h.Base"]   # same language still resolves

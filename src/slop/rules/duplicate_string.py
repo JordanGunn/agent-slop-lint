@@ -20,7 +20,7 @@ from collections.abc import Iterable
 from ..config import RuleConfig
 from ..metrics.structural.view import Structure
 from ..rule import Rule
-from ..scope.base import Scope
+from ..scope.model import Scope
 from ..scope.identity import ScopeKind
 from ..violation import Violation
 

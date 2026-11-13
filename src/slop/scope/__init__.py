@@ -1,40 +1,29 @@
-"""The component model — ownership spine for slop v3.
+"""slop.scope: the tree slop carves the sources into, and the queries over it.
 
     Corpus -> Realm -> Package -> Module -> Class -> Callable
 
-Public surface: the ABC tier (``Scope``, ``AggregateContainer``,
-``SymbolContainer``), the six concrete kinds, identity/extent value types, the
-and the ``scan_corpus`` entry point. Metrics live in
-``metrics/structural`` (consumed via ``Structure.over(region)``), not here.
+``scan_corpus`` builds the tree; ``model`` holds the scope classes; ``identity`` the ids,
+kinds and extents; ``find`` looks scopes up by name. Measurements live in
+``slop.metrics.structural`` and are read through ``Structure.over(scope)``.
 """
 from __future__ import annotations
 
-from .aggregate import Corpus, Realm, Package
-from .base import AggregateContainer, Scope, SymbolContainer
-from .identity import CallableKind, ScopeId, ScopeKind, Extent, Span
 from .carve import scan_corpus
-from .projection import Lexicon
-from .symbol import Callable, Class, Module
+from .identity import CallableKind, Extent, ScopeId, ScopeKind, Span
+from .model import Callable, Class, Corpus, Module, Package, Realm, Scope
 
 __all__ = [
-    # entry point
     "scan_corpus",
-    # spine
     "Scope",
-    "AggregateContainer",
-    "SymbolContainer",
     "Corpus",
     "Realm",
     "Package",
     "Module",
     "Class",
     "Callable",
-    # identity
     "ScopeId",
     "ScopeKind",
     "CallableKind",
     "Extent",
     "Span",
-    # projection
-    "Lexicon",
 ]

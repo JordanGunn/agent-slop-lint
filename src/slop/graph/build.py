@@ -1,11 +1,5 @@
-"""Concrete DependencyGraph — Module-level import edges over a Corpus.
-
-Implements ``slop.graph.dependency.DependencyGraph``. Nodes are Module
-ComponentIds; edges come from each Module's raw imports, resolved by its grammar
-against the corpus's ``ModuleIndex`` and the importing file. Cycles via
-Tarjan SCC. Neighbour-set accessors (beyond the ABC's count-returning
-afferent/efferent) support Package-level contraction for Martin metrics.
-"""
+"""Building the dependency graph: every module's imports, resolved by its grammar against the
+corpus's module index and the importing file, become the edges of a ``DependencyGraph``."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -13,80 +7,11 @@ from typing import Any
 
 from ..ast.paradigm.base import ModuleIndex
 from ..identity import ScopeId, Span, relative_path
-from .dependency import DependencyCycle
 from .dependency import DependencyEdge, DependencyGraph
 from .imports import module_imports
 
 
-class ConcreteDependencyGraph(DependencyGraph):
-    def __init__(
-        self,
-        edges: tuple[DependencyEdge, ...],
-        efferent: dict[ScopeId, frozenset[ScopeId]],
-        afferent: dict[ScopeId, frozenset[ScopeId]],
-        label: dict[ScopeId, str],
-    ) -> None:
-        self._edges = edges
-        self._efferent = efferent
-        self._afferent = afferent
-        self._label = label
-
-    def edges(self):
-        return self._edges
-
-    def afferent(self, node: ScopeId) -> int:
-        return len(self._afferent.get(node, frozenset()))
-
-    def efferent(self, node: ScopeId) -> int:
-        return len(self._efferent.get(node, frozenset()))
-
-    def efferent_nodes(self, node: ScopeId) -> frozenset[ScopeId]:
-        return self._efferent.get(node, frozenset())
-
-    def afferent_nodes(self, node: ScopeId) -> frozenset[ScopeId]:
-        return self._afferent.get(node, frozenset())
-
-    def cycles(self):
-        # Tarjan SCC over the efferent map; components with >1 node are cycles.
-        index = 0
-        indexes: dict[ScopeId, int] = {}
-        lowlink: dict[ScopeId, int] = {}
-        stack: list[ScopeId] = []
-        on_stack: set[ScopeId] = set()
-        out: list[DependencyCycle] = []
-
-        def strongconnect(v: ScopeId) -> None:
-            nonlocal index
-            indexes[v] = lowlink[v] = index
-            index += 1
-            stack.append(v)
-            on_stack.add(v)
-            for w in self._efferent.get(v, frozenset()):
-                if w not in indexes:
-                    strongconnect(w)
-                    lowlink[v] = min(lowlink[v], lowlink[w])
-                elif w in on_stack:
-                    lowlink[v] = min(lowlink[v], indexes[w])
-            if lowlink[v] == indexes[v]:
-                comp: list[ScopeId] = []
-                while stack:
-                    w = stack.pop()
-                    on_stack.discard(w)
-                    comp.append(w)
-                    if w == v:
-                        break
-                if len(comp) > 1:
-                    ordered = sorted(comp, key=lambda c: (self._label[c], c.spans))
-                    out.append(DependencyCycle(
-                        members=tuple(self._label[c] for c in ordered), scopes=tuple(ordered)))
-
-        for v in self._efferent:
-            if v not in indexes:
-                strongconnect(v)
-        return out
-
-
-def build(corpus: Any) -> ConcreteDependencyGraph:
+def build(corpus: Any) -> DependencyGraph:
     modules = list(corpus._iter_modules())
     label: dict[ScopeId, str] = {m.id: relative_path(m.id, corpus.root) or m.qualname for m in modules}
     index = _index(modules)
@@ -101,7 +26,7 @@ def build(corpus: Any) -> ConcreteDependencyGraph:
         for t in tgts:
             afferent[t].add(src)
 
-    return ConcreteDependencyGraph(
+    return DependencyGraph(
         tuple(edges),
         {k: frozenset(v) for k, v in efferent.items()},
         {k: frozenset(v) for k, v in afferent.items()},

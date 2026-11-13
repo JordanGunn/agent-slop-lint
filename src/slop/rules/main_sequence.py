@@ -11,7 +11,7 @@ from __future__ import annotations
 from typing import ClassVar
 
 from ..metrics.structural.view import Structure
-from ..scope.base import Scope
+from ..scope.model import Scope
 from ..scope.identity import ScopeKind
 from .limit import Limit
 

@@ -7,7 +7,7 @@ number of methods, so it measures breadth, and it is left to a class-size rule.
 from __future__ import annotations
 
 from ..metrics.structural.view import Structure
-from ..scope.base import Scope
+from ..scope.model import Scope
 from ..scope.identity import ScopeKind
 from .limit import Limit
 

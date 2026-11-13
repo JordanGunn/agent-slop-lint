@@ -13,7 +13,7 @@ The numbers come from ``Structure.over(cls)``; ``slop shape`` prints the same on
 from __future__ import annotations
 
 from ..metrics.structural.view import Structure
-from ..scope.base import Scope
+from ..scope.model import Scope
 from ..scope.identity import ScopeKind
 from .limit import Limit
 

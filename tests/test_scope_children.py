@@ -35,7 +35,6 @@ def test_accessors_return_only_their_own_kind(tmp_path: Path):
 
     klass = _find(corpus, ScopeKind.CLASS, "K")
     assert [c.name for c in klass.methods()] == ["method"]
-    assert [c.name for c in klass.nested_classes()] == ["Inner"]
 
     method = _find(corpus, ScopeKind.CALLABLE, "method")
     assert [c.name for c in method.nested()] == ["local"]

@@ -14,7 +14,7 @@ from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from pathlib import Path
 
-from .base import Scope
+from .model import Scope
 from .identity import ScopeKind
 from ..identity import relative_path
 from ..ast.paradigm import ObjectOriented

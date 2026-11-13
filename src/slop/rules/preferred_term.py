@@ -15,7 +15,7 @@ from collections.abc import Iterable
 from ..config import RuleConfig
 from ..lexicon import Vocabulary, split_tokens
 from ..rule import Rule
-from ..scope.base import Scope
+from ..scope.model import Scope
 from ..scope.identity import ScopeKind
 from ..scope.lexicon import declared_units
 from ..violation import Violation

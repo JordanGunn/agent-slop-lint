@@ -6,7 +6,7 @@ sequential branches that are harmless to McCabe's measure still blow it up.
 from __future__ import annotations
 
 from ..metrics.structural.view import Structure
-from ..scope.base import Scope
+from ..scope.model import Scope
 from ..scope.identity import ScopeKind
 from .limit import Limit
 

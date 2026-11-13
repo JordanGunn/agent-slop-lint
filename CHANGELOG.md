@@ -93,6 +93,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- The doubled scope hierarchy: `Scope`, `AggregateContainer`, `SymbolContainer` and six abstract
+  kinds (`scope/base.py`, `aggregate.py`, `symbol.py`), each with exactly one implementation in
+  `components.py`, plus the `Descendants` mixin and the `Lexicon` protocol (`projection.py`). One
+  class per kind now lives in `scope/model.py`; `slop.scope` exports those classes. `symbols()`,
+  `nested_classes()` and `Class.bases()` had no reader and are gone (the class index holds
+  parents). `Class.is_abstract` is `True`, `False` or `None` (the grammar cannot tell) and is
+  the one source Martin's abstractness reads; it was a `bool` nothing read while the metric
+  recomputed the answer.
+- The `DependencyGraph` ABC: `ConcreteDependencyGraph` is now `DependencyGraph`, in
+  `graph/dependency.py`; `graph/build.py` only builds it.
 - Support for tree-sitter before 0.25 and the grammar packages before the versions CI tests: the
   dependency floors now match what is tested, and the three shims that served the untested range
   are gone (the pre-0.22 `Parser()` fallback, the pre-`QueryCursor` query path, and the

@@ -18,7 +18,7 @@ from collections.abc import Iterable
 from typing import Any, ClassVar
 
 from .config import RuleConfig
-from .scope.base import Scope
+from .scope.model import Scope
 from .scope.identity import ScopeKind
 from .violation import Violation
 

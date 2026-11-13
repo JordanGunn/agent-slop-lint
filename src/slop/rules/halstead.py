@@ -8,7 +8,7 @@ The default limit of 1000 is the default of the DCM tool; Halstead gave none.
 from __future__ import annotations
 
 from ..metrics.structural.view import Structure
-from ..scope.base import Scope
+from ..scope.model import Scope
 from ..scope.identity import ScopeKind
 from .limit import Limit
 

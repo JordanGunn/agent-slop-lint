@@ -7,7 +7,7 @@ a class-size question) and neither do lambdas (inline values, not definitions).
 from __future__ import annotations
 
 from ..metrics.structural.view import Structure
-from ..scope.base import Scope
+from ..scope.model import Scope
 from ..scope.identity import ScopeKind
 from .limit import Limit
 
