@@ -33,7 +33,7 @@ _USELESS_ABOVE = 0.7
 
 
 class Structure:
-    """Structural metrics over one region (a scope, or — later — a selection)."""
+    """Structural metrics over one scope."""
 
     def __init__(self, region: Any) -> None:
         self._r = region
@@ -64,14 +64,6 @@ class Structure:
         """At a callable, its Halstead volume. Above one, the sum of its callables' volumes,
         which is a total and not itself a Halstead volume (vocabulary does not add)."""
         return float(sum(halstead.volume(c._ast_node(), c._grammar) for c in self._leaves()))
-
-    def sloc(self) -> int:
-        return sum(halstead.sloc(c._ast_node()) for c in self._leaves())
-
-    # ---- Callable measures (non-aggregatable) -----------------------------
-    def halstead(self):
-        r = self._r
-        return halstead.profile(r._ast_node(), r._grammar)
 
     # ---- Module measures: literals --------------------------------------
     def magic_floats(self):

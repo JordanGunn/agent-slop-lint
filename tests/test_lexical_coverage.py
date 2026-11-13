@@ -17,7 +17,8 @@ from slop.lexicon import Lexicon, Role
 from slop import ontology
 from slop.ontology import Scheme, Term
 from slop.scope import scan_corpus
-from slop.scope.lexicon import build_declared_lexicon
+from slop.scope.find import walk
+from slop.scope.lexicon import build_declared_lexicon, declared_units
 from slop.span import Span
 
 SUPPORT_DESK = Scheme("support-desk", [
@@ -141,8 +142,7 @@ def test_declared_names_exclude_references_receivers_special_methods_and_unnamed
 def test_declared_names_carry_the_role_they_name(tmp_path: Path):
     (tmp_path / "m.py").write_text("class Ticket:\n    def close(self, reason):\n        pass\n")
     corpus = scan_corpus(tmp_path, config=None)
-    lex = build_declared_lexicon(corpus)
-    roles = {role for _text, role, _span in lex._units}
+    roles = {role for scope in walk(corpus) for _text, role, _span in declared_units(scope)}
     assert {Role.MODULE, Role.CLASS, Role.CALLABLE, Role.PARAMETER} <= roles
 
 

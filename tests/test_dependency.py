@@ -33,7 +33,7 @@ def test_no_cycle(tmp_path: Path):
 def test_dependency_edges_resolve(tmp_path: Path):
     (tmp_path / "a.py").write_text("import b\n")
     (tmp_path / "b.py").write_text("x = 1\n")
-    g = scan_corpus(tmp_path, config=None).dependency_graph()
+    g = scan_corpus(tmp_path, config=None).context.dep_graph
     resolved = [e for e in g.edges() if e.resolved]
     assert len(resolved) == 1 and resolved[0].raw_specifier == "b"
 

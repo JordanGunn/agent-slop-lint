@@ -40,13 +40,6 @@ def test_hapax_in_range(tmp_path: Path):
     c = _corpus(tmp_path)
     assert 0.0 <= c.lexicon().hapax_ratio() <= 1.0
 
-def test_slice_is_per_file_superset(tmp_path: Path):
-    c = _corpus(tmp_path)
-    mod = c.realms()[0].packages()[0].modules()[0]
-    sliced = set(c.lexicon().slice(mod.extent).tokens())
-    assert set(mod.lexicon().tokens()) <= sliced  # module tokens within the file slice
-
-
 # ---- kernel used standalone (no component layer) -----------------------
 
 def _lex(*texts: str) -> Lexicon:

@@ -10,7 +10,6 @@ import hashlib
 from typing import Any, NamedTuple
 
 from ...ast.binding import SymbolKind
-from ..locus import narrowest_common_ancestor
 from .records import CloneCluster, CloneMember
 
 
@@ -45,13 +44,11 @@ def clone_clusters(callables: list[Any], *, min_leaf_nodes: int = 10) -> list[Cl
     for members in buckets.values():
         if len(members) < 2:
             continue
-        nca = narrowest_common_ancestor([m[2] for m in members])
         clusters.append(CloneCluster(
             members=tuple(sorted(
                 (CloneMember(scope=m[2].id, qualname=m[0], line=m[2].line) for m in members),
                 key=lambda cm: (cm.scope.spans[0].path if cm.scope.spans else "", cm.line, cm.qualname))),
             leaf_count=members[0][1],
-            locus=nca.id if nca is not None else None,
         ))
     clusters.sort(key=lambda cl: -len(cl.members))
     return clusters

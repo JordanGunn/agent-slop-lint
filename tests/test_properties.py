@@ -9,7 +9,8 @@ from slop.lexical import coverage
 from slop.lexicon import Role
 from slop.ontology import Scheme, Term
 from slop.scope import scan_corpus
-from slop.scope.lexicon import build_declared_lexicon
+from slop.scope.find import walk
+from slop.scope.lexicon import build_declared_lexicon, declared_units
 
 
 def _props(tmp_path: Path, name: str, source: str, cls: str = "A") -> tuple[str, ...]:
@@ -85,8 +86,8 @@ def test_declared_fields_are_properties_in_every_language(tmp_path: Path, name, 
 
 def test_properties_enter_the_declared_lexicon_with_their_own_role(tmp_path: Path):
     (tmp_path / "m.py").write_text("class Ticket:\n    def __init__(self):\n        self.escalation = None\n")
-    lexicon = build_declared_lexicon(scan_corpus(tmp_path, config=None))
-    assert ("escalation", Role.PROPERTY) in {(t, r) for t, r, _span in lexicon._units}
+    corpus = scan_corpus(tmp_path, config=None)
+    assert ("escalation", Role.PROPERTY) in {(t, r) for s in walk(corpus) for t, r, _span in declared_units(s)}
 
 
 def test_a_property_named_like_a_vocabulary_word_is_covered(tmp_path: Path):

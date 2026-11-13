@@ -1,4 +1,4 @@
-"""Descendant iteration over anything that has ``children()``: a scope or a ``Selection``.
+"""Descendant iteration over anything that has ``children()``: a scope.
 
 The metric views and rules read this surface (``_iter_callables``, ``_iter_classes``,
 ``_iter_modules``) without importing the concrete scope classes.

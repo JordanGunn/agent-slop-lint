@@ -78,11 +78,6 @@ class Node:
         return self._raw.start_point[0] + 1
 
     @property
-    def end_line(self) -> int:
-        """1-based line of this node's last character."""
-        return self._raw.end_point[0] + 1
-
-    @property
     def kind(self) -> NodeKind:
         """Neutral category, derived from the grammar's own node-type sets."""
         return _classify(self._raw.type, self._grammar)

@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from collections import Counter
 from dataclasses import replace
-from typing import Any, Iterable
+from typing import Iterable
 
 from ..span import Span
 from .distribution import TokenDistribution, token_distribution
@@ -45,11 +45,7 @@ class Lexicon:
         *,
         stopwords: frozenset[str] | set[str] = STOP_WORDS,
     ) -> None:
-        self._units: list[tuple[str, Role, Span]] = list(units)
-        self._stopwords = stopwords
-        self._lexemes: list[Lexeme] = [
-            Lexeme.of(text, role=role, span=span) for text, role, span in self._units
-        ]
+        self._lexemes: list[Lexeme] = [Lexeme.of(text, role=role, span=span) for text, role, span in units]
         self._tokens: list[tuple[str, Role, Span]] = []
         for lex in self._lexemes:
             for token in lex.tokens:
@@ -120,14 +116,3 @@ class Lexicon:
         measured = token_distribution(self._counter, top=top)
         spellings = self.spellings()
         return replace(measured, top=[(spellings.get(t, t), c) for t, c in measured.top])
-
-    # ---- corpus selection --------------------------------------------
-    def slice(self, extent: Any) -> "Lexicon":
-        """Narrow to a sub-extent, matched on span paths. ``extent`` is any object
-        exposing ``.spans`` (each with a ``.path``); duck-typed so the component
-        ``Extent`` type stays out of this layer. Reuses the parent's units."""
-        paths = {span.path for span in extent.spans}
-        return Lexicon(
-            [u for u in self._units if u[2].path in paths],
-            stopwords=self._stopwords,
-        )

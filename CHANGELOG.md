@@ -93,6 +93,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- Code with no consumer: the lexicon comparison functions (`jaccard`, `containment`, `cosine`,
+  `js_divergence`, `js_similarity`), `Lexicon.slice`, `metrics/locus.py` and the `locus` fields
+  of clone clusters and hotspots, the Halstead profile (`HalsteadProfile`, difficulty, effort,
+  `Structure.halstead`, `sloc`; `volume` stays), `Selection`, `Node.end_line`, and
+  `Corpus.dependency_graph()` (every reader uses `context.dep_graph`).
 - The inference layer (`slop/infer/`, `slop infer`, residue, verdicts, rubrics, the rulings
   ledger `.slop/inferences.jsonl`) and agglomerations (`slop/agglomeration.py`, the
   `agglomerations` and `project_root` keys of lint JSON, finding ids). Lint is deterministic

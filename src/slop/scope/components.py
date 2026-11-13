@@ -220,7 +220,3 @@ class Corpus(_Base, aggregate.Corpus):
     @property
     def config(self): return self._config
     def realms(self): return self._children_of(ScopeKind.REALM)
-
-    def dependency_graph(self):
-        """The corpus Module-level DependencyGraph (built during carve)."""
-        return self.context.dep_graph

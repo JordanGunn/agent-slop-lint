@@ -40,8 +40,7 @@ def hotspots(corpus: Any, *, since: str | None = None, last: int = DEFAULT_LAST)
         rel = _repo_relative(mod.files[0], repo)
         if rel is None or not churn.get(rel):
             continue
-        rows.append(Hotspot(path=rel, churn=churn[rel], complexity=_module_cyclomatic(mod),
-                            locus=mod.id))
+        rows.append(Hotspot(path=rel, churn=churn[rel], complexity=_module_cyclomatic(mod)))
     rows.sort(key=lambda h: (-(h.churn * h.complexity), h.path))
     return rows
 

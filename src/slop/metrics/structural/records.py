@@ -19,24 +19,6 @@ from ...identity import ScopeId
 # --- Complexity primitives (Callable altitude) ------------------------------
 
 @dataclass(frozen=True)
-class HalsteadProfile:
-    """Halstead (1977) software-science measures for one callable.
-
-    Legacy: complexity.volume / complexity.density, structure/halstead.py.
-    ``n1``/``n2`` distinct operators/operands; ``N1``/``N2`` total occurrences.
-    ``volume`` aggregates upward; ``difficulty``/``effort`` are non-additive.
-    """
-
-    n1: int
-    n2: int
-    N1: int
-    N2: int
-    volume: float
-    difficulty: float
-    effort: float
-
-
-@dataclass(frozen=True)
 class LiteralUse:
     """One distinct literal in a module: its text, where it first appears, and how many
     times it is used."""
@@ -145,9 +127,6 @@ class CloneCluster:
 
     members: tuple[CloneMember, ...]
     leaf_count: int
-    #: Narrowest scope containing all clone members (module if co-located, else
-    #: package/realm) — the attribution target. ``None`` if unresolvable.
-    locus: ScopeId | None = None
 
 
 @dataclass(frozen=True)
@@ -158,5 +137,3 @@ class Hotspot:
     path: str
     churn: int
     complexity: int
-    #: The Module ScopeId for ``path`` — the attribution target. ``None`` if unresolvable.
-    locus: ScopeId | None = None

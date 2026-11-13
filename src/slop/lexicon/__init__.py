@@ -19,13 +19,6 @@ Current surface (consumer-driven; grows as rules need it):
 """
 from __future__ import annotations
 
-from .comparison import (
-    containment,
-    cosine,
-    jaccard,
-    js_divergence,
-    js_similarity,
-)
 from .corpus import Lexicon
 from .inflection import plural, stem
 from .distribution import (
@@ -48,10 +41,4 @@ __all__ = [
     "Vocabulary",
     "TokenDistribution",
     "token_distribution",
-    # pairwise comparison (relational lexicostatistics)
-    "jaccard",
-    "containment",
-    "cosine",
-    "js_divergence",
-    "js_similarity",
 ]
