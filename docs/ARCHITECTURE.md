@@ -11,7 +11,6 @@ slop is a linter on top of read-only primitives. Source: `src/slop/`.
 | Measures | `metrics/`, `lexicon/`, `graph/` | read-only views over a component |
 | Vocabulary | `ontology/`, `lexical/` | the project's vocabulary (SKOS terms) and the comparison with the words in code |
 | Lint | `rule.py`, `rules/`, `dispatch.py`, `violation.py`, `config.py` | rules compare a measure with a limit |
-| Agglomeration | `agglomeration.py` | groups the findings the code's structure relates (Oizumi et al. 2016); facts, never violations |
 | CLI | `cli/` (one module per command family) | `ast`, `tree`, `find`, `lexicon`, `deps`, `shape`, `hotspots` (primitives); `ontology`; `lint`, `check`, `rules` (lint); `init`, `doctor` |
 
 Primitive commands return facts and apply no limits. Only `rules/` and rule `limit` options
@@ -85,7 +84,8 @@ stated limit alone. A rule whose findings need judgement of idiom or intent (`cl
 `rigid-package`, `useless-package`) sets `subjective = True`; the dispatcher then reports its
 findings as warnings (`WARN` in the human output, `warnings` in JSON) that never fail the run.
 A case that cannot be a rule at all (an integer literal, a short string) is not reported;
-judging those and the warnings is the job of a layer that reads context. `magic-float` and
+judging those and the warnings is the job of a layer that reads context, which is not built
+(the first attempt, with rubrics and stored rulings, was removed). `magic-float` and
 `duplicate-string` show the split: they measure a float operand and a repeated long string,
 and say nothing about integers or short strings.
 
@@ -99,80 +99,11 @@ Contributor invariants:
   (`metrics/structural/view.py`), so `shape`, `find` and rules share one number.
 - A new rule is added to `RULE_REGISTRY`; `slop rules` and `slop init` are generated from it.
 
-## Inference
-
-`slop/infer/` is a layer over the linter, imported only by `cli/` and `slop/skill/` (pinned by
-`tests/test_layers.py`). Slop never calls a model: the host agent does the inferring. This
-package frames what the agent sees, fixes the shape of what it may return, and validates and
-stores the result. It follows `Dpre(X) -> A(X' : Sigma) : S -> Dpost(Y)`.
-
-| Subpackage | Role | May import |
-|---|---|---|
-| `bundle/` | prose slop ships and prints: `instructions.md`, `references/` (rubrics among them) | nothing in slop |
-| `contract/` | the documents exchanged (`Residue`, `Verdicts`, `Receipt`), their JSON Schema, strict parsing | nothing in slop |
-| `ledger/` | persisted rulings (`Ledger`, `JsonlLedger`) | `contract` |
-| `frame/` | finding id, project-relative location, code fingerprint, the question and rubric for a rule | `bundle`, `contract` |
-| `source/` | where residue comes from (`Source`, `FindingSource`) | `contract`, `frame` |
-| `apply/` | validate verdicts, store them, settle a report | `contract`, `frame`, `ledger`, `source` |
-
-`tests/test_infer_layers.py` pins these directions. A new kind of residue, such as a project
-survey for bootstrapping, is a new module in `source/`; the other layers do not change.
-
-The agent works from the linter's own output. `slop lint --output json` attaches a `residue`
-to each warning and to each agglomeration: the id, the `locations`
-to read (the whole lines of the subject's extent, so a class shows its definition and a package
-every module in it; for a group, the lead's extent and then each unit's), the closed question, the rubric command and version, the fingerprint, and the ruling's `status`
-(`none`, `stale`, `defer` or `confirm`). The output also states `root`, the absolute scan root
-that finding paths are relative to, and `project_root`, the absolute root that residue paths are
-relative to, so the agent can open the code from any working directory. Every finding has an
-`id` (rule, project-relative path, subject, and for `duplicate-string` and `magic-float` the
-literal), its `scope` and its `related` scopes. `agglomerations` lists the groups the findings
-form: an `id`, a `topology` (`intra-method`, `intra-class`, `hierarchical`, `intra-component`,
-`cross-component`), the `lead` scope, the `units` and the member finding ids. A group never
-changes the exit code. The agent reads the code
-at that span and the rubric, then sends verdicts. `slop infer` keeps only what nothing else does:
-
-| Command | Does |
-|---|---|
-| `slop infer apply [FILE]` | validates a `Verdicts` document (file or stdin) against the current findings, stores what it accepts, prints a `Receipt` |
-| `slop infer references [NAME]` | lists the references (the rubrics), or prints one |
-| `slop infer schema [NAME]` | prints the JSON Schema of `residue`, `verdicts` and `receipt`, or of one |
-| `slop infer instructions` | prints the agent's workflow |
-
-`slop lint` settles the report with the ledger (`apply/settle.py`): a `clear` ruling drops the
-finding, a `confirm` ruling makes it a violation (it fails the run), and a `defer` ruling, a
-stale ruling or no ruling leaves it a warning. Human output tags each warning `[not ruled]`,
-`[stale: the code|rubric changed ...]` or `[deferred: reason]`, and the summary counts the
-findings that wait for a ruling. `slop lint` never writes the ledger.
-
-A ruling's lifetime: it is in force while its finding exists and its fingerprint (the code's
-text and the rubric's version) matches. When either changes it is stale: no longer in force, but
-kept, so the finding shows that it was ruled and has changed. A new ruling for the same id
-replaces it. When the finding no longer exists (fixed, deleted, renamed, its rule turned off) the
-ruling has nothing to answer and ends: `slop infer apply`, the one writer, removes it and lists
-it in the receipt's `ended`, but only for code under the scanned root, so scanning one directory
-never ends rulings elsewhere. The ledger therefore holds one ruling per id, sorted by path, rule
-and id; its history is the file's version control.
-
-Every subjective rule ships a rubric, and so does `agglomeration`; a test pins that, because a
-warning without one could never be ruled on and would stay a warning forever. A rubric is one
-bundled file, `references/rubrics/<rule>.md`, that states its closed question on a
-`Question:` line and the criteria for each outcome; the question's id is the rule. A confirmed agglomeration is
-recorded and shown but never fails the run. A field is declared once with `described(...)`; the schema
-and the parser both read it. The ledger is `.slop/inferences.jsonl` under the project root, one ruling per line, committed. The project
-root is the directory holding the config (`.slop.toml` or `[tool.slop]`), else the scan root, so
-a finding's id, its path and its ruling are the same whichever directory is scanned.
-`frame/location.py` turns an extent's byte spans into the lines a residue shows and fingerprints.
-
-Constants: one used by a single module stays in it. One needed by a second module in the same
-subpackage moves to that subpackage; the contract's closed terms are in `contract/vocabulary.py`.
-One needed by a second package goes in `slop/layout.py` (`CONFIG_FILENAME`, `STATE_DIR`).
-
 ## Vocabulary
 
 The lexicon says which words the code uses; the ontology says what words mean in the project's
 domain, whether or not the code uses them. `slop/ontology/` holds the project's vocabulary as
-W3C SKOS terms in `<project root>/.slop/ontology.json`, beside the inference ledger, committed:
+W3C SKOS terms in `<project root>/.slop/ontology.json`, committed:
 each term is one word (`prefLabel`) with its `definition`, other accepted words (`altLabel`),
 retired or misspelt words (`hiddenLabel`), and `broader` and `related` terms. A term binds the
 code only once it has a definition; an undefined term is a draft candidate.
@@ -196,7 +127,7 @@ words with the defined terms (`slop lexicon`).
 single point of agentic access. The agent reads the user's ask, finds the matching capability,
 takes the exact options from `slop --help` and `slop COMMAND --help`, runs the commands and
 answers in prose. Its capabilities table is checked against the parser, so a new command fails
-the tests until the table names it. It imports `infer`; nothing below it imports `skill`.
+the tests until the table names it. Nothing below it imports `skill`.
 
 | Module | Role |
 |---|---|
@@ -204,9 +135,8 @@ the tests until the table names it. It imports `infer`; nothing below it imports
 | `catalog.py` | `SKILLS`, every skill by name; one function per skill, its body in `manifests/<name>.md` |
 | `install.py` | writes `DEST/<name>/`, replaces only a recorded earlier install |
 
-A skill's files are built from their single sources each time it is shown or installed:
-`slop` takes the inference workflow and rubrics from `infer/bundle/` and the schemas from
-`infer/contract/`. Nothing is copied into the repository. An installed skill is a snapshot of
+A skill's files are built from their single sources each time it is shown or installed, so
+nothing is copied into the repository; `slop` is its manifest alone. An installed skill is a snapshot of
 the slop that wrote it, and goes stale when slop is upgraded until it is reinstalled.
 
 `install` builds the whole tree before touching disk and records what it wrote in

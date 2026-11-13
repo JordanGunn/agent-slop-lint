@@ -12,8 +12,7 @@ answer in prose.
 2. Use `--output json` when you will read a result yourself. Tell the user what it means in
    prose; do not hand them raw JSON.
 3. Run commands that only read freely. Before a command that writes, say what it will change
-   and confirm: `slop init` writes `.slop.toml`, `slop infer apply` stores rulings that change
-   what `slop lint` reports, `slop skill install` writes a skill directory.
+   and confirm: `slop init` writes `.slop.toml`, `slop skill install` writes a skill directory.
 4. `slop lint` and `slop check` exit 0 when clean, 1 on any violation, 2 on an error. A `WARN`
    line is a subjective finding: it never fails the run.
 
@@ -31,19 +30,8 @@ answer in prose.
 | what the project's words mean; draft, check or show its vocabulary; where a word reaches the code; a rename plan | `slop ontology` |
 | what is complex and changing right now | `slop hotspots` |
 | the parse tree of one file | `slop ast` |
-| whether the `WARN` findings are real problems | `slop infer`: follow `references/infer.md` |
 | how to set slop up in a project | `slop init`, `slop doctor` |
 | how to install this skill elsewhere | `slop skill` |
-
-## Judging warnings
-
-Some findings need judgement, not a limit, and so do the groups of related findings in
-`agglomerations` (does the group have one cause?). In `slop lint --output json` they carry a
-`residue` object: you read the code it points to, rule on it against its rubric, and return verdicts with
-`slop infer apply`. The workflow and its rules are
-in `references/infer.md`, the rubrics in `references/rubrics/`, and the document shapes in
-`assets/schemas/`. The same text is printed by `slop infer instructions`, `slop infer references`
-and `slop infer schema`.
 
 ## Agreeing on vocabulary
 
@@ -61,8 +49,3 @@ name uses an alternative or retired word. `slop ontology occurrences WORD` shows
 reaches the code, and `slop ontology rename OLD NEW` lists every edit a rename makes; apply
 those edits yourself. `slop lexicon` reports the code's words that no term defines yet. The file
 is committed, so each agreement is a reviewable diff.
-
-## Files
-
-These are copies of what slop printed when the skill was installed. If they disagree with the
-CLI, the CLI is current: reinstall with `slop skill install slop --dest DIR --force`.

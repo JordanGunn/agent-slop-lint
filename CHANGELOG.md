@@ -30,23 +30,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `class-cohesion` (LCOM4, 1, off by default): 12 rules.
 - Suppression matches exact rule names only: `slop: ignore[a, b]`.
 - `scripts/` removed.
-- New package `slop/infer/` and `slop infer apply | references | schema | instructions`:
-  inference over the linter's subjective warnings. `slop lint --output json` attaches a
-  `residue` (id, line span, question, rubric, fingerprint, `status`) to each finding that can be
-  put to inference, and states `root` and `project_root` as absolute paths so each location
-  resolves from any working directory; the host agent reads the code and the rubric, and slop validates its
-  answer (`Verdicts`, `Receipt`) and stores it in `.slop/inferences.jsonl`. `slop lint` applies the rulings: `clear` drops a warning, `confirm`
-  makes it a violation, `defer` or a stale ruling leaves it a warning. Instructions and
-  references (the `class-cohesion` rubric) are bundled and printed by the CLI. `Violation`
-  gains `subject`; `slop/layout.py` holds `CONFIG_FILENAME` and `STATE_DIR`. Finding paths and the
-  ledger are relative to the project root (the directory holding the config, else the scan root),
-  so a ruling holds whichever directory is scanned.
+- `Violation` gains `subject`; `slop/layout.py` holds `CONFIG_FILENAME` and `STATE_DIR`.
 - New package `slop/skill/` and `slop skill list | show | install`: Agent Skills built at
   install time from their single sources (no copies in the repository). An install records
   its files in `.slop-skill.json`; `--force` replaces only such an install of the same skill
   and keeps files a user added. Reinstall after upgrading slop. Slop ships one skill, `slop`
-  (`/slop`): a conversational interface over the CLI, which also carries the `slop infer`
-  workflow, rubrics and schemas.
+  (`/slop`): a conversational interface over the CLI.
 - The project's vocabulary, `.slop/ontology.json`: what the project's words mean, as W3C SKOS
   terms (one word each, with a `definition`, `altLabel` and `hiddenLabel` words, and `broader`
   and `related` terms). It is seeded from the code and then corrects it:
@@ -80,14 +69,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `slop infer` rules on agglomerations: rubric `agglomeration` asks whether a group shares one
-  cause a single change would remove. A cleared group disappears; a confirmed one is recorded
-  and shown, never failing the run. A residue's code is a list of `locations` (one for a
-  finding, the lead's and each member's for a group) instead of one `path` and line range.
-- `slop lint --output json` lists `agglomerations`: groups of findings related by the code's
-  structure (Oizumi et al. 2016: intra-method, intra-class, hierarchical, intra-component,
-  cross-component), each with a lead scope and member finding ids. Every finding has an `id`;
-  `duplicate-string` and `magic-float` ids include the literal, so they no longer collide.
 - Read-only primitives that answer with facts and no limits: `slop find` / `--collisions`,
   `tree`, `shape` and `lexicon`; they report
   caveats for syntax-error files.
@@ -110,30 +91,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   occurrence. `class_fields` and `assignment_nodes` leave the grammar contract;
   `member_access` returns every spelling of `receiver.member`.
 
-### Changed (breaking)
+### Removed
 
-- A ruling has a lifetime. It is in force while its finding and fingerprint last, stale (kept,
-  not in force) when the code or rubric changes, replaced by a newer ruling, and ended when its
-  finding no longer exists. The ledger holds one ruling per id, sorted, rewritten whole by
-  `slop infer apply`, which removes ended rulings under the scanned root and lists them in the
-  receipt's new `ended` field. `Ledger.append` and `Ledger.latest` are gone; `Ledger.write`
-  replaces the record.
-- Human `slop lint` output tags each warning `[not ruled]`, `[stale: the code|rubric changed
-  since it was ruled ...]` or `[deferred: reason]`, and the summary counts the findings that wait
-  for a ruling.
+- The inference layer (`slop/infer/`, `slop infer`, residue, verdicts, rubrics, the rulings
+  ledger `.slop/inferences.jsonl`) and agglomerations (`slop/agglomeration.py`, the
+  `agglomerations` and `project_root` keys of lint JSON, finding ids). Lint is deterministic
+  again: a subjective rule's findings are warnings that never fail the run, and nothing slop
+  stores changes what it reports. The rubrics coaxed an agent with invented prose and never
+  got one to propose a deleting redesign; a rebuilt inference layer is being designed.
 
 ### Fixed
 
-- slop rules on its own findings: `.slop/inferences.jsonl` holds 12 rulings (10 class and package
-  warnings cleared, the root package's rigid-package confirmed). The confirmed agglomeration
-  (four re-implementations of `scope.find.walk`) is fixed: `scope.lexicon` and the tests use
+- Four re-implementations of `scope.find.walk` are gone: `scope.lexicon` and the tests use
   `walk`.
 - Constructors are `CallableKind.CONSTRUCTOR` (it was declared and never produced): a method
   its grammar names a constructor, or named like its class. LCOM4 and the accessor test read the
   kind instead of re-deriving it.
 - `ruff check src tests` is clean (8 E702 in `tests/test_full_corpus_smoke.py`).
-- The repository's `.slop/inferences.jsonl` held three rulings a test wrote into it on
-  2026-11-10 (paths under `/tmp/pytest-...`); it is removed.
 - Words are one word whatever their inflection: the lexicon counts, and the vocabulary,
   `preferred-term`, `ontology check`, `occurrences` and `rename` compare, by stem
   (`slop.lexicon.inflection.stem`: Porter 1980 steps 1a and 1c), so `node` and `nodes` are one
@@ -143,13 +117,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the repository as the project root. The NPath and Cognitive grammar projections are
   `_NPathGrammar` and `_CognitiveGrammar` (they were named `vocab`, which the vocabulary
   reserves for itself).
-- `rigid-package` and `useless-package` warnings can be ruled on. A residue is placed by its
-  subject's extent rather than its syntax node, so a package shows every module in it; both
-  rules ship rubrics that ask what the measure cannot see (will the package keep changing, do
-  its abstractions have users). Every subjective rule now has a rubric.
-- A rubric file states its own question (`Question: ...`); the question id is the rule name.
-  Rubrics changed, so earlier rulings are stale and come back as warnings until ruled again.
-- An agglomeration's residue reads the lead and every unit the group sits on, packages included.
 - `class-cohesion` (LCOM4) leaves getters and setters out of its method groups and lists
   them as `accessors`, so a value class is no longer split one group per field. An accessor
   is a method whose only statement returns one instance member or assigns a plain value to

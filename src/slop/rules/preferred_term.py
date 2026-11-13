@@ -43,7 +43,7 @@ def _declarations(rule: str, scope: Scope, vocabulary: Vocabulary) -> Iterable[V
         word, preferred = next(((w, p) for w, p in replaced if p is not None), (None, None))
         if preferred is not None:
             yield Violation.at(scope, rule, f"name '{name}' uses '{word}'; the vocabulary's word is '{preferred}'",
-                               value=1, threshold=0, key=name)
+                               value=1, threshold=0)
     for child in scope.children():
         if child.id.kind not in _OWN_ALTITUDE:
             yield from _declarations(rule, child, vocabulary)

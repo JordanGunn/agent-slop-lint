@@ -9,5 +9,4 @@ copy committed beside them. `slop skill list | show | install` serve them.
     catalog     every skill slop ships, by name; one function per skill
     install     write a skill's directory
 
-Imports ``infer`` (for its prose and schemas); ``infer`` never imports this package.
 """

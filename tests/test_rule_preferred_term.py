@@ -39,7 +39,6 @@ def test_lint_reports_defined_alternatives_once_at_each_declaration(tmp_path, ca
     doc = json.loads(capsys.readouterr().out)
     findings = [v for v in doc["violations"] if v["rule"] == "preferred-term"]
     assert len(findings) == 2
-    assert len({v["id"] for v in findings}) == 2
     assert {v["message"] for v in findings} == {
         "name 'get_user' uses 'get'; the vocabulary's word is 'Fetch'",
         "name 'get_count' uses 'get'; the vocabulary's word is 'Fetch'",

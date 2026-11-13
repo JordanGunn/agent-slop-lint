@@ -39,7 +39,6 @@ Read-only (exit `0` answered, `2` could not answer):
 | `slop deps` | the module dependency graph (`--cycles`) |
 | `slop ontology draft`, `check`, `show`, `occurrences`, `rename` | the project's vocabulary (`.slop/ontology.json`, [W3C SKOS](https://www.w3.org/TR/skos-reference/) terms): seeded from the code's words, agreed, then used to correct names (`preferred-term`, rename plans) |
 | `slop shape` | each class's CK profile and cohesion groups |
-| `slop infer apply`, `references`, `schema`, `instructions` | inference over the subjective warnings: `slop lint --output json` gives each one a `residue`; an agent reads the code and rubric and returns verdicts; `slop lint` applies the rulings |
 | `slop skill list`, `show`, `install` | the `slop` Agent Skill (`/slop`): a conversational interface that runs slop from a plain-language ask |
 | `slop hotspots` | files changed in a revision window (`--since REV`, `--last N`, plus uncommitted changes), ranked by churn × complexity |
 

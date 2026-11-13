@@ -2,7 +2,7 @@
 
 Primitives (read-only views over the layers): ``ast`` / ``tree`` / ``find`` / ``lexicon`` /
 ``deps`` / ``shape`` / ``hotspots``. Lint: ``lint`` / ``check`` / ``rules``.
-Inference: ``infer``. Vocabulary: ``ontology``. Housekeeping: ``doctor`` / ``init`` / ``skill``.
+Vocabulary: ``ontology``. Housekeeping: ``doctor`` / ``init`` / ``skill``.
 
 The primitives answer questions and exit 0 whenever they answered (an empty result is an
 answer); 2 means the question could not be answered. The lint commands exit 0 with no
@@ -16,10 +16,10 @@ import argparse
 import sys
 from importlib import metadata
 
-from . import ast, config, deps, doctor, find, hotspots, infer, lexicon, lint, ontology, shape, skill, tree
+from . import ast, config, deps, doctor, find, hotspots, lexicon, lint, ontology, shape, skill, tree
 
 #: in the order ``slop --help`` lists them
-_COMMANDS = (lint, doctor, config, ast, lexicon, deps, find, tree, ontology, shape, hotspots, infer, skill)
+_COMMANDS = (lint, doctor, config, ast, lexicon, deps, find, tree, ontology, shape, hotspots, skill)
 
 
 def version() -> str:

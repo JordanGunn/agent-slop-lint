@@ -8,8 +8,6 @@ from pathlib import Path
 import pytest
 
 from slop import cli
-from slop.infer.bundle import prose
-from slop.infer.contract import schemas
 from slop.skill.catalog import SKILLS
 from slop.skill.install import RECORD, InstallError, install
 from slop.skill.model import MAX_DESCRIPTION_LENGTH, Skill
@@ -45,31 +43,7 @@ def test_every_skill_meets_the_spec(skill: Skill):
 def test_every_file_a_manifest_names_is_in_the_skill(skill: Skill):
     tree = skill.tree()
     named = set(re.findall(r"`((?:references|assets|scripts)/[\w./-]+\.\w+)`", tree["SKILL.md"]))
-    assert named and named <= set(tree), named - set(tree)
-
-
-def test_the_infer_skill_carries_exactly_what_the_cli_prints():
-    tree = SLOP.tree()
-    assert tree["references/infer.md"] == prose.instructions()
-    for name in prose.references():
-        assert tree[f"references/{name}.md"] == prose.reference(name)
-    for document, schema in schemas().items():
-        assert json.loads(tree[f"assets/schemas/{document}.json"]) == schema
-    expected = ({"SKILL.md", "references/infer.md"} | {f"references/{n}.md" for n in prose.references()}
-                | {f"assets/schemas/{d}.json" for d in schemas()})
-    assert set(tree) == expected
-
-
-def test_the_infer_skill_follows_its_sources_when_they_change(tmp_path: Path, monkeypatch):
-    names = prose.references()
-    for name in names:                                                     # every reference, with new text
-        (tmp_path / "references" / f"{name}.md").parent.mkdir(parents=True, exist_ok=True)
-        (tmp_path / "references" / f"{name}.md").write_text(f"new {name}\n", encoding="utf-8")
-    (tmp_path / "instructions.md").write_text("changed\n", encoding="utf-8")
-    monkeypatch.setattr(prose, "ROOT", tmp_path)
-    rebuilt = SLOP.tree()                                                 # read when built, not copied
-    assert rebuilt["references/infer.md"] == "changed\n"
-    assert all(rebuilt[f"references/{name}.md"] == f"new {name}\n" for name in names)
+    assert named <= set(tree), named - set(tree)
 
 
 @pytest.mark.parametrize("name", ["Slop", "-slop", "slop-", "slop--infer", "a" * 65, ""])
@@ -187,8 +161,6 @@ def test_the_cli_lists_shows_and_installs(tmp_path: Path, capsys):
     assert code == 0 and out.startswith("slop  ")
     code, out, _ = _run(capsys, "skill", "show", "slop")
     assert code == 0 and out == SLOP.tree()["SKILL.md"]
-    code, out, _ = _run(capsys, "skill", "show", "slop", "assets/schemas/verdicts.json")
-    assert code == 0 and json.loads(out) == schemas()["verdicts"]
     code, out, _ = _run(capsys, "skill", "install", "slop", "--dest", str(tmp_path))
     assert code == 0 and out.strip() == str(tmp_path / "slop")
     code, _, err = _run(capsys, "skill", "install", "slop", "--dest", str(tmp_path))

@@ -112,16 +112,13 @@ def test_lint_clean_source_exits_zero_with_no_violations(tmp_path: Path, capsys)
 def test_lint_json_shape(tmp_path: Path, capsys):
     (tmp_path / "m.py").write_text(_TANGLED)
     code, doc = _lint_json(tmp_path, capsys)
-    assert code == 1 and set(doc) == {"root", "project_root", "summary", "violations", "warnings", "zero_visited",
-                                      "agglomerations"}
+    assert code == 1 and set(doc) == {"root", "summary", "violations", "warnings", "zero_visited"}
     assert doc["summary"] == {"violations": len(doc["violations"]), "warnings": 0, "exit_code": 1}
     assert "findings" not in doc
     v = next(v for v in doc["violations"] if v["rule"] == "cyclomatic-complexity")
     assert v == {"rule": "cyclomatic-complexity", "path": "m.py", "line": 1, "column": 1,
                  "message": v["message"], "value": 16, "threshold": 10, "subject": "m.f",
-                 "scope": {"kind": "callable", "qualname": "m.f", "path": "m.py"}, "related": [],
-                 "id": v["id"]}
-    assert len({f["id"] for f in doc["violations"]}) == len(doc["violations"])
+                 "scope": {"kind": "callable", "qualname": "m.f", "path": "m.py"}, "related": []}
 
 
 def test_lint_json_of_clean_source(tmp_path: Path, capsys):
@@ -175,9 +172,8 @@ def test_a_subjective_rule_warns_and_never_fails_the_run(tmp_path: Path, capsys)
     assert (w["rule"], w["path"], w["value"], w["threshold"]) == ("class-cohesion", "m.py", 2, 1)
     cli.lint.lint(tmp_path, "human")
     out = capsys.readouterr().out.splitlines()
-    assert out[0].startswith("m.py:1:1: WARN class-cohesion ") and out[0].endswith(" [not ruled]")
-    assert out[-1] == ("No violations and 1 warning. 1 waits for a ruling (1 never ruled, 0 stale): "
-                       "see `slop infer instructions`.")
+    assert out[0].startswith("m.py:1:1: WARN class-cohesion ")
+    assert out[-1] == "No violations and 1 warning."
     (tmp_path / ".slop.toml").write_text("[rules.class-cohesion]\nenabled = false\n")
     _, off = _lint_json(tmp_path, capsys)
     assert off["warnings"] == []
@@ -416,7 +412,7 @@ def _leaf_commands(parser, path=()):
 
 def test_every_command_has_a_handler():
     leaves = dict(_leaf_commands(cli.parser()))
-    assert {("lint",), ("doctor",), ("infer", "apply"), ("skill", "install")} <= set(leaves)
+    assert {("lint",), ("doctor",), ("ontology", "draft"), ("skill", "install")} <= set(leaves)
     missing = [" ".join(path) for path, parser in leaves.items() if not callable(parser.get_default("run"))]
     assert missing == []
 
@@ -443,10 +439,6 @@ _WIRING = [
     (["shape", "--root", "r", "--scope", "s", "--scope-kind", "class"], "shape.view", ("r", "human"),
      {"scope": "s", "scope_kind": "class"}),
     (["hotspots", "--root", "r", "--since", "HEAD~3"], "hotspots.view", ("r", "human"), {"since": "HEAD~3", "last": None}),
-    (["infer", "instructions"], "infer.instructions", (), {}),
-    (["infer", "references", "rubrics/x"], "infer.references", ("rubrics/x",), {}),
-    (["infer", "schema", "verdicts"], "infer.schema", ("verdicts",), {}),
-    (["infer", "apply", "v.json", "--root", "r"], "infer.apply", ("v.json", "r"), {}),
     (["ontology", "draft", "--root", "r"], "ontology.draft", ("r",), {}),
     (["ontology", "show", "Laz", "--root", "r"], "ontology.show", ("Laz", "r", "human"), {}),
     (["ontology", "occurrences", "laz", "--root", "r", "--output", "json"], "ontology.occurrences", ("laz", "r", "json"), {}),
@@ -468,5 +460,5 @@ def test_each_command_reaches_its_handler_with_its_arguments(monkeypatch, argv, 
 
 
 def test_the_wiring_table_covers_every_command():
-    covered = {tuple(argv[:2]) if argv[0] in ("infer", "ontology", "skill") else (argv[0],) for argv, *_ in _WIRING}
+    covered = {tuple(argv[:2]) if argv[0] in ("ontology", "skill") else (argv[0],) for argv, *_ in _WIRING}
     assert covered == set(dict(_leaf_commands(cli.parser())))

@@ -22,13 +22,8 @@ root (src-layout; package `agent-slop-lint`, import `slop`, CLI `slop.cli:main`)
   its definition, alt/hidden labels, broader/related); `model.py`, `fs.py`, `check.py`,
   `draft.py` (seed from declared words), `occurrence.py` (where a word reaches the code, rename
   plans). It reaches lint through the `lexicon.Vocabulary` protocol on the analysis context.
-- `src/slop/agglomeration.py`: groups of related findings (Oizumi et al. 2016), in lint JSON
-  only; they relate through class and function references, inheritance, and imports between
-  modules, never through a file import alone.
 - Lint layer: `rule.py` (Rule), `rules/` (15 rules, `RULE_REGISTRY` in `rules/__init__.py`),
   `dispatch.py`, `violation.py`, `config.py`.
-- `src/slop/infer/`: inference layered over the linter (`contract`, `ledger`, `frame`, `source`,
-  `apply`, `bundle`); only `cli/` and `skill/` import it.
 - `src/slop/skill/`: the one Agent Skill, `slop`, built at install time from the sources it
   describes (`slop skill list | show | install`); its capabilities table is tested against the parser. `layout.py` holds file names more than one package uses.
 - `cli/`: the commands, one module per command family; each `register`s its subcommands with

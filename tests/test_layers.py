@@ -27,34 +27,14 @@ ALLOWED: dict[str, set[str]] = {
     "ontology": {"ast", "lexicon", "scope", "span"},
     "lexical": {"lexicon", "ontology", "span"},      # never scope, rules or cli
     "layout": set(),
-    "infer": {"agglomeration", "dispatch", "identity", "layout", "span", "violation"},   # never cli or skill
-    "skill": {"infer"},
-    "agglomeration": {"identity", "metrics", "scope", "violation"},   # reads findings; never rules or cli
+    "skill": set(),
 }
 
 #: package -> internal packages it must never import (everything else is unconstrained).
 FORBIDDEN: dict[str, set[str]] = {
-    "scope": {"rules", "rule", "dispatch", "cli", "ontology", "lexical", "agglomeration"},
-    "rules": {"cli", "ontology", "lexical", "agglomeration"},
-    "metrics": {"agglomeration"},
-    "dispatch": {"agglomeration"},
+    "scope": {"rules", "rule", "dispatch", "cli", "ontology", "lexical"},
+    "rules": {"cli", "ontology", "lexical"},
 }
-
-
-def test_only_the_cli_and_skill_import_infer():
-    offenders = []
-    for path in sorted((SRC / "slop").rglob("*.py")):
-        rel = path.relative_to(SRC)
-        if rel.parts[1] in ("infer", "skill", "cli"):
-            continue
-        module = ".".join(rel.with_suffix("").parts)
-        is_package = path.name == "__init__.py"
-        if is_package:
-            module = module.removesuffix(".__init__")
-        for line, target in internal_imports(path.read_text(), module, is_package=is_package):
-            if target == "infer":
-                offenders.append(f"{rel}:{line}")
-    assert offenders == []
 
 
 def internal_imports(source: str, module: str, *, is_package: bool) -> list[tuple[int, str]]:

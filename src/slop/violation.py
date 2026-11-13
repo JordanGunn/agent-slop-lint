@@ -11,12 +11,11 @@ a separate layer from checking.
 """
 from __future__ import annotations
 
-import hashlib
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from .identity import ScopeId, project_path
+from .identity import ScopeId
 from .scope.identity import ScopeKind
 
 
@@ -39,14 +38,10 @@ class Violation:
     scope: ScopeId | None = None
     #: The other scopes the violation names, in the order the message names them.
     related: tuple[ScopeId, ...] = ()
-    #: What tells this violation apart from the rule's others about the same subject (the
-    #: repeated string, the float), for rules that report several per subject; else None.
-    key: str | None = None
 
     @classmethod
     def at(cls, scope: Any, rule: str, message: str, *, value: float | int | None = None,
-           threshold: float | int | None = None, related: tuple[ScopeId, ...] = (),
-           key: str | None = None) -> Violation:
+           threshold: float | int | None = None, related: tuple[ScopeId, ...] = ()) -> Violation:
         """A violation located at the definition of ``scope``: a module, class or callable
         (its first source line), or a package (its directory)."""
         node = getattr(scope, "_node", None)
@@ -67,13 +62,7 @@ class Violation:
             subject=scope.qualname,
             scope=scope.id,
             related=related,
-            key=key,
         )
-
-    def id(self, root: Path) -> str:
-        """A stable id: the rule, the file relative to the project ``root``, the subject and the
-        key, not the line, so it survives edits that move the finding."""
-        return finding_id(self.rule, project_path(self.path, root) if self.path else "", self.subject or "", self.key)
 
     @property
     def position(self) -> tuple[str, int, int, str]:
@@ -93,17 +82,6 @@ class Violation:
             "scope": scope_json(self.scope),
             "related": [scope_json(r) for r in self.related],
         }
-
-
-_ID_LENGTH = 16
-
-
-def finding_id(rule: str, path: str, subject: str, key: str | None = None) -> str:
-    """The id of the finding of ``rule`` about ``subject`` in ``path``, told apart by ``key``. An
-    id without a key is the digest of the first three alone, so it never changes for rules
-    that report one finding per subject."""
-    fields = (rule, path, subject) if key is None else (rule, path, subject, key)
-    return hashlib.sha256("\0".join(fields).encode("utf-8")).hexdigest()[:_ID_LENGTH]
 
 
 def scope_json(scope: ScopeId | None) -> dict[str, Any] | None:
