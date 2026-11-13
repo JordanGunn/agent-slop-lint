@@ -5,9 +5,6 @@ The raw tree-sitter type -> ``NodeKind`` mapping is computed in ``tree.Node.kind
 from the *grammar's own* vocabulary methods (``callable()``, ``decision_nodes()``,
 ``loop_nodes()``, ...) — there is no separate table to drift, and the raw
 ``.type`` stays available as the escape hatch for the long tail.
-
-(Revives the legacy ``slop.language.ast`` per-category node enums as one flat
-neutral vocabulary rather than a module-per-category split.)
 """
 from __future__ import annotations
 

@@ -5,7 +5,7 @@ splits camelCase, snake_case, PascalCase, acronym runs (``HTTPServer`` ->
 ``HTTP``/``Server``), and digit boundaries uniformly, with no knowledge of what
 casing convention an identifier "should" follow. Case is preserved through
 ``split_tokens`` and normalised away later, at :class:`~slop.lexicon.corpus.Lexicon`
-construction — so the kernel needs no ``Case`` enum and must not bind to a language's
+construction, so the lexicon needs no ``Case`` enum and must not bind to a language's
 declared convention (developers violate them: camelCase in Python, PascalCase
 fields). Casing-*convention* violation is a style signal, not structural debt, and is
 a deliberate non-goal here.

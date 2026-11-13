@@ -1,11 +1,8 @@
-"""Rust grammar — struct/enum/trait + impl blocks + free functions.
+"""Rust grammar: structs, enums and traits, impl blocks, free functions.
 
-impl_item is NOT a type, so it is excluded from classes(); its function_items are
-carved at module level and reparented to the impl's target type via
-reparent_callable (parent-walk to the enclosing impl_item) — replacing the legacy
-post_scan_adjust. Inheritance-shaped metrics are absent (extract_superclasses
-defaults to []). Also fixes a legacy bug (operator/operand_nodes were dead code
-nested in a helper).
+An ``impl_item`` is not a type, so ``classes()`` leaves it out; its functions are carved at
+module level and ``reparent_callable`` attaches each to the type the impl names. Rust has no
+inheritance, so ``extract_superclasses`` returns nothing.
 """
 from __future__ import annotations
 

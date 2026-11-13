@@ -4,7 +4,7 @@ This is everything a rule reports, and deliberately no more, as in flake8, ruff 
 which rule, where (``path:line:column``), and one factual message. A rule that measures
 something also records the ``value`` it measured and the ``threshold`` it exceeded, and every
 violation records the ``scope`` it is about and the ``related`` scopes it names (the other
-clones, the other definitions, the rest of a cycle), so a reader or a later layer sees the
+clones, the other definitions, the rest of a cycle), so a reader or another tool sees the
 numbers and the structure without parsing the message. A violation does not advise, rank,
 or say how sure it is: deciding what a violation *means* is judgement, and judgement is
 a separate layer from checking.

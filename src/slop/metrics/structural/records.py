@@ -1,12 +1,6 @@
-"""Value records returned by metric methods.
+"""The frozen records structural metrics return.
 
-These are data contracts (frozen records), not computations. They fix the shape
-a metric reports; the computation that fills them is built per altitude during
-rule porting (build step 5). Fields known from the legacy inventory are declared
-now; provisional records carry the fields we already know we want and may grow.
-
-Each record cites the legacy rule/compute it preserves, so the inventory is
-traceable from the new model back to the source of truth.
+Each record is what one measure reports; the module named for the measure computes it.
 """
 from __future__ import annotations
 
@@ -97,8 +91,7 @@ class CKMetrics:
 
 @dataclass(frozen=True)
 class PackageMetrics:
-    """Martin (1994) package stability/abstractness. Legacy: rigidity, uselessness,
-    structure/packages.py. Defined only at the Package altitude.
+    """Martin (1994) package stability and abstractness. Defined only at the Package altitude.
     """
 
     afferent: int       # Ca — incoming dependencies

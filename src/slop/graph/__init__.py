@@ -1,9 +1,7 @@
-"""Derived graphs — downstream projections over a built component hierarchy.
+"""Graphs over the scope tree.
 
-The component hierarchy answers "what owns what"; the graphs answer "what
-depends on what" (``DependencyGraph``) and "what calls what" (``CallGraph``,
-deferred). They are built after the ownership spine is solid and piggyback on
-it — see DESIGN.md.
+``DependencyGraph``: which modules import which, with each module's afferent and efferent
+coupling and the import cycles. Carving builds it and keeps it on the analysis context.
 """
 from __future__ import annotations
 

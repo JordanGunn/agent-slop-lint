@@ -1,10 +1,7 @@
-"""Go grammar — structs + receiver methods + free functions (MultiPurpose).
+"""Go grammar: structs and interfaces, receiver methods, free functions.
 
-Receiver methods are emitted at file top-level by tree-sitter but belong to their
-receiver type; ``reparent_callable`` returns the receiver name so the carver
-attaches them to the struct by construction (the legacy used a post_scan_adjust
-record-rewrite — dropped). Also fixes a legacy bug where operator_nodes/
-operand_nodes were nested inside a helper and never took effect.
+tree-sitter places receiver methods at file level; ``reparent_callable`` names the receiver's
+type, so carving attaches each method to its struct.
 """
 from __future__ import annotations
 

@@ -1,19 +1,11 @@
-"""Lexicon — the analysable identifier token-space over some extent.
+"""Lexicon: the words of a set of identifiers, counted.
 
-The kernel's central object: a bag of role-tagged, span-located identifier tokens,
-cleaned (split, stop-word stripped, stemmed) and ready for descriptive
-measurement. There is **one** ``Lexicon`` type; a narrower scope is a narrower
-*extent*, never a subclass — ``slice`` produces a sub-lexicon over a path subset,
-reusing the parent's tokenisation.
+A bag of role-tagged, span-located identifier tokens, split, stop-word stripped and stemmed.
+It measures the bag (type and token counts, hapax ratio, frequency, spread over files) and
+checks nothing; limits belong to the rules.
 
-Boundary discipline: this module measures the token-space and nothing more. Type and
-token counts, hapax ratio, and frequency are descriptive lexicostatistics a corpus
-linguist would recognise. Limits and checks belong to the rule layer above, not here.
-
-Input is plain data — a stream of ``(text, role, span)`` — so the lexicon imports
-nothing from ``component``/``rules``/``linter`` and stays usable on its own. ``slice``
-is duck-typed on its argument's ``.spans`` (each exposing ``.path``) precisely so the
-component ``Extent`` type need not be imported.
+Input is plain data, a stream of ``(text, role, span)``, so the lexicon imports nothing from
+``scope``, ``rules`` or ``cli``.
 """
 from __future__ import annotations
 
@@ -35,8 +27,7 @@ class Lexicon:
     Built from a stream of ``(text, role, span)`` units. Each unit is tokenised
     once into a :class:`Lexeme`; the significant token-space is the tokens that are
     not stop words, each counted under its stem (``slop.lexicon.inflection``, so
-    ``node`` and ``Nodes`` are one word), retaining provenance for slicing and
-    future cross-view joins.
+    ``node`` and ``Nodes`` are one word), keeping each token's role and span.
     """
 
     def __init__(

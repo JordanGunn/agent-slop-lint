@@ -1,10 +1,7 @@
-"""Parse substrate — tree-sitter grammar loading + file parsing.
+"""Loading tree-sitter grammars and parsing files.
 
-Infrastructure ported faithfully from the legacy ``tree/parse.py`` +
-``language/treesitter.py``: tree-sitter's loader and parser API are a real
-external constraint, not a structural choice, so this is a direct port (the
-pre/post-0.22 Parser shim stays). Detection maps a path to a language id by
-extension; loading resolves + caches a ``tree_sitter.Language``.
+Detection maps a path to a language id by its extension; loading imports the language's
+grammar package and caches its ``tree_sitter.Language``; parsing returns the tree.
 """
 from __future__ import annotations
 
@@ -81,12 +78,7 @@ def parse_bytes(content: bytes, language_id: str) -> object | None:
     if ts_lang is None:
         return None
     try:
-        try:
-            parser = tree_sitter.Parser(ts_lang)
-        except TypeError:  # pre-0.22 API
-            parser = tree_sitter.Parser()
-            parser.language = ts_lang  # type: ignore[assignment]
-        return parser.parse(content)
+        return tree_sitter.Parser(ts_lang).parse(content)
     except Exception:
         return None
 

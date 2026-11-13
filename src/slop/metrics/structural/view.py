@@ -7,8 +7,7 @@ Callable and the sum over descendant callables at a container.
 
 Position-unique metrics answer at their home altitude (CK at a Class, Martin at a
 Package, the cross-cutting ones at a Corpus) — the caller (a rule at that altitude, or
-a test) supplies a region of the right kind, exactly as the legacy altitude-typed
-measure mixins required. Methods that need cross-scope data read it from
+a test) supplies a region of the right kind. Methods that need cross-scope data read it from
 ``region.context`` (the corpus-global AnalysisContext).
 
 Like the rest of ``metrics/structural``, it reads the region's duck-typed surface

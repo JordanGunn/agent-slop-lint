@@ -11,7 +11,7 @@ Two reasons this is hand-curated rather than a library list:
 
 ``STOP_WORDS`` is the default; it is injectable — a :class:`~slop.lexicon.corpus.Lexicon`
 takes a ``stopwords`` set, so a caller analysing a different vocabulary can substitute
-its own without forking the kernel.
+its own without editing this list.
 """
 from __future__ import annotations
 

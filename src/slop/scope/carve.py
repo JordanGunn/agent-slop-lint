@@ -104,8 +104,8 @@ def _resolved_imports(graph: Any) -> dict[Any, set[Any]]:
 
 def _carve_realm(root: Path, lang: str, grammar: type, paths: list[Path]) -> components.Realm | None:
     # Carve modules, then group into packages via the grammar's own
-    # resolve_packages rule (Python: __init__-gated; flat, rel-path-named —
-    # matching the legacy package model). Files in no package fall back to a
+    # resolve_packages rule (Python: __init__-gated; flat, rel-path-named).
+    # Files in no package fall back to a
     # per-directory package so no module is lost.
     module_by_file: dict[Path, components.Module] = {}
     for path in sorted(paths):
@@ -260,8 +260,8 @@ def _make_callable(
 
 
 def _reparent_callables(children: tuple[Any, ...], grammar: type, content: bytes) -> tuple[Any, ...]:
-    """Attach receiver/impl callables to their owning Class by construction
-    (replaces the legacy post_scan_adjust). Driven by grammar.reparent_callable."""
+    """Attach receiver and impl callables to the class they belong to, as named by
+    ``grammar.reparent_callable``."""
     classes = {c.name: c for c in children if c.KIND == ScopeKind.CLASS}
     if not classes:
         return children

@@ -29,18 +29,18 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "tree-sitter", specifier = ">=0.21.0" },
-    { name = "tree-sitter-c", specifier = ">=0.21.0" },
-    { name = "tree-sitter-c-sharp", specifier = ">=0.21.0" },
-    { name = "tree-sitter-cpp", specifier = ">=0.21.0" },
-    { name = "tree-sitter-go", specifier = ">=0.21.0" },
-    { name = "tree-sitter-java", specifier = ">=0.21.0" },
-    { name = "tree-sitter-javascript", specifier = ">=0.21.0" },
-    { name = "tree-sitter-julia", specifier = ">=0.21.0" },
-    { name = "tree-sitter-python", specifier = ">=0.21.0" },
-    { name = "tree-sitter-ruby", specifier = ">=0.21.0" },
-    { name = "tree-sitter-rust", specifier = ">=0.21.0" },
-    { name = "tree-sitter-typescript", specifier = ">=0.21.0" },
+    { name = "tree-sitter", specifier = ">=0.25" },
+    { name = "tree-sitter-c", specifier = ">=0.24" },
+    { name = "tree-sitter-c-sharp", specifier = ">=0.23" },
+    { name = "tree-sitter-cpp", specifier = ">=0.23" },
+    { name = "tree-sitter-go", specifier = ">=0.25" },
+    { name = "tree-sitter-java", specifier = ">=0.23" },
+    { name = "tree-sitter-javascript", specifier = ">=0.25" },
+    { name = "tree-sitter-julia", specifier = ">=0.23" },
+    { name = "tree-sitter-python", specifier = ">=0.25" },
+    { name = "tree-sitter-ruby", specifier = ">=0.23" },
+    { name = "tree-sitter-rust", specifier = ">=0.24" },
+    { name = "tree-sitter-typescript", specifier = ">=0.23" },
 ]
 
 [package.metadata.requires-dev]

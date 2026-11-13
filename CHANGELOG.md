@@ -93,6 +93,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- Support for tree-sitter before 0.25 and the grammar packages before the versions CI tests: the
+  dependency floors now match what is tested, and the three shims that served the untested range
+  are gone (the pre-0.22 `Parser()` fallback, the pre-`QueryCursor` query path, and the
+  `(name, node)` capture shape).
+- Docstrings that justified code by the port it came from ("ported from the legacy …", "build
+  step 5", "the kernel") or described things that do not exist (`DESIGN.md`, a `CallGraph`,
+  modules named `annotations` and `relational`). Each now says what the code does.
 - Code with no consumer: the lexicon comparison functions (`jaccard`, `containment`, `cosine`,
   `js_divergence`, `js_similarity`), `Lexicon.slice`, `metrics/locus.py` and the `locus` fields
   of clone clusters and hotspots, the Halstead profile (`HalsteadProfile`, difficulty, effort,

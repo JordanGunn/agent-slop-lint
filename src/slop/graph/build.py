@@ -140,8 +140,7 @@ def _edges(module: Any, index: ModuleIndex, module_ids: set[ScopeId]) -> list[De
 
 
 def _module_names_for_path(fp: Path, init_name: str | None = None) -> list[str]:
-    """All module-name spellings a grammar might emit for this path
-    (ported from legacy build_module_index).
+    """All module-name spellings a grammar might emit for this path.
 
     ``init_name`` is the grammar's ``package_init_name()`` (Python ``__init__.py``,
     ``None`` elsewhere): a package-init module is also importable by its directory

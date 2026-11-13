@@ -1,13 +1,10 @@
-"""slop.metrics — slop's measurements over the substrate.
+"""slop.metrics: measurements over the parsed code.
 
-- ``metrics.structural`` — structural metrics computed over ``ast`` nodes + the
-  analysis-context (cyclomatic, Halstead, CK, Martin, clones, hotspots, …).
+``metrics.structural`` computes structural measures over ``ast`` nodes and the corpus-wide
+analysis context: cyclomatic, cognitive and NPath complexity, Halstead volume, CK, Martin's
+package metrics, clones, cohesion, hotspots, literals. Words in identifiers are measured by
+``slop.lexicon``.
 
-Vocabulary analysis lives in the standalone ``slop.lexicon`` kernel, not here. The
-former ``metrics.lexical`` package held slop-invented signals and was removed; see
-CHANGELOG for the commit it can be recovered from.
-
-Metrics are *measurements*. Limits live above, in the rules. A
-metric takes plain inputs — an addressable region plus the corpus-global context —
-never a scope object, so ``metrics`` never imports ``scope``.
+Metrics measure; rules set the limits. A metric takes plain inputs (a region exposing its
+nodes, and the context), never a scope class, so ``metrics`` never imports ``scope``.
 """

@@ -1,12 +1,10 @@
-"""Distribution — the identifier token-space as a measured Zipfian object.
+"""Distribution: the identifier words as a measured Zipfian frequency distribution.
 
-An identifier vocabulary is a frequency distribution: its Zipf exponent and fit, the share
-of words used once (hapax legomena), how concentrated its head is. This module measures the
-shape and checks nothing against it. Lexicography a corpus linguist would recognise, so it
-lives in the kernel.
+Its Zipf exponent and fit, the share of words used once (hapax legomena), and how
+concentrated its head is. It measures the shape and checks nothing against it.
 
-No population norm is reported beside it: the norms once stored here could not be traced to
-a reproducible measurement, and over declared names slop and laszy both sit near Zipf α 1.0,
+It reports no population norm beside the measurement: no norm traceable to a reproducible
+measurement exists, and over declared names slop and laszy both measure near Zipf α 1.0,
 R² 0.94 and a hapax ratio of 0.36, which is no population either.
 """
 from __future__ import annotations

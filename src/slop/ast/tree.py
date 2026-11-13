@@ -164,26 +164,16 @@ class Node:
     def query(self, pattern: str, capture: str | None = None) -> tuple["Node", ...]:
         """Run a tree-sitter query rooted at this node. With ``capture``, return
         only nodes bound to that capture name (e.g. ``"module"`` for ``@module``);
-        otherwise every captured node, flattened. Wraps the modern
-        ``Query``/``QueryCursor`` API with the pre-0.22 fallback, matching the
-        loader shim in ``parse.py``."""
+        otherwise every captured node, flattened."""
         ts_lang = self._grammar.ts_language()
         if ts_lang is None:
             return ()
         import tree_sitter
 
         out: list[Node] = []
-        query_cls = getattr(tree_sitter, "Query", None)
-        cursor_cls = getattr(tree_sitter, "QueryCursor", None)
-        if query_cls is not None and cursor_cls is not None:
-            cursor = cursor_cls(query_cls(ts_lang, pattern))
-            for _idx, captures in cursor.matches(self._raw):
-                out.extend(self._wrap(n) for n in _captured_nodes(captures, capture))
-        else:
-            query = ts_lang.query(pattern)
-            for match in query.matches(self._raw):
-                if isinstance(match, tuple) and len(match) == 2:
-                    out.extend(self._wrap(n) for n in _captured_nodes(match[1], capture))
+        cursor = tree_sitter.QueryCursor(tree_sitter.Query(ts_lang, pattern))
+        for _idx, captures in cursor.matches(self._raw):
+            out.extend(self._wrap(n) for n in _captured_nodes(captures, capture))
         return tuple(out)
 
     # ---- inspection / serialization ----------------------------------
@@ -374,17 +364,11 @@ def _classify(raw_type: str, grammar: Any) -> NodeKind:
     return NodeKind.OTHER
 
 
-def _captured_nodes(captures: Any, name: str | None = None) -> Iterator[Any]:
-    """Yield raw nodes from a tree-sitter match's captures, across both the
-    dict shape (modern) and the (name, node) pairs shape (legacy). With ``name``,
-    yield only nodes bound to that capture name."""
-    if isinstance(captures, dict):
-        if name is not None:
-            yield from captures.get(name, [])
-        else:
-            for nodes in captures.values():
-                yield from nodes
-        return
-    for cname, node in captures:
-        if name is None or cname == name:
-            yield node
+def _captured_nodes(captures: dict[str, list[Any]], name: str | None = None) -> Iterator[Any]:
+    """The raw nodes of one match's captures (capture name -> nodes); with ``name``, only
+    the nodes bound to that capture."""
+    if name is not None:
+        yield from captures.get(name, [])
+    else:
+        for nodes in captures.values():
+            yield from nodes
