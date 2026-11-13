@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from slop.scope import scan_corpus
-from slop.scope.find import collisions, find, outline
+from slop.scope.find import collisions, find, outline, walk
 from slop.scope.identity import ScopeKind
 
 
@@ -42,7 +42,7 @@ def test_find_kind_separates_a_function_from_a_class_of_the_same_word(sample_pro
 
 def test_find_under_restricts_to_a_subtree(sample_project: Path):
     corpus = _corpus(sample_project)
-    store = next(s for s in _walk(corpus) if s.id.kind is ScopeKind.PACKAGE and s.name == "store")
+    store = next(s for s in walk(corpus) if s.id.kind is ScopeKind.PACKAGE and s.name == "store")
     assert {m.path for m in find(corpus, "Store", under=store)} == {"store/array.py", "store/frame.py"}
     assert find(corpus, "Index", under=store) == []   # defined elsewhere in the corpus
 
@@ -106,8 +106,3 @@ def test_a_procedural_only_grammar_is_reported_as_unable_to_answer_class_questio
                                "struct/type definitions are not discovered"]
     assert caveats(corpus, ScopeKind.CALLABLE) == []     # callables are still discoverable
 
-
-def _walk(scope):
-    yield scope
-    for child in scope.children():
-        yield from _walk(child)

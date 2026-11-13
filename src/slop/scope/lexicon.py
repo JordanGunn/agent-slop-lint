@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from .find import walk
 from .identity import ScopeKind
 from ..lexicon import Lexicon, Role
 from ..span import Span
@@ -50,7 +51,7 @@ def build_declared_lexicon(component: Any) -> Lexicon:
     This is the vocabulary a canonical vocabulary governs: it is chosen where a name is
     declared."""
     units: list[tuple[str, Role, Span]] = []
-    for comp in _iter_all(component):
+    for comp in walk(component):
         units.extend(declared_units(comp))
     return Lexicon(units)
 
@@ -112,8 +113,3 @@ def _node_holding_nodes(component: Any):
         for ch in component.children():
             yield from _node_holding_nodes(ch)
 
-
-def _iter_all(component: Any):
-    yield component
-    for ch in component.children():
-        yield from _iter_all(ch)

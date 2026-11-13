@@ -11,19 +11,14 @@ from slop.rules import RULE_REGISTRY
 from slop.rules.duplicate_string import DuplicateStringRule
 from slop.rules.magic_float import MagicFloatRule
 from slop.scope import scan_corpus
+from slop.scope.find import walk
 from slop.scope.identity import ScopeKind
 
 
 def _module(tmp_path: Path, filename: str, source: str):
     (tmp_path / filename).write_text(source)
     corpus = scan_corpus(tmp_path, config=None)
-    return next(m for m in _walk(corpus) if m.id.kind is ScopeKind.MODULE)
-
-
-def _walk(component):
-    yield component
-    for child in component.children():
-        yield from _walk(child)
+    return next(m for m in walk(corpus) if m.id.kind is ScopeKind.MODULE)
 
 
 def _floats(tmp_path: Path, source: str, filename: str = "m.py") -> dict[str, int]:

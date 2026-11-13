@@ -124,6 +124,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- slop rules on its own findings: `.slop/inferences.jsonl` holds 12 rulings (10 class and package
+  warnings cleared, the root package's rigid-package confirmed). The confirmed agglomeration
+  (four re-implementations of `scope.find.walk`) is fixed: `scope.lexicon` and the tests use
+  `walk`.
 - Constructors are `CallableKind.CONSTRUCTOR` (it was declared and never produced): a method
   its grammar names a constructor, or named like its class. LCOM4 and the accessor test read the
   kind instead of re-deriving it.

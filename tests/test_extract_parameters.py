@@ -12,6 +12,7 @@ from pathlib import Path
 import pytest
 
 from slop.scope import scan_corpus
+from slop.scope.find import walk
 from slop.scope.identity import ScopeKind
 
 CASES = {
@@ -31,12 +32,6 @@ CASES = {
 def _params(tmp_path: Path, fname: str, src: str):
     (tmp_path / fname).write_text(src)
     corpus = scan_corpus(tmp_path, config=None)
-
-    def walk(s):
-        yield s
-        for c in s.children():
-            yield from walk(c)
-
     return [c.parameters() for c in walk(corpus) if c.KIND is ScopeKind.CALLABLE]
 
 
