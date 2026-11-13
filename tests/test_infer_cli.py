@@ -4,6 +4,7 @@ from __future__ import annotations
 import io
 import json
 import re
+import shutil
 from pathlib import Path
 
 import pytest
@@ -146,3 +147,42 @@ def test_apply_reads_stdin_by_default(tmp_path: Path, capsys, monkeypatch):
     monkeypatch.setattr("sys.stdin", io.StringIO(document))
     code, out = _run(capsys, "infer", "apply", "--root", str(tmp_path))
     assert code == 0 and json.loads(out)["accepted"] == [item_id]
+
+
+def test_a_ruling_ends_when_its_finding_is_gone_but_a_narrower_scan_keeps_rulings_it_did_not_read(tmp_path: Path, capsys):
+    (tmp_path / ".slop.toml").write_text("", encoding="utf-8")
+    for package in ("a", "b"):
+        (tmp_path / package).mkdir()
+        (tmp_path / package / "m.py").write_text(TWO_GROUPS, encoding="utf-8")
+    document = {"version": "1", "verdicts": [{"id": r["id"], "outcome": "clear", "reason": "r"} for r in _residues(tmp_path, capsys)]}
+    (tmp_path / "v.json").write_text(json.dumps(document), encoding="utf-8")
+    assert _run(capsys, "infer", "apply", str(tmp_path / "v.json"), "--root", str(tmp_path))[0] == 0
+    (tmp_path / "a" / "m.py").write_text("x = 1\n", encoding="utf-8")         # a's finding is fixed
+    (tmp_path / "b" / "m.py").write_text("x = 1\n", encoding="utf-8")         # so is b's
+    (tmp_path / "none.json").write_text('{"version": "1", "verdicts": []}', encoding="utf-8")
+    code, out = _run(capsys, "infer", "apply", str(tmp_path / "none.json"), "--root", str(tmp_path / "a"))
+    assert code == 0 and len(json.loads(out)["ended"]) == 1                   # only a was scanned
+    ledger = (tmp_path / ".slop" / "inferences.jsonl").read_text(encoding="utf-8")
+    assert '"b/m.py"' in ledger and '"a/m.py"' not in ledger
+    code, out = _run(capsys, "infer", "apply", str(tmp_path / "none.json"), "--root", str(tmp_path))
+    assert len(json.loads(out)["ended"]) == 1 and not (tmp_path / ".slop" / "inferences.jsonl").exists()
+
+
+def test_human_lint_tags_each_warning_with_where_its_ruling_stands(tmp_path: Path, capsys, monkeypatch):
+    _project(tmp_path)
+    [item] = _residues(tmp_path, capsys)
+    _run(capsys, "infer", "apply", str(_verdicts(tmp_path, "defer", item_id=item["id"], reason="needs callers")), "--root", str(tmp_path))
+    code, out = _run(capsys, "lint", "--root", str(tmp_path))
+    assert out.splitlines()[0].endswith(" [deferred: needs callers]") and "wait for a ruling" not in out
+    (tmp_path / "m.py").write_text(TWO_GROUPS + "\n    def h(self):\n        return 0\n", encoding="utf-8")
+    code, out = _run(capsys, "lint", "--root", str(tmp_path))
+    assert out.splitlines()[0].endswith(" [stale: the code changed since it was ruled defer]")
+    assert out.splitlines()[-1].endswith("1 waits for a ruling (0 never ruled, 1 stale): see `slop infer instructions`.")
+    bundle = tmp_path / "bundle"
+    shutil.copytree(prose.ROOT / "references", bundle / "references")
+    (bundle / "references" / "rubrics" / "class-cohesion.md").write_text(
+        prose.reference("rubrics/class-cohesion") + "\nA new clause.\n", encoding="utf-8")
+    (tmp_path / "m.py").write_text(TWO_GROUPS, encoding="utf-8")              # the code as it was ruled
+    monkeypatch.setattr(prose, "ROOT", bundle)
+    code, out = _run(capsys, "lint", "--root", str(tmp_path))
+    assert out.splitlines()[0].endswith(" [stale: the rubric changed since it was ruled defer]")

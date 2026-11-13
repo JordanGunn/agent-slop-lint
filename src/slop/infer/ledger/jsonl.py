@@ -1,13 +1,13 @@
 """A ledger kept as one JSON object per line in a file under the project's state directory.
 
-The file is meant to be committed: one ruling per line makes a change a readable diff and
-lets two branches merge. A line that cannot be read is an error, not something to skip, so a
+The file is meant to be committed: one ruling per line, in a stable order, makes a change a
+readable diff and lets two branches merge. A line that cannot be read is an error, not something to skip, so a
 lost ruling is never silent.
 """
 from __future__ import annotations
 
 import json
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from pathlib import Path
 
 from ...layout import STATE_DIR
@@ -26,17 +26,17 @@ class JsonlLedger(Ledger):
         """The ledger of the project at ``root``."""
         return cls(root / STATE_DIR / LEDGER_FILENAME)
 
-    def append(self, ruling: Ruling) -> None:
+    def write(self, rulings: Iterable[Ruling]) -> None:
+        """One line per ruling, ordered by path, rule and id, so a change is a small diff. An
+        empty record removes the file. The file is replaced whole, never left half written."""
+        ordered = sorted(rulings, key=lambda r: (r.path, r.rule, r.verdict.id))
+        if not ordered:
+            self.path.unlink(missing_ok=True)
+            return
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        with self.path.open("a", encoding="utf-8") as out:
-            out.write(json.dumps(dump(ruling), ensure_ascii=False) + "\n")
-
-    def latest(self, finding_id: str) -> Ruling | None:
-        newest = None
-        for ruling in self.rulings():
-            if ruling.verdict.id == finding_id:
-                newest = ruling
-        return newest
+        staged = self.path.with_suffix(".jsonl.tmp")
+        staged.write_text("".join(json.dumps(dump(r), ensure_ascii=False) + "\n" for r in ordered), encoding="utf-8")
+        staged.replace(self.path)
 
     def rulings(self) -> Iterator[Ruling]:
         if not self.path.exists():

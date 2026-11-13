@@ -141,16 +141,25 @@ at that span and the rubric, then sends verdicts. `slop infer` keeps only what n
 
 `slop lint` settles the report with the ledger (`apply/settle.py`): a `clear` ruling drops the
 finding, a `confirm` ruling makes it a violation (it fails the run), and a `defer` ruling, a
-stale ruling or no ruling leaves it a warning. A ruling is stale when the definition's text or
-the rubric changed since it was given, which the fingerprint records. A new ruling for the same
-id replaces the old one, so a confirmed finding can be ruled on again.
+stale ruling or no ruling leaves it a warning. Human output tags each warning `[not ruled]`,
+`[stale: the code|rubric changed ...]` or `[deferred: reason]`, and the summary counts the
+findings that wait for a ruling. `slop lint` never writes the ledger.
+
+A ruling's lifetime: it is in force while its finding exists and its fingerprint (the code's
+text and the rubric's version) matches. When either changes it is stale: no longer in force, but
+kept, so the finding shows that it was ruled and has changed. A new ruling for the same id
+replaces it. When the finding no longer exists (fixed, deleted, renamed, its rule turned off) the
+ruling has nothing to answer and ends: `slop infer apply`, the one writer, removes it and lists
+it in the receipt's `ended`, but only for code under the scanned root, so scanning one directory
+never ends rulings elsewhere. The ledger therefore holds one ruling per id, sorted by path, rule
+and id; its history is the file's version control.
 
 Every subjective rule ships a rubric, and so does `agglomeration`; a test pins that, because a
 warning without one could never be ruled on and would stay a warning forever. A rubric is one
 bundled file, `references/rubrics/<rule>.md`, that states its closed question on a
 `Question:` line and the criteria for each outcome; the question's id is the rule. A confirmed agglomeration is
 recorded and shown but never fails the run. A field is declared once with `described(...)`; the schema
-and the parser both read it. The ledger is `.slop/inferences.jsonl` under the project root, one ruling per line. The project
+and the parser both read it. The ledger is `.slop/inferences.jsonl` under the project root, one ruling per line, committed. The project
 root is the directory holding the config (`.slop.toml` or `[tool.slop]`), else the scan root, so
 a finding's id, its path and its ruling are the same whichever directory is scanned.
 `frame/location.py` turns an extent's byte spans into the lines a residue shows and fingerprints.

@@ -18,12 +18,14 @@ from ..source.interface import Analysis
 class Settlement:
     """The settled report; the residue of each finding in it that can be put to inference, keyed
     by the finding's ``Violation.position``; the agglomerations of the settled findings that a
-    ruling has not cleared; and the residue of every agglomeration, cleared or not, by its id."""
+    ruling has not cleared; the residue of every agglomeration, cleared or not, by its id; and
+    the ledger's ruling for each id, whether in force or stale."""
 
     report: Report
     residue: dict[tuple[str, int, int, str], Residue]
     agglomerations: tuple[Agglomeration, ...]
     groups: dict[str, Residue]
+    rulings: dict[str, Ruling]
 
 
 def settle(analysis: Analysis, ledger: Ledger) -> Settlement:
@@ -59,7 +61,7 @@ def settle(analysis: Analysis, ledger: Ledger) -> Settlement:
     violations.sort(key=attrgetter("position"))
     settled = replace(report, violations=violations, warnings=warnings)
     kept, group_residue = _settle_groups(replace(analysis, report=settled), newest)
-    return Settlement(report=settled, residue=attached, agglomerations=kept, groups=group_residue)
+    return Settlement(report=settled, residue=attached, agglomerations=kept, groups=group_residue, rulings=newest)
 
 
 def _settle_groups(analysis: Analysis, newest: dict[str, Ruling]) -> tuple[tuple[Agglomeration, ...], dict[str, Residue]]:

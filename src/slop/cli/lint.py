@@ -12,7 +12,7 @@ from . import resolve
 from ..config import AnalysisConfig
 from ..dispatch import Dispatcher, Report
 from ..infer.apply.settle import settle
-from ..infer.contract import dump
+from ..infer.contract import Status, dump
 from ..infer.ledger.jsonl import JsonlLedger
 from ..infer.source.interface import Analysis
 from ..rules import RULE_REGISTRY
@@ -73,7 +73,7 @@ def lint(root: str | Path, output: str = "human", *, selected=None) -> int:
     if output == "json":
         print(json.dumps(_annotated(report, settlement, analysis), indent=2))
     else:
-        print(_human(report))
+        print(_human(report, settlement))
     return report.exit_code()
 
 
@@ -126,16 +126,34 @@ def _annotated(report: Report, settlement, analysis: Analysis) -> dict:
     return doc
 
 
-def _human(report: Report) -> str:
+def _human(report: Report, settlement) -> str:
     """One ``path:line:column: rule message`` line per violation, the shape editors and
-    other tools already parse; then one ``WARN`` line per subjective finding; then a summary."""
+    other tools already parse; then one ``WARN`` line per subjective finding, tagged with where
+    its ruling stands; then a summary that says how many findings wait for a ruling."""
     def at(v) -> str:
         return f"{report.relative_path(v) or '<corpus>'}:{v.line}:{v.column}"
 
+    tags = {position: _tag(item, settlement.rulings.get(item.id)) for position, item in settlement.residue.items()}
     lines = [f"{at(v)}: {v.rule} {v.message}" for v in report.violations]
-    lines += [f"{at(v)}: WARN {v.rule} {v.message}" for v in report.warnings]
+    lines += [f"{at(v)}: WARN {v.rule} {v.message}{tags.get(v.position, '')}" for v in report.warnings]
     errors, warnings = len(report.violations), len(report.warnings)
     head = f"Found {errors} violation{'s' if errors != 1 else ''}" if errors else "No violations"
     tail = f" and {warnings} warning{'s' if warnings != 1 else ''}" if warnings else ""
-    lines.append(f"{head}{tail}.")
+    statuses = [settlement.residue[v.position].status for v in report.warnings if v.position in settlement.residue]
+    unruled, stale = statuses.count(Status.NONE), statuses.count(Status.STALE)
+    waiting = (f" {unruled + stale} {'waits' if unruled + stale == 1 else 'wait'} for a ruling ({unruled} never ruled, {stale} stale): see "
+               "`slop infer instructions`.") if unruled + stale else ""
+    lines.append(f"{head}{tail}.{waiting}")
     return "\n".join(lines)
+
+
+def _tag(item, ruling) -> str:
+    """Where a warning's ruling stands, as a suffix: never ruled, stale and why, or deferred."""
+    if item.status is Status.NONE:
+        return " [not ruled]"
+    if item.status is Status.STALE:
+        cause = "rubric" if ruling.rubric_version != item.rubric.version else "code"
+        return f" [stale: the {cause} changed since it was ruled {ruling.verdict.outcome.value}]"
+    if item.status is Status.DEFER:
+        return f" [deferred: {ruling.verdict.reason}]"
+    return ""

@@ -110,8 +110,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   occurrence. `class_fields` and `assignment_nodes` leave the grammar contract;
   `member_access` returns every spelling of `receiver.member`.
 
+### Changed (breaking)
+
+- A ruling has a lifetime. It is in force while its finding and fingerprint last, stale (kept,
+  not in force) when the code or rubric changes, replaced by a newer ruling, and ended when its
+  finding no longer exists. The ledger holds one ruling per id, sorted, rewritten whole by
+  `slop infer apply`, which removes ended rulings under the scanned root and lists them in the
+  receipt's new `ended` field. `Ledger.append` and `Ledger.latest` are gone; `Ledger.write`
+  replaces the record.
+- Human `slop lint` output tags each warning `[not ruled]`, `[stale: the code|rubric changed
+  since it was ruled ...]` or `[deferred: reason]`, and the summary counts the findings that wait
+  for a ruling.
+
 ### Fixed
 
+- The repository's `.slop/inferences.jsonl` held three rulings a test wrote into it on
+  2026-11-10 (paths under `/tmp/pytest-...`); it is removed.
 - Words are one word whatever their inflection: the lexicon counts, and the vocabulary,
   `preferred-term`, `ontology check`, `occurrences` and `rename` compare, by stem
   (`slop.lexicon.inflection.stem`: Porter 1980 steps 1a and 1c), so `node` and `nodes` are one

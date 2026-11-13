@@ -117,9 +117,9 @@ def test_optional_fields_are_nullable_in_the_schema():
 
 def test_a_receipt_dumps_to_what_the_schema_describes():
     receipt = parse(Receipt, {"version": "1", "accepted": ["abc"],
-                              "rejected": [{"id": "zzz", "reason": "not on the worklist"}]})
+                              "rejected": [{"id": "zzz", "reason": "not on the worklist"}], "ended": ["old"]})
     assert dump(receipt) == {"version": "1", "accepted": ["abc"],
-                             "rejected": [{"id": "zzz", "reason": "not on the worklist"}]}
+                             "rejected": [{"id": "zzz", "reason": "not on the worklist"}], "ended": ["old"]}
 
 
 def _fields_without_a_description(schema, path="$"):

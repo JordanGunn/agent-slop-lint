@@ -1,6 +1,7 @@
 """apply: validate verdicts, route them into the ledger, settle a report and say where each ruling stands."""
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -17,6 +18,7 @@ from slop.infer.source.interface import Analysis
 from slop.rules import RULE_REGISTRY
 from slop.scope import scan_corpus
 
+_ANYWHERE = lambda ruling: True          # noqa: E731  the analysis read every file
 TWO_GROUPS = "class A:\n    def f(self):\n        return self.a * 2\n\n    def g(self):\n        return self.b * 2\n"
 
 
@@ -49,19 +51,37 @@ def test_unknown_ids_disallowed_outcomes_and_repeated_ids_are_rejected_with_a_re
 def test_route_stores_each_accepted_verdict_with_its_provenance_and_rejects_the_rest(tmp_path: Path):
     ledger = JsonlLedger.at(tmp_path)
     receipt = route(_verdicts(("a1", Outcome.CONFIRM, "two jobs"), ("zz", Outcome.CLEAR, "x")),
-                    {"a1": _item("a1")}, ledger, at="2026-01-01T00:00:00+00:00")
-    assert (receipt.accepted, [r.id for r in receipt.rejected]) == (("a1",), ["zz"])
+                    {"a1": _item("a1")}, ledger, at="2026-01-01T00:00:00+00:00", scanned=_ANYWHERE)
+    assert (receipt.accepted, [r.id for r in receipt.rejected], receipt.ended) == (("a1",), ["zz"], ())
     [stored] = ledger.rulings()
     assert (stored.verdict.id, stored.verdict.outcome, stored.rule, stored.path) == ("a1", Outcome.CONFIRM, "class-cohesion", "m.py")
     assert (stored.fingerprint, stored.rubric_version, stored.at) == ("fp", "rv", "2026-01-01T00:00:00+00:00")
-    assert ledger.latest("zz") is None
 
 
-def test_route_stores_accepted_verdicts_in_document_order(tmp_path: Path):
+def test_a_new_verdict_replaces_the_earlier_ruling_for_its_id(tmp_path: Path):
     ledger = JsonlLedger.at(tmp_path)
-    route(_verdicts(("b2", Outcome.CLEAR, "x"), ("a1", Outcome.DEFER, "x")), {"a1": _item("a1"), "b2": _item("b2")},
-          ledger, at="t")
-    assert [r.verdict.id for r in ledger.rulings()] == ["b2", "a1"]
+    route(_verdicts(("a1", Outcome.CLEAR, "first")), {"a1": _item("a1")}, ledger, at="t1", scanned=_ANYWHERE)
+    route(_verdicts(("a1", Outcome.CONFIRM, "second")), {"a1": _item("a1")}, ledger, at="t2", scanned=_ANYWHERE)
+    assert [(r.verdict.outcome, r.at) for r in ledger.rulings()] == [(Outcome.CONFIRM, "t2")]
+
+
+def test_a_ruling_whose_finding_is_gone_ends_but_only_where_the_scan_reached(tmp_path: Path):
+    ledger = JsonlLedger.at(tmp_path)
+    residue = {"a1": _item("a1"), "b2": replace(_item("b2"), locations=(Location(path="other/n.py", first_line=1, last_line=2),))}
+    route(_verdicts(("a1", Outcome.CLEAR, "x"), ("b2", Outcome.CLEAR, "x")), residue, ledger, at="t1", scanned=_ANYWHERE)
+    receipt = route(_verdicts(), {}, ledger, at="t2", scanned=lambda ruling: not ruling.path.startswith("other/"))
+    assert receipt.ended == ("a1",)                                   # its finding is gone from the scanned code
+    assert [r.verdict.id for r in ledger.rulings()] == ["b2"]         # other/ was not scanned: kept
+    assert route(_verdicts(), {}, ledger, at="t3", scanned=_ANYWHERE).ended == ("b2",)
+    assert not ledger.path.exists()
+
+
+def test_a_stale_ruling_is_kept_until_it_is_ruled_again(tmp_path: Path):
+    ledger = JsonlLedger.at(tmp_path)
+    route(_verdicts(("a1", Outcome.CLEAR, "x")), {"a1": _item("a1")}, ledger, at="t1", scanned=_ANYWHERE)
+    changed = replace(_item("a1"), fingerprint="new")
+    assert route(_verdicts(), {"a1": changed}, ledger, at="t2", scanned=_ANYWHERE).ended == ()
+    assert [r.fingerprint for r in ledger.rulings()] == ["fp"]
 
 
 def _analysis(root: Path, source: str = TWO_GROUPS) -> Analysis:
@@ -74,7 +94,7 @@ def _analysis(root: Path, source: str = TWO_GROUPS) -> Analysis:
 def _rule_on(root: Path, outcome: Outcome, source: str = TWO_GROUPS, reason: str = "because") -> Analysis:
     analysis = _analysis(root, source)
     [item] = FindingSource().residue(analysis)
-    route(_verdicts((item.id, outcome, reason)), {item.id: item}, JsonlLedger.at(root), at="t")
+    route(_verdicts((item.id, outcome, reason)), {item.id: item}, JsonlLedger.at(root), at="t", scanned=_ANYWHERE)
     return analysis
 
 
@@ -147,7 +167,7 @@ def test_a_ruling_applies_only_to_its_own_finding(tmp_path: Path, outcome: Outco
     two = TWO_GROUPS + "\n\n" + TWO_GROUPS.replace("class A", "class B")
     analysis = _analysis(tmp_path, two)
     first, second = FindingSource().residue(analysis)
-    route(_verdicts((first.id, outcome, "r")), {first.id: first}, JsonlLedger.at(tmp_path), at="t")
+    route(_verdicts((first.id, outcome, "r")), {first.id: first}, JsonlLedger.at(tmp_path), at="t", scanned=_ANYWHERE)
     settled = settle(analysis, JsonlLedger.at(tmp_path)).report
     remaining = {w.subject for w in settled.warnings}
     assert second.subject in remaining and first.subject not in remaining

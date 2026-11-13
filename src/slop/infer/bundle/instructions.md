@@ -21,7 +21,8 @@ slop checks and stores what you return.
 5. `slop infer apply FILE` (or pipe the document to `slop infer apply`) stores the verdicts it
    accepts and prints a receipt, shaped as `slop infer schema receipt`. Exit 0 means every
    verdict was accepted. Exit 1 means some were rejected: read `rejected`, correct those
-   verdicts and send only them again. Exit 2 means the document was not valid.
+   verdicts and send only them again. Exit 2 means the document was not valid. `ended` lists
+   rulings removed because their finding no longer exists in the scanned code.
 6. `slop lint` applies the rulings.
 
 ## Outcomes
@@ -37,7 +38,8 @@ slop checks and stores what you return.
 - `reason` is one sentence of evidence from the code, at most 280 characters.
 - Rule only on what the code and the rubric support. Use `defer` otherwise.
 - A ruling goes stale when the code it answered or its rubric changes. The finding then shows
-  `status: stale` until you rule on it again.
+  `status: stale` until you rule on it again: judge the code as it is now, not the old reason.
+- A ruling ends when its finding no longer exists. There is nothing to clean up by hand.
 
 ## Reading more
 

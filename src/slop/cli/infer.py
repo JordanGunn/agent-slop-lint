@@ -74,7 +74,13 @@ def apply(file: str, root: str | Path) -> int:
         return 2
     ledger = JsonlLedger.at(analysis.root)
     inferable = {item.id: item for item in FindingSource().residue(analysis)} | settle(analysis, ledger).groups
-    receipt = route(verdicts, inferable, ledger,
-                    at=datetime.now(timezone.utc).isoformat(timespec="seconds"))
+    receipt = route(verdicts, inferable, ledger, at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                    scanned=lambda ruling: _within(analysis.root / ruling.path, Path(root)))
     print(json.dumps(dump(receipt), indent=2))
     return 1 if receipt.rejected else 0
+
+
+def _within(path: Path, scan_root: Path) -> bool:
+    """Whether a scan of ``scan_root`` reads ``path``: it is the root, or lies under it."""
+    path, scan_root = path.resolve(), scan_root.resolve()
+    return path == scan_root or scan_root in path.parents

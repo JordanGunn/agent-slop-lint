@@ -175,8 +175,9 @@ def test_a_subjective_rule_warns_and_never_fails_the_run(tmp_path: Path, capsys)
     assert (w["rule"], w["path"], w["value"], w["threshold"]) == ("class-cohesion", "m.py", 2, 1)
     cli.lint.lint(tmp_path, "human")
     out = capsys.readouterr().out.splitlines()
-    assert out[0].startswith("m.py:1:1: WARN class-cohesion ")
-    assert out[-1] == "No violations and 1 warning."
+    assert out[0].startswith("m.py:1:1: WARN class-cohesion ") and out[0].endswith(" [not ruled]")
+    assert out[-1] == ("No violations and 1 warning. 1 waits for a ruling (1 never ruled, 0 stale): "
+                       "see `slop infer instructions`.")
     (tmp_path / ".slop.toml").write_text("[rules.class-cohesion]\nenabled = false\n")
     _, off = _lint_json(tmp_path, capsys)
     assert off["warnings"] == []

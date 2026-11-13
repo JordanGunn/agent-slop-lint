@@ -44,3 +44,5 @@ class Receipt:
     version: str = described("The document version.", const=SCHEMA_VERSION)
     accepted: tuple[str, ...] = described("Ids of verdicts stored in the ledger.")
     rejected: tuple[Rejection, ...] = described("Verdicts that were not stored, with the reason.")
+    ended: tuple[str, ...] = described(
+        "Ids of rulings removed from the ledger because their finding no longer exists in the scanned code.")
