@@ -116,18 +116,21 @@ class Callable(_Base, symbol.Callable):
         super().__init__(**kw)
         self._kind = kind
         self._parameters = parameters
-        self._accessor_checked = False
+        self._kind_settled = False
 
     @property
     def kind(self) -> CallableKind:
-        """The callable's kind. Carving knows lambdas, methods and functions from syntax alone; a
-        method that is a getter or setter (``slop.ast.accessor``) is an accessor, decided on first
-        read because it needs the file's name bindings. A constructor is never an accessor."""
-        if self._kind is CallableKind.METHOD and not self._accessor_checked:
-            self._accessor_checked = True
-            constructor = self.name in self._grammar.constructor_names() or (
-                self._owner is not None and self.name == self._owner.name)
-            if not constructor and is_accessor(self._node, self._content, self._grammar, self.bindings()):
+        """The callable's kind. Carving knows lambdas, methods and functions from syntax alone. A
+        method is then a constructor when its grammar names it one (``__init__``, ``constructor``)
+        or it is named like its class (Java, C#, C++), and otherwise an accessor when it is a
+        getter or setter (``slop.ast.accessor``). Both are decided on first read: a method's class
+        is known only once carving is done, and the accessor test needs the file's bindings."""
+        if self._kind is CallableKind.METHOD and not self._kind_settled:
+            self._kind_settled = True
+            if self.name in self._grammar.constructor_names() or (
+                    self._owner is not None and self.name == self._owner.name):
+                self._kind = CallableKind.CONSTRUCTOR
+            elif is_accessor(self._node, self._content, self._grammar, self.bindings()):
                 self._kind = CallableKind.ACCESSOR
         return self._kind
 

@@ -51,13 +51,12 @@ def cohesion(methods: Sequence[Any], grammar: Any) -> Cohesion | None:
     spellings = grammar.member_access()
     if not spellings:
         return None
-    constructors = grammar.constructor_names()
     parent: dict[str, str] = {}
     measured: list[str] = []
     accessors: list[str] = []
     for method in methods:
         name = _method_name(method)
-        if name in constructors or name == method.owner.name:
+        if method.kind is CallableKind.CONSTRUCTOR:
             continue
         receiver = grammar.instance_receiver(method._node, method._content)
         if receiver is None:

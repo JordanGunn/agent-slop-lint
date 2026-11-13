@@ -124,6 +124,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Constructors are `CallableKind.CONSTRUCTOR` (it was declared and never produced): a method
+  its grammar names a constructor, or named like its class. LCOM4 and the accessor test read the
+  kind instead of re-deriving it.
+- `ruff check src tests` is clean (8 E702 in `tests/test_full_corpus_smoke.py`).
 - The repository's `.slop/inferences.jsonl` held three rulings a test wrote into it on
   2026-11-10 (paths under `/tmp/pytest-...`); it is removed.
 - Words are one word whatever their inflection: the lexicon counts, and the vocabulary,
