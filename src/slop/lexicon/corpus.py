@@ -49,14 +49,6 @@ class Lexicon:
         """Distinct significant tokens, sorted."""
         return tuple(sorted(self._counter))
 
-    def significant_token_count(self) -> int:
-        """Distinct significant tokens after stop-word removal."""
-        return len(self._counter)
-
-    def total_token_count(self) -> int:
-        """Total significant token occurrences (with multiplicity)."""
-        return sum(self._counter.values())
-
     def hapax_ratio(self) -> float:
         """Fraction of distinct tokens occurring exactly once."""
         n = len(self._counter)
@@ -74,7 +66,7 @@ class Lexicon:
 
     def spread(self) -> dict[str, int]:
         """Significant token -> number of distinct files it occurs in (document
-        frequency). Units with no file (a fileless component name) count in
+        frequency). Units with no file (a fileless scope name) count in
         ``frequencies`` but in no file."""
         files: dict[str, set[str]] = {}
         for token, _role, span in self._tokens:

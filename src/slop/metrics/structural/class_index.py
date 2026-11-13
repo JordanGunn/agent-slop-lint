@@ -2,7 +2,7 @@
 
 CK's DIT/NOC/CBO need cross-class context (the inheritance graph and the set of known
 class names), so a ``ClassIndex`` is built once over all carved classes and attached to
-each ``Class`` component.
+each ``Class`` scope.
 
 Base classes are written as simple names (``extract_superclasses`` yields ``Params``, not
 ``transform.grid.Params``), and simple names repeat: one corpus can hold several ``Params``
@@ -78,7 +78,7 @@ def nearest(cls: Any, candidates: list[Any],
 
 def build(classes: list[Any],
           imports: dict[ScopeId, frozenset[ScopeId]] | None = None) -> ClassIndex:
-    """Build the index from all Class components in a corpus. ``imports`` maps a module to
+    """Build the index from all Class scopes in a corpus. ``imports`` maps a module to
     the modules it imports (resolved), so a base name can be resolved through them."""
     imports = imports or {}
     by_name: dict[str, list[Any]] = {}
@@ -162,7 +162,7 @@ def cbo(cls: Any, idx: ClassIndex) -> int:
 def references(cls: Any, by_name: dict[str, list[Any]], imports: dict[ScopeId, frozenset[ScopeId]]) -> tuple[Any, ...]:
     """The definitions in ``by_name`` that ``cls``'s own body names (not its nested classes',
     which own their coupling), each resolved to the nearest definition of that name in the
-    same language. ``cls`` is any class or callable component; CBO passes the classes."""
+    same language. ``cls`` is any class or callable scope; CBO passes the classes."""
     realm = _enclosing(cls, ScopeKind.REALM)
     bindings, identifiers = cls.bindings(), cls._grammar.identifiers()
     inside = range(cls._node.start_byte, cls._node.end_byte)

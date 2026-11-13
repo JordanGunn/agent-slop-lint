@@ -1,5 +1,4 @@
-"""Complexity family — cyclomatic / cognitive / combinatorial / halstead.
-Values cross-checked against the legacy oracle."""
+"""Complexity family — cyclomatic / cognitive / combinatorial / halstead."""
 from __future__ import annotations
 
 from pathlib import Path

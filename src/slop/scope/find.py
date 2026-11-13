@@ -107,7 +107,7 @@ def find(corpus, name: str | None = None, *, kind: ScopeKind | None = None,
 
 def locate(scopes: Iterable[Scope], root: Path | str) -> list[tuple[Scope, Match]]:
     """Each of ``scopes`` paired with where it is defined, in :class:`Match` order, for
-    callers that need the component as well as the fact (a measure over each class)."""
+    callers that need the scope as well as the fact (a measure over each class)."""
     lines = _Lines()
     located = [(s, _match(s, root, lines)) for s in scopes]
     return sorted(located, key=lambda pair: pair[1].sort_key())

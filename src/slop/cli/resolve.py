@@ -32,15 +32,9 @@ def add_scope(parser: argparse.ArgumentParser, help: str, *, kind: bool = True) 
 
 def has_source(corpus) -> bool:
     """True if the scanned corpus contains at least one module. A nonexistent or
-    source-free root yields an empty corpus; linting it would visit zero components and
+    source-free root yields an empty corpus; linting it would visit zero scopes and
     report "clean", a false pass, so the CLI treats it as an error."""
-    stack = [corpus]
-    while stack:
-        component = stack.pop()
-        if component.id.kind is ScopeKind.MODULE:
-            return True
-        stack.extend(component.children())
-    return False
+    return any(scope.id.kind is ScopeKind.MODULE for scope in walk(corpus))
 
 
 def scan(root: str | Path):

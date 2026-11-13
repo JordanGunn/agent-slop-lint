@@ -1,7 +1,7 @@
 """Parameterized clone clusters among a set of callables (Baker 1995: a match up to a
 consistent renaming of names), where only names the body binds may be renamed.
 
-Operates on duck-typed component objects (``_ast_node()``, ``_grammar``, ``qualname``) so it
+Operates on duck-typed scope objects (``_ast_node()``, ``_grammar``, ``qualname``) so it
 does not import the concrete scope classes (avoids a cycle).
 """
 from __future__ import annotations

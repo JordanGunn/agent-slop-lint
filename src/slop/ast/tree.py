@@ -256,8 +256,8 @@ class AST:
     """One parsed source file. Owns the ``tree_sitter.Tree`` (keeps it alive so
     held node references stay valid), the source bytes, the path, and the grammar.
 
-    Per file by design: a component whose extent spans several files (a Go module,
-    a reopened class) is the *component layer's* composition over multiple ``AST``s.
+    Per file by design: a scope whose extent spans several files (a Go module,
+    a reopened class) is the *scope layer's* composition over multiple ``AST``s.
     ``ast/`` does not model forests.
     """
 

@@ -106,7 +106,7 @@ def test_replacing_keeps_what_the_user_added_and_drops_what_the_skill_no_longer_
 
 
 def test_a_directory_left_empty_by_the_replacement_is_removed(tmp_path: Path):
-    target = install(_skill({"references/rubrics/a.md": lambda: "a"}), tmp_path)
+    target = install(_skill({"references/notes/a.md": lambda: "a"}), tmp_path)
     install(_skill({"assets/b.json": lambda: "{}"}), tmp_path, replace=True)
     assert not (target / "references").exists()
 

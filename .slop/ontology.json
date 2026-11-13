@@ -28,9 +28,11 @@
     },
     {
       "prefLabel": "Scope",
-      "definition": "A region of code that owns names: a corpus, realm, package, module, class or callable.",
+      "definition": "A region of code that owns names: a corpus, realm, package, module, class or callable; one node of the tree slop carves the sources into.",
       "altLabel": [],
-      "hiddenLabel": [],
+      "hiddenLabel": [
+        "component"
+      ],
       "broader": [],
       "related": []
     },
@@ -146,16 +148,6 @@
     {
       "prefLabel": "Corpus",
       "definition": "The whole body of source slop analyses in one run: the root of the ownership tree.",
-      "altLabel": [],
-      "hiddenLabel": [],
-      "broader": [
-        "Scope"
-      ],
-      "related": []
-    },
-    {
-      "prefLabel": "Component",
-      "definition": "A scope as slop carves it: one element of the ownership tree, with an identity, an extent and children.",
       "altLabel": [],
       "hiddenLabel": [],
       "broader": [

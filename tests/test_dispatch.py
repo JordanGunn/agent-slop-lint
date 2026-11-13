@@ -29,9 +29,9 @@ class _Recorder(Rule):
     def default_config(cls) -> RuleConfig:
         return RuleConfig(name=cls.name)
 
-    def check(self, component, config):
-        type(self).seen.append(component.id.kind)
-        yield Violation.at(component, self.name, f"saw {component.qualname}")
+    def check(self, scope, config):
+        type(self).seen.append(scope.id.kind)
+        yield Violation.at(scope, self.name, f"saw {scope.qualname}")
 
 
 def _config(rule_cls: type[Rule], **kw) -> AnalysisConfig:
@@ -74,7 +74,7 @@ def test_a_rule_that_visited_nothing_is_reported_not_passed_as_clean(tmp_path: P
     assert report.exit_code() == 0
 
 
-def test_visited_counts_every_component_at_the_altitude(tmp_path: Path):
+def test_visited_counts_every_scope_at_the_altitude(tmp_path: Path):
     (tmp_path / "m.py").write_text(BRANCHY.format(n="a") + BRANCHY.format(n="b") + "class C:\n    def m(self):\n        return 1\n")
     report = _cyclomatic(tmp_path)
     assert report.visited["cyclomatic-complexity"] == 3        # a, b, C.m

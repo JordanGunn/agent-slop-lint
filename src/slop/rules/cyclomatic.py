@@ -21,5 +21,5 @@ class CyclomaticRule(Limit):
     def measure(self, view: Structure) -> int:
         return view.cyclomatic()
 
-    def describe(self, component: Scope, value: int, limit: float, view: Structure) -> str:
-        return f"{component.qualname} has cyclomatic complexity {value} (limit {limit})"
+    def describe(self, scope: Scope, value: int, limit: float, view: Structure) -> str:
+        return f"{scope.qualname} has cyclomatic complexity {value} (limit {limit})"

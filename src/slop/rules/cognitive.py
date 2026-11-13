@@ -21,5 +21,5 @@ class CognitiveRule(Limit):
     def measure(self, view: Structure) -> int:
         return view.cognitive()
 
-    def describe(self, component: Scope, value: int, limit: float, view: Structure) -> str:
-        return f"{component.qualname} has cognitive complexity {value} (limit {limit})"
+    def describe(self, scope: Scope, value: int, limit: float, view: Structure) -> str:
+        return f"{scope.qualname} has cognitive complexity {value} (limit {limit})"

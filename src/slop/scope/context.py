@@ -1,6 +1,6 @@
 """AnalysisContext — the corpus-global derived state, held at the Corpus root.
 
-Some metrics need cross-scope context a single component cannot carry: CK
+Some metrics need cross-scope context a single scope cannot carry: CK
 (dit/noc/cbo) needs the whole-corpus class hierarchy; Martin's package metrics need
 the module dependency graph. These corpus-global artifacts are built once during carve
 and held *here*, on the Corpus — not bolted onto individual entity attributes

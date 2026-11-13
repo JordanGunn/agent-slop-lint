@@ -29,10 +29,10 @@ class PreferredTermRule(Rule):
     description = "a declared name uses a word the project's vocabulary replaces with its preferred term"
     altitudes = _OWN_ALTITUDE
 
-    def check(self, component: Scope, config: RuleConfig) -> Iterable[Violation]:
-        vocabulary = component.context.vocabulary
+    def check(self, scope: Scope, config: RuleConfig) -> Iterable[Violation]:
+        vocabulary = scope.context.vocabulary
         if vocabulary is not None:
-            yield from _declarations(self.name, component, vocabulary)
+            yield from _declarations(self.name, scope, vocabulary)
 
 
 def _declarations(rule: str, scope: Scope, vocabulary: Vocabulary) -> Iterable[Violation]:

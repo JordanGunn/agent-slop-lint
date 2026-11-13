@@ -28,12 +28,12 @@ class DuplicationRule(Rule):
 
     default_options = {"min_leaf_nodes": 10}
 
-    def check(self, component: Scope, config: RuleConfig) -> Iterable[Violation]:
-        clusters = Structure.over(component).clone_clusters(
+    def check(self, scope: Scope, config: RuleConfig) -> Iterable[Violation]:
+        clusters = Structure.over(scope).clone_clusters(
             min_leaf_nodes=config.option("min_leaf_nodes"))
         for cluster in clusters:
             members = ", ".join(
-                f"{relative_path(m.scope, component.root) or '?'}:{m.line} {m.qualname}"
+                f"{relative_path(m.scope, scope.root) or '?'}:{m.line} {m.qualname}"
                 for m in cluster.members)
             first = cluster.members[0]
             span = first.scope.spans[0] if first.scope.spans else None

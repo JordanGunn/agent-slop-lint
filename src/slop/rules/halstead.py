@@ -22,5 +22,5 @@ class HalsteadVolumeRule(Limit):
     def measure(self, view: Structure) -> float:
         return round(view.volume(), 1)
 
-    def describe(self, component: Scope, value: float, limit: float, view: Structure) -> str:
-        return f"{component.qualname} has Halstead volume {value:g} (limit {limit})"
+    def describe(self, scope: Scope, value: float, limit: float, view: Structure) -> str:
+        return f"{scope.qualname} has Halstead volume {value:g} (limit {limit})"

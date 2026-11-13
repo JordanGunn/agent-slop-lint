@@ -2,7 +2,7 @@
 
 A vocabulary that a project has agreed (``slop.ontology``) lists, for each concept, the word
 to use and the other words that name it: synonyms, abbreviations, retired spellings. A
-component that checks names against it needs only this question answered, so it depends on
+scope that checks names against it needs only this question answered, so it depends on
 this protocol and never on the ontology: the dependency points down, to the lexicon.
 """
 from __future__ import annotations

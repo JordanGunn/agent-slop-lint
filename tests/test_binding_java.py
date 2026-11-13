@@ -100,7 +100,7 @@ def test_block_scope_and_patterns(tmp_path):
     assert role(r, "o", 19) is SymbolKind.FREE
 
 
-def test_record_components_and_anonymous_class(tmp_path):
+def test_record_components_and_anonymous_class(tmp_path):  # slop: ignore[preferred-term]  Java's record components, not slop's scopes
     r = roles(tmp_path)
     assert role(r, "a", 25, 0) is SymbolKind.FIELD              # a record component is a member
     assert role(r, "a", 25, 1) is SymbolKind.FIELD

@@ -1,12 +1,12 @@
-"""Dispatcher: runs each enabled rule at the components it is defined at.
+"""Dispatcher: runs each enabled rule at the scopes it is defined at.
 
-The dispatcher owns traversal. It walks the component tree once, indexes components by
-altitude, and calls each enabled rule at every component of its *declared* altitudes;
+The dispatcher owns traversal. It walks the scope tree once, indexes scopes by
+altitude, and calls each enabled rule at every scope of its *declared* altitudes;
 rules never walk the corpus themselves. Two things follow:
 
 - A rule runs only where it declares itself defined, so a misconfigured rule cannot
   silently check nothing.
-- A rule that examined zero components (its altitude is absent, or everything was
+- A rule that examined zero scopes (its altitude is absent, or everything was
   excluded) is reported in ``zero_visited`` instead of passing as clean.
 
 A violation on a line carrying ``slop: ignore`` is dropped, and ``slop: ignore[a, b]``
@@ -31,6 +31,7 @@ from typing import Any
 
 from .config import AnalysisConfig, RuleConfig
 from .rule import Rule
+from .scope.find import walk
 from .scope.identity import ScopeKind
 from .violation import Violation
 
@@ -112,14 +113,14 @@ class Dispatcher:
 
 
 def _run_rule(rule: Rule, config: RuleConfig, by_kind: dict[ScopeKind, list[Any]]) -> tuple[int, list[Violation]]:
-    """Run ``rule`` at every component of its declared altitudes; return how many
-    components it was run at and what it found."""
+    """Run ``rule`` at every scope of its declared altitudes; return how many
+    scopes it was run at and what it found."""
     violations: list[Violation] = []
     count = 0
     for kind in rule.altitudes:
-        for component in by_kind.get(kind, ()):
+        for scope in by_kind.get(kind, ()):
             count += 1
-            violations.extend(rule.check(component, config))
+            violations.extend(rule.check(scope, config))
     return count, violations
 
 
@@ -170,9 +171,6 @@ class _Lines:
 
 def _index_by_kind(root: Any) -> dict[ScopeKind, list[Any]]:
     out: dict[ScopeKind, list[Any]] = {k: [] for k in ScopeKind}
-    stack = [root]
-    while stack:
-        component = stack.pop()
-        out[component.id.kind].append(component)
-        stack.extend(component.children())
+    for scope in walk(root):
+        out[scope.id.kind].append(scope)
     return out

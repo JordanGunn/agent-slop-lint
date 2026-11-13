@@ -1,6 +1,6 @@
 """Limit: a rule that compares one measure with a ``limit`` option at one altitude.
 
-Most rules are exactly this: measure something about a component, and report it when the
+Most rules are exactly this: measure something about a scope, and report it when the
 measure is over the configured limit. A subclass names the altitude and the default limit,
 says how to measure (``measure``), and how to word the violation (``describe``).
 """
@@ -30,18 +30,18 @@ class Limit(Rule):
         return RuleConfig(name=cls.name, enabled=True,
                           options={"limit": cls.default_limit})
 
-    def check(self, component: Scope, config: RuleConfig) -> Iterable[Violation]:
+    def check(self, scope: Scope, config: RuleConfig) -> Iterable[Violation]:
         limit = config.option("limit")
-        view = Structure.over(component)
+        view = Structure.over(scope)
         value = self.measure(view)
         if value is not None and value > limit:
-            yield Violation.at(component, self.name, self.describe(component, value, limit, view),
+            yield Violation.at(scope, self.name, self.describe(scope, value, limit, view),
                                value=value, threshold=limit)
 
     def measure(self, view: Structure) -> float | None:
-        """The measure for the component under ``view``, or None when it does not apply."""
+        """The measure for the scope under ``view``, or None when it does not apply."""
         raise NotImplementedError
 
-    def describe(self, component: Scope, value: Any, limit: float, view: Structure) -> str:
-        """One factual sentence naming the component, the measure and the limit."""
+    def describe(self, scope: Scope, value: Any, limit: float, view: Structure) -> str:
+        """One factual sentence naming the scope, the measure and the limit."""
         raise NotImplementedError

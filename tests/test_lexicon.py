@@ -18,13 +18,6 @@ def _corpus(tmp_path: Path):
     (tmp_path / "proc.py").write_text(SRC)
     return scan_corpus(tmp_path, config=None)
 
-def test_lexicon_exists_at_every_scope(tmp_path: Path):
-    c = _corpus(tmp_path)
-    mod = c.realms()[0].packages()[0].modules()[0]
-    cls = next(x for x in mod.children() if x.KIND == ScopeKind.CLASS)
-    for comp in (c, c.realms()[0], mod, cls):
-        assert comp.lexicon().significant_token_count() >= 0
-
 def test_tokenisation_and_noise(tmp_path: Path):
     mod = _corpus(tmp_path).realms()[0].packages()[0].modules()[0]
     toks = set(mod.lexicon().tokens())
@@ -40,7 +33,7 @@ def test_hapax_in_range(tmp_path: Path):
     c = _corpus(tmp_path)
     assert 0.0 <= c.lexicon().hapax_ratio() <= 1.0
 
-# ---- kernel used standalone (no component layer) -----------------------
+# ---- the lexicon used standalone (no scope tree) -----------------------
 
 def _lex(*texts: str) -> Lexicon:
     return Lexicon([(t, Role.CALLABLE, Span("x.py", i, i + 1)) for i, t in enumerate(texts)])

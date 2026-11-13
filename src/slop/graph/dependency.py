@@ -20,7 +20,7 @@ class DependencyCycle:
 
 @dataclass(frozen=True)
 class DependencyEdge:
-    """A directed dependency between two components, evidence preserved.
+    """A directed dependency between two scopes, evidence preserved.
 
     ``to`` may be unresolved (an external dependency or bare specifier string),
     so the edge records ``resolved`` and the ``raw_specifier`` rather than
@@ -70,7 +70,7 @@ class DependencyGraph:
         return self._afferent.get(node, frozenset())
 
     def cycles(self):
-        # Tarjan SCC over the efferent map; components with >1 node are cycles.
+        # Tarjan SCC over the efferent map; strongly connected components with >1 node are cycles.
         index = 0
         indexes: dict[ScopeId, int] = {}
         lowlink: dict[ScopeId, int] = {}

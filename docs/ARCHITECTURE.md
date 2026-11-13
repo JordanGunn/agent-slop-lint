@@ -7,8 +7,8 @@ slop is a linter on top of read-only primitives. Source: `src/slop/`.
 | Layer | Package / module | Role |
 |---|---|---|
 | AST | `ast/` | tree-sitter parse behind a `Node`/`AST` proxy; one `Grammar` class per language |
-| Scope tree | `scope/` | `scan_corpus` carves the sources into a tree of components |
-| Measures | `metrics/`, `lexicon/`, `graph/` | read-only views over a component |
+| Scope tree | `scope/` | `scan_corpus` carves the sources into a tree of scopes |
+| Measures | `metrics/`, `lexicon/`, `graph/` | read-only views over a scope |
 | Vocabulary | `ontology/`, `lexical/` | the project's vocabulary (SKOS terms) and the comparison with the words in code |
 | Lint | `rule.py`, `rules/`, `dispatch.py`, `violation.py`, `config.py` | rules compare a measure with a limit |
 | CLI | `cli/` (one module per command family) | `ast`, `tree`, `find`, `lexicon`, `deps`, `shape`, `hotspots` (primitives); `ontology`; `lint`, `check`, `rules` (lint); `init`, `doctor` |
@@ -21,21 +21,22 @@ encode limits.
 `Corpus > Realm > Package > Module > Class > Callable` (`ScopeKind` in `scope/identity.py`).
 
 - A `Realm` is one language; it owns that language's `Grammar`. Packages are directories.
-- `Scope` (`scope/base.py`) is the shared interface: `id`, `name`, `qualname`, `extent`,
-  `files`, `owner`, `children()`, `lexicon()`. `AggregateContainer` covers Corpus, Realm and
-  Package; `SymbolContainer` covers Module, Class and Callable.
+- One class per kind, in `scope/model.py` (the scope's model). `Scope` holds what every kind
+  shares: `id`, `name`, `qualname`, `extent`, `files`, `owner`, `children()`, `lexicon()`,
+  `bindings()` and iteration over descendants by kind; each kind adds what only it has
+  (`Class.is_abstract`, `Callable.kind`, `Package.modules()`, ...).
 - `scope.scan_corpus(root, config)` (`scope/carve.py`) reads the files `scope/discover.py`
   lists, minus those matched by `exclude`. Inside a git work tree that list is tracked plus
   untracked-and-not-ignored files; elsewhere it is every file under the root except `.git`. Owners
   are set while the tree is built.
 - Corpus-wide derived state (class hierarchy, module dependency graph) is built once at carve
-  time and held in `AnalysisContext` (`scope/context.py`), reached through `component.context`.
-- `Selection` (`scope/selection.py`) is a union of regions; `scope/find.py` implements
-  `find`, `tree` and name collisions.
+  time and held in `AnalysisContext` (`scope/context.py`), reached through `scope.context`.
+- `scope/find.py` implements `find`, `tree`, name collisions and the one walk over a tree
+  (`walk`).
 
 ## Grammars
 
-A `Grammar` (`ast/paradigm/base.py`) is tabular metadata plus extractor classmethods; it never
+A `Grammar` (`ast/grammar/interface.py`, the grammar's interface) is tabular metadata plus extractor classmethods; it never
 walks the tree. A language is one class in `ast/grammar/` (registered in
 `GRAMMARS_BY_ID`: python, go, c, cpp, julia, java, csharp, rust, ruby, javascript,
 typescript). It states:
@@ -61,22 +62,22 @@ typescript). It states:
 Languages that share facts inherit them from a family parent instead of repeating them:
 `ecmascript.py` (JavaScript, TypeScript) and `c_family.py` (C, C++). A fact that two grammars
 spell the same way belongs in the parent; `duplicate-code` finds the ones that were missed.
-
-Its `Paradigm` (`PROCEDURAL`, `OBJECT_ORIENTED`, `MULTI_PURPOSE`) selects the base class in
-`ast/paradigm/`. Language-specific behaviour belongs in the grammar, not in `if lang` branches
-elsewhere.
+Helpers several grammars use live in modules named for what they hold: `imports.py`
+(`ModuleIndex`, the corpus's modules as imports name them), `syntax.py` (reading tree-sitter
+nodes), `heritage.py` (the classes a heritage clause names). Language-specific behaviour belongs
+in the grammar, not in `if lang` branches elsewhere.
 
 ## How a rule runs
 
 1. `cli.lint.lint` loads `AnalysisConfig` (validated against `RULE_REGISTRY` in `rules/__init__.py`;
    unknown keys, unknown rules and options, and wrongly typed values are errors) and calls `scan_corpus`.
-2. `Dispatcher.run` walks the tree once and indexes components by `ScopeKind`. For each
-   enabled rule it calls `rule.check(component, rule_config)` at every component of each
+2. `Dispatcher.run` walks the tree once and indexes scopes by `ScopeKind`. For each
+   enabled rule it calls `rule.check(scope, rule_config)` at every scope of each
    altitude in `rule.altitudes`.
 3. A rule yields `Violation`s (`rule`, `path`, `line`, `column`, `message`, optional `value`
    and `threshold`). `Violation.at(scope, ...)` locates one at a scope's definition.
 4. Violations on a line with `slop: ignore` (or `slop: ignore[a, b]`, exact rule names) are dropped, then the rest are sorted by path and position.
-5. A rule that visited zero components is listed in `Report.zero_visited` rather than passing
+5. A rule that visited zero scopes is listed in `Report.zero_visited` rather than passing
    silently. Exit code: 0 no violations (warnings allowed), 1 any violation, 2 error.
 
 Objective and subjective violations: a violation is objective when it follows from syntax and a
@@ -84,8 +85,8 @@ stated limit alone. A rule whose findings need judgement of idiom or intent (`cl
 `rigid-package`, `useless-package`) sets `subjective = True`; the dispatcher then reports its
 findings as warnings (`WARN` in the human output, `warnings` in JSON) that never fail the run.
 A case that cannot be a rule at all (an integer literal, a short string) is not reported;
-judging those and the warnings is the job of a layer that reads context, which is not built
-(the first attempt, with rubrics and stored rulings, was removed). `magic-float` and
+judging those and the warnings is the job of a layer that reads context, which is not built.
+`magic-float` and
 `duplicate-string` show the split: they measure a float operand and a repeated long string,
 and say nothing about integers or short strings.
 
@@ -94,8 +95,8 @@ Contributor invariants:
 - A rule subclasses `Rule` (`name`, `description`, `altitudes`, `default_options`, `check`);
   most subclass `Limit` (`rules/limit.py`), which names one altitude and a default limit and
   reads the `limit` option.
-- A rule does not compute its measure and does not traverse beyond the component it is
-  given. Measures live in `metrics/structural/` and are read through `Structure.over(component)`
+- A rule does not compute its measure and does not traverse beyond the scope it is
+  given. Measures live in `metrics/structural/` and are read through `Structure.over(scope)`
   (`metrics/structural/view.py`), so `shape`, `find` and rules share one number.
 - A new rule is added to `RULE_REGISTRY`; `slop rules` and `slop init` are generated from it.
 

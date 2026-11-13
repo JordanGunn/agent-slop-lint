@@ -21,5 +21,5 @@ class GodModuleRule(Limit):
     def measure(self, view: Structure) -> int:
         return view.definition_count()
 
-    def describe(self, component: Scope, value: int, limit: float, view: Structure) -> str:
-        return f"{component.qualname} declares {value} top-level definitions (limit {limit})"
+    def describe(self, scope: Scope, value: int, limit: float, view: Structure) -> str:
+        return f"{scope.qualname} declares {value} top-level definitions (limit {limit})"

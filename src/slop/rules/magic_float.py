@@ -25,13 +25,13 @@ class MagicFloatRule(Rule):
 
     default_options = {"limit": 0}
 
-    def check(self, component: Scope, config: RuleConfig) -> Iterable[Violation]:
+    def check(self, scope: Scope, config: RuleConfig) -> Iterable[Violation]:
         limit = config.option("limit")
-        path = str(component.files[0]) if component.files else None
-        for use in Structure.over(component).magic_floats():
+        path = str(scope.files[0]) if scope.files else None
+        for use in Structure.over(scope).magic_floats():
             if use.count > limit:
                 yield Violation(
                     rule=self.name, path=path, line=use.line, column=use.column,
                     message=f"float {use.value} is an operand {use.count} time(s) in "
-                            f"{component.qualname}; name it (limit {limit})",
-                    value=use.count, threshold=limit, subject=component.qualname, scope=component.id)
+                            f"{scope.qualname}; name it (limit {limit})",
+                    value=use.count, threshold=limit, subject=scope.qualname, scope=scope.id)

@@ -28,7 +28,7 @@ class Zone(Limit):
     def measure(self, view: Structure) -> float | None:
         return view.martin_metrics().distance if self.in_zone(view) else None
 
-    def describe(self, component: Scope, value: float, limit: float, view: Structure) -> str:
+    def describe(self, scope: Scope, value: float, limit: float, view: Structure) -> str:
         m = view.martin_metrics()
-        return (f"{component.qualname} is in the Zone of {self.zone}: distance {value:.2f} "
+        return (f"{scope.qualname} is in the Zone of {self.zone}: distance {value:.2f} "
                 f"(limit {limit}), instability {m.instability:.2f}, abstractness {m.abstractness:.2f}")

@@ -1,4 +1,4 @@
-"""The component -> lexicon bridge.
+"""The names a scope declares, as a lexicon.
 
 Lives in the scope layer, above ``slop.lexicon``: it walks the scope tree, takes the
 names each scope declares (a package's or module's own name, a class and its properties,
@@ -17,8 +17,7 @@ from .identity import ScopeKind
 from ..lexicon import Lexicon, Role
 from ..span import Span
 
-#: Filesystem-derived component names carry the grammatical-degradation signal
-#: (module/package names come from the directory tree, not an AST node).
+#: Realm, package and module names come from the filesystem, not from a syntax node.
 _FS_ROLE = {
     ScopeKind.REALM: Role.REALM,
     ScopeKind.PACKAGE: Role.PACKAGE,
@@ -27,7 +26,7 @@ _FS_ROLE = {
 
 
 def _fs_name_unit(comp: Any, role: Role) -> tuple[str, Role, Span]:
-    """A filesystem-named component as a lexicon unit: the name it declares, which for a
+    """A filesystem-named scope as a lexicon unit: the name it declares, which for a
     package is its own directory's name (``grammar``, not ``slop/ast/grammar``: the parents
     declare theirs). A fileless name gets an empty path, counted in full and excluded from any
     slice."""
@@ -38,7 +37,7 @@ def _fs_name_unit(comp: Any, role: Role) -> tuple[str, Role, Span]:
 _UNNAMED = frozenset({"<anonymous>", "<lambda>"})
 
 
-def build_declared_lexicon(component: Any) -> Lexicon:
+def build_declared_lexicon(scope: Any) -> Lexicon:
     """Build a Lexicon of the names the code *declares*, not every identifier it mentions.
 
     Modules, packages and realms (from the filesystem), classes, their properties,
@@ -51,7 +50,7 @@ def build_declared_lexicon(component: Any) -> Lexicon:
     This is the vocabulary a canonical vocabulary governs: it is chosen where a name is
     declared."""
     units: list[tuple[str, Role, Span]] = []
-    for comp in walk(component):
+    for comp in walk(scope):
         units.extend(declared_units(comp))
     return Lexicon(units)
 
@@ -103,13 +102,13 @@ def _callable_units(comp: Any) -> list[tuple[str, Role, Span]]:
     return units
 
 
-def _node_holding_nodes(component: Any):
-    """Yield the ``ast.Node`` of each node-holding component in the extent.
-    Node-holding components (Module/Class/Callable) own a subtree; aggregates
+def _node_holding_nodes(scope: Any):
+    """Yield the ``ast.Node`` of each node-holding scope in the extent.
+    Node-holding scopes (Module/Class/Callable) own a subtree; aggregates
     recurse to their node-holding descendants, so each file is reached once."""
-    if component._node is not None:
-        yield component._ast_node()
+    if scope._node is not None:
+        yield scope._ast_node()
     else:
-        for ch in component.children():
+        for ch in scope.children():
             yield from _node_holding_nodes(ch)
 

@@ -5,11 +5,13 @@ root (src-layout; package `agent-slop-lint`, import `slop`, CLI `slop.cli:main`)
 
 ## Layers
 
-- `src/slop/ast/`: tree-sitter parse (`parse.py`, `nodes.py`, `tree.py`, `grammar/`, `paradigm/`).
-- `src/slop/scope/`: ownership tree Corpus › Realm › Package › Module › Class › Callable,
-  carved once from the parse (`carve.py`); `discover.py` lists the files to read;
-  `descendants.py` is the one walk over a scope's children (`_iter_callables`, `_iter_modules`); `find.py`
-  is name discovery (`slop find`, `slop tree`).
+- `src/slop/ast/`: tree-sitter parse (`parse.py`, `nodes.py`, `tree.py`); `grammar/` holds one
+  grammar per language, the grammar's interface (`interface.py`) and the helpers they share
+  (`imports.py`, `syntax.py`, `heritage.py`).
+- `src/slop/scope/`: the tree Corpus › Realm › Package › Module › Class › Callable, one class
+  per kind in `model.py` (the scope's model), carved once from the parse (`carve.py`);
+  `discover.py` lists the files to read; `find.py` holds `walk` (the one walk over a tree) and
+  name discovery (`slop find`, `slop tree`).
 - `src/slop/metrics/`: measures over a scope. `Structure.over(region)` in
   `metrics/structural/view.py` is the view rules and commands read.
   `Structure.hotspots` backs `slop hotspots`; no rule reads it.
@@ -17,7 +19,7 @@ root (src-layout; package `agent-slop-lint`, import `slop`, CLI `slop.cli:main`)
 - `src/slop/lexicon/`, `src/slop/lexical/`: identifier statistics and coverage against a
   vocabulary (`slop lexicon`).
 - `src/slop/ast/binding.py`: name binding (what each name refers to) from the per-grammar locals
-  queries in `ast/grammar/locals/*.scm`; read through `Component.bindings()`.
+  queries in `ast/grammar/locals/*.scm`; read through `Scope.bindings()`.
 - `src/slop/ontology/`: the project's vocabulary (`.slop/ontology.json`, SKOS terms: one word,
   its definition, alt/hidden labels, broader/related); `model.py`, `fs.py`, `check.py`,
   `draft.py` (seed from declared words), `occurrence.py` (where a word reaches the code, rename
@@ -45,13 +47,13 @@ uv run slop rules
 - A `Rule` declares `name`, `description`, `altitudes` (a set of `ScopeKind`),
   `default_options` (its flat options and their defaults; `default_config()` builds the
   `RuleConfig` from them) and
-  `check(component, config) -> Iterable[Violation]`. The dispatcher
-  calls `check` once per component at each declared altitude; a rule never walks the corpus.
+  `check(scope, config) -> Iterable[Violation]`. The dispatcher
+  calls `check` once per scope at each declared altitude; a rule never walks the corpus.
 - A `Limit` (`rules/limit.py`) is a rule that compares one measure with its `limit` option. A subclass sets `altitude` and `default_limit` and implements
   `measure(view)` and `describe(...)`. A violation needs the measure strictly greater than
   the limit.
 - The measure lives on `Structure` or in `metrics/`, not in the rule.
-- `Violation(rule, path, line, column, message, value, threshold)`; `Violation.at(component,
+- `Violation(rule, path, line, column, message, value, threshold)`; `Violation.at(scope,
   ...)` locates it at the narrowest scope the violation is about. A rule runs at the
   altitude it needs to compute (duplication runs at corpus) but reports at the entity or the
   first member (by path) of a group. The message is one factual sentence naming the unit
@@ -77,7 +79,7 @@ uv run slop rules
 - Exit codes: lint `0` no violations (warnings allowed) / `1` any violation / `2` error. Read-only commands `0`
   answered / `2` could not answer; an empty answer carries caveats.
 - Suppression is inline `slop: ignore[exact-rule-name]`, applied by the dispatcher. The dispatcher
-  lists rules that visited no component under `zero_visited` in the JSON report.
+  lists rules that visited no scope under `zero_visited` in the JSON report.
 - Layer imports are pinned by `tests/test_layers.py`: `span`, `identity`, `lexicon`, `ast`
   depend on nothing above them; `metrics` never imports `scope`; `scope` never imports
   `rules`, `dispatch`, `cli` or `ontology`; `rules` never imports `cli` or `ontology`.

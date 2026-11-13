@@ -46,7 +46,7 @@ def cohesion(methods: Sequence[Any], grammar: Any) -> Cohesion | None:
     of each group's first method, and the detached methods; ``None`` when ``grammar``
     cannot read instance access.
 
-    ``methods`` are the class's method components (``name``, ``_node``, ``_content``,
+    ``methods`` are the class's method scopes (``name``, ``_node``, ``_content``,
     ``_ast_node()``)."""
     spellings = grammar.member_access()
     if not spellings:

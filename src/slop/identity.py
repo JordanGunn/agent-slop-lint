@@ -1,10 +1,9 @@
 """Identity primitives — the substrate's stable, value-typed keys.
 
 Like :class:`~slop.span.Span`, these live at the package root and depend on nothing
-above it: the scope model, the metric views, the dependency/call graphs, and the
+above it: the scope model, the metric views, the dependency graph, and the
 linter all key on them, so housing them low keeps those layers from depending on each
-other just to share an id. ``component.identity`` re-exports them so existing
-``from ..scope.identity import …`` sites are unchanged.
+other just to share an id. ``slop.scope.identity`` re-exports them.
 
 Logical vs physical identity: ``ScopeId`` carries a stable *logical* key (kind +
 qualname) distinct from its *physical* extent (byte spans). A one-byte edit shifts the
@@ -36,7 +35,7 @@ class ScopeKind(Enum):
 
 class CallableKind(Enum):
     """The sub-kind of a Callable — lets rules filter (e.g. exclude lambdas from
-    named-entity lexical rules) without inspecting AST. Names are paradigm-neutral.
+    named-entity lexical rules) without inspecting AST. Names are language-neutral.
     """
 
     FUNCTION = "function"        # free function (module-direct)
@@ -48,7 +47,7 @@ class CallableKind(Enum):
 
 @dataclass(frozen=True)
 class Extent:
-    """The source material a component owns.
+    """The source material a scope owns.
 
     A Python module's extent is one file (one span covering it); a Go module's
     is several files sharing a ``package`` declaration; a class's may be several
@@ -67,12 +66,12 @@ class Extent:
 
 @dataclass(frozen=True)
 class ScopeId:
-    """Stable, hashable identity for a component.
+    """Stable, hashable identity for a scope.
 
     ``qualname`` is the dotted ownership path (``pkg.mod.Class.method``);
-    ``spans`` disambiguates components that share a qualname (overloads,
-    reopened classes). Equality and hashing are structural — two components with
-    the same id are the same component, regardless of which traversal produced
+    ``spans`` disambiguates scopes that share a qualname (overloads,
+    reopened classes). Equality and hashing are structural — two scopes with
+    the same id are the same scope, regardless of which traversal produced
     them.
     """
 

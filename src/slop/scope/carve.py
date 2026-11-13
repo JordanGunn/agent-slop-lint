@@ -1,4 +1,4 @@
-"""Carving — turn a filesystem root into the component hierarchy.
+"""Carving — turn a filesystem root into the scope hierarchy.
 
 ``scan_corpus`` discovers source files, parses them, and carves
 Corpus → Realm → Package → Module → Class → Callable. Parenting is done by
@@ -191,7 +191,7 @@ def _carve_decls(
     node: Any, *, grammar: type, content: bytes, path: Path,
     parts: tuple[str, ...], in_class: bool,
 ) -> tuple[Any, ...]:
-    """Direct declaration components within ``node`` (a ``slop.ast.Node``),
+    """Direct declaration scopes within ``node`` (a ``slop.ast.Node``),
     descending through non-declaration nodes, stopping at class/callable nodes."""
     class_types = grammar.classes()
     callable_types = grammar.callable()
@@ -240,7 +240,7 @@ def _make_callable(
     qn = ".".join((*parts, name))
     span = node.span
     body = node.field("body") or node
-    # Nested callables become child components; nested classes too (rare).
+    # Nested callables become child scopes; nested classes too (rare).
     children = _carve_decls(
         body, grammar=grammar, content=content, path=path,
         parts=(*parts, name), in_class=False,
@@ -296,16 +296,16 @@ def _rel_name(directory: Path, root: Path) -> str:
         return directory.name or _ROOT_NAME
 
 
-def _union_extent(components) -> Extent:
+def _union_extent(scopes) -> Extent:
     spans: list[Span] = []
-    for comp in components:
+    for comp in scopes:
         spans.extend(comp.extent.spans)
     return Extent(tuple(spans))
 
 
-def _union_files(components) -> tuple[Path, ...]:
+def _union_files(scopes) -> tuple[Path, ...]:
     seen: list[Path] = []
-    for comp in components:
+    for comp in scopes:
         for f in comp.files:
             if f not in seen:
                 seen.append(f)

@@ -93,6 +93,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- `component` as a word for a scope. The distinction existed only between the abstract scope
+  classes and their implementations; `.slop/ontology.json` now lists `component` as a retired
+  word (`hiddenLabel`) of `Scope`, and every declared name and docstring that used it says
+  `scope` (64 edits planned by `slop ontology rename component scope`). The graph-theory
+  "strongly connected component" stays, and so does Java's "record component" (inline ignore).
+- Two more hand-written tree walks (`dispatch._index_by_kind`, `cli.resolve.has_source`) use
+  `scope.find.walk`; `Lexicon.significant_token_count` and `total_token_count` had no caller.
 - The grammar paradigm tree (`Procedural`, `ObjectOriented`, `MultiPurpose`, `Paradigm`,
   `ast/paradigm/`). Every shipped grammar was object-oriented, so the procedural branches in
   carving and `find` were reachable only from a test stub; they are gone, along with the

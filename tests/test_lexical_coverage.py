@@ -108,7 +108,7 @@ def test_coverage_is_deterministic():
     assert coverage(observed, vocabulary) == coverage(observed, vocabulary)
 
 
-# ---- the kernel's spread --------------------------------------------------
+# ---- the lexicon's spread --------------------------------------------------
 
 def test_spread_counts_distinct_files_and_ignores_fileless_units():
     lex = Lexicon([("alpha", Role.CALLABLE, Span("a.py", 0, 1)),

@@ -1,10 +1,5 @@
-"""Language-agnostic parameter extraction — the root fix for the v3 Python-overfit.
-
-Before this, only Python extracted parameters; every other grammar returned () (the
-base helper matched Python tree-sitter node types), silently dropping every parameter
-token from the lexicon on all non-Python code. Each case below asserts the parameter
-NAMES are recovered.
-"""
+"""Parameter extraction in every language: each case asserts the parameter NAMES a grammar
+recovers, so no language silently drops its parameters from the lexicon."""
 from __future__ import annotations
 
 from pathlib import Path

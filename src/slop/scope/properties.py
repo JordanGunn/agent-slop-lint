@@ -14,7 +14,7 @@ from ..ast.binding import SymbolKind
 
 
 def class_properties(cls: Any) -> tuple[str, ...]:
-    """Property names of the class component ``cls`` in first-seen order, without duplicates
+    """Property names of the class scope ``cls`` in first-seen order, without duplicates
     or special names, and without the fields of classes nested inside it."""
     node, grammar = cls._node, cls._grammar
     nested = [(n.start_byte, n.end_byte) for n in _descendants(node) if n.type in grammar.classes()]

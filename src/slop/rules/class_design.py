@@ -27,8 +27,8 @@ class CouplingRule(Limit):
     def measure(self, view: Structure) -> int:
         return view.cbo()
 
-    def describe(self, component: Scope, value: int, limit: float, view: Structure) -> str:
-        return f"{component.qualname} is coupled to {value} other classes (limit {limit})"
+    def describe(self, scope: Scope, value: int, limit: float, view: Structure) -> str:
+        return f"{scope.qualname} is coupled to {value} other classes (limit {limit})"
 
 
 class InheritanceDepthRule(Limit):
@@ -40,8 +40,8 @@ class InheritanceDepthRule(Limit):
     def measure(self, view: Structure) -> int:
         return view.dit()
 
-    def describe(self, component: Scope, value: int, limit: float, view: Structure) -> str:
-        return f"{component.qualname} has inheritance depth {value} (limit {limit})"
+    def describe(self, scope: Scope, value: int, limit: float, view: Structure) -> str:
+        return f"{scope.qualname} has inheritance depth {value} (limit {limit})"
 
 
 class ChildrenRule(Limit):
@@ -53,8 +53,8 @@ class ChildrenRule(Limit):
     def measure(self, view: Structure) -> int:
         return view.noc()
 
-    def describe(self, component: Scope, value: int, limit: float, view: Structure) -> str:
-        return f"{component.qualname} has {value} direct subclasses (limit {limit})"
+    def describe(self, scope: Scope, value: int, limit: float, view: Structure) -> str:
+        return f"{scope.qualname} has {value} direct subclasses (limit {limit})"
 
 
 class CohesionRule(Limit):
@@ -71,7 +71,7 @@ class CohesionRule(Limit):
         cohesion = view.cohesion()
         return None if cohesion is None else cohesion.lcom4
 
-    def describe(self, component: Scope, value: int, limit: float, view: Structure) -> str:
+    def describe(self, scope: Scope, value: int, limit: float, view: Structure) -> str:
         groups = "; ".join("{" + ", ".join(g) + "}" for g in view.cohesion().groups)
-        return (f"{component.qualname} has {value} method groups sharing no instance member "
+        return (f"{scope.qualname} has {value} method groups sharing no instance member "
                 f"(limit {limit}): {groups}")

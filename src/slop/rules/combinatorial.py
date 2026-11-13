@@ -20,5 +20,5 @@ class CombinatorialRule(Limit):
     def measure(self, view: Structure) -> int:
         return view.combinatorial()
 
-    def describe(self, component: Scope, value: int, limit: float, view: Structure) -> str:
-        return f"{component.qualname} has NPath {value} (limit {limit})"
+    def describe(self, scope: Scope, value: int, limit: float, view: Structure) -> str:
+        return f"{scope.qualname} has NPath {value} (limit {limit})"

@@ -1,13 +1,13 @@
 """Rule contract.
 
 A rule **declares** the altitude(s) it is defined at (``altitudes``); the dispatcher
-(``slop.dispatch``) walks the component tree and calls the rule at every component of
+(``slop.dispatch``) walks the scope tree and calls the rule at every scope of
 that altitude. A rule never walks the corpus itself, so it cannot run where it is
 undefined, and the dispatcher reports a rule that examined nothing instead of letting it
 pass as clean.
 
 A rule is a limit on a measure. It does not compute the measure: that lives on a metric
-view (``Structure.over(component)``), which ``find``, ``shape`` and ``lexicon`` read too.
+view (``Structure.over(scope)``), which ``find``, ``shape`` and ``lexicon`` read too.
 Keeping the measure out of the rule is what lets one number serve both a question ("what
 is this class's cohesion?") and a check ("cohesion is over 2").
 """
@@ -45,7 +45,7 @@ class Rule(ABC):
         return RuleConfig(name=cls.name, options=dict(cls.default_options))
 
     @abstractmethod
-    def check(self, component: Scope, config: RuleConfig) -> Iterable[Violation]:
-        """Inspect ONE component, guaranteed to be of a declared altitude, and yield a
+    def check(self, scope: Scope, config: RuleConfig) -> Iterable[Violation]:
+        """Inspect ONE scope, guaranteed to be of a declared altitude, and yield a
         violation for each way it breaks the rule. Must not traverse beyond it."""
         ...

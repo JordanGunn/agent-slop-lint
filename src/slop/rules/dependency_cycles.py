@@ -24,9 +24,9 @@ class DependencyCyclesRule(Rule):
     altitudes = frozenset({ScopeKind.CORPUS})
 
 
-    def check(self, component: Scope, config: RuleConfig) -> Iterable[Violation]:
-        mod_by_id = {m.id: m for m in component._iter_modules()}
-        for cycle in Structure.over(component).dependency_cycles():
+    def check(self, scope: Scope, config: RuleConfig) -> Iterable[Violation]:
+        mod_by_id = {m.id: m for m in scope._iter_modules()}
+        for cycle in Structure.over(scope).dependency_cycles():
             members = list(cycle.members)
             loop = " → ".join(members + members[:1])
             anchor = mod_by_id.get(cycle.scopes[0]) if cycle.scopes else None
