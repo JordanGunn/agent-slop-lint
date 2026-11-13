@@ -33,7 +33,7 @@ def view(root: str | Path, name: str | None, output: str = "human", *,
     if name is None:
         raise ValueError("find needs a NAME, or --collisions")
     found = find.find(corpus, name, kind=scope_kind)
-    notes = find.caveats(corpus, scope_kind)
+    notes = find.caveats(corpus)
     if output == "json":
         print(json.dumps({"name": name, "matches": [m.as_dict() for m in found], "caveats": notes}, indent=2))
         return 0
@@ -47,7 +47,7 @@ def view(root: str | Path, name: str | None, output: str = "human", *,
 def _collisions(corpus, kind: ScopeKind, output: str) -> int:
     """Every name more than one scope of ``kind`` defines."""
     groups = find.collisions(corpus, kind=kind)
-    notes = find.caveats(corpus, kind)
+    notes = find.caveats(corpus)
     if output == "json":
         print(json.dumps({"kind": kind.value,
                           "collisions": {n: [m.as_dict() for m in ms] for n, ms in groups.items()},

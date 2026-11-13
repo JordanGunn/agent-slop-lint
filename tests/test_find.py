@@ -88,21 +88,3 @@ def test_outline_kinds_hides_other_kinds_but_not_their_children(sample_project: 
     assert {m.kind for _, m in rows} == {ScopeKind.CLASS}
     assert {m.name for _, m in rows} >= {"Index", "Store", "Address", "Twin"}
 
-
-def test_a_procedural_only_grammar_is_reported_as_unable_to_answer_class_questions():
-    # No shipped grammar is procedural-only any more, so exercise the guard with a stand-in
-    # realm: a future grammar that carves no class scopes must not answer "no match" silently.
-    from types import SimpleNamespace
-
-    from slop.scope.find import caveats
-
-    class Plain:  # not an ObjectOriented grammar
-        pass
-
-    realm = SimpleNamespace(language="plain", grammar=Plain)
-    corpus = SimpleNamespace(realms=lambda: [realm], children=lambda: (),
-                             id=SimpleNamespace(kind=ScopeKind.CORPUS), root=".")
-    assert caveats(corpus) == ["plain: procedural grammar carves no class scopes; "
-                               "struct/type definitions are not discovered"]
-    assert caveats(corpus, ScopeKind.CALLABLE) == []     # callables are still discoverable
-

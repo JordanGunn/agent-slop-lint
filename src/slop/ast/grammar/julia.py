@@ -4,12 +4,12 @@ from __future__ import annotations
 
 from typing import Any, ClassVar
 
-from ..paradigm import MultiPurpose
-from ..paradigm.base import julia_signature_parameters
-from ..paradigm.heritage import type_name
+from .interface import Grammar
+from .syntax import IDENTIFIER, child_of_type, first_identifier, node_text
+from .heritage import type_name
 
 
-class Julia(MultiPurpose):
+class Julia(Grammar):
     id: ClassVar[str] = "julia"
 
     @classmethod
@@ -161,3 +161,21 @@ def _head_identifier(node: Any) -> Any | None:
 
 def _text(node: Any, content: bytes) -> str:
     return content[node.start_byte:node.end_byte].decode("utf-8", errors="replace")
+
+
+def julia_signature_parameters(node: Any, content: bytes) -> tuple[tuple[str, str | None], ...]:
+    """Julia parameter extraction: params live under ``signature → call_expression →
+    argument_list`` as identifiers (or the first identifier of a typed argument)."""
+    sig = child_of_type(node, "signature")
+    call = child_of_type(sig, "call_expression") if sig is not None else None
+    arglist = child_of_type(call, "argument_list") if call is not None else None
+    if arglist is None:
+        return ()
+    out: list[tuple[str, str | None]] = []
+    for child in arglist.children:
+        if child.type in ("(", ")", ","):
+            continue
+        ident = child if child.type == IDENTIFIER else first_identifier(child)
+        if ident is not None:
+            out.append((node_text(ident, content), None))
+    return tuple(out)

@@ -34,7 +34,7 @@ def view(root: str | Path, output: str = "human", *, scope: str | None = None,
         return 2
     located = find.locate((s for s in walk(target) if s.id.kind is ScopeKind.CLASS), corpus.root)
     rows = [(match, Structure.over(cls).ck().as_dict()) for cls, match in located]
-    notes = find.caveats(corpus, ScopeKind.CLASS, under=target)
+    notes = find.caveats(corpus, under=target)
     name = label(target, corpus)
     if output == "json":
         print(json.dumps({"scope": name, "kind": target.id.kind.value,

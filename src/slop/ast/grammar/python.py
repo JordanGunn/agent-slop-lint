@@ -1,15 +1,15 @@
-"""Python grammar — multi-paradigm (classes + free functions + lambdas)."""
+"""Python grammar: classes, free functions and lambdas."""
 from __future__ import annotations
 
 from pathlib import Path
 from typing import Any, ClassVar
 
-from ..paradigm import MultiPurpose
-from ..paradigm.base import MemberAccess, ModuleIndex, distinct
-from ..paradigm.heritage import heritage
+from .interface import Grammar, MemberAccess
+from .imports import ModuleIndex, distinct
+from .heritage import heritage
 
 
-class Python(MultiPurpose):
+class Python(Grammar):
     id: ClassVar[str] = "python"
 
     @classmethod

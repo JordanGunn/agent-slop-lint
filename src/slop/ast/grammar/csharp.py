@@ -3,12 +3,12 @@ from __future__ import annotations
 
 from typing import Any, ClassVar
 
-from ..paradigm import ObjectOriented
-from ..paradigm.base import MemberAccess, has_keyword
-from ..paradigm.heritage import heritage
+from .interface import Grammar, MemberAccess
+from .syntax import has_keyword
+from .heritage import heritage
 
 
-class CSharp(ObjectOriented):
+class CSharp(Grammar):
     id: ClassVar[str] = "c_sharp"
 
     @classmethod

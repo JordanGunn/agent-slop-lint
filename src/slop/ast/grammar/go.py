@@ -7,11 +7,10 @@ from __future__ import annotations
 
 from typing import Any, ClassVar
 
-from ..paradigm import MultiPurpose
-from ..paradigm.base import MemberAccess
+from .interface import Grammar, MemberAccess
 
 
-class Go(MultiPurpose):
+class Go(Grammar):
     id: ClassVar[str] = "go"
 
     @classmethod

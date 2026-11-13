@@ -3,12 +3,12 @@ from __future__ import annotations
 
 from typing import Any, ClassVar
 
-from ..paradigm import MultiPurpose
-from ..paradigm.heritage import heritage
+from .interface import Grammar
+from .heritage import heritage
 from .ecmascript import EcmaScript
 
 
-class JavaScript(EcmaScript, MultiPurpose):
+class JavaScript(EcmaScript, Grammar):
     id: ClassVar[str] = "javascript"
 
     @classmethod

@@ -13,7 +13,6 @@ from typing import Any
 
 from .identity import CallableKind, ScopeId, ScopeKind, Extent, Span
 from ..ast import AST, GRAMMARS_BY_ID
-from ..ast.paradigm import ObjectOriented
 from ..ast.parse import detect_language, parse_file
 from . import model
 from .discover import source_files
@@ -194,8 +193,7 @@ def _carve_decls(
 ) -> tuple[Any, ...]:
     """Direct declaration components within ``node`` (a ``slop.ast.Node``),
     descending through non-declaration nodes, stopping at class/callable nodes."""
-    is_oo = issubclass(grammar, ObjectOriented)
-    class_types = grammar.classes() if is_oo else frozenset()
+    class_types = grammar.classes()
     callable_types = grammar.callable()
     out: list[Any] = []
     for child in node.children():

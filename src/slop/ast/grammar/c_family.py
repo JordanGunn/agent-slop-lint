@@ -5,7 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from ..paradigm.base import ModuleIndex, c_style_parameters
+from .imports import ModuleIndex
+from .syntax import child_of_type, first_identifier, node_text
 
 
 class CFamily:
@@ -70,3 +71,32 @@ class CFamily:
     def extract_parameters(cls, node: Any, content: bytes) -> tuple[tuple[str, str | None], ...]:
         """Params hang off the function declarator; names nest in declarators."""
         return c_style_parameters(node, content)
+
+
+def _c_function_declarator(node: Any) -> Any | None:
+    decl = node.child_by_field_name("declarator")
+    for _ in range(6):  # walk down to the function_declarator (mirrors c.py)
+        if decl is None or decl.type == "function_declarator":
+            break
+        decl = decl.child_by_field_name("declarator")
+    return decl
+
+
+def c_style_parameters(node: Any, content: bytes) -> tuple[tuple[str, str | None], ...]:
+    """C/C++ parameter extraction: the parameter list hangs off the function
+    *declarator*, and each parameter's name nests inside its own declarator
+    (``char *name`` → ``pointer_declarator`` → ``identifier``)."""
+    decl = _c_function_declarator(node)
+    if decl is None or decl.type != "function_declarator":
+        return ()
+    plist = decl.child_by_field_name("parameters") or child_of_type(decl, "parameter_list")
+    if plist is None:
+        return ()
+    out: list[tuple[str, str | None]] = []
+    for pnode in plist.children:
+        if pnode.type != "parameter_declaration":
+            continue
+        ident = first_identifier(pnode.child_by_field_name("declarator") or pnode)
+        if ident is not None:
+            out.append((node_text(ident, content), None))
+    return tuple(out)

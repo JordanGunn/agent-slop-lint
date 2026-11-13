@@ -1,75 +1,18 @@
-"""``Grammar`` — the tabular per-language adapter contract.
+"""The grammar's interface: what slop reads from a language's tree-sitter grammar.
 
-Ported from the legacy ``slop.language.Language`` ABC. Renamed to ``Grammar``
-(the component model already uses ``Realm.language`` for the id string; the
-adapter is the *grammar*). It is tabular metadata + extractor classmethods —
-never a walker. A ``Realm`` owns one ``Grammar``; carving and the metric layer
-read it.
-
-Faithful port (this encodes real tree-sitter / language constraints), with one
-deliberate omission, per the governing principle that legacy structure is
-suspect not sacred:
-
-- ``post_scan_adjust`` — the legacy walked generically then *rewrote* mis-parented
-  Go-receiver / Rust-impl records. Carving will parent correctly by construction;
-  the fixup hook should not exist.
-
-Defaults use raw tree-sitter node-type strings (the legacy's per-category
-constant modules were over-organised; a shared node vocabulary can be extracted
-later if multiple grammars want it).
+``Grammar`` is the contract each language implements (``slop.ast.grammar.<language>``);
+``MemberAccess`` is the record its ``member_access()`` returns.
 """
 from __future__ import annotations
 
-import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from enum import Enum
 from pathlib import Path
-from collections.abc import Iterable
 from typing import Any, ClassVar
 
 from ..parse import load_ts_language
-
-
-_IDENTIFIER = "identifier"
-
-
-def _normal(path: Path) -> Path:
-    """``path`` with ``.`` and ``..`` collapsed, without touching the filesystem."""
-    return Path(os.path.normpath(path))
-
-
-@dataclass(frozen=True)
-class ModuleIndex:
-    """The corpus's modules, as an import can name them: ``by_name`` holds every spelling a
-    module path can take (``find``, ``scope.find``, ``scope/find``, ...), ``by_path`` the
-    module's file, with and without its suffix. Values are module ids."""
-
-    by_name: dict[str, Any]
-    by_path: dict[Path, Any]
-
-    def at(self, path: Path) -> Any | None:
-        """The module whose file is ``path`` (or ``path`` plus a suffix), else None."""
-        return self.by_path.get(_normal(path))
-
-    @staticmethod
-    def keys(file: Path) -> tuple[Path, Path]:
-        """The ``by_path`` keys of a module's file."""
-        return _normal(file), _normal(file).with_suffix("")
-
-
-def distinct(found: Iterable[Any]) -> tuple[Any, ...]:
-    """The modules in ``found``, first occurrence kept, misses (None) dropped."""
-    return tuple(dict.fromkeys(m for m in found if m is not None))
-
-
-class Paradigm(Enum):
-    """The capability tier of a grammar — decides which typed accessors a carved
-    Module/Package exposes."""
-
-    PROCEDURAL = "procedural"            # free functions, no classes (no shipped grammar)
-    OBJECT_ORIENTED = "object_oriented"  # classes + methods, no free functions (Java, C#)
-    MULTI_PURPOSE = "multi_purpose"      # both (Python, Go, Rust, C, C++, Julia, Ruby, TS, JS)
+from .imports import ModuleIndex
+from .syntax import IDENTIFIER, node_text
 
 
 @dataclass(frozen=True)
@@ -83,11 +26,13 @@ class MemberAccess:
 
 
 class Grammar(ABC):
-    """Base grammar contract. Concrete grammars set ``id`` + ``PARADIGM`` and
-    override the metadata/extractors that differ from these defaults."""
+    """What slop needs to know about one language: which tree-sitter node types are callables,
+    classes, decisions, literals and imports; how names, parameters, members and imports are
+    spelled; and how packages are laid out. Each language's grammar sets ``id`` and overrides the
+    defaults that differ for it. Everything is a class method: a grammar is a table, not a
+    walker."""
 
     id: ClassVar[str]
-    PARADIGM: ClassVar[Paradigm]
 
     @classmethod
     def ts_language(cls) -> object | None:
@@ -104,7 +49,7 @@ class Grammar(ABC):
     @classmethod
     def identifiers(cls) -> frozenset[str]:
         """Node types representing identifier tokens. Default ``{identifier}``."""
-        return frozenset({_IDENTIFIER})
+        return frozenset({IDENTIFIER})
 
     @classmethod
     def extract_name(cls, node: Any, content: bytes) -> str:
@@ -127,7 +72,7 @@ class Grammar(ABC):
         ``{"identifier"}`` — types are distinct node kinds (``type_identifier``,
         ``primitive_type``, ``type_annotation``, …), so identifier-typed nodes are the
         names across most grammars."""
-        return frozenset({_IDENTIFIER})
+        return frozenset({IDENTIFIER})
 
     @classmethod
     def extract_parameters(cls, node: Any, content: bytes) -> tuple[tuple[str, str | None], ...]:
@@ -147,11 +92,11 @@ class Grammar(ABC):
         out: list[tuple[str, str | None]] = []
         for pnode in plist.children:
             if pnode.type in names:
-                out.append((_node_text(pnode, content), None))
+                out.append((node_text(pnode, content), None))
             else:
                 for child in pnode.children:
                     if child.type in names:
-                        out.append((_node_text(child, content), None))
+                        out.append((node_text(child, content), None))
         return tuple(out)
 
     # ---- cyclomatic / cognitive vocabulary ----------------------------
@@ -394,95 +339,38 @@ class Grammar(ABC):
         convention. Used when carving packages and resolving imports."""
         return None
 
+    # ---- classes ------------------------------------------------------
 
-def _node_text(node: Any, content: bytes) -> str:
-    """The source text spanned by ``node``."""
-    return content[node.start_byte:node.end_byte].decode("utf-8", errors="replace")
+    @classmethod
+    @abstractmethod
+    def classes(cls) -> frozenset[str]:
+        """Node types defining class-like scopes (classes, structs, interfaces, enums)."""
 
+    @classmethod
+    def is_class_definition(cls, node: Any) -> bool:
+        """True if a node of a ``classes()`` type *defines* a type here. Default True.
 
-def _first_identifier(node: Any, identifier_types: frozenset[str] = frozenset({_IDENTIFIER})) -> Any:
-    """DFS for the first identifier-typed descendant (the name buried in a C/C++
-    declarator: ``char *name`` → ``pointer_declarator`` → ``identifier``)."""
-    if node is None:
+        C overrides it because ``struct_specifier`` is both a definition (has a body) and
+        a type reference (``struct Node *head;``, a forward declaration)."""
+        del node
+        return True
+
+    @classmethod
+    def is_abstract_scope(cls, node: Any, content: bytes) -> bool | None:
+        """Classify a class-like scope abstract/concrete/neither (None). Default None."""
+        del node, content
         return None
-    stack = [node]
-    while stack:
-        n = stack.pop(0)
-        if n.type in identifier_types:
-            return n
-        stack.extend(n.children)
-    return None
 
+    @classmethod
+    def extract_superclasses(cls, node: Any, content: bytes) -> list[str]:
+        """Base-class / interface names declared on a class node. Default empty."""
+        del node, content
+        return []
 
-def _child_of_type(node: Any, type_name: str) -> Any:
-    if node is None:
+    @classmethod
+    def reparent_callable(cls, node: Any, content: bytes) -> str | None:
+        """Simple name of the type a callable structurally belongs to, when the
+        grammar emits it outside that type's body (Go receiver methods, Rust impl
+        functions). Carving attaches it to the matching class. Default None."""
+        del node, content
         return None
-    for child in node.children:
-        if child.type == type_name:
-            return child
-    return None
-
-
-def has_keyword(node: Any, content: bytes, child_type: str, keyword: str) -> bool:
-    """Whether a direct child of ``node`` typed ``child_type`` reads ``keyword`` (C#'s ``modifier``
-    or C++'s ``storage_class_specifier`` reading ``static``)."""
-    return any(c.type == child_type and content[c.start_byte:c.end_byte].decode("utf-8", errors="replace") == keyword
-               for c in node.children)
-
-
-def type_specifier_name(node: Any, content: bytes) -> str:
-    """A C/C++ struct/union/enum/class specifier's tag, else the name of the ``typedef``
-    that wraps an anonymous one (``typedef struct { ... } Point;`` is ``Point``)."""
-    name = node.child_by_field_name("name")
-    if name is None and node.parent is not None and node.parent.type == "type_definition":
-        name = node.parent.child_by_field_name("declarator")
-    if name is None or name.type not in ("type_identifier", _IDENTIFIER):
-        return "<anonymous>"
-    return content[name.start_byte:name.end_byte].decode("utf-8", errors="replace")
-
-
-def _c_function_declarator(node: Any) -> Any | None:
-    decl = node.child_by_field_name("declarator")
-    for _ in range(6):  # walk down to the function_declarator (mirrors c.py)
-        if decl is None or decl.type == "function_declarator":
-            break
-        decl = decl.child_by_field_name("declarator")
-    return decl
-
-
-def c_style_parameters(node: Any, content: bytes) -> tuple[tuple[str, str | None], ...]:
-    """C/C++ parameter extraction: the parameter list hangs off the function
-    *declarator*, and each parameter's name nests inside its own declarator
-    (``char *name`` → ``pointer_declarator`` → ``identifier``)."""
-    decl = _c_function_declarator(node)
-    if decl is None or decl.type != "function_declarator":
-        return ()
-    plist = decl.child_by_field_name("parameters") or _child_of_type(decl, "parameter_list")
-    if plist is None:
-        return ()
-    out: list[tuple[str, str | None]] = []
-    for pnode in plist.children:
-        if pnode.type != "parameter_declaration":
-            continue
-        ident = _first_identifier(pnode.child_by_field_name("declarator") or pnode)
-        if ident is not None:
-            out.append((_node_text(ident, content), None))
-    return tuple(out)
-
-
-def julia_signature_parameters(node: Any, content: bytes) -> tuple[tuple[str, str | None], ...]:
-    """Julia parameter extraction: params live under ``signature → call_expression →
-    argument_list`` as identifiers (or the first identifier of a typed argument)."""
-    sig = _child_of_type(node, "signature")
-    call = _child_of_type(sig, "call_expression") if sig is not None else None
-    arglist = _child_of_type(call, "argument_list") if call is not None else None
-    if arglist is None:
-        return ()
-    out: list[tuple[str, str | None]] = []
-    for child in arglist.children:
-        if child.type in ("(", ")", ","):
-            continue
-        ident = child if child.type == _IDENTIFIER else _first_identifier(child)
-        if ident is not None:
-            out.append((_node_text(ident, content), None))
-    return tuple(out)

@@ -5,11 +5,11 @@ from __future__ import annotations
 
 from typing import Any, ClassVar
 
-from ..paradigm import MultiPurpose
+from .interface import Grammar
 from .c_family import CFamily
 
 
-class C(CFamily, MultiPurpose):
+class C(CFamily, Grammar):
     id: ClassVar[str] = "c"
 
     @classmethod
@@ -88,7 +88,7 @@ class C(CFamily, MultiPurpose):
     @classmethod
     def extract_name(cls, node: Any, content: bytes) -> str:
         if node.type in cls.classes():
-            from ..paradigm.base import type_specifier_name
+            from .syntax import type_specifier_name
             return type_specifier_name(node, content)
         if node.type != "function_definition":
             return super().extract_name(node, content)

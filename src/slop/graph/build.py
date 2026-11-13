@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from ..ast.paradigm.base import ModuleIndex
+from ..ast.grammar.imports import ModuleIndex
 from ..identity import ScopeId, Span, relative_path
 from .dependency import DependencyEdge, DependencyGraph
 from .imports import module_imports

@@ -93,6 +93,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- The grammar paradigm tree (`Procedural`, `ObjectOriented`, `MultiPurpose`, `Paradigm`,
+  `ast/paradigm/`). Every shipped grammar was object-oriented, so the procedural branches in
+  carving and `find` were reachable only from a test stub; they are gone, along with the
+  procedural caveat and `caveats()`'s `kind` parameter. `Grammar` now lives in
+  `ast/grammar/interface.py` with the class members it always had; `grammar.functions()` and
+  `grammar.methods()` had no reader. The helpers that shared the old `base.py` live in modules
+  named for what they hold: `ast/grammar/imports.py` (`ModuleIndex`, `distinct`),
+  `ast/grammar/syntax.py` (node-reading helpers), `heritage.py` beside the grammars, and the C
+  and Julia parameter readers in `c_family.py` and `julia.py`.
 - The doubled scope hierarchy: `Scope`, `AggregateContainer`, `SymbolContainer` and six abstract
   kinds (`scope/base.py`, `aggregate.py`, `symbol.py`), each with exactly one implementation in
   `components.py`, plus the `Descendants` mixin and the `Lexicon` protocol (`projection.py`). One

@@ -4,9 +4,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, ClassVar
 
-from ..paradigm import MultiPurpose
-from ..paradigm.base import MemberAccess, ModuleIndex, distinct
-from ..paradigm.heritage import heritage
+from .interface import Grammar, MemberAccess
+from .imports import ModuleIndex, distinct
+from .heritage import heritage
 
 
 _MODULE = "module"
@@ -15,7 +15,7 @@ _WHILE = "while"
 _UNTIL = "until"
 
 
-class Ruby(MultiPurpose):
+class Ruby(Grammar):
     id: ClassVar[str] = "ruby"
 
     @classmethod

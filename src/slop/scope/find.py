@@ -17,7 +17,6 @@ from pathlib import Path
 from .model import Scope
 from .identity import ScopeKind
 from ..identity import relative_path
-from ..ast.paradigm import ObjectOriented
 
 
 @dataclass(frozen=True)
@@ -159,38 +158,12 @@ def collisions(corpus, *, kind: ScopeKind = ScopeKind.CLASS) -> dict[str, list[M
     return {name: sorted(matches, key=Match.sort_key) for name, matches in sorted(clashing.items())}
 
 
-def _realms_under(corpus, scope: Scope) -> list:
-    """The realms a question about ``scope`` can touch: all of them for the corpus, else
-    the realm that is, or encloses, ``scope``."""
-    if scope is corpus:
-        return list(corpus.realms())
-    node = scope
-    while node is not None and node.id.kind is not ScopeKind.REALM:
-        node = node.owner
-    return [node] if node is not None else []
-
-
-def caveats(corpus, kind: ScopeKind | None = None, *, under: Scope | None = None) -> list[str]:
-    """Reasons an answer about ``under`` (the whole corpus by default) may be incomplete.
-
-    - A realm whose grammar is procedural-only carves no class scopes, so its type
-      definitions are not discoverable and an empty class answer there does not mean "not
-      defined". No shipped grammar is procedural-only today (C and Julia carve their
-      struct/abstract types); the guard keeps a future one honest. Reported only for
-      questions about classes (``kind`` None or CLASS).
-    - A file with syntax errors is still carved, but definitions inside the broken region
-      may be missing, for any kind of question.
-
-    Only realms and files that ``under`` actually contains are reported."""
+def caveats(corpus, *, under: Scope | None = None) -> list[str]:
+    """Reasons an answer about ``under`` (the whole corpus by default) may be incomplete: a file
+    with syntax errors is still carved, but definitions inside the broken region may be missing.
+    Only files that ``under`` contains are reported."""
     target = under if under is not None else corpus
     notes: list[str] = []
-    if kind is None or kind is ScopeKind.CLASS:
-        notes.extend(
-            f"{realm.language}: procedural grammar carves no class scopes; "
-            "struct/type definitions are not discovered"
-            for realm in _realms_under(corpus, target)
-            if not issubclass(realm.grammar, ObjectOriented)
-        )
     broken = sorted(
         relative_path(m.id, corpus.root) or m.qualname
         for m in walk(target)

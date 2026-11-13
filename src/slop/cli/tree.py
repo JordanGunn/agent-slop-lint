@@ -32,7 +32,7 @@ def view(root: str | Path, output: str = "human", *, scope: str | None = None,
         return 2
     shown = parse_kind(kind)
     rows = find.outline(target, corpus.root, depth=depth, kinds=frozenset({shown}) if shown else None)
-    notes = find.caveats(corpus, shown, under=target)
+    notes = find.caveats(corpus, under=target)
     name = label(target, corpus)
     if output == "json":
         print(json.dumps({"scope": name, "kind": target.id.kind.value,

@@ -3,12 +3,11 @@ from __future__ import annotations
 
 from typing import Any, ClassVar
 
-from ..paradigm import ObjectOriented
-from ..paradigm.base import MemberAccess
-from ..paradigm.heritage import heritage
+from .interface import Grammar, MemberAccess
+from .heritage import heritage
 
 
-class Java(ObjectOriented):
+class Java(Grammar):
     id: ClassVar[str] = "java"
 
     @classmethod

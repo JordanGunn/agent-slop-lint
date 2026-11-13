@@ -3,9 +3,9 @@ from __future__ import annotations
 
 from typing import Any, ClassVar
 
-from ..paradigm import MultiPurpose
-from ..paradigm.base import MemberAccess, has_keyword
-from ..paradigm.heritage import heritage
+from .interface import Grammar, MemberAccess
+from .syntax import has_keyword
+from .heritage import heritage
 from .c_family import CFamily
 
 
@@ -13,7 +13,7 @@ _IDENTIFIER = "identifier"
 _UTF8 = "utf-8"
 
 
-class Cpp(CFamily, MultiPurpose):
+class Cpp(CFamily, Grammar):
     id: ClassVar[str] = "cpp"
 
     @classmethod
@@ -129,7 +129,7 @@ class Cpp(CFamily, MultiPurpose):
     @classmethod
     def extract_name(cls, node: Any, content: bytes) -> str:
         if node.type in cls.classes():
-            from ..paradigm.base import type_specifier_name
+            from .syntax import type_specifier_name
             return type_specifier_name(node, content)
         if node.type == "lambda_expression":
             return "<lambda>"

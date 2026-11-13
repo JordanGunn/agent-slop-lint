@@ -6,7 +6,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from ..paradigm.base import MemberAccess, ModuleIndex, distinct
+from .interface import MemberAccess
+from .imports import ModuleIndex, distinct
 
 
 class EcmaScript:

@@ -10,14 +10,14 @@ from itertools import dropwhile
 from pathlib import Path
 from typing import Any, ClassVar
 
-from ..paradigm import MultiPurpose
-from ..paradigm.base import MemberAccess, ModuleIndex
+from .interface import Grammar, MemberAccess
+from .imports import ModuleIndex
 
 #: files that hold the module of their directory rather than a module named for themselves
 _DIRECTORY_MODULES = ("mod", "lib", "main")
 
 
-class Rust(MultiPurpose):
+class Rust(Grammar):
     id: ClassVar[str] = "rust"
 
     @classmethod
